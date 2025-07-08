@@ -1,0 +1,81 @@
+name: PixelMed Java DICOM Source Sync
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-pixelmed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y wget bzip2
+
+      - name: Get latest source release link
+        id: get_link
+        run: |
+          page_url="https://www.dclunie.com/pixelmed/software/current/index.html"
+          # Extract the latest tar.bz2 link with the correct pattern
+          link=$(curl -s "$page_url" | grep -oP 'href="([^"]*pixelmedjavadicom_sourcerelease\\.\\d{8}\\.tar\\.bz2)"' | head -n1 | cut -d'"' -f2)
+          if [ -z "$link" ]; then
+            echo "No source release found."
+            exit 1
+          fi
+          filename=$(basename "$link")
+          echo "link=https://www.dclunie.com/pixelmed/software/current/$filename" >> $GITHUB_OUTPUT
+          echo "filename=$filename" >> $GITHUB_OUTPUT
+
+      - name: Read current version
+        id: version
+        run: |
+          if [ -f VERSION.txt ]; then
+            current_version=$(cat VERSION.txt)
+          else
+            current_version=""
+          fi
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        id: compare
+        run: |
+          new_version="${{ steps.get_link.outputs.filename }}"
+          current_version="${{ steps.version.outputs.current_version }}"
+          if [ "$new_version" = "$current_version" ]; then
+            echo "Up-to-date. Exiting."
+            exit 0
+          fi
+
+      - name: Download and extract new release
+        if: steps.compare.outcome == 'success'
+        run: |
+          mkdir new_release
+          wget "${{ steps.get_link.outputs.link }}" -O new_release/source.tar.bz2
+          tar -xjf new_release/source.tar.bz2 -C new_release
+          rm new_release/source.tar.bz2
+
+      - name: Replace repository content with new release
+        if: steps.compare.outcome == 'success'
+        run: |
+          shopt -s dotglob
+          # Remove all files except .git and .github
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
+          # Move new files to root
+          mv new_release/* .
+          rmdir new_release || true
+
+      - name: Update VERSION.txt
+        if: steps.compare.outcome == 'success'
+        run: |
+          echo "${{ steps.get_link.outputs.filename }}" > VERSION.txt
+
+      - name: Commit and create pull request
+        if: steps.compare.outcome == 'success'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Update PixelMed Java DICOM source to ${{ steps.get_link.outputs.filename }}"
+          title: "Update PixelMed Java DICOM source to ${{ steps.get_link.outputs.filename }}"
+          body: "Automated update to the latest PixelMed Java DICOM source release."
+          branch: "update-pixelmed-${{ steps.get_link.outputs.filename }}"
+
