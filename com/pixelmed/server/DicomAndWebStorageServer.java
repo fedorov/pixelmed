@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.server;
 
@@ -31,6 +31,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>The {@link com.pixelmed.server.DicomAndWebStorageServer DicomAndWebStorageServer} 
  * implements a DICOM storage server with query and retrieval as well as an HTTP server that responds
@@ -42,7 +45,7 @@ import java.util.Properties;
  *
  * <p>For example:</p>
  * <pre>
-% java -server -Djava.awt.headless=true -Xms128m -Xmx512m -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/excalibur-bzip2-1.0.jar:./lib/additional/vecmath1.2-1.14.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar:./lib/additional/aiviewer.jar com.pixelmed.server.DicomAndWebStorageServer test.properties
+% java -server -Djava.awt.headless=true -Xms128m -Xmx512m -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/commons-compress-1.12.jar:./lib/additional/vecmath1.2-1.14.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar:./lib/additional/aiviewer.jar com.pixelmed.server.DicomAndWebStorageServer test.properties
  * </pre>
  *
  * <p>Note that the aiviewer.jar file is only necessary if <a href="http://mars.elcom.nitech.ac.jp/dicom/index-e.html">Takahiro Katoji's AiViewer applet</a> is to be used
@@ -63,8 +66,9 @@ import java.util.Properties;
  * @author	dclunie
  */
 public class DicomAndWebStorageServer {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/server/DicomAndWebStorageServer.java,v 1.23 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/server/DicomAndWebStorageServer.java,v 1.38 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomAndWebStorageServer.class);
 
 	protected DatabaseInformationModel databaseInformationModel;
 
@@ -74,9 +78,9 @@ public class DicomAndWebStorageServer {
 		 * @param	dicomFileName
 		 * @param	transferSyntax
 		 * @param	callingAETitle
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String dicomFileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
@@ -95,7 +99,7 @@ public class DicomAndWebStorageServer {
 //long insertTime=System.currentTimeMillis();
 //System.err.println("Received: "+dicomFileName+" ; re-read file time "+(fileReadTime-startTime)+" ms; database insert time "+(insertTime-fileReadTime)+" ms");
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to insert {} received from {} in {} into database",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
@@ -106,9 +110,9 @@ public class DicomAndWebStorageServer {
 	 * <p>Wait for connections and process requests, storing received files in a database, using the default {@link com.pixelmed.database.PatientStudySeriesConcatenationInstanceModel PatientStudySeriesConcatenationInstanceModel}.</p>
 	 *
 	 * @param		properties
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public DicomAndWebStorageServer(Properties properties) throws java.io.IOException, com.pixelmed.dicom.DicomException, com.pixelmed.network.DicomNetworkException {	
 		doCommonConstructorStuff(properties,null);
@@ -119,9 +123,9 @@ public class DicomAndWebStorageServer {
 	 *
 	 * @param		properties
 	 * @param		databaseInformationModel
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public DicomAndWebStorageServer(Properties properties,DatabaseInformationModel databaseInformationModel) throws java.io.IOException, com.pixelmed.dicom.DicomException, com.pixelmed.network.DicomNetworkException {	
 		doCommonConstructorStuff(properties,databaseInformationModel);
@@ -132,14 +136,15 @@ public class DicomAndWebStorageServer {
 	 *
 	 * @param		properties
 	 * @param		databaseInformationModel	if null, a {@link com.pixelmed.database.PatientStudySeriesConcatenationInstanceModel PatientStudySeriesConcatenationInstanceModel} will be used
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	protected void doCommonConstructorStuff(Properties properties,DatabaseInformationModel databaseInformationModel) throws java.io.IOException, com.pixelmed.dicom.DicomException, com.pixelmed.network.DicomNetworkException {
 		DatabaseApplicationProperties databaseApplicationProperties = new DatabaseApplicationProperties(properties);
 		File savedImagesFolder = databaseApplicationProperties.getSavedImagesFolderCreatingItIfNecessary();
 		if (databaseInformationModel == null) {
+			slf4jlogger.debug("doCommonConstructorStuff(): No databaseInformationModel specified so using default PatientStudySeriesConcatenationInstanceModel");
 			this.databaseInformationModel = new PatientStudySeriesConcatenationInstanceModel(databaseApplicationProperties.getDatabaseFileName(),databaseApplicationProperties.getDatabaseServerName());
 		}
 		else {
@@ -152,18 +157,18 @@ public class DicomAndWebStorageServer {
 		federatedNetworkApplicationInformation.startupAllKnownSourcesAndRegister(networkApplicationProperties,webServerApplicationProperties);
 
 		// Start up DICOM association listener in background for receiving images and responding to echoes and queries and retrieves ...
-//System.err.println("Starting up DICOM association listener ...");
+		slf4jlogger.debug("doCommonConstructorStuff(): Starting up DICOM association listener ...");
 		{
 			int port = networkApplicationProperties.getListeningPort();
 			String calledAETitle = networkApplicationProperties.getCalledAETitle();
-			int storageSCPDebugLevel = networkApplicationProperties.getStorageSCPDebugLevel();
-			int queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
-			new Thread(new StorageSOPClassSCPDispatcher(port,calledAETitle,savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDHASHSUBFOLDERS,new OurReceivedObjectHandler(),
-					this.databaseInformationModel.getQueryResponseGeneratorFactory(queryDebugLevel),
-					this.databaseInformationModel.getRetrieveResponseGeneratorFactory(queryDebugLevel),
+			new Thread(new StorageSOPClassSCPDispatcher(port,calledAETitle,
+					networkApplicationProperties.getAcceptorMaximumLengthReceived(),networkApplicationProperties.getAcceptorSocketReceiveBufferSize(),networkApplicationProperties.getAcceptorSocketSendBufferSize(),
+					savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDHASHSUBFOLDERS,new OurReceivedObjectHandler(),
+					this.databaseInformationModel.getQueryResponseGeneratorFactory(),
+					this.databaseInformationModel.getRetrieveResponseGeneratorFactory(),
 					federatedNetworkApplicationInformation,
-					false/*secureTransport*/,
-					storageSCPDebugLevel)).start();
+					false/*secureTransport*/
+					)).start();
 		}
 		// Start up web server ...
 		{
@@ -191,20 +196,18 @@ public class DicomAndWebStorageServer {
 				in.close();
 			}
 			catch (IOException e) {
-				//e.printStackTrace(System.err);
+				//slf4jlogger.error("",e);
 				properties.put(NetworkApplicationProperties.propertyName_DicomListeningPort,"11112");
 				properties.put(NetworkApplicationProperties.propertyName_DicomCalledAETitle,"STORESCP");
 				properties.put(NetworkApplicationProperties.propertyName_DicomCallingAETitle,"STORESCP");
 				properties.put(NetworkApplicationProperties.propertyName_PrimaryDeviceType,"ARCHIVE");
-				properties.put(NetworkApplicationProperties.propertyName_StorageSCPDebugLevel,"0");
-				properties.put(NetworkApplicationProperties.propertyName_NetworkDynamicConfigurationDebugLevel,"0");
 				properties.put(DatabaseApplicationProperties.propertyName_SavedImagesFolderName,"tmp");
 			}
-System.err.println("properties="+properties);
+			slf4jlogger.info("properties=\n{}",properties);	// use SLF4J since may be used as a background service
 			new DicomAndWebStorageServer(properties);
 		}
 		catch (Exception e) {
-			System.err.println(e);
+			slf4jlogger.error("",e);	// use SLF4J since may be used as a background service
 		}
 
 

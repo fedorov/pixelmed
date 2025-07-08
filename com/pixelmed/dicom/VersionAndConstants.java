@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -7,17 +7,21 @@ import java.io.InputStream;
 import java.io.InputStreamReader; 
 import java.io.IOException; 
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Various pre-defined constants for identifying this software.</p>
  *
+ * <p>Includes a function and a main method to return the build date.</p>
+ *
  * @author	dclunie
  */
 public class VersionAndConstants {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/VersionAndConstants.java,v 1.25 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/VersionAndConstants.java,v 1.10 2012/04/04 18:42:17 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(AttributeList.class);
 	
-	/***/
 	public static final String softwareVersion = "001";	// must be [A-Z0-9_] and <= 4 chars else screws up ImplementationVersionName
 
 	/***/
@@ -36,7 +40,15 @@ public class VersionAndConstants {
 	public static final String implementationClassUID = uidRoot+"."+uidQualifierForThisToolkit+"."+uidQualifierForImplementationClassUID;
 	/***/
 	public static final String instanceCreatorUID = uidRoot+"."+uidQualifierForThisToolkit+"."+uidQualifierForInstanceCreatorUID;
-
+	/***/
+	public static final String uidQualifierFor99PMPFamilyOfCodingSchemes = "98";	/* see "com.pixelmed.validate.PixelMedContextGroupsSource.xml" */
+	/***/
+	public static final String uidQualifierFor99PMPCodingScheme = "1";
+	public static final String uidQualifierFor99IPCMRCodingScheme = "2";
+	/***/
+	public static final String codingSchemeUIDFor99PMP = uidRoot+"."+uidQualifierFor99PMPFamilyOfCodingSchemes+"."+uidQualifierFor99PMPCodingScheme;
+	public static final String codingSchemeUIDFor99IPCMR = uidRoot+"."+uidQualifierFor99PMPFamilyOfCodingSchemes+"."+uidQualifierFor99IPCMRCodingScheme;
+	/***/
 	public static final String releaseString = "General Release";
 	
 	/**
@@ -56,9 +68,17 @@ public class VersionAndConstants {
 //System.err.println("VersionAndConstants.getBuildDate(): = "+buildDate);
 		}
 		catch (IOException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 		}
 		return buildDate;
 	}
 	
+	/**
+	 * <p>Get the date the package was built.</p>
+	 *
+	 * @param	arg
+	 */
+	public static void main(String arg[]) {
+		System.err.println(getBuildDate());
+	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
@@ -10,6 +10,9 @@ import java.awt.geom.PathIterator;
 
 import javax.vecmath.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>An factory class that provides instances of {@link com.pixelmed.geometry.LocalizerPoster LocalizerPoster}
  * that are used for posting the position of specified
@@ -20,8 +23,9 @@ import javax.vecmath.*;
  * @author	dclunie
  */
 public class LocalizerPosterFactory {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPosterFactory.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPosterFactory.java,v 1.9 2012/03/14 18:32:49 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(LocalizerPosterFactory.class);
 	
 	private static final String dumpPathSegmentType(int pathSegmentType) {
 		String name = null;
@@ -119,10 +123,10 @@ public class LocalizerPosterFactory {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		catch (NoClassDefFoundError e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return poster;
 	}

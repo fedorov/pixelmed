@@ -1,8 +1,11 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.util.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A transformation constructed from a DICOM attribute list that extracts
@@ -20,9 +23,9 @@ import java.util.*;
  * @author	dclunie
  */
 public class VOITransform {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/VOITransform.java,v 1.24 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/VOITransform.java,v 1.12 2012/03/02 21:37:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(VOITransform.class);
 	
 	/***/
 	private class SingleVOITransform {
@@ -126,8 +129,8 @@ public class VOITransform {
 			if (Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID).equals(SOPClass.PETImageStorage)) {
 				centerInterceptCorrection = Attribute.getSingleDoubleValueOrDefault(list,TagFromName.RescaleIntercept,0.0);		// should always be zero per IOD
 				centerSlopeCorrection = Attribute.getSingleDoubleValueOrDefault(list,TagFromName.RescaleSlope,1.0);
-System.err.println("VOITransform: PET centerInterceptCorrection = "+centerInterceptCorrection);
-System.err.println("VOITransform: PET centerSlopeCorrection = "+centerSlopeCorrection);
+//System.err.println("VOITransform: PET centerInterceptCorrection = "+centerInterceptCorrection);
+//System.err.println("VOITransform: PET centerSlopeCorrection = "+centerSlopeCorrection);
 			}
 		
 			double      centers[] = Attribute.getDoubleValues(list,TagFromName.WindowCenter);
@@ -177,9 +180,9 @@ System.err.println("VOITransform: PET centerSlopeCorrection = "+centerSlopeCorre
 									int firstValueMapped = aLUTDescriptor.getIntegerValues()[1];
 									if (interpretFirstValueMappedAsSigned && !ValueRepresentation.isSignedShortVR(aLUTDescriptor.getVR())) {
 										if ((firstValueMapped & 0x8000) != 0) {
-System.err.println("VOITransform: firstValueMapped before interpretFirstValueMappedAsSigned = "+firstValueMapped);
+											slf4jlogger.debug("firstValueMapped before interpretFirstValueMappedAsSigned = {}",firstValueMapped);
 											firstValueMapped =  firstValueMapped | 0xffff0000;
-System.err.println("VOITransform: firstValueMapped before interpretFirstValueMappedAsSigned = "+firstValueMapped);
+											slf4jlogger.debug("firstValueMapped before interpretFirstValueMappedAsSigned = {}",firstValueMapped);
 										}
 									}
 									final int bitsPerEntry = aLUTDescriptor.getIntegerValues()[2];
@@ -192,7 +195,7 @@ System.err.println("VOITransform: firstValueMapped before interpretFirstValueMap
 									}
 								}
 								catch (DicomException e) {
-									e.printStackTrace(System.err);
+									slf4jlogger.error("",e);
 								}
 							}
 						}
@@ -279,7 +282,7 @@ System.err.println("VOITransform: firstValueMapped before interpretFirstValueMap
 			
 		}
 		//catch (DicomException e) {
-		//	e.printStackTrace(System.err);
+		//	slf4jlogger.error("",e);
 		//}
 //System.err.println("VOITransform: is "+toString());
 	}

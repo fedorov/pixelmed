@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -11,7 +11,7 @@ import java.util.ListIterator;
  * @author	dclunie
  */
 class AssociateAcceptPDU extends AssociateRequestAcceptPDU {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateAcceptPDU.java,v 1.9 2008/09/24 18:54:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateAcceptPDU.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	calledAETitle
@@ -22,7 +22,7 @@ class AssociateAcceptPDU extends AssociateRequestAcceptPDU {
 	 * @param	presentationContexts
 	 * @param	scuSCPRoleSelections
 	 * @param	userIdentityServerResponse	null if no response
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateAcceptPDU(String calledAETitle,String callingAETitle, String implementationClassUID, String implementationVersionName,
 			int ourMaximumLengthReceived,
@@ -41,7 +41,7 @@ class AssociateAcceptPDU extends AssociateRequestAcceptPDU {
 	 * @param	presentationContexts
 	 * @param	scuSCPRoleSelections
 	 * @param	scuSCPRoleSelections
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateAcceptPDU(String calledAETitle,String callingAETitle, String implementationClassUID, String implementationVersionName,
 			int ourMaximumLengthReceived,
@@ -52,7 +52,7 @@ class AssociateAcceptPDU extends AssociateRequestAcceptPDU {
 
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateAcceptPDU(byte[] pdu) throws DicomNetworkException {
 		super(pdu);

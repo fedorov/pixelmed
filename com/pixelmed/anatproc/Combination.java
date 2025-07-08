@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -9,7 +9,7 @@ import com.pixelmed.dicom.AttributeList;
  */
 class Combination {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/Combination.java,v 1.2 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/Combination.java,v 1.13 2025/01/29 10:58:05 dclunie Exp $";
 
 	Concept parent;
 	Concept[] children;
@@ -19,22 +19,26 @@ class Combination {
 		this.children = children;
 	}
 	
-	boolean containsOrIsSelf(Concept candidate) {
-//System.err.println("Combination.containsOrIsSelf(): comparing self "+parent+" with "+candidate);
+	int size() {
+		return children == null ? 0 : children.length;
+	}
+	
+	boolean contains(Concept candidate) {
 		boolean match = false;
-		if (parent.equals(candidate)) {
-//System.err.println("Combination.containsOrIsSelf(): equals self");
-			match = true;
-		}
-		else {
-			for (Concept child : children) {
-				if (child.equals(candidate)) {
-//System.err.println("Combination.containsOrIsSelf(): found matching child");
-					match = true;
-					break;
-				}
+		for (Concept child : children) {
+			if (child.equals(candidate)) {
+				match = true;
+				break;
 			}
 		}
 		return match;
+	}
+	
+	boolean isSelf(Concept candidate) {
+		return parent.equals(candidate);
+	}
+	
+	boolean containsOrIsSelf(Concept candidate) {
+		return isSelf(candidate) || contains(candidate);
 	}
 }

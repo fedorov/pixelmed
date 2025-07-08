@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.event;
 
@@ -10,7 +10,7 @@ import java.rmi.server.UID;
 public class EventContext {
 
 	/***/
-	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/EventContext.java,v 1.3 2004/09/30 12:51:52 dclunie Exp $";
+	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/EventContext.java,v 1.13 2025/01/29 10:58:08 dclunie Exp $";
 	
 	/***/
 	private UID uid;

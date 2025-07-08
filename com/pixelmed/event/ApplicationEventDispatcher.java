@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.event;
 
@@ -7,13 +7,16 @@ import java.lang.ref.WeakReference;
 import java.util.Vector;
 import java.util.Iterator;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author      dclunie
  */
-public class ApplicationEventDispatcher implements EventDispatcher 
-{
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/ApplicationEventDispatcher.java,v 1.7 2006/10/23 17:21:51 dclunie Exp $";
+public class ApplicationEventDispatcher implements EventDispatcher {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/ApplicationEventDispatcher.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ApplicationEventDispatcher.class);
 
 	// Thanks to Chris Beckey for rewriting this to use Singleton pattern
 
@@ -56,13 +59,13 @@ public class ApplicationEventDispatcher implements EventDispatcher
 			while (i.hasNext()) {
 				WeakReference r = (WeakReference)(i.next());
 				if (r == null) {
-System.err.println("ApplicationEventDispatcher.removeListener(): tidy up weak reference that was nulled - this should not happen");
+					slf4jlogger.info("removeListener(): tidy up weak reference that was nulled - this should not happen");
 					i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 				}
 				else {
 					Listener listener = (Listener)(r.get());
 					if (listener == null) {
-System.err.println("ApplicationEventDispatcher.removeListener(): tidy up weak reference that was nulled - this should not happen");
+						slf4jlogger.info("removeListener(): tidy up weak reference that was nulled - this should not happen");
 						i.remove();		// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 					}
 					else if (listener.equals(l)) {
@@ -86,14 +89,14 @@ System.err.println("ApplicationEventDispatcher.removeListener(): tidy up weak re
 				while (i.hasNext()) {
 					WeakReference r = (WeakReference)(i.next());
 					if (r == null) {
-System.err.println("ApplicationEventDispatcher.removeAllListenersForEventContext(): tidy up weak reference that was nulled - this should not happen");
+						slf4jlogger.info("removeAllListenersForEventContext(): tidy up weak reference that was nulled - this should not happen");
 						i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 					}
 					else {
 						Listener listener = (Listener)(r.get());
 //System.err.println("ApplicationEventDispatcher.removeAllListenersForEventContext(): looping on listener="+listener);
 						if (listener == null) {
-System.err.println("ApplicationEventDispatcher.removeAllListenersForEventContext(): tidy up weak reference that was nulled - this should not happen");
+							slf4jlogger.info("removeAllListenersForEventContext(): tidy up weak reference that was nulled - this should not happen");
 							i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 						}
 						else if (listener.getEventContext() == context) {
@@ -120,15 +123,15 @@ System.err.println("ApplicationEventDispatcher.removeAllListenersForEventContext
 			while (i.hasNext()) {
 				WeakReference r = (WeakReference)(i.next());
 				if (r == null) {
-System.err.println("ApplicationEventDispatcher.processEvent(): tidy up weak reference that was nulled - this should not happen");
-					i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
+			//		slf4jlogger.info("processEvent(): tidy up weak reference that was nulled - this should not happen");
+			//		i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 				}
 				else {
 					Listener listener = (Listener)(r.get());
 //System.err.println("ApplicationEventDispatcher.processEvent(): looping on listener="+listener);
 					if (listener == null) {
-System.err.println("ApplicationEventDispatcher.processEvent(): tidy up weak reference that was nulled - this should not happen");
-						i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
+			//			slf4jlogger.info("processEvent(): tidy up weak reference that was nulled - this should not happen");
+			//			i.remove();			// tidy up weak reference that was nulled during garbage collection, unrelated to this removeListener() request
 					}
 					else {
 						EventContext listenerEventContext = listener.getEventContext();

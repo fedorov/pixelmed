@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -17,10 +17,14 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferDouble;
 import java.awt.image.DataBufferFloat;
+import java.awt.image.IndexColorModel;
 import java.awt.image.LookupOp;
 import java.awt.image.Raster;
 import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class of static methods to perform window operations on images.</p>
@@ -28,8 +32,9 @@ import java.awt.image.WritableRaster;
  * @author	dclunie
  */
 public class WindowCenterAndWidth {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/WindowCenterAndWidth.java,v 1.14 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/WindowCenterAndWidth.java,v 1.30 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(WindowCenterAndWidth.class);
 
 	/**
 	 * @param	lut
@@ -43,11 +48,11 @@ public class WindowCenterAndWidth {
 		int maskedPadEnd = padRangeLimit&mask;
 		int incr = maskedPadStart <= maskedPadEnd ? 1 : -1;
 		for (int i=maskedPadStart; i != maskedPadEnd; i+=incr) {
-//System.err.println("WindowCenterAndWidth.applyPaddingValueRangeToLUT(): LUT index set to zero for pad in range "+i);
+			slf4jlogger.trace("applyPaddingValueRangeToLUT(): LUT index set to zero for pad in range {}",i);
 			lut[i]=(byte)0;
 		}
 		lut[maskedPadEnd]=(byte)0;		// since not done in for loop due to bi-directional end condition
-//System.err.println("WindowCenterAndWidth.applyPaddingValueRangeToLUT(): LUT index set to zero for pad in range "+maskedPadEnd);
+		slf4jlogger.trace("applyPaddingValueRangeToLUT(): LUT index set to zero for pad in range {}",maskedPadEnd);
 	}
 	
 	/**
@@ -80,7 +85,7 @@ public class WindowCenterAndWidth {
 	 */
 	public static final BufferedImage applyWindowCenterAndWidthLogistic(BufferedImage src,double center,double width,
 			boolean signed,boolean inverted,double useSlope,double useIntercept,boolean usePad,int pad,int padRangeLimit) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLogistic(): center="+center+" width="+width);
+		slf4jlogger.debug("applyWindowCenterAndWidthLogistic(): center={} width={}",center,width);
 
 		int       ymin = 0;
 		int       ymax = 255;
@@ -90,18 +95,18 @@ public class WindowCenterAndWidth {
 		byte lut[] = null;
 		int mask;
 		
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLogistic(): bottom="+bottom+" top="+top);
+		//slf4jlogger.debug("applyWindowCenterAndWidthLogistic(): bottom={} top={}",bottom,top);
 		int dataType = src.getSampleModel().getDataType();
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLogistic(): Data type "+dataType);
+		slf4jlogger.debug("applyWindowCenterAndWidthLogistic(): Data type {}",dataType);
 		if (dataType == DataBuffer.TYPE_SHORT || dataType == DataBuffer.TYPE_USHORT) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLogistic(): Data type is short or ushort and signed is "+signed);
+			slf4jlogger.debug("applyWindowCenterAndWidthLogistic(): Data type is short or ushort and signed is {}",signed);
 			startx = signed ? -32768 : 0;
 			endx   = signed ?  32768 : 65536;
 			lut=new byte[65536];
 			mask=0xffff;
 		}
 		else if (dataType == DataBuffer.TYPE_BYTE) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLogistic(): Data type is byte and signed is "+signed);
+			slf4jlogger.debug("applyWindowCenterAndWidthLogistic(): Data type is byte and signed is {}",signed);
 			startx = signed ? -128 : 0;
 			endx   = signed ?  128 : 256;
 			lut=new byte[256];
@@ -199,8 +204,8 @@ public class WindowCenterAndWidth {
 	public static final BufferedImage applyWindowCenterAndWidthLinear(BufferedImage src,double center,double width,
 			boolean signed,boolean inverted,double useSlope,double useIntercept,boolean usePad,int pad,int padRangeLimit,
 			boolean useExactCalculationInsteadOfDICOMStandardMethod) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): center="+center+" width="+width);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): useExactCalculationInsteadOfDICOMStandardMethod="+useExactCalculationInsteadOfDICOMStandardMethod);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): center={} width={}",center,width);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): useExactCalculationInsteadOfDICOMStandardMethod={}",useExactCalculationInsteadOfDICOMStandardMethod);
 
 		int       ymin = 0;
 		int       ymax = 255;
@@ -208,7 +213,7 @@ public class WindowCenterAndWidth {
 		byte     bymin = (byte)ymin;
 		byte     bymax = (byte)ymax;
 		double  yrange = ymax - ymin;
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): yrange="+yrange);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): yrange={}",yrange);
 
 		double    cmp5 = useExactCalculationInsteadOfDICOMStandardMethod ? center : (center - 0.5);
 		double     wm1 = useExactCalculationInsteadOfDICOMStandardMethod ? width : (width - 1.0);
@@ -217,11 +222,11 @@ public class WindowCenterAndWidth {
 		double  bottom = cmp5 - halfwm1;
 		double     top = cmp5 + halfwm1;
 		
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): cmp5="+cmp5);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): wm1="+wm1);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): halfwm1="+halfwm1);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): bottom="+bottom);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): top="+top);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): cmp5={}",cmp5);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): wm1={}",wm1);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): halfwm1={}",halfwm1);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): bottom={}",bottom);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): top={}",top);
 
 		int startx = 0;
 		int endx = 0;
@@ -229,25 +234,25 @@ public class WindowCenterAndWidth {
 		int mask = 0;
 		
 		boolean doItWithLookupTable = true;
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): bottom="+bottom+" top="+top);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): bottom={} top={}",bottom,top);
 		int dataType = src.getSampleModel().getDataType();
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): Data type "+dataType);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinear(): Data type {}",dataType);
 		if (dataType == DataBuffer.TYPE_SHORT || dataType == DataBuffer.TYPE_USHORT) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): Data type is short or ushort and signed is "+signed);
+			slf4jlogger.debug("applyWindowCenterAndWidthLinear(): Data type is short or ushort and signed is {}",signed);
 			startx = signed ? -32768 : 0;
 			endx   = signed ?  32768 : 65536;
 			lut=new byte[65536];
 			mask=0xffff;
 		}
 		else if (dataType == DataBuffer.TYPE_BYTE) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): Data type is byte and signed is "+signed);
+			slf4jlogger.debug("applyWindowCenterAndWidthLinear(): Data type is byte and signed is {}",signed);
 			startx = signed ? -128 : 0;
 			endx   = signed ?  128 : 256;
 			lut=new byte[256];
 			mask=0xff;
 		}
 		else if (dataType == DataBuffer.TYPE_FLOAT || dataType == DataBuffer.TYPE_DOUBLE) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): Data type is float or double");
+			slf4jlogger.debug("applyWindowCenterAndWidthLinear(): Data type is float or double");
 			doItWithLookupTable = false;
 
 		}
@@ -285,7 +290,7 @@ public class WindowCenterAndWidth {
 			}
 			LookupOp lookup=new LookupOp(new ByteLookupTable(0,lut), null);
 			dst = lookup.filter(src,lookup.createCompatibleDestImage(src,dstColorModel));	// Fails if src is DataBufferShort
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): BufferedImage out of LookupOp"+dst);
+			slf4jlogger.debug("applyWindowCenterAndWidthLinear(): BufferedImage out of LookupOp{}",dst);
 		}
 		else {
 			int w = src.getWidth();
@@ -309,7 +314,7 @@ public class WindowCenterAndWidth {
 			WritableRaster srcRaster = src.getRaster();
 			DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 			if (srcDataBuffer instanceof DataBufferDouble) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): per pixel with DataBufferDouble");
+				slf4jlogger.debug("applyWindowCenterAndWidthLinear(): per pixel with DataBufferDouble");
 				double srcPixels[] = null; // to disambiguate SampleModel.getPixels() method signature
 				srcPixels = srcSampleModel.getPixels(0,0,w,h,srcPixels,srcDataBuffer);
 		
@@ -330,7 +335,7 @@ public class WindowCenterAndWidth {
 				}
 			}
 			else if (srcDataBuffer instanceof DataBufferFloat) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthLinear(): per pixel with DataBufferFloat");
+				slf4jlogger.debug("applyWindowCenterAndWidthLinear(): per pixel with DataBufferFloat");
 				float srcPixels[] = null; // to disambiguate SampleModel.getPixels() method signature
 				srcPixels = srcSampleModel.getPixels(0,0,w,h,srcPixels,srcDataBuffer);
 		
@@ -403,7 +408,7 @@ public class WindowCenterAndWidth {
 			boolean usePad,int pad,int padRangeLimit,
 			int largestGray,int bitsPerEntry,int numberOfEntries,
 			short[] redTable,short[] greenTable,short[] blueTable) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor center="+center+" width="+width);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor center={} width={}",center,width);
 
 		int       ymin = 0;
 		int       ymax = 255;
@@ -442,23 +447,57 @@ public class WindowCenterAndWidth {
 			glut[xi&0xffff]=y;
 			blut[xi&0xffff]=y;
 		}
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(): numberOfEntries = "+numberOfEntries);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(): redTable.length = "+redTable.length);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(): greenTable.length = "+greenTable.length);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(): blueTable.length = "+blueTable.length);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(): largestGray="+largestGray);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor(): numberOfEntries = {}",numberOfEntries);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor(): redTable.length = {}",redTable.length);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor(): greenTable.length = {}",greenTable.length);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor(): blueTable.length = {}",blueTable.length);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor(): largestGray={}",largestGray);
 
-		int shiftRight = bitsPerEntry-8;
-		int i;
-		int xi;
-		for (xi=largestGray+1,i=0; i < numberOfEntries; ++xi,++i) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: xi="+xi+" i="+i);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: redTable[i]="+redTable[i]);
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: redTable[i]>>shiftRight="+(redTable[i]>>shiftRight));
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: redTable[i]>>shiftRight="+Integer.toHexString((redTable[i]>>shiftRight)&0xff));
-			rlut[xi&0xffff]=(byte)(redTable[i]>>shiftRight);
-			glut[xi&0xffff]=(byte)(greenTable[i]>>shiftRight);
-			blut[xi&0xffff]=(byte)(blueTable[i]>>shiftRight);
+		if (bitsPerEntry <= 8) {
+			slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: LUTs contain 8 bits packed in 16");
+			// the 8 bit entries are packed two per 16 bit short table entry
+			// assume no shift and interpret the values literally :(
+			int i;
+			int xi;
+			int n = (numberOfEntries - 1)/2 + 1;	// in case odd number, which sometimes happens
+			slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: half the numberOfEntries rounded = {}",n);
+			if (n > redTable.length) {
+				// do not go beyond actually table length
+				slf4jlogger.info("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: truncating half the numberOfEntries {} to the actual array size {}",n,redTable.length);
+				n = redTable.length;
+			}
+			for (xi=largestGray+1,i=0; i<n;++i) {
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: xi="+xi+" i={}",i);
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: redTable[i]&0xff={}",Integer.toHexString((redTable[i])&0xff));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: redTable[i]>>8={}",Integer.toHexString((redTable[i]>>8)&0xff));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: greenTable[i]&0xff={}",Integer.toHexString((greenTable[i])&0xff));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: greenTable[i]>>8={}",Integer.toHexString((greenTable[i]>>8)&0xff));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: blueTable[i]&0xff={}",Integer.toHexString((blueTable[i])&0xff));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: blueTable[i]>>8={}",Integer.toHexString((blueTable[i]>>8)&0xff));
+				rlut[xi&0xffff]=(byte)(redTable[i]);
+				glut[xi&0xffff]=(byte)(greenTable[i]);
+				blut[xi&0xffff]=(byte)(blueTable[i]);
+				++xi;
+				rlut[xi&0xffff]=(byte)(redTable[i]>>8);
+				glut[xi&0xffff]=(byte)(greenTable[i]>>8);
+				blut[xi&0xffff]=(byte)(blueTable[i]>>8);
+				++xi;
+			}
+		}
+		else {
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: LUTs contain 16 bit entries");
+			int shiftRight = bitsPerEntry-8;
+			int i;
+			int xi;
+			for (xi=largestGray+1,i=0; i < numberOfEntries; ++xi,++i) {
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: xi="+xi+" i={}",i);
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: redTable[i]={}",redTable[i]);
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: redTable[i]>>shiftRight={}",(redTable[i]>>shiftRight));
+				slf4jlogger.trace("applyWindowCenterAndWidthWithPaletteColor: redTable[i]>>shiftRight={}",Integer.toHexString((redTable[i]>>shiftRight)&0xff));
+				rlut[xi&0xffff]=(byte)(redTable[i]>>shiftRight);
+				glut[xi&0xffff]=(byte)(greenTable[i]>>shiftRight);
+				blut[xi&0xffff]=(byte)(blueTable[i]>>shiftRight);
+			}
 		}
 		
 		if (usePad) {
@@ -503,9 +542,9 @@ public class WindowCenterAndWidth {
 		dstPixels = dstSampleModel.getPixels(0,0,columns,rows,dstPixels,dstDataBuffer);
 		int dstPixelsLength = dstPixels.length;
         
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: dstNumBands = "+dstNumBands);
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: dstNumBands = {}",dstNumBands);
 		if (srcNumBands == 1 && dstNumBands == 4 && srcPixelsLength*4 == dstPixelsLength) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: converting gray to RGBA");
+			slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: converting gray to RGBA");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength; ++srcIndex) {
 				dstPixels[dstIndex++]=rlut[srcPixels[srcIndex]];
@@ -516,7 +555,7 @@ public class WindowCenterAndWidth {
 			dstSampleModel.setPixels(0,0,columns,rows,dstPixels,dstDataBuffer);
 		}
 		else if (srcNumBands == 1 && dstNumBands == 3 && srcPixelsLength*3 == dstPixelsLength) {
-//System.err.println("WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor: converting gray to RGB");
+			slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor: converting gray to RGB");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength; ++srcIndex) {
 				dstPixels[dstIndex++]=rlut[srcPixels[srcIndex]];
@@ -526,6 +565,110 @@ public class WindowCenterAndWidth {
 			dstSampleModel.setPixels(0,0,columns,rows,dstPixels,dstDataBuffer);
 		}
 
+		return dst;
+	}
+
+	
+	/**
+	 * @param	src
+	 * @param	center
+	 * @param	width
+	 */
+	public static final BufferedImage applyWindowCenterAndWidthLinearToColorImage(BufferedImage src,double center,double width) {
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): center={} width={}",center,width);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): BufferedImage src{}",src);
+
+		int       ymin = 0;
+		int       ymax = 255;
+
+		byte     bymin = (byte)ymin;
+		byte     bymax = (byte)ymax;
+		double  yrange = ymax - ymin;
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): yrange={}",yrange);
+
+		double    cmp5 = center - 0.5;
+		double     wm1 = width - 1.0;
+
+		double halfwm1 = wm1/2.0;
+		double  bottom = cmp5 - halfwm1;
+		double     top = cmp5 + halfwm1;
+		
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): cmp5={}",cmp5);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): wm1={}",wm1);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): halfwm1={}",halfwm1);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): bottom={}",bottom);
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): top={}",top);
+
+		int startx = 0;
+		int endx = 0;
+		byte lut[] = null;
+		int mask = 0;
+		
+		slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): bottom={} top={}",bottom,top);
+
+		boolean doIt = true;
+		int dataType = src.getSampleModel().getDataType();
+		ColorModel colorModel = src.getColorModel();
+		if (colorModel instanceof IndexColorModel) {
+			// We get RGB IndexColorModel from single bit images out of SourceImage and BufferedImageUtilities.resample() without convertToMostFavorableImageType(), so ignore (000996)
+			slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): Unsupported colorModel "+colorModel.getClass()+", so doing nothing");
+			doIt = false;
+		}
+		else {
+			slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): Data type {}",dataType);
+			// assume always unsigned since signed color is not used in DICOM
+			if (dataType == DataBuffer.TYPE_SHORT || dataType == DataBuffer.TYPE_USHORT) {
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): Data type is short or ushort");
+				startx = 0;
+				endx   = 65536;
+				lut=new byte[65536];
+				mask=0xffff;
+			}
+			else if (dataType == DataBuffer.TYPE_BYTE) {
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): Data type is byte");
+				startx = 0;
+				endx   = 256;
+				lut=new byte[256];
+				mask=0xff;
+			}
+			else {
+				// e.g. might be DataBuffer.TYPE_INT if supplied with IndexColorModel image after convertToMostFavorableImageType() (000996)
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): Unsupported data type is "+dataType+", so doing nothing");
+				doIt = false;
+			}
+		}
+		
+		BufferedImage dst = src;
+		if (doIt) {
+			for (int xi=startx; xi<endx; ++xi) {
+				double x = xi;	//  no rescale slope or intercept
+				byte y;
+				if (x <= bottom)  y=bymin;
+				else if (x > top) y=bymax;
+				else {
+					y = (byte)(((x-cmp5)/wm1 + 0.5)*yrange+ymin);
+//System.err.println("xi&0xffff="+(xi&0xffff)+" y="+((int)y&0xff)+" x="+x);
+				}
+//if (xi%16 == 0) System.err.println(xi+"\t"+(((int)y)&0xff));
+				lut[xi&mask]=y;
+			}
+			LookupOp lookup=new LookupOp(new ByteLookupTable(0,lut), null);
+			if (dataType == DataBuffer.TYPE_BYTE) {
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): 8 bit so using lookup.createCompatibleDestImage (src)");
+				dst = lookup.createCompatibleDestImage(src,null/*ColorModel*/);		// this won't work if src is not 8 bit image
+			}
+			else {
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): 16 bit so manually creating an 8 bit dst image");
+				int w = src.getWidth();
+				int h = src.getHeight();
+				// seems to work regardless of whether src is band or pixel interleaved and destination is different ...
+				//dst = SourceImage.createBandInterleavedByteThreeComponentColorImage(w,h,new byte[w*h*3],0/*offset*/,src.getColorModel().getColorSpace());
+				dst = SourceImage.createPixelInterleavedByteThreeComponentColorImage(w,h,new byte[w*h*3],0/*offset*/,src.getColorModel().getColorSpace(),false/*isChrominanceHorizontallyDownsampledBy2*/);
+				slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): BufferedImage dst for LookupOp {}",dst);
+			}
+			dst = lookup.filter(src,dst);	// applies single LUT to all channels and uses color model of src
+			slf4jlogger.debug("applyWindowCenterAndWidthLinearToColorImage(): BufferedImage out of LookupOp {}",dst);
+		}
 		return dst;
 	}
 	
@@ -554,8 +697,8 @@ public class WindowCenterAndWidth {
 			boolean usePad,int pad,int padRangeLimit,
 			int numberOfEntries,int firstValueMapped,int bitsPerEntry,short[] grayTable,int entryMin,int entryMax,int topOfEntryRange) {
 
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): firstValueMapped="+firstValueMapped);
-//System.err.println("WindowCenterAndWidth.applyVOILUT center="+center+" width="+width);
+		slf4jlogger.debug("applyVOILUT(): firstValueMapped={}",firstValueMapped);
+		slf4jlogger.debug("applyVOILUT center={} width={}",center,width);
 
 		int       ymin = 0;
 		int       ymax = 255;
@@ -563,15 +706,15 @@ public class WindowCenterAndWidth {
 
 		int bottomOfEntryRange = 0;
 		double entryRange = topOfEntryRange - bottomOfEntryRange;
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): bottomOfEntryRange="+bottomOfEntryRange+" topOfEntryRange="+topOfEntryRange+" entryRange="+entryRange);
+		slf4jlogger.debug("applyVOILUT(): bottomOfEntryRange={} topOfEntryRange={} entryRange={}",bottomOfEntryRange,topOfEntryRange,entryRange);
 
 		int firstLUTValue = grayTable[0] & 0xffff;
 		int lastLUTValue  = grayTable[numberOfEntries-1] & 0xffff;
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): firstLUTValue="+firstLUTValue+" lastLUTValue="+lastLUTValue);
+		slf4jlogger.debug("applyVOILUT(): firstLUTValue={} lastLUTValue={}",firstLUTValue,lastLUTValue);
 
 		byte     bymin = (byte)(((firstLUTValue-bottomOfEntryRange)/entryRange)*yrange+ymin);
 		byte     bymax = (byte)(((lastLUTValue -bottomOfEntryRange)/entryRange)*yrange+ymin);
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): bymin="+(bymin&0xff)+" bymax="+(bymax&0xff));
+		slf4jlogger.debug("applyVOILUT(): bymin={} bymax={}",(bymin&0xff),(bymax&0xff));
 
 		int startx;
 		int endx;
@@ -579,16 +722,16 @@ public class WindowCenterAndWidth {
 		int mask;
 		
 		int dataType = src.getSampleModel().getDataType();
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): Data type "+dataType);
+		slf4jlogger.debug("applyVOILUT(): Data type {}",dataType);
 		if (dataType == DataBuffer.TYPE_SHORT || dataType == DataBuffer.TYPE_USHORT) {
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): Data type is short or ushort and signed is "+signed);
+			slf4jlogger.debug("applyVOILUT(): Data type is short or ushort and signed is {}",signed);
 			startx = signed ? -32768 : 0;
 			endx   = signed ?  32768 : 65536;
 			lut=new byte[65536];
 			mask=0xffff;
 		}
 		else if (dataType == DataBuffer.TYPE_BYTE) {
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): Data type is byte and signed is "+signed);
+			slf4jlogger.debug("applyVOILUT(): Data type is byte and signed is {}",signed);
 			startx = signed ? -128 : 0;
 			endx   = signed ?  128 : 256;
 			lut=new byte[256];
@@ -634,7 +777,7 @@ public class WindowCenterAndWidth {
 			DataBuffer.TYPE_BYTE
 		);
 		BufferedImage dst = lookup.filter(src,lookup.createCompatibleDestImage(src,dstColorModel));	// Fails if src is DataBufferShort
-//System.err.println("WindowCenterAndWidth.applyVOILUT(): BufferedImage out of LookupOp"+dst);
+		slf4jlogger.debug("applyVOILUT(): BufferedImage out of LookupOp{}",dst);
 		return dst;
 	}
 						

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -15,7 +15,7 @@ import java.awt.Rectangle;
  */
 public class TextAnnotationPositioned {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TextAnnotationPositioned.java,v 1.7 2007/08/06 16:50:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TextAnnotationPositioned.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
 	private String string;
 	private boolean fromLeft;

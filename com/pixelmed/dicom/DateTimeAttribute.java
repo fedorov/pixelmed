@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,7 +21,11 @@ import java.util.TimeZone;
  */
 public class DateTimeAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.13 2013/02/17 18:55:25 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 26;	// assuming not being used for query range matching, in which case it would be 54 :(
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -38,8 +42,8 @@ public class DateTimeAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DateTimeAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -51,8 +55,8 @@ public class DateTimeAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DateTimeAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -65,6 +69,16 @@ public class DateTimeAttribute extends StringAttribute {
 	 */
 	public byte[] getVR() { return ValueRepresentation.DT; }
 	
+	protected final boolean allowRepairOfIncorrectLength() { return false; }				// do not allow truncation
+	
+	protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }
+	
+	public final boolean isCharacterInValueValid(int c) throws DicomException {
+		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == ' ' || c == '+' || c =='-' || c == '.');
+	}
+	
+	// public boolean areValuesWellFormed() throws DicomException {}	// should implement this to check position of period and +/- :(
+
 	/**
 	 * <p>Get a DICOM format DT {@link java.lang.String String} value from a Java {@link java.util.Date Date}.</p>
 	 *
@@ -125,7 +139,7 @@ public class DateTimeAttribute extends StringAttribute {
 	 *
 	 * <p>Will format the Date for the default timezone, converting from whatever timezone is specified in the supplied {@link java.util.Date Date} if not the default.</p>
 	 *
-	 * @deprecated	use {@link #getFormattedStringDefaultTimeZone(Date) getFormattedStringDefaultTimeZone()} instead
+	 * @deprecated	use {@link com.pixelmed.dicom.DateTimeAttribute#getFormattedStringDefaultTimeZone(java.util.Date) getFormattedStringDefaultTimeZone()} instead
 	 *
 	 * @param	date			the Java {@link java.util.Date Date} to format
 	 * @return					a DICOM formatted DT value
@@ -137,9 +151,9 @@ public class DateTimeAttribute extends StringAttribute {
 	/**
 	 * <p>Get a Java {@link java.util.Date Date} from a DICOM format DT {@link java.lang.String String} value.</p>
 	 *
-	 * @param		dateString	the date to parse
-	 * @return					a Java {@link java.util.Date Date}
-	 * @exception				java.text.ParseException
+	 * @param		dateString					the date to parse
+	 * @return									a Java {@link java.util.Date Date}
+	 * @throws		java.text.ParseException	if incorrectly encoded
 	 */
 	public static java.util.Date getDateFromFormattedString(String dateString) throws java.text.ParseException {
 //System.err.println("DateTimeAttribute.getDateFromFormattedString(): given "+dateString);
@@ -237,12 +251,12 @@ public class DateTimeAttribute extends StringAttribute {
 	 *
 	 * <p>Will use the TimezoneOffsetFromUTC if present in the AttributeList, else will assume UTC (not whatever the local time zone happens to be). </p>
 	 *
-	 * @param		list		the list containing the attributes
-	 * @param		dateTag		the tag of the DA attribute
-	 * @param		timeTag		the tag of the TM attribute
-	 * @return					a Java {@link java.util.Date Date}
-	 * @exception				java.text.ParseException
-	 * @exception				DicomException	if date attribute is missing or empty
+	 * @param	list						the list containing the attributes
+	 * @param	dateTag						the tag of the DA attribute
+	 * @param	timeTag						the tag of the TM attribute
+	 * @return								a Java {@link java.util.Date Date}
+	 * @throws	java.text.ParseException	if incorrectly encoded
+	 * @throws	DicomException				if date attribute is missing or empty
 	 */
 	public static java.util.Date getDateFromFormattedString(AttributeList list,AttributeTag dateTag,AttributeTag timeTag) throws java.text.ParseException, DicomException {
 		String dateValue = Attribute.getSingleStringValueOrEmptyString(list,dateTag);
@@ -276,11 +290,55 @@ public class DateTimeAttribute extends StringAttribute {
 	}
 	
 	/**
+	 * <p>Get a DICOM format {@link java.lang.String String} time zone from a Java {@link java.util.TimeZone TimeZone} on a particular Java {@link java.util.Date Date} .</p>
+	 *
+	 * <p>E.g. from +0500 or -0700, the last component of a DateTime attribute value, or the value of the DICOM attribute TimezoneOffsetFromUTC. </p>
+	 *
+	 * @param		javaTimeZone	the {@link java.util.TimeZone TimeZone} time zone
+	 * @param		javaDate		the {@link java.util.Date Date} used to establish whether daylight savings is in effect or not
+	 * @return						a DICOM format {@link java.lang.String String} time zone representing the supplied time zone on the supplied date
+	 */
+	public static String getTimeZone(java.util.TimeZone javaTimeZone,java.util.Date javaDate) {
+//System.err.println("DateTimeAttribute.getTimeZone(): javaTimeZone = "+javaTimeZone);
+//System.err.println("DateTimeAttribute.getTimeZone(): javaDate = "+javaDate);
+		int offset = javaTimeZone.getOffset(javaDate.getTime());	// returns the amount of time in milliseconds to add to UTC to get local time
+					
+		boolean isNegative = false;
+		if (offset < 0) {
+			isNegative = true;
+			offset = -offset;
+		}
+
+		int offsetTotalMinutes = offset / 1000 / 60;
+		int offsetHoursPart = offsetTotalMinutes / 60;
+		int offsetMinutesPart = offsetTotalMinutes % 60;
+
+		String tzInDICOMFormat =
+						(isNegative ? "-" : "+")
+						+ (offsetHoursPart > 9 ? "" : "0") + offsetHoursPart
+						+ (offsetMinutesPart > 9 ? "" : "0") + offsetMinutesPart
+					;
+//System.err.println("DateTimeAttribute.getTimeZone(): tzInDICOMFormat = "+tzInDICOMFormat);
+		return tzInDICOMFormat;
+	}
+	
+	/**
+	 * <p>Get a DICOM format {@link java.lang.String String} time zone representation of the current timezone.</p>
+	 *
+	 * <p>E.g. from +0500 or -0700, the last component of a DateTime attribute value, or the value of the DICOM attribute TimezoneOffsetFromUTC. </p>
+	 *
+	 * @return						a DICOM format {@link java.lang.String String} time zone representing the current time zone on the current date
+	 */
+	public static String getCurrentTimeZone() {
+		return getTimeZone(java.util.TimeZone.getDefault(),new java.util.Date());
+	}
+	
+	/**
 	 * <p>Returns the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by the DT value. </p>
 	 *
 	 * @param		dateTime	the string to parse
 	 * @return					the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date; may be a ludicrous value if string not formatted correctly
-	 * @exception				java.text.ParseException
+	 * @throws		java.text.ParseException	if incorrectly encoded
 	 */
 	public static long getTimeInMilliSecondsSinceEpoch(String dateTime) throws java.text.ParseException {
 		java.util.Date date = getDateFromFormattedString(dateTime);
@@ -300,8 +358,8 @@ public class DateTimeAttribute extends StringAttribute {
 	 * @param		dateTag		the tag of the DA attribute
 	 * @param		timeTag		the tag of the TM attribute
 	 * @return					the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date
-	 * @exception				java.text.ParseException
-	 * @exception				DicomException	if date attribute is missing or empty
+	 * @throws		java.text.ParseException	if incorrectly encoded
+	 * @throws				DicomException	if date attribute is missing or empty
 	 */
 	public static long getTimeInMilliSecondsSinceEpoch(AttributeList list,AttributeTag dateTag,AttributeTag timeTag) throws java.text.ParseException, DicomException {
 		String dateValue = Attribute.getSingleStringValueOrEmptyString(list,dateTag);

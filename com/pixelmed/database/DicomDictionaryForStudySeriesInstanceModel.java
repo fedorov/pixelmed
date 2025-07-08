@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -70,7 +70,7 @@ import com.pixelmed.dicom.*;
  */
 public class DicomDictionaryForStudySeriesInstanceModel extends DicomDictionary {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDictionaryForStudySeriesInstanceModel.java,v 1.8 2013/02/09 17:30:44 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDictionaryForStudySeriesInstanceModel.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
 
 	// N.B. requires that AttributeTag implement hashCode() method
 

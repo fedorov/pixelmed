@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -9,6 +9,9 @@ import com.pixelmed.dicom.TagFromName;
 
 import com.pixelmed.utils.StringUtilities;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class encapsulates information pertaining to anatomy of CT images.</p>
  * 
@@ -18,10 +21,9 @@ import com.pixelmed.utils.StringUtilities;
  * @author	dclunie
  */
 public class CTAnatomy {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CTAnatomy.java,v 1.27 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CTAnatomy.java,v 1.13 2013/04/08 18:38:35 dclunie Exp $";
-	
-	protected static int debugLevel = 0;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CTAnatomy.class);
 	
 	protected static String[] newStringArray(String... values) { return values; }		// use 1.5 varargs feature; seems like a lot of trouble to work around lack of string array curly braces outside declarations
 
@@ -154,6 +156,15 @@ public class CTAnatomy {
 			),
 			newStringArray("Neck, Chest, Abdomen and Pelvis"),		newStringArray("Neck, Chest, Abdomen and Pelvis")),
 	
+	new DisplayableAnatomicConcept("C1508520","LP33902-5",	false/*unpaired*/,	"LN",	null,	null,	"LP33902-5",	"Aortic Arch and Carotid Artery",				null,
+			newStringArray(
+				"Aortic Arch Carotid Artery",	// without conjunctions
+				"Aortic Arch and Carotid Arteries",
+				"Aortic Arch Carotid Arteries"
+			),
+			newStringArray("Aortic Arch and Carotid Artery"),		newStringArray("Aortic Arch and Carotid Artery")),
+
+
 	// single part entries ...
 		new DisplayableAnatomicConcept("C0000726","113345001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D4000",	"Abdomen",			"ABDOMEN",
 			newStringArray(
@@ -181,6 +192,8 @@ public class CTAnatomy {
 				newStringArray("Adrenal"),
 				newStringArray("Adrenal gland"),	newStringArray("Adrenal gland")),
 
+		new DisplayableAnatomicConcept("C0042425","67109009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-64700",	"Ampulla of Vater",		null,			null,	newStringArray("Ampulla of Vater"),		newStringArray("Ampulla of Vater")),
+
 		new DisplayableAnatomicConcept("C0003087","70258002",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-15750",	"Ankle joint",		"ANKLE",
 			newStringArray(
 				"Ankle",
@@ -196,10 +209,17 @@ public class CTAnatomy {
 			),
 			newStringArray("Ankle joint"),		newStringArray("Ankle joint")),
 		new DisplayableAnatomicConcept("C0003483","15825003",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-42000",	"Aorta",			"AORTA",		null,	newStringArray("Aorta"),			newStringArray("Aorta")),
+		new DisplayableAnatomicConcept("C0545736","LP33868-8",	false/*unpaired*/,	"LN",	null,	null,	"LP33868-8",	"Aorta and femoral artery",	null,	null,	newStringArray("Aorta and femoral artery"),	newStringArray("Aorta and femoral artery")),
+		new DisplayableAnatomicConcept("C0003489","57034009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-42300",	"Aortic Arch",		null,	null,	newStringArray("Aortic Arch"),		newStringArray("Aortic Arch")),
+		new DisplayableAnatomicConcept("C1508529","LP33903-3",	false/*unpaired*/,	"LN",	null,	null,	"LP33903-3",	"Aortic arch and subclavian artery",	null,	null,	newStringArray("Aortic arch and subclavian artery"),		newStringArray("Aortic arch and subclavian artery")),
 		new DisplayableAnatomicConcept("C0446516","40983000",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D8200",	"Arm",				"ARM",			null,	newStringArray("Arm"),				newStringArray("Arm")),
+		// D1-50666 "Arteriovenous fistula" is in the SNOMED US extension
+		new DisplayableAnatomicConcept("C0003855","439470001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"D1-50666",	"Arteriovenous fistula",	null,	null,	newStringArray("Arteriovenous fistula"),	newStringArray("Arteriovenous fistula")),
 		new DisplayableAnatomicConcept("C0004454","34797008",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D8100",	"Axilla",			"AXILLA",		null,	newStringArray("Axilla"),			newStringArray("Axilla")),
 		new DisplayableAnatomicConcept("C1995000","77568009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D2100",	"Back",				"BACK",			null,	newStringArray("Back"),				newStringArray("Back")),
+		new DisplayableAnatomicConcept("C0005400","28273000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-60610",	"Bile duct",		null,			null,	newStringArray("Bile duct"),		newStringArray("Bile duct")),
 		new DisplayableAnatomicConcept("C0005682","89837001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-74000",	"Bladder",			"BLADDER",		null,	newStringArray("Bladder"),			newStringArray("Bladder")),
+		new DisplayableAnatomicConcept("C0006087","17137000",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-47160",	"Brachial artery",	null,			null,	newStringArray("Brachial artery"),	newStringArray("Brachial artery")),
 		new DisplayableAnatomicConcept("C0006104","12738006",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-A0100",	"Brain",			"BRAIN",		null,	newStringArray("Brain"),			newStringArray("Brain")),
 		new DisplayableAnatomicConcept("C0006141","76752008",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-04000",	"Breast",			"BREAST",		null,	newStringArray("Breast"),			newStringArray("Breast")),
 		new DisplayableAnatomicConcept("C0006255","955009",		true   /*paired*/,	"SRT",	"SNM3",	null,	"T-26000",	"Bronchus",			"BRONCHUS",		null,	newStringArray("Bronchus"),			newStringArray("Bronchus")),
@@ -295,10 +315,12 @@ public class CTAnatomy {
 		new DisplayableAnatomicConcept("C0008913","51299004",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12310",	"Clavicle",			"CLAVICLE",		null,	newStringArray("Clavicle"),			newStringArray("Clavicle")),
 		new DisplayableAnatomicConcept("C0009194","64688005",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-11BF0",	"Coccyx",			"COCCYX",		null,	newStringArray("Coccyx"),			newStringArray("Coccyx")),
 		new DisplayableAnatomicConcept("C0009368","71854001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-59300",	"Colon",			"COLON",		null,	newStringArray("Colon"),			newStringArray("Colon")),
+		new DisplayableAnatomicConcept("C1268346","110797007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-DD080",	"Colon and rectum",	null,			null,	newStringArray("Colon and rectum"),	newStringArray("Colon and rectum")),
 		new DisplayableAnatomicConcept("C0010031","28726007",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-AA200",	"Cornea",			"CORNEA",		null,	newStringArray("Cornea"),			newStringArray("Cornea")),
 		new DisplayableAnatomicConcept("C0205042","41801008",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-43000",	"Coronary artery",	"CORONARYARTERY",
 			newStringArray("Coronary"),
 			newStringArray("Coronary artery"),	newStringArray("Coronary artery")),
+		new DisplayableAnatomicConcept("C0011980","5798000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D3400",	"Diaphragm",		null,			null,	newStringArray("Diaphragm"),		newStringArray("Diaphragm")),
 		new DisplayableAnatomicConcept("C0013303","38848004",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-58200",	"Duodenum",			"DUODENUM",		null,	newStringArray("Duodenum"),			newStringArray("Duodenum")),
 		new DisplayableAnatomicConcept("C0521421","1910005",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-AB000",	"Ear",				"EAR",			null,	newStringArray("Ear"),				newStringArray("Ear")),
 		new DisplayableAnatomicConcept("C1305417","76248009",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D8300",	"Elbow",			"ELBOW",
@@ -328,7 +350,9 @@ public class CTAnatomy {
 		new DisplayableAnatomicConcept("C0015392","81745001",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-AA000",	"Eye",				"EYE",			null,	newStringArray("Eye"),				newStringArray("Eye")),
 		new DisplayableAnatomicConcept("C0015426","80243003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-AA810",	"Eyelid",			"EYELID",		null,	newStringArray("Eyelid"),			newStringArray("Eyelid")),
 		// not face ... gets confused with frontal view (FR,NL) ... new DisplayableAnatomicConcept("C0015450","89545001",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D1200",	"Face",				"FACE",			null,	newStringArray("Face"),				newStringArray("Face")),
+		new DisplayableAnatomicConcept("C0015801","7657000",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-47400",	"Femoral artery",	null,			null,	newStringArray("Femoral artery"),	newStringArray("Femoral artery")),
 		new DisplayableAnatomicConcept("C0015811","71341001",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12710",	"Femur",			"FEMUR",		null,	newStringArray("Femur"),			newStringArray("Femur")),
+		new DisplayableAnatomicConcept("C0524584","55460000",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-F5201",	"Fetus",			null,			null,	newStringArray("Fetus"),			newStringArray("Fetus")),
 		new DisplayableAnatomicConcept("C0016129","7569003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D8800",	"Finger",			"FINGER",		null,	newStringArray("Finger"),			newStringArray("Finger")),
 		new DisplayableAnatomicConcept("C0016504","56459004",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D9700",	"Foot",				"FOOT",
 			newStringArray(
@@ -365,8 +389,10 @@ public class CTAnatomy {
 		new DisplayableAnatomicConcept("C0018563","85562004",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D8700",	"Hand",				"HAND",			null,	newStringArray("Hand"),				newStringArray("Hand")),
 		new DisplayableAnatomicConcept("C0018670","69536005",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D1100",	"Head",				"HEAD",
 			newStringArray(
+				"Kopf"/*DE*/,
 				"Schaedel"/*DE*/,
 				"Schædel"/*DE*/,
+				"Sch?del"/*DE encoded incorrectly*/,
 				"Tete"/*FR*/
 			),
 			newStringArray("Head"),				newStringArray("Head")),
@@ -401,10 +427,13 @@ public class CTAnatomy {
 			),
 			newStringArray("Humerus"),			newStringArray("Humerus")),
 		new DisplayableAnatomicConcept("C0020885","34516001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-58600",	"Ileum",			"ILEUM",		null,	newStringArray("Ileum"),			newStringArray("Ileum")),
+		new DisplayableAnatomicConcept("C0576469","299716001",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-41068",	"Iliac and femoral artery",	null,	null,	newStringArray("Iliac and femoral artery"),	newStringArray("Iliac and femoral artery")),
 		new DisplayableAnatomicConcept("C0020889","22356005",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12340",	"Ilium",			"ILIUM",		null,	newStringArray("Ilium"),			newStringArray("Ilium")),
+		new DisplayableAnatomicConcept("C0018246","26893007",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D7000",	"Inguinal region",	null,			null,	newStringArray("Inguinal region"),	newStringArray("Inguinal region")),
 		new DisplayableAnatomicConcept("C1283773","361078006",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-AB959",	"Internal Auditory Canal",	"IAC",
 			newStringArray("IAC"),
 			newStringArray("Internal Auditory Canal"),	newStringArray("Internal Auditory Canal")),
+		new DisplayableAnatomicConcept("C0226364","90024005",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-46740",	"Internal iliac artery",	null,			null,	newStringArray("Internal iliac artery"),	newStringArray("Internal iliac artery")),
 		new DisplayableAnatomicConcept("C0022359","661005",		true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D1213",	"Jaw region",		"JAW",			null,	newStringArray("Jaw region"),		newStringArray("Jaw region")),
 		new DisplayableAnatomicConcept("C0022378","21306003",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-58400",	"Jejunum",			"JEJUNUM",		null,	newStringArray("Jejunum"),			newStringArray("Jejunum")),
 		new DisplayableAnatomicConcept("C0022646","64033007",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-71000",	"Kidney",			"KIDNEY",		null,	newStringArray("Kidney"),			newStringArray("Kidney")),
@@ -480,6 +509,7 @@ public class CTAnatomy {
 			newStringArray("Lung"),				newStringArray("Lung")),
 		new DisplayableAnatomicConcept("C0024687","91609006",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-11180",	"Mandible",			"JAW",			null,	newStringArray("Mandible"),			newStringArray("Mandible")),
 		new DisplayableAnatomicConcept("C0024947","70925003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-11170",	"Maxilla",			"MAXILLA",		null,	newStringArray("Maxilla"),			newStringArray("Maxilla")),
+		new DisplayableAnatomicConcept("C0178738","LP30124-9",	true   /*paired*/,	"LN",	null,	null,	"LP30124-9",	"Maxilla and Mandible",				null,		null,	newStringArray("Maxilla and Mandible"),			newStringArray("Maxilla and Mandible")),
 		new DisplayableAnatomicConcept("C0025066","72410000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D3300",	"Mediastinum",		"MEDIASTINUM",	null,	newStringArray("Mediastinum"),		newStringArray("Mediastinum")),
 		new DisplayableAnatomicConcept("C1267547","21082005",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-51000",	"Mouth",			"MOUTH",		null,	newStringArray("Mouth"),			newStringArray("Mouth")),
 		new DisplayableAnatomicConcept("C0027530","45048000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D1600",	"Neck",				"NECK",
@@ -499,7 +529,17 @@ public class CTAnatomy {
 			),
 			newStringArray("Orbital region"),	newStringArray("Orbital region")),
 		new DisplayableAnatomicConcept("C0029939","15497006",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-87000",	"Ovary",			"OVARY",		null,	newStringArray("Ovary"),			newStringArray("Ovary")),
-		new DisplayableAnatomicConcept("C1278931","181277001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-D4034",	"Pancreas",			"PANCREAS",		null,	newStringArray("Pancreas"),			newStringArray("Pancreas")),
+		new DisplayableAnatomicConcept("C0030274","15776009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-65000",	"Pancreas",			"PANCREAS",		null,	newStringArray("Pancreas"),			newStringArray("Pancreas")),
+		new DisplayableAnatomicConcept("C0030288","69930009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-65010",	"Pancreatic duct",	null,			null,	newStringArray("Pancreatic duct"),	newStringArray("Pancreatic duct")),
+		new DisplayableAnatomicConcept("C1267614","110621006",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-65600",	"Pancreatic duct and bile duct systems",			null,
+			newStringArray(
+				"Pancreatic duct and bile duct systems",
+				"Pancreatic duct and bile ducts",
+				"Pancreatic duct and bile duct",
+				"Pancreatic and bile ducts"
+			),
+			newStringArray("Pancreatic duct and bile duct systems"),
+			newStringArray("Pancreatic duct and bile duct systems")),
 		new DisplayableAnatomicConcept("C0030580","45289007",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-61100",	"Parotid gland",	"PAROTID",
 			newStringArray("Parotid"),
 			newStringArray("Parotid gland"),	newStringArray("Parotid gland")),
@@ -522,8 +562,9 @@ public class CTAnatomy {
 			),
 			newStringArray("Pelvis"),			newStringArray("Pelvis")),
 		new DisplayableAnatomicConcept("C0030851","18911002",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-91000",	"Penis",			"PENIS",		null,	newStringArray("Penis"),			newStringArray("Penis")),
+		new DisplayableAnatomicConcept("C0225972","25489000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-39050",	"Pericardial cavity",	null,		null,	newStringArray("Pericardial cavity"),	newStringArray("Pericardial cavity")),
 		new DisplayableAnatomicConcept("C1278903","181211006",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-55002",	"Pharynx",			"PHARYNX",		null,	newStringArray("Pharynx"),			newStringArray("Pharynx")),
-		new DisplayableAnatomicConcept("C1278980","181422007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-9200B",	"Prostate",			"PROSTATE",		null,	newStringArray("Prostate"),			newStringArray("Prostate")),
+		new DisplayableAnatomicConcept("C0033572","41216001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-92000",	"Prostate",			"PROSTATE",		null,	newStringArray("Prostate"),			newStringArray("Prostate")),
 		new DisplayableAnatomicConcept("C0034896","34402009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-59600",	"Rectum",			"RECTUM",		null,	newStringArray("Rectum"),			newStringArray("Rectum")),
 		new DisplayableAnatomicConcept("C0035561","113197003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-11300",	"Rib",				"RIB",
 			newStringArray(
@@ -552,6 +593,7 @@ public class CTAnatomy {
 				"Rippe"/*DE*/
 			),
 			newStringArray("Shoulder"),			newStringArray("Shoulder")),
+		new DisplayableAnatomicConcept("C0021852","30315005",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-58000",	"Small intestine",	null,		null,	newStringArray("Small intestine"),			newStringArray("Small intestine")),
 		new DisplayableAnatomicConcept("C0037303","89546000",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-11100",	"Skull",			"SKULL",
 			newStringArray(
 				"Kolju"/*EE*/,
@@ -580,9 +622,13 @@ public class CTAnatomy {
 				"chrbtica"/*SK*/
 			),
 			newStringArray("Spine"),			newStringArray("Spine")),
+			
+		new DisplayableAnatomicConcept("C0028872","51807001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-64710",	"Sphincter of Oddi",	null,		null,	newStringArray("Sphincter of Oddi"),	newStringArray("Sphincter of Oddi")),
+		new DisplayableAnatomicConcept("C0278443","56101001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-65016",	"Sphincter pancreaticus",	null,		null,	newStringArray("Sphincter pancreaticus"),	newStringArray("Sphincter pancreaticus")),
 		new DisplayableAnatomicConcept("C0037993","78961009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-C3000",	"Spleen",			"SPLEEN",		null,	newStringArray("Spleen"),			newStringArray("Spleen")),
 		new DisplayableAnatomicConcept("C0038293","56873002",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-11210",	"Sternum",			"STERNUM",		null,	newStringArray("Sternum"),			newStringArray("Sternum")),
 		new DisplayableAnatomicConcept("C0038351","69695003",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-57000",	"Stomach",			"STOMACH",		null,	newStringArray("Stomach"),			newStringArray("Stomach")),
+		new DisplayableAnatomicConcept("C0038530","36765005",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-46100",	"Subclavian artery",	null,		null,	newStringArray("Subclavian artery"),	newStringArray("Subclavian artery")),
 		new DisplayableAnatomicConcept("C0038556","54019009",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-61300",	"Submandibular gland",	"SUBMANDIBULAR",
 			newStringArray("Submandibular"),
 			newStringArray("Submandibular gland"),	newStringArray("Submandibular gland")),
@@ -645,6 +691,7 @@ public class CTAnatomy {
 		new DisplayableAnatomicConcept("C0041967","13648007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-75000",	"Urethra",			"URETHRA",		null,	newStringArray("Urethra"),			newStringArray("Urethra")),
 		new DisplayableAnatomicConcept("C0042149","35039007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-83000",	"Uterus",			"UTERUS",		null,	newStringArray("Uterus"),			newStringArray("Uterus")),
 		new DisplayableAnatomicConcept("C0042232","76784001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-82000",	"Vagina",			"VAGINA",		null,	newStringArray("Vagina"),			newStringArray("Vagina")),
+		new DisplayableAnatomicConcept("C0729900","312548007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-46006",	"Ventral branch of abdominal aorta",		null,			null,	newStringArray("Ventral branch of abdominal aorta"),			newStringArray("Ventral branch of abdominal aorta")),
 		new DisplayableAnatomicConcept("C0042993","45292006",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-81000",	"Vulva",			"VULVA",		null,	newStringArray("Vulva"),			newStringArray("Vulva")),
 		new DisplayableAnatomicConcept("C1262468","74670003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-15460",	"Wrist joint",		"WRIST",
 			newStringArray(
@@ -678,17 +725,17 @@ public class CTAnatomy {
 		{
 			CodedSequenceItem anatomicRegionSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.AnatomicRegionSequence);
 			if (anatomicRegionSequence != null) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAnatomicConcept(): anatomicRegionSequence = "+anatomicRegionSequence);
+				slf4jlogger.debug("findAnatomicConcept(): anatomicRegionSequence = {}",anatomicRegionSequence);
 				anatomy = anatomyConcepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(anatomicRegionSequence);
-if (debugLevel > 0) if (anatomy != null) System.err.println("CTAnatomy.findAnatomicConcept(): found Anatomy in AnatomicRegionSequence = "+anatomy.toStringBrief());
+				if (anatomy != null) slf4jlogger.debug("findAnatomicConcept(): found Anatomy in AnatomicRegionSequence = {}",anatomy.toStringBrief());
 			}
 		}
 		if (anatomy == null) {
 			String bodyPartExamined = Attribute.getSingleStringValueOrNull(list,TagFromName.BodyPartExamined);
 			if (bodyPartExamined != null) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAnatomicConcept(): bodyPartExamined = "+bodyPartExamined);
+				slf4jlogger.debug("findAnatomicConcept(): bodyPartExamined = {}",bodyPartExamined);
 				anatomy = anatomyConcepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(bodyPartExamined);
-if (debugLevel > 0) if (anatomy != null) System.err.println("CTAnatomy.findAnatomicConcept(): found Anatomy in BodyPartExamined = "+anatomy.toStringBrief());
+				if (anatomy != null) slf4jlogger.debug("findAnatomicConcept(): found Anatomy in BodyPartExamined = {}",anatomy.toStringBrief());
 			}
 		}
 		if (anatomy == null) {
@@ -703,57 +750,57 @@ if (debugLevel > 0) if (anatomy != null) System.err.println("CTAnatomy.findAnato
 		{
 			String imageComments = Attribute.getSingleStringValueOrNull(list,TagFromName.ImageComments);
 			if (imageComments != null && !StringUtilities.containsRegardlessOfCase(imageComments,badPhraseTriggers)) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): imageComments = "+imageComments);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): imageComments = {}",imageComments);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(imageComments);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = ImageComments "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ImageComments = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String seriesDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.SeriesDescription);
 			if (seriesDescription != null && !StringUtilities.containsRegardlessOfCase(seriesDescription,badPhraseTriggers)) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): seriesDescription = "+seriesDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): seriesDescription = {}",seriesDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(seriesDescription);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in SeriesDescription = "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in SeriesDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String protocolName = Attribute.getSingleStringValueOrNull(list,TagFromName.ProtocolName);
 			if (protocolName != null && !StringUtilities.containsRegardlessOfCase(protocolName,badPhraseTriggers)) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): protocolName = "+protocolName);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): protocolName = {}",protocolName);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(protocolName);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in ProtocolName = "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ProtocolName = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			CodedSequenceItem performedProtocolCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.PerformedProtocolCodeSequence);
 			if (performedProtocolCodeSequence != null) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): performedProtocolCodeSequence = "+performedProtocolCodeSequence);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): performedProtocolCodeSequence = {}",performedProtocolCodeSequence);
 				found = concepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(performedProtocolCodeSequence);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = PerformedProtocolCodeSequence "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in PerformedProtocolCodeSequence = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String performedProcedureStepDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.PerformedProcedureStepDescription);
 			if (performedProcedureStepDescription != null && !StringUtilities.containsRegardlessOfCase(performedProcedureStepDescription,badPhraseTriggers)) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): performedProcedureStepDescription = "+performedProcedureStepDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): performedProcedureStepDescription = {}",performedProcedureStepDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(performedProcedureStepDescription);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = PerformedProcedureStepDescription "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in PerformedProcedureStepDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			CodedSequenceItem procedureCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.ProcedureCodeSequence);
 			if (procedureCodeSequence != null) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): procedureCodeSequence = "+procedureCodeSequence);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): procedureCodeSequence = {}",procedureCodeSequence);
 				found = concepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(procedureCodeSequence);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = ProcedureCodeSequence "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ProcedureCodeSequence = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String studyDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.StudyDescription);
 			if (studyDescription != null && !StringUtilities.containsRegardlessOfCase(studyDescription,badPhraseTriggers)) {
-if (debugLevel > 0) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): seriesDescription = "+studyDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): seriesDescription = {}",studyDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(studyDescription);
-if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = StudyDescription "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in StudyDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		return found;
@@ -774,13 +821,13 @@ if (debugLevel > 0) if (found != null) System.err.println("CTAnatomy.findAmongst
 				list.read(inputFileName,null,true,true,TagFromName.PixelData);
 				DisplayableAnatomicConcept anatomy = findAnatomicConcept(list);
 				if (anatomy != null) {
-					System.err.print(anatomy);
+					slf4jlogger.info(anatomy.toString());
 				}
 				else {
-					System.err.println("########################### - ANATOMY NOT FOUND - ###########################");
+					slf4jlogger.info("########################### - ANATOMY NOT FOUND - ###########################");
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			}
 		}
 	}

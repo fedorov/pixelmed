@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.doseocr;
 
@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to extract Exposure Dose Sequence and related attributes from Philips modality dose report screen saves.</p>
  *
@@ -27,15 +30,41 @@ import java.util.regex.Pattern;
  */
 
 public class ExposureDoseSequence {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/ExposureDoseSequence.java,v 1.43 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ExposureDoseSequence.class);
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/ExposureDoseSequence.java,v 1.30 2013/02/01 13:53:20 dclunie Exp $";
-	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	private static AttributeTag privateDLPTag = new AttributeTag(0x00e1,0x1021);
 
+	/**
+	 * <p>Extract DLP and CTDIVol values from CommentsOnRadiationDose string value.</p>
+	 *
+	 * @deprecated														SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getValuesFromCommentsOnRadiationDose(AttributeList,Map,Map)} instead.
+	 * @param	list													the list
+	 * @param	DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber		map of DLP values indexed by series number to which to add extracted values
+	 * @param	CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber	map of CTDIVol values indexed by series number to which to add extracted values
+	 * @param	debugLevel												ignored
+	 * @return															the total DLP value extracted
+	 */
 	public static String getValuesFromCommentsOnRadiationDose(AttributeList list,Map<String,String> DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber,Map<String,String> CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber,int debugLevel) throws IOException {
-if (debugLevel > 0) System.err.println("ExposureDoseSequence.getValuesFromCommentsOnRadiationDose():");
+		slf4jlogger.warn("getValuesFromCommentsOnRadiationDose(): Debug level supplied as argument ignored");
+		return getValuesFromCommentsOnRadiationDose(list,DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber,CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber);
+	}
+	
+	/**
+	 * <p>Extract DLP and CTDIVol values from CommentsOnRadiationDose string value.</p>
+	 *
+	 * @param	list													the list
+	 * @param	DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber		map of DLP values indexed by series number to which to add extracted values
+	 * @param	CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber	map of CTDIVol values indexed by series number to which to add extracted values
+	 * @return															the total DLP value extracted
+	 */
+	public static String getValuesFromCommentsOnRadiationDose(AttributeList list,Map<String,String> DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber,Map<String,String> CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber) throws IOException {
+			slf4jlogger.debug("ExposureDoseSequence.getValuesFromCommentsOnRadiationDose():");
 		String totalDLPFromCommentsOnRadiationDose = "";
-		String commentsOnRadiationDose = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CommentsOnRadiationDose).toUpperCase(java.util.Locale.US).trim();
+		String commentsOnRadiationDose = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("CommentsOnRadiationDose")).toUpperCase(java.util.Locale.US).trim();
 		if (commentsOnRadiationDose.length() > 0) {
 			//Series #2 OS Average CTDIvol=23.3 DLP=899.8
 			Pattern pSeries = Pattern.compile("[ \t]*SERIES #[ \t]*([0-9]+)[ \t]*.*CTDIVOL[ \t]*=[ \t]*([0-9]*[.][0-9]*)[ \t]+DLP[ \t]*=[ \t]*([0-9]*[.][0-9]*).*");
@@ -47,18 +76,18 @@ if (debugLevel > 0) System.err.println("ExposureDoseSequence.getValuesFromCommen
 			String line = null;
 			while ((line=r.readLine()) != null) {
 				line=line.toUpperCase(java.util.Locale.US);
-if (debugLevel > 0) System.err.println(line);
+			slf4jlogger.debug(line);
 				if (line.contains("SERIES")) {			// Philips
 					Matcher m = pSeries.matcher(line);
 					if (m.matches()) {
-if (debugLevel > 0) System.err.println("matches");
+						slf4jlogger.debug("matches");
 						int groupCount = m.groupCount();
-if (debugLevel > 0) System.err.println("groupCount = "+groupCount);
+						slf4jlogger.debug("groupCount = {}",groupCount);
 						if (groupCount >= 3) {
 							String series = m.group(1);		// first group is not 0, which is the entire match
-							String CTDIVol = m.group(2);		// first group is not 0, which is the entire match
+							String CTDIVol = m.group(2);	// first group is not 0, which is the entire match
 							String DLP = m.group(3);		// first group is not 0, which is the entire match
-if (debugLevel > 0) System.err.println("series = "+series+", CTDIVol = "+CTDIVol+", DLP = "+DLP);
+							slf4jlogger.debug("series = {}, CTDIVol = {}, DLP = {}",series,CTDIVol,DLP);
 							if (series.length() > 0) {
 								CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber.put(series,CTDIVol);
 								DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber.put(series,DLP);
@@ -69,13 +98,13 @@ if (debugLevel > 0) System.err.println("series = "+series+", CTDIVol = "+CTDIVol
 				if (line.contains("EVENT")) {			// GE
 					Matcher m = pEvent.matcher(line);
 					if (m.matches()) {
-if (debugLevel > 0) System.err.println("matches");
+						slf4jlogger.debug("matches");
 						int groupCount = m.groupCount();
-if (debugLevel > 0) System.err.println("groupCount = "+groupCount);
+						slf4jlogger.debug("groupCount = {}",groupCount);
 						if (groupCount >= 2) {
 							String series = m.group(1);		// first group is not 0, which is the entire match
 							String DLP = m.group(2);		// first group is not 0, which is the entire match
-if (debugLevel > 0) System.err.println("series = "+series+", DLP = "+DLP);
+							slf4jlogger.debug("series = {}, DLP = {}",series,DLP);
 							if (series.length() > 0) {
 								DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber.put(series,DLP);
 							}
@@ -85,12 +114,12 @@ if (debugLevel > 0) System.err.println("series = "+series+", DLP = "+DLP);
 				else if (line.contains("TOTAL")) {
 					Matcher m = pTotal.matcher(line);
 					if (m.matches()) {
-if (debugLevel > 0) System.err.println("matches");
+						slf4jlogger.debug("matches");
 						int groupCount = m.groupCount();
-if (debugLevel > 0) System.err.println("groupCount = "+groupCount);
+						slf4jlogger.debug("groupCount = {}",groupCount);
 						if (groupCount >= 1) {
 							totalDLPFromCommentsOnRadiationDose = m.group(1);		// first group is not 0, which is the entire match
-if (debugLevel > 0) System.err.println("totalDLPFromCommentsOnRadiationDose = "+totalDLPFromCommentsOnRadiationDose);
+							slf4jlogger.debug("totalDLPFromCommentsOnRadiationDose = {}",totalDLPFromCommentsOnRadiationDose);
 						}
 					}
 				}
@@ -137,11 +166,35 @@ if (debugLevel > 0) System.err.println("totalDLPFromCommentsOnRadiationDose = "+
 		String imageType = Attribute.getDelimitedStringValuesOrDefault(list,TagFromName.ImageType,"").trim();
 		return Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SeriesDescription).toLowerCase(java.util.Locale.US).trim().equals("dose info")
 		    && isPossiblyPhilipsDoseScreenInstance(list)
-			&& list.get(TagFromName.ExposureDoseSequence) != null;	// this is necessary to distinguish localizers that pretend to be dose info but don't have the information present (and may be mixed in the same series as a real one)
+			&& list.get(dictionary.getTagFromName("ExposureDoseSequence")) != null;	// this is necessary to distinguish localizers that pretend to be dose info but don't have the information present (and may be mixed in the same series as a real one)
 	}
 	
+
+	/**
+	 * <p>Extract CTDose values from ExposureDoseSequence. optionally building an RDSR object.</p>
+	 *
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getCTDoseFromExposureDoseSequence(AttributeList,CTIrradiationEventDataFromImages,boolean)} instead.
+	 * @param	list					the list
+	 * @param	debugLevel				ignored
+	 * @param	eventDataFromImages		the per-event data or null
+	 * @param	buildSR					whether or not to extract composite context from the list for use later to build an RDSR
+	 * @return							the CTDose instance
+	 */
 	public static CTDose getCTDoseFromExposureDoseSequence(AttributeList list,int debugLevel,CTIrradiationEventDataFromImages eventDataFromImages,boolean buildSR) throws IOException, DicomException {
-if (debugLevel > 0) System.err.println("ExposureDoseSequence.getCTDoseFromExposureDoseSequence():");
+		slf4jlogger.warn("getCTDoseFromExposureDoseSequence(): Debug level supplied as argument ignored");
+		return getCTDoseFromExposureDoseSequence(list,eventDataFromImages,buildSR);
+	}
+	
+	/**
+	 * <p>Extract CTDose values from ExposureDoseSequence. optionally building an RDSR object.</p>
+	 *
+	 * @param	list					the list
+	 * @param	eventDataFromImages		the per-event data or null
+	 * @param	buildSR					whether or not to extract composite context from the list for use later to build an RDSR
+	 * @return							the CTDose instance
+	 */
+	public static CTDose getCTDoseFromExposureDoseSequence(AttributeList list,CTIrradiationEventDataFromImages eventDataFromImages,boolean buildSR) throws IOException, DicomException {
+			slf4jlogger.debug("ExposureDoseSequence.getCTDoseFromExposureDoseSequence():");
 		String studyInstanceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.StudyInstanceUID);
 		String studyDescription = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.StudyDescription);
 		String startDateTime = null;
@@ -176,18 +229,18 @@ if (debugLevel > 0) System.err.println("ExposureDoseSequence.getCTDoseFromExposu
 		
 		Map<String,String> DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber = new HashMap<String,String>();
 		Map<String,String> CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber = new HashMap<String,String>();
-		String totalDLPFromCommentsOnRadiationDose = getValuesFromCommentsOnRadiationDose(list,DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber,CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber,debugLevel);
+		String totalDLPFromCommentsOnRadiationDose = getValuesFromCommentsOnRadiationDose(list,DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber,CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber);
 
 		{
 			String totalDLP = getPhilipsPrivateDLPValue(list);
 			if (totalDLP == null || totalDLP.length() == 0) {
-if (debugLevel > 0) System.err.println("Cannot get total DLP from private attribute - using value parsed from CommentsOnRadiationDose if present");
+				slf4jlogger.debug("Cannot get total DLP from private attribute - using value parsed from CommentsOnRadiationDose if present");
 				totalDLP = totalDLPFromCommentsOnRadiationDose;
 			}
 			ctDose.setDLPTotal(totalDLP);
 		}
 				
-		Attribute aExposureDoseSequence = list.get(TagFromName.ExposureDoseSequence);
+		Attribute aExposureDoseSequence = list.get(dictionary.getTagFromName("ExposureDoseSequence"));
 		if (aExposureDoseSequence != null && aExposureDoseSequence instanceof SequenceAttribute) {
 			//UIDGenerator u = new UIDGenerator();
 		
@@ -197,7 +250,7 @@ if (debugLevel > 0) System.err.println("Cannot get total DLP from private attrib
 				SequenceItem item = (SequenceItem)(ieds.next());
 				if (item != null) {
 					AttributeList itemList = item.getAttributeList();
-if (debugLevel > 1) System.err.print(itemList);
+					if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(itemList.toString());
 
 	// Philips ...				
 	// (0x0008,0x002a) DT Acquisition Date Time 	 VR=<DT>   VL=<0x0016>  <20090806081005.000000 > 
@@ -242,18 +295,18 @@ if (debugLevel > 1) System.err.print(itemList);
 					String acquisitionDateTime = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.AcquisitionDateTime);
 					String seriesDescription = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SeriesDescription);
 					String protocolName = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.ProtocolName);
-					String kvp = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.KVP);
-					double exposureTimeInMilliSeconds = Attribute.getSingleDoubleValueOrDefault(itemList,TagFromName.ExposureTime,0d);
-					String radiationMode = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.RadiationMode);
-					String filterType = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.FilterType);
-					String scanLength = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.ScanLength);
-					double tubeCurrentInuA = Attribute.getSingleDoubleValueOrDefault(itemList,TagFromName.XRayTubeCurrentInuA,0d);
+					String kvp = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("KVP"));
+					double exposureTimeInMilliSeconds = Attribute.getSingleDoubleValueOrDefault(itemList,dictionary.getTagFromName("ExposureTime"),0d);
+					String radiationMode = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("RadiationMode"));
+					String filterType = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("FilterType"));
+					String scanLength = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("ScanLength"));
+					double tubeCurrentInuA = Attribute.getSingleDoubleValueOrDefault(itemList,dictionary.getTagFromName("XRayTubeCurrentInuA"),0d);
 					String acquisitionType = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.AcquisitionType);
-					String singleCollimationWidth = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SingleCollimationWidth);
-					String totalCollimationWidth = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.TotalCollimationWidth);
-					String spiralPitchFactor = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SpiralPitchFactor);
-					String estimatedDoseSaving = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.EstimatedDoseSaving);
-					String CTDIvol = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.CTDIvol);
+					String singleCollimationWidth = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("SingleCollimationWidth"));
+					String totalCollimationWidth = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("TotalCollimationWidth"));
+					String spiralPitchFactor = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("SpiralPitchFactor"));
+					String estimatedDoseSaving = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("EstimatedDoseSaving"));
+					String CTDIvol = Attribute.getSingleStringValueOrEmptyString(itemList,dictionary.getTagFromName("CTDIvol"));
 					String seriesNumber = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SeriesNumber);
 					String sliceLocation = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SliceLocation);
 					String DLP = getPhilipsPrivateDLPValue(itemList);
@@ -269,14 +322,14 @@ if (debugLevel > 1) System.err.print(itemList);
 					
 					if (useSeriesNumber.length() > 0) {
 						if (CTDIvol.length() == 0) {
-if (debugLevel > 0) System.err.println("Cannot get per series CTDIvol from private attribute - using value parsed from CommentsOnRadiationDose if present");
+							slf4jlogger.debug("Cannot get per series CTDIvol from private attribute - using value parsed from CommentsOnRadiationDose if present");
 							CTDIvol = CTDIVolFromCommentsOnRadiationDoseIndexedBySeriesNumber.get(useSeriesNumber);
 							if (CTDIvol == null) {
 								CTDIvol = "";
 							}
 						}
 						if (DLP.length() == 0) {
-if (debugLevel > 0) System.err.println("Cannot get per series DLP from private attribute - using value parsed from CommentsOnRadiationDose if present");
+							slf4jlogger.debug("Cannot get per series DLP from private attribute - using value parsed from CommentsOnRadiationDose if present");
 							DLP = DLPFromCommentsOnRadiationDoseIndexedBySeriesNumber.get(useSeriesNumber);
 							if (DLP == null) {
 								DLP = "";
@@ -295,7 +348,7 @@ if (debugLevel > 0) System.err.println("Cannot get per series DLP from private a
 					CodedSequenceItem useAnatomy = defaultAnatomy;
 					{
 						DisplayableAnatomicConcept anatomyConcept = CTAnatomy.findAnatomicConcept(itemList);	// will us BodyPartExamined from GE
-if (debugLevel > 0) System.err.println("anatomyConcept = "+anatomyConcept);
+						slf4jlogger.debug("anatomyConcept = {}",anatomyConcept);
 						if (anatomyConcept != null) {
 							useAnatomy = anatomyConcept.getCodedSequenceItem();
 						}
@@ -303,10 +356,10 @@ if (debugLevel > 0) System.err.println("anatomyConcept = "+anatomyConcept);
 					
 					CTPhantomType usePhantom = null;
 					{
-						CodedSequenceItem csiCTDIPhantomTypeCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(itemList,TagFromName.CTDIPhantomTypeCodeSequence);
+						CodedSequenceItem csiCTDIPhantomTypeCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(itemList,dictionary.getTagFromName("CTDIPhantomTypeCodeSequence"));
 						if (csiCTDIPhantomTypeCodeSequence != null) {
 							usePhantom = CTPhantomType.selectFromCode(csiCTDIPhantomTypeCodeSequence);
-if (debugLevel > 0) System.err.println("usePhantom = "+usePhantom);
+							slf4jlogger.debug("usePhantom = {}",usePhantom);
 						}
 					}
 					
@@ -320,9 +373,9 @@ if (debugLevel > 0) System.err.println("usePhantom = "+usePhantom);
 						useComment = seriesDescription;
 					}
 					
-if (debugLevel > 0) System.err.println("acquisitionType = "+acquisitionType);
+					slf4jlogger.debug("acquisitionType = {}",acquisitionType);
 					CTScanType useScanType = CTScanType.selectFromDescription(acquisitionType);
-if (debugLevel > 0) System.err.println("useScanType = "+useScanType);
+					slf4jlogger.debug("useScanType = {}",useScanType);
 					// sometimes acquisitionType is missing, yet valid information is present, and there is (some) information provided for localizers
 					{
 						CTDoseAcquisition acq = new CTDoseAcquisition(studyInstanceUID,
@@ -354,8 +407,8 @@ if (debugLevel > 0) System.err.println("useScanType = "+useScanType);
 							kvp,tubeCurrentInmA,null/*no info about maximum tube current, cannot assume constant and do not want to override what is found scanning reconstructed slice headers*/,
 							null/*exposureTimePerRotation*/);
 						
-if (debugLevel > 0) System.err.println("CTDIvol = "+CTDIvol);
-if (debugLevel > 0) System.err.println("DLP = "+DLP);
+						slf4jlogger.debug("CTDIvol = {}",CTDIvol);
+						slf4jlogger.debug("DLP = {}",DLP);
 						if (CTDIvol.length() > 0 && DLP.length() > 0) {
 							// override Scan Length, which does not include overranging, if the DLP and CTDIvol informaiton is present (i.e., other than a localizer)
 							// in order to match DICOM RDSR definition for sequenced scans if there is any skip, only override if greater (otherwise would be too small)
@@ -398,20 +451,17 @@ if (debugLevel > 0) System.err.println("DLP = "+DLP);
 	 * @param	arg		an array of 1 to 4 strings - the file name of the dose screen save image (or "-" if to search for dose screen amongst acquired images),
 	 *					then optionally the path to a DICOMDIR or folder containing acquired CT slice images (or "-" if none and more arguments)
 	 *					then optionally the name of Dose SR file to write  (or "-" if none and more arguments)
-	 *					then optionally the debug level
 	 */
 	public static final void main(String arg[]) {
 		try {
 			String screenFilename            = arg.length > 0  && !arg[0].equals("-") ? arg[0] : null;
 			String acquiredImagesPath        = arg.length > 1  && !arg[1].equals("-") ? arg[1] : null;
 			String srOutputFilename          = arg.length > 2 && !arg[2].equals("-") ? arg[2] : null;
-			int    debugLevel                = arg.length > 3 ? Integer.parseInt(arg[3]) : -1;
-//System.err.println("debugLevel = "+debugLevel);
 		
 			CTIrradiationEventDataFromImages eventDataFromImages = null;
 			if (acquiredImagesPath != null) {
 				eventDataFromImages = new CTIrradiationEventDataFromImages(acquiredImagesPath);
-System.err.print(eventDataFromImages);
+				slf4jlogger.info(eventDataFromImages.toString());
 				if (screenFilename == null) {
 					screenFilename = eventDataFromImages.getDoseScreenOrStructuredReportFilenames(true/*includeScreen*/,false/*includeSR*/).get(0);
 				}
@@ -419,11 +469,10 @@ System.err.print(eventDataFromImages);
 
 			AttributeList list = new AttributeList();
 			list.read(screenFilename);
-//System.err.print(list);
-			CTDose ctDose = getCTDoseFromExposureDoseSequence(list,debugLevel,eventDataFromImages,srOutputFilename != null);
-System.err.print(ctDose.toString(true,true));
+			CTDose ctDose = getCTDoseFromExposureDoseSequence(list,eventDataFromImages,srOutputFilename != null);
+			slf4jlogger.info(ctDose.toString(true,true));
 			if (!ctDose.specifiedDLPTotalMatchesDLPTotalFromAcquisitions()) {
-				System.err.println("############ specified DLP total ("+ctDose.getDLPTotal()+") does not match DLP total from acquisitions ("+ctDose.getDLPTotalFromAcquisitions()+")");
+				slf4jlogger.warn("############ specified DLP total ({}) does not match DLP total from acquisitions ({})",ctDose.getDLPTotal(),ctDose.getDLPTotalFromAcquisitions());
 			}
 			
 			if (srOutputFilename != null) {
@@ -431,7 +480,7 @@ System.err.print(ctDose.toString(true,true));
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

@@ -10,7 +10,13 @@
 
 <xsl:param name="optionDescribeChecking" select="'F'"/>
 
+<xsl:param name="optionCheckCodeMeaning" select="'F'"/>
+
 <xsl:param name="optionMatchCaseOfCodeMeaning" select="'F'"/>
+
+<xsl:param name="optionCheckDeprecatedCodingScheme" select="'F'"/>
+
+<xsl:param name="optionCheckTemplateID" select="'F'"/>
 
 <xsl:variable name="optionEmbedMatchedLocationsInOutputWithElement" select="'item'"/>
 
@@ -136,6 +142,8 @@
 	<xsl:param name="cmConceptName"/>
 	<xsl:param name="csdConceptName"/>
 	<xsl:param name="cvConceptName"/>
+	<xsl:param name="csdAltConceptName"/>
+	<xsl:param name="cvAltConceptName"/>
 	<xsl:param name="vmmin"/>
 	<xsl:param name="vmmax"/>
 	<xsl:param name="requiredType"/>
@@ -161,9 +169,14 @@
 	<xsl:param name="templateConditionSatisfied"/>
 	<xsl:param name="templateMBPO"/>
 	<xsl:param name="nestingLevel"/>
+	<xsl:param name="templateID"/>
+	<xsl:param name="templateOrderSignificant"/>
 
 	<xsl:if test="$optionDescribeChecking='T'">
 		<xsl:text>CheckContentItem: </xsl:text><xsl:value-of select="$description"/><xsl:text>: within </xsl:text><xsl:value-of select="substring-after(@ID,'ci_')"/><xsl:text>: </xsl:text><xsl:call-template name="buildFullPathInInstanceToCurrentNode"/><xsl:value-of select="$newline"/>
+		<xsl:text>CheckContentItem: templateID = </xsl:text><xsl:value-of select="$templateID"/><xsl:value-of select="$newline"/>
+		<xsl:text>CheckContentItem: templateOrderSignificant = </xsl:text><xsl:value-of select="$templateOrderSignificant"/><xsl:value-of select="$newline"/>
+		<xsl:text>CheckContentItem: row = </xsl:text><xsl:value-of select="$row"/><xsl:value-of select="$newline"/>
 		<xsl:text>CheckContentItem: relationship = </xsl:text><xsl:value-of select="$relationship"/><xsl:value-of select="$newline"/>
 		<xsl:text>CheckContentItem: byReference = </xsl:text><xsl:value-of select="$byReference"/><xsl:value-of select="$newline"/>
 		<xsl:text>CheckContentItem: valueType = </xsl:text><xsl:value-of select="$valueType"/><xsl:value-of select="$newline"/>
@@ -180,10 +193,36 @@
 		<xsl:text>CheckContentItem: templateMBPO = </xsl:text><xsl:value-of select="$templateMBPO"/><xsl:value-of select="$newline"/>
 		<xsl:text>CheckContentItem: nestingLevel = </xsl:text><xsl:value-of select="$nestingLevel"/><xsl:value-of select="$newline"/>
 	</xsl:if>
-
+	
+	<xsl:variable name="contextgroupcodesforconceptname">
+		<xsl:if test="string-length($conceptNameCID) &gt; 0">
+			<xsl:text> </xsl:text>	<!-- initial "delimiter" since going to be using delimiters around match candidates later to assure exact not partial match -->
+			<xsl:for-each select="document('DicomContextGroupsSource.xml')/definecontextgroups/definecontextgroup[@cid=$conceptNameCID]/contextgroupcode">
+				<xsl:value-of select="@cv"/>
+				<xsl:text>,</xsl:text>
+				<!-- not really much point in calling getPreferredCodingSchemeDesignatorForSameScheme, since probably used in template source anyway, and cannot call it within matching code in predicate later anyway :( -->
+				<xsl:call-template name="getPreferredCodingSchemeDesignatorForSameScheme">
+					<xsl:with-param name="csd" select="@csd"/>
+				</xsl:call-template>
+				<xsl:text> </xsl:text>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+	<!--<xsl:text>Value of contextgroupcodesforconceptname for </xsl:text><xsl:value-of select="$conceptNameCID"/><xsl:text> is </xsl:text><xsl:value-of select="$contextgroupcodesforconceptname"/><xsl:value-of select="$newline"/>-->
+	
 	<!-- Do NOT check node name matches valueType if by reference relationship, since node name will be reference; note also that the @relationship value will NOT be preceded by "R-"-->
 	<!-- matchRelationship causes a match only if both the relationship and the mode (by-value or by-reference) are the same -->
-	<xsl:variable name="matchlist" select="child::node()[(name() = $valueType or ($byReference = 'T' and name() = 'reference')) and ($matchRelationship != 'T' or (@relationship = $relationship and ($byReference = 'T' and name() = 'reference' or $byReference != 'T' and name() != 'reference'))) and (string-length($cvConceptName) = 0 or (concept/@cv = $cvConceptName and concept/@csd = $csdConceptName))]"/>
+	<!-- matchlist is filtered by match to either $cvConceptName and $csdConceptName, $cvAltConceptName and $csdAltConceptName, or entries in $conceptNameCID, if present, or not filtered if neither are present (i.e., match any concept if no constraints are specified) -->
+	<xsl:variable name="matchlist" select="child::node()[
+			(name() = $valueType or ($byReference = 'T' and name() = 'reference'))
+		and ($matchRelationship != 'T' or (@relationship = $relationship and ($byReference = 'T' and name() = 'reference' or $byReference != 'T' and name() != 'reference')))
+		and (
+				(string-length($conceptNameCID) = 0 and string-length($cvConceptName) = 0 and string-length($cvAltConceptName) = 0)
+			 or	(string-length($cvConceptName) &gt; 0 and concept/@cv = $cvConceptName and concept/@csd = $csdConceptName)
+			 or	(string-length($cvAltConceptName) &gt; 0 and concept/@cv = $cvAltConceptName and concept/@csd = $csdAltConceptName)
+			 or	(string-length($conceptNameCID) &gt; 0 and contains($contextgroupcodesforconceptname,concat(' ',concept/@cv,',',concept/@csd,' ')))
+			)
+		]"/>
 	<xsl:variable name="matchlistcount" select="count($matchlist)"/>
 	<xsl:choose>
 	<xsl:when test="$matchlistcount != 0">
@@ -191,11 +230,23 @@
 			<xsl:text>CheckContentItem: Matched: </xsl:text>
 			<xsl:value-of select="$valueType"/>
 			<xsl:text> </xsl:text>
-			<xsl:call-template name="describeCodeWanted">
-				<xsl:with-param name="cv"  select="$cvConceptName"/>
-				<xsl:with-param name="csd" select="$csdConceptName"/>
-				<xsl:with-param name="cm"  select="$cmConceptName"/>
-			</xsl:call-template>
+			<xsl:if test="string-length($cvConceptName) &gt; 0">
+				<xsl:call-template name="describeCodeWanted">
+					<xsl:with-param name="cv"  select="$cvConceptName"/>
+					<xsl:with-param name="csd" select="$csdConceptName"/>
+					<xsl:with-param name="cm"  select="$cmConceptName"/>
+				</xsl:call-template>
+			</xsl:if>
+			<xsl:if test="string-length($cvAltConceptName) &gt; 0">
+				<xsl:call-template name="describeCodeWanted">
+					<xsl:with-param name="cv"  select="$cvAltConceptName"/>
+					<xsl:with-param name="csd" select="$csdAltConceptName"/>
+					<xsl:with-param name="cm"  select="$cmConceptName"/>
+				</xsl:call-template>
+			</xsl:if>
+			<xsl:if test="string-length($conceptNameCID) &gt; 0">
+				<xsl:text>CID </xsl:text><xsl:value-of select="$conceptNameCID"/>
+			</xsl:if>
 			<xsl:text> with </xsl:text>
 			<xsl:value-of select="$matchlistcount"/><xsl:text> content items</xsl:text><xsl:value-of select="$newline"/>
 		</xsl:if>
@@ -259,376 +310,434 @@
 		</xsl:choose>
 		
 		<xsl:for-each select="$matchlist">
-			<xsl:variable name="location" select="substring-after(@ID,'ci_')"/>
-			<xsl:if test="$optionEmbedMatchedLocationsInOutputWithElement">
-				<!-- Note that we are writing text but embedding an XML element -->
-				<xsl:text>&lt;</xsl:text><xsl:value-of select="$optionEmbedMatchedLocationsInOutputWithElement"/><xsl:text> location=&quot;</xsl:text>
-				<xsl:value-of select="$location"/>
-				<xsl:text>&quot;/&gt;</xsl:text>
-				<xsl:value-of select="$newline"/>
-			</xsl:if>
-			<xsl:if test="$optionDescribeChecking='T'">
-				<xsl:text>Iterating on match: </xsl:text>
-				<xsl:value-of select="$location"/>
-				<xsl:text>: </xsl:text>
-				<xsl:value-of select="name(.)"/>
-				<xsl:text> </xsl:text>
-				<xsl:call-template name="describeCodeActual">
-					<xsl:with-param name="cv"  select="concept/@cv"/>
-					<xsl:with-param name="csd" select="concept/@csd"/>
-					<xsl:with-param name="cm"  select="concept/@cm"/>
-				</xsl:call-template>
-				<xsl:value-of select="$newline"/>
-			</xsl:if>
-
-			<xsl:variable name="locationdescription"><xsl:value-of select="$description"/><xsl:text>: </xsl:text><xsl:value-of select="$location"/><xsl:text>: </xsl:text><xsl:call-template name="buildFullPathInInstanceToCurrentNode"/></xsl:variable>
-
+			<xsl:variable name="cv" select="concept/@cv"/>
 			<xsl:variable name="conceptCSDPreferred">
-				<xsl:call-template name="getPreferredCodingSchemeDesignator">
+				<xsl:call-template name="getPreferredCodingSchemeDesignatorForSameScheme">
 					<xsl:with-param name="csd" select="concept/@csd"/>
 				</xsl:call-template>
 			</xsl:variable>
-
-			<xsl:if test="$optionDescribeChecking='T'">
-				<xsl:text>CheckContentItem: Preferred coding scheme designator for concept name </xsl:text>
-				<xsl:call-template name="describeCodeActual">
-					<xsl:with-param name="cv"  select="concept/@cv"/>
-					<xsl:with-param name="csd" select="concept/@csd"/>
-					<xsl:with-param name="cm"  select="concept/@cm"/>
-				</xsl:call-template>
-				<xsl:text> is </xsl:text>
-				<xsl:value-of select="$conceptCSDPreferred"/>
-				<xsl:value-of select="$newline"/>
-			</xsl:if>
-
-			<xsl:if test="string-length(concept/@csd)&gt;0 and $conceptCSDPreferred != concept/@csd">
-				<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cm"  select="concept/@cm"/>
-					<xsl:with-param name="cv" select="concept/@cv"/>
-					<xsl:with-param name="csdDeprecated" select="concept/@csd"/>
-					<xsl:with-param name="csdPreferred" select="$conceptCSDPreferred"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:if test="$cmConceptName">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>CheckContentItem: Checking code meaning for concept name against single value for </xsl:text>
-					<xsl:call-template name="describeCodeActual">
-						<xsl:with-param name="cv"  select="concept/@cv"/>
-						<xsl:with-param name="csd" select="$conceptCSDPreferred"/>
-						<xsl:with-param name="cm"  select="concept/@cm"/>
-					</xsl:call-template>
-					<xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:variable name="checkingCodeMeaningAgainst"><xsl:text>template concept name</xsl:text></xsl:variable>
-				<xsl:call-template name="checkCodeMeaning">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cv" select="concept/@cv"/>
+			<!--<xsl:message><xsl:text>Have matchlist entry (</xsl:text><xsl:value-of select="$cv"/><xsl:text>,</xsl:text><xsl:value-of select="concept/@csd"/><xsl:text>[</xsl:text><xsl:value-of select="$conceptCSDPreferred"/><xsl:text>],</xsl:text><xsl:value-of select="concept/@cm"/><xsl:text>)</xsl:text></xsl:message>-->
+			<xsl:variable name="foundCodeMeaning">
+				<xsl:call-template name="findCodeMeaningInContextGroup">
+					<xsl:with-param name="cid" select="$conceptNameCID"/>
+					<xsl:with-param name="cv" select="$cv"/>
 					<xsl:with-param name="csd" select="$conceptCSDPreferred"/>
-					<xsl:with-param name="cmEncountered" select="concept/@cm"/>
-					<xsl:with-param name="cmWanted" select="$cmConceptName"/>
-					<xsl:with-param name="checkingAgainst" select="$checkingCodeMeaningAgainst"/>
 				</xsl:call-template>
-			</xsl:if>
-			
-			<xsl:if test="$conceptNameCID">
+			</xsl:variable>
+			<!--<xsl:message><xsl:text>Iterating through matchlist, foundCodeMeaning for concept = </xsl:text><xsl:value-of select="$foundCodeMeaning"/></xsl:message>-->
+			<xsl:if test="string-length($conceptNameCID) = 0 or string-length($foundCodeMeaning) &gt; 0">
+				<!--<xsl:message><xsl:text>Doing something</xsl:text></xsl:message>-->
+				
+				<xsl:variable name="location" select="substring-after(@ID,'ci_')"/>
+				<xsl:if test="$optionEmbedMatchedLocationsInOutputWithElement">
+					<!-- Note that we are writing text but embedding an XML element -->
+					<xsl:text>&lt;</xsl:text><xsl:value-of select="$optionEmbedMatchedLocationsInOutputWithElement"/>
+					<xsl:text> location=&apos;</xsl:text><xsl:value-of select="$location"/><xsl:text>&apos;</xsl:text>
+					<xsl:text> description=&apos;</xsl:text><xsl:value-of select="$description"/><xsl:text>&apos;</xsl:text>
+					<xsl:text> row=&apos;</xsl:text><xsl:value-of select="$row"/><xsl:text>&apos;</xsl:text>
+					<xsl:text> ordered=&apos;</xsl:text><xsl:value-of select="$templateOrderSignificant"/><xsl:text>&apos;</xsl:text>
+					<xsl:text>/&gt;</xsl:text>
+					<xsl:value-of select="$newline"/>
+				</xsl:if>
 				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>CheckContentItem: Checking code meaning for concept name against context group </xsl:text><xsl:value-of select="$conceptNameCID"/><xsl:text> </xsl:text>
+					<xsl:text>Iterating on match: </xsl:text>
+					<xsl:value-of select="$location"/>
+					<xsl:text>: </xsl:text>
+					<xsl:value-of select="name(.)"/>
+					<xsl:text> </xsl:text>
 					<xsl:call-template name="describeCodeActual">
 						<xsl:with-param name="cv"  select="concept/@cv"/>
-						<xsl:with-param name="csd" select="$conceptCSDPreferred"/>
+						<xsl:with-param name="csd" select="concept/@csd"/>
 						<xsl:with-param name="cm"  select="concept/@cm"/>
 					</xsl:call-template>
 					<xsl:value-of select="$newline"/>
 				</xsl:if>
-				<xsl:variable name="checkingCodeMeaningAgainst"><xsl:text>template concept name context group</xsl:text></xsl:variable>
-				<xsl:variable name="cmWanted">
-					<xsl:call-template name="findCodeMeaningInContextGroup">
-						<xsl:with-param name="cid" select="$conceptNameCID"/>
-						<xsl:with-param name="cv" select="concept/@cv"/>
-						<xsl:with-param name="csd" select="$conceptCSDPreferred"/>
+				
+				<xsl:variable name="locationdescription"><xsl:value-of select="$description"/><xsl:text>: </xsl:text><xsl:value-of select="$location"/><xsl:text>: </xsl:text><xsl:call-template name="buildFullPathInInstanceToCurrentNode"/></xsl:variable>
+				
+				<xsl:if test="$optionCheckTemplateID='T' and $row = 1 and $valueType = 'container' and name() = 'container' and string-length(@template) &gt; 0">
+					<!--<xsl:message><xsl:text>Checking for template ID </xsl:text><xsl:value-of select="$templateID"/><xsl:text> in first row container - have encoded template ID </xsl:text><xsl:value-of select="@template"/></xsl:message>-->
+					<xsl:if test="$templateID != @template">
+						<xsl:text>Warning: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: template ID encoded in first row container </xsl:text><xsl:value-of select="@template"/><xsl:text> does not match expected template ID </xsl:text><xsl:value-of select="$templateID"/><xsl:text> - may be ambiguous template invocation</xsl:text><xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:variable name="conceptCSDPreferred">
+					<xsl:call-template name="getPreferredCodingSchemeDesignator">
+						<xsl:with-param name="csd" select="concept/@csd"/>
 					</xsl:call-template>
 				</xsl:variable>
-				<xsl:call-template name="checkCodeMeaning">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cv" select="concept/@cv"/>
-					<xsl:with-param name="csd" select="$conceptCSDPreferred"/>
-					<xsl:with-param name="cmEncountered" select="concept/@cm"/>
-					<xsl:with-param name="cmWanted" select="$cmWanted"/>
-					<xsl:with-param name="checkingAgainst" select="$checkingCodeMeaningAgainst"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:if test="$relationship">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking for relationship </xsl:text><xsl:value-of select="$relationship"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:if test="$relationship != @relationship">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect relationship - expected </xsl:text><xsl:value-of select="$relationship"/><xsl:text> - found </xsl:text><xsl:value-of select="@relationship"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-			</xsl:if>
-
-			<xsl:variable name="unitsCSDPreferred">
-				<xsl:call-template name="getPreferredCodingSchemeDesignator">
-					<xsl:with-param name="csd" select="units/@csd"/>
-				</xsl:call-template>
-			</xsl:variable>
-
-			<xsl:if test="$optionDescribeChecking='T'">
-				<xsl:text>CheckContentItem: Preferred coding scheme designator for units </xsl:text>
-				<xsl:call-template name="describeCodeActual">
-					<xsl:with-param name="cv"  select="units/@cv"/>
-					<xsl:with-param name="csd" select="units/@csd"/>
-					<xsl:with-param name="cm"  select="units/@cm"/>
-				</xsl:call-template>
-				<xsl:text> is </xsl:text>
-				<xsl:value-of select="$unitsCSDPreferred"/>
-				<xsl:value-of select="$newline"/>
-			</xsl:if>
-
-			<xsl:if test="string-length(units/@csd)&gt;0 and $unitsCSDPreferred != units/@csd">
-				<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cm"  select="units/@cm"/>
-					<xsl:with-param name="cv" select="units/@cv"/>
-					<xsl:with-param name="csdDeprecated" select="units/@csd"/>
-					<xsl:with-param name="csdPreferred" select="$unitsCSDPreferred"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:if test="$cvUnits">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking for units </xsl:text>
-					<xsl:call-template name="describeCodeWanted">
-						<xsl:with-param name="cv" select="$cvUnits"/>
-						<xsl:with-param name="csd" select="$csdUnits"/>
-						<xsl:with-param name="cm" select="$cmUnits"/>
+				
+				<xsl:variable name="conceptCSDPreferredSameScheme">
+					<xsl:call-template name="getPreferredCodingSchemeDesignatorForSameScheme">
+						<xsl:with-param name="csd" select="concept/@csd"/>
 					</xsl:call-template>
-					<xsl:text> against </xsl:text>
+				</xsl:variable>
+
+				<xsl:if test="$optionDescribeChecking='T'">
+					<xsl:text>CheckContentItem: Preferred coding scheme designator for concept name </xsl:text>
 					<xsl:call-template name="describeCodeActual">
+						<xsl:with-param name="cv"  select="concept/@cv"/>
+						<xsl:with-param name="csd" select="concept/@csd"/>
+						<xsl:with-param name="cm"  select="concept/@cm"/>
+					</xsl:call-template>
+					<xsl:text> is </xsl:text>
+					<xsl:value-of select="$conceptCSDPreferred"/>
+					<xsl:value-of select="$newline"/>
+				</xsl:if>
+				
+				<xsl:if test="$optionCheckDeprecatedCodingScheme='T' and string-length(concept/@csd)&gt;0 and $conceptCSDPreferred != concept/@csd">
+					<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cm"  select="concept/@cm"/>
+						<xsl:with-param name="cv" select="concept/@cv"/>
+						<xsl:with-param name="csdDeprecated" select="concept/@csd"/>
+						<xsl:with-param name="csdPreferred" select="$conceptCSDPreferred"/>
+					</xsl:call-template>
+				</xsl:if>
+				
+				<xsl:if test="$cmConceptName">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>CheckContentItem: Checking code meaning for concept name against single value for </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv"  select="concept/@cv"/>
+							<xsl:with-param name="csd" select="$conceptCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm"  select="concept/@cm"/>
+						</xsl:call-template>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:variable name="checkingCodeMeaningAgainst"><xsl:text>template concept name</xsl:text></xsl:variable>
+					<xsl:call-template name="checkCodeMeaning">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cv" select="concept/@cv"/>
+						<xsl:with-param name="csd" select="$conceptCSDPreferredSameScheme"/>
+						<xsl:with-param name="cmEncountered" select="concept/@cm"/>
+						<xsl:with-param name="cmWanted" select="$cmConceptName"/>
+						<xsl:with-param name="checkingAgainst" select="$checkingCodeMeaningAgainst"/>
+					</xsl:call-template>
+				</xsl:if>
+				
+				<xsl:if test="$conceptNameCID">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>CheckContentItem: Checking code meaning for concept name against context group </xsl:text><xsl:value-of select="$conceptNameCID"/><xsl:text> </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv"  select="concept/@cv"/>
+							<xsl:with-param name="csd" select="$conceptCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm"  select="concept/@cm"/>
+						</xsl:call-template>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:variable name="checkingCodeMeaningAgainst"><xsl:text>template concept name context group</xsl:text></xsl:variable>
+					<xsl:variable name="cmWanted">
+						<xsl:call-template name="findCodeMeaningInContextGroup">
+							<xsl:with-param name="cid" select="$conceptNameCID"/>
+							<xsl:with-param name="cv" select="concept/@cv"/>
+							<xsl:with-param name="csd" select="$conceptCSDPreferredSameScheme"/>
+						</xsl:call-template>
+					</xsl:variable>
+					<xsl:call-template name="checkCodeMeaning">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cv" select="concept/@cv"/>
+						<xsl:with-param name="csd" select="$conceptCSDPreferredSameScheme"/>
+						<xsl:with-param name="cmEncountered" select="concept/@cm"/>
+						<xsl:with-param name="cmWanted" select="$cmWanted"/>
+						<xsl:with-param name="checkingAgainst" select="$checkingCodeMeaningAgainst"/>
+					</xsl:call-template>
+				</xsl:if>
+				
+				<xsl:if test="$relationship">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for relationship </xsl:text><xsl:value-of select="$relationship"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:if test="$relationship != @relationship">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect relationship - expected </xsl:text><xsl:value-of select="$relationship"/><xsl:text> - found </xsl:text><xsl:value-of select="@relationship"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:variable name="unitsCSDPreferred">
+					<xsl:call-template name="getPreferredCodingSchemeDesignator">
+						<xsl:with-param name="csd" select="units/@csd"/>
+					</xsl:call-template>
+				</xsl:variable>
+
+				<xsl:variable name="unitsCSDPreferredSameScheme">
+					<xsl:call-template name="getPreferredCodingSchemeDesignatorForSameScheme">
+						<xsl:with-param name="csd" select="units/@csd"/>
+					</xsl:call-template>
+				</xsl:variable>
+
+				<xsl:if test="$optionDescribeChecking='T'">
+					<xsl:text>CheckContentItem: Preferred coding scheme designator for units </xsl:text>
+					<xsl:call-template name="describeCodeActual">
+						<xsl:with-param name="cv"  select="units/@cv"/>
+						<xsl:with-param name="csd" select="units/@csd"/>
+						<xsl:with-param name="cm"  select="units/@cm"/>
+					</xsl:call-template>
+					<xsl:text> is </xsl:text>
+					<xsl:value-of select="$unitsCSDPreferred"/>
+					<xsl:value-of select="$newline"/>
+				</xsl:if>
+				
+				<xsl:if test="$optionCheckDeprecatedCodingScheme='T' and string-length(units/@csd)&gt;0 and $unitsCSDPreferred != units/@csd">
+					<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cm"  select="units/@cm"/>
 						<xsl:with-param name="cv" select="units/@cv"/>
-						<xsl:with-param name="csd" select="$unitsCSDPreferred"/>
-						<xsl:with-param name="cm" select="units/@cm"/>
+						<xsl:with-param name="csdDeprecated" select="units/@csd"/>
+						<xsl:with-param name="csdPreferred" select="$unitsCSDPreferred"/>
 					</xsl:call-template>
-					<xsl:value-of select="$newline"/>
 				</xsl:if>
-				<xsl:if test="not($cvUnits = units/@cv and $csdUnits = units/@csd)">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect units - expected </xsl:text>
-					<xsl:call-template name="describeCodeWanted">
-						<xsl:with-param name="cv" select="$cvUnits"/>
-						<xsl:with-param name="csd" select="$csdUnits"/>
-						<xsl:with-param name="cm" select="$cmUnits"/>
-					</xsl:call-template>
-					<xsl:text> - found </xsl:text>
-					<xsl:call-template name="describeCodeActual">
+				
+				<xsl:if test="$cvUnits">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for units </xsl:text>
+						<xsl:call-template name="describeCodeWanted">
+							<xsl:with-param name="cv" select="$cvUnits"/>
+							<xsl:with-param name="csd" select="$csdUnits"/>
+							<xsl:with-param name="cm" select="$cmUnits"/>
+						</xsl:call-template>
+						<xsl:text> against </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv" select="units/@cv"/>
+							<xsl:with-param name="csd" select="$unitsCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm" select="units/@cm"/>
+						</xsl:call-template>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:if test="not($cvUnits = units/@cv and $csdUnits = units/@csd)">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect units - expected </xsl:text>
+						<xsl:call-template name="describeCodeWanted">
+							<xsl:with-param name="cv" select="$cvUnits"/>
+							<xsl:with-param name="csd" select="$csdUnits"/>
+							<xsl:with-param name="cm" select="$cmUnits"/>
+						</xsl:call-template>
+						<xsl:text> - found </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv" select="units/@cv"/>
+							<xsl:with-param name="csd" select="$unitsCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm" select="units/@cm"/>
+						</xsl:call-template>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:if test="$unitsCID">
+					<xsl:call-template name="checkCodeIsRecognized">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cm" select="units/@cm"/>
+						<xsl:with-param name="csd" select="units/@csd"/>	<!-- this template handles the preferred CSD itself -->
 						<xsl:with-param name="cv" select="units/@cv"/>
-						<xsl:with-param name="csd" select="$unitsCSDPreferred"/>
-						<xsl:with-param name="cm" select="units/@cm"/>
+						<xsl:with-param name="cid" select="$unitsCID"/>
+						<xsl:with-param name="bde" select="$unitsBDE"/>
 					</xsl:call-template>
-					<xsl:value-of select="$newline"/>
 				</xsl:if>
-			</xsl:if>
-
-			<xsl:if test="$unitsCID">
-				<xsl:call-template name="checkCodeIsRecognized">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cm" select="units/@cm"/>
-					<xsl:with-param name="csd" select="units/@csd"/>	<!-- this template handles the preferred CSD itself -->
-					<xsl:with-param name="cv" select="units/@cv"/>
-					<xsl:with-param name="cid" select="$unitsCID"/>
-					<xsl:with-param name="bde" select="$unitsBDE"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:variable name="valueCSDPreferred">
-				<xsl:call-template name="getPreferredCodingSchemeDesignator">
-					<xsl:with-param name="csd" select="value/@csd"/>
-				</xsl:call-template>
-			</xsl:variable>
-
-			<xsl:if test="$optionDescribeChecking='T'">
-				<xsl:text>CheckContentItem: Preferred coding scheme designator for value </xsl:text>
-				<xsl:call-template name="describeCodeActual">
-					<xsl:with-param name="cv"  select="value/@cv"/>
-					<xsl:with-param name="csd" select="value/@csd"/>
-					<xsl:with-param name="cm"  select="value/@cm"/>
-				</xsl:call-template>
-				<xsl:text> is </xsl:text>
-				<xsl:value-of select="$valueCSDPreferred"/>
-				<xsl:value-of select="$newline"/>
-			</xsl:if>
-
-			<xsl:if test="string-length(value/@csd)&gt;0 and $valueCSDPreferred != value/@csd">
-				<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cm"  select="value/@cm"/>
-					<xsl:with-param name="cv" select="value/@cv"/>
-					<xsl:with-param name="csdDeprecated" select="value/@csd"/>
-					<xsl:with-param name="csdPreferred" select="$valueCSDPreferred"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:if test="$cvValue">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking for value </xsl:text>
-					<xsl:call-template name="describeCodeWanted">
-						<xsl:with-param name="cv" select="$cvValue"/>
-						<xsl:with-param name="csd" select="$csdValue"/>
-						<xsl:with-param name="cm" select="$cmValue"/>
+				
+				<xsl:variable name="valueCSDPreferred">
+					<xsl:call-template name="getPreferredCodingSchemeDesignator">
+						<xsl:with-param name="csd" select="value/@csd"/>
 					</xsl:call-template>
-					<xsl:text> against </xsl:text>
+				</xsl:variable>
+
+				<xsl:variable name="valueCSDPreferredSameScheme">
+					<xsl:call-template name="getPreferredCodingSchemeDesignatorForSameScheme">
+						<xsl:with-param name="csd" select="value/@csd"/>
+					</xsl:call-template>
+				</xsl:variable>
+				
+				<xsl:if test="$optionDescribeChecking='T'">
+					<xsl:text>CheckContentItem: Preferred coding scheme designator for value </xsl:text>
 					<xsl:call-template name="describeCodeActual">
-						<xsl:with-param name="cv" select="value/@cv"/>
-						<xsl:with-param name="csd" select="$valueCSDPreferred"/>
-						<xsl:with-param name="cm" select="value/@cm"/>
+						<xsl:with-param name="cv"  select="value/@cv"/>
+						<xsl:with-param name="csd" select="value/@csd"/>
+						<xsl:with-param name="cm"  select="value/@cm"/>
 					</xsl:call-template>
+					<xsl:text> is </xsl:text>
+					<xsl:value-of select="$valueCSDPreferred"/>
 					<xsl:value-of select="$newline"/>
 				</xsl:if>
-				<xsl:if test="not($cvValue = value/@cv and $csdValue = value/@csd)">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect value - expected </xsl:text>
-					<xsl:call-template name="describeCodeWanted">
-						<xsl:with-param name="cv" select="$cvValue"/>
-						<xsl:with-param name="csd" select="$csdValue"/>
-						<xsl:with-param name="cm" select="$cmValue"/>
-					</xsl:call-template>
-					<xsl:text> - found </xsl:text>
-					<xsl:call-template name="describeCodeActual">
+				
+				<xsl:if test="$optionCheckDeprecatedCodingScheme='T' and string-length(value/@csd)&gt;0 and $valueCSDPreferred != value/@csd">
+					<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cm"  select="value/@cm"/>
 						<xsl:with-param name="cv" select="value/@cv"/>
-						<xsl:with-param name="csd" select="$valueCSDPreferred"/>
-						<xsl:with-param name="cm" select="value/@cm"/>
+						<xsl:with-param name="csdDeprecated" select="value/@csd"/>
+						<xsl:with-param name="csdPreferred" select="$valueCSDPreferred"/>
 					</xsl:call-template>
-					<xsl:value-of select="$newline"/>
 				</xsl:if>
-			</xsl:if>
-
-			<xsl:if test="$valueSetCID">
-				<xsl:call-template name="checkCodeIsRecognized">
-					<xsl:with-param name="locationdescription" select="$locationdescription"/>
-					<xsl:with-param name="cm" select="value/@cm"/>
-					<xsl:with-param name="csd" select="value/@csd"/>	<!-- this template handles the preferred CSD itself -->
-					<xsl:with-param name="cv" select="value/@cv"/>
-					<xsl:with-param name="cid" select="$valueSetCID"/>
-					<xsl:with-param name="bde" select="$valueSetBDE"/>
-				</xsl:call-template>
-			</xsl:if>
-
-			<xsl:if test="$graphicType">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking for graphicType = </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:choose>
-				<xsl:when test="$graphicType = 'POINT'">
-					<xsl:if test="count(point) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'MULTIPOINT'">
-					<xsl:if test="count(multipoint) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'POLYLINE'">
-					<xsl:if test="count(polyline) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'CIRCLE'">
-					<xsl:if test="count(circle) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'ELLIPSE'">
-					<xsl:if test="count(ellipse) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'ELLIPSE_OR_POLYLINE'">
-					<xsl:if test="count(ellipse) = 0 and count(polyline) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected ELLIPSE or POLYLINE</xsl:text><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'POLYLINE_CIRCLE_ELLIPSE'">
-					<xsl:if test="count(ellipse) = 0 and count(circle) = 0 and count(polyline) = 0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected ELLIPSE, CIRCLE or POLYLINE</xsl:text><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:when test="$graphicType = 'NOT_MULTIPOINT'">
-					<xsl:if test="count(multipoint)&gt;0">
-						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected not MULIPOINT</xsl:text><xsl:value-of select="$newline"/>
-					</xsl:if>
-				</xsl:when>
-				<xsl:otherwise>
-				</xsl:otherwise>
-				</xsl:choose>
-			</xsl:if>
-
-			<xsl:variable name="countX" select="count(*/x)"/>
-			<xsl:variable name="countY" select="count(*/y)"/>
-
-			<xsl:if test="count(ellipse) &gt; 0">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking ellipse countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:if test="$countX != 4">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
-					<xsl:text>: number of coordinates incorrect for ELLIPSE - got </xsl:text><xsl:value-of select="$countX"/>
-					<xsl:text> - expected 4</xsl:text>
+				
+				<xsl:if test="$cvValue">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for value </xsl:text>
+						<xsl:call-template name="describeCodeWanted">
+							<xsl:with-param name="cv" select="$cvValue"/>
+							<xsl:with-param name="csd" select="$csdValue"/>
+							<xsl:with-param name="cm" select="$cmValue"/>
+						</xsl:call-template>
+						<xsl:text> against </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv" select="value/@cv"/>
+							<xsl:with-param name="csd" select="$valueCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm" select="value/@cm"/>
+						</xsl:call-template>
 						<xsl:value-of select="$newline"/>
-				</xsl:if>
-			</xsl:if>
-			
-			<xsl:if test="count(circle) &gt; 0">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking ellipse countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:if test="$countX != 2">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
-					<xsl:text>: number of coordinates incorrect for CIRCLE - got </xsl:text><xsl:value-of select="$countX"/>
-					<xsl:text> - expected 2</xsl:text>
+					</xsl:if>
+					<xsl:if test="not($cvValue = value/@cv and $csdValue = value/@csd)">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect value - expected </xsl:text>
+						<xsl:call-template name="describeCodeWanted">
+							<xsl:with-param name="cv" select="$cvValue"/>
+							<xsl:with-param name="csd" select="$csdValue"/>
+							<xsl:with-param name="cm" select="$cmValue"/>
+						</xsl:call-template>
+						<xsl:text> - found </xsl:text>
+						<xsl:call-template name="describeCodeActual">
+							<xsl:with-param name="cv" select="value/@cv"/>
+							<xsl:with-param name="csd" select="$valueCSDPreferredSameScheme"/>
+							<xsl:with-param name="cm" select="value/@cm"/>
+						</xsl:call-template>
 						<xsl:value-of select="$newline"/>
+					</xsl:if>
 				</xsl:if>
-			</xsl:if>
-			
-			<xsl:if test="count(point) &gt; 0">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking point countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
+				
+				<xsl:if test="$valueSetCID">
+					<xsl:call-template name="checkCodeIsRecognized">
+						<xsl:with-param name="locationdescription" select="$locationdescription"/>
+						<xsl:with-param name="cm" select="value/@cm"/>
+						<xsl:with-param name="csd" select="value/@csd"/>	<!-- this template handles the preferred CSD itself -->
+						<xsl:with-param name="cv" select="value/@cv"/>
+						<xsl:with-param name="cid" select="$valueSetCID"/>
+						<xsl:with-param name="bde" select="$valueSetBDE"/>
+					</xsl:call-template>
 				</xsl:if>
-				<xsl:if test="$countX != 1">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
-					<xsl:text>: number of coordinates incorrect for POINT - got </xsl:text><xsl:value-of select="$countX"/>
-					<xsl:text> - expected 1</xsl:text>
-						<xsl:value-of select="$newline"/>
+				
+				<xsl:if test="$valueType = 'num' or $valueType = 'text' or $valueType = 'date' or $valueType = 'time' or $valueType = 'datetime' or $valueType = 'pname' or $valueType = 'uidref'">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for presence of non-empty value for valueType = </xsl:text><xsl:value-of select="$valueType"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:if test="string-length(normalize-space(value)) = '0'">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Missing value</xsl:text><xsl:value-of select="$newline"/>
+					</xsl:if>
 				</xsl:if>
-			</xsl:if>
-			
-			<xsl:if test="$numpointsmin">
-				<xsl:if test="$optionDescribeChecking='T'">
-					<xsl:text>Checking for numpointsmin = </xsl:text><xsl:value-of select="$numpointsmin"/><xsl:text> and numpointsmax = </xsl:text><xsl:value-of select="$numpointsmax"/><xsl:value-of select="$newline"/>
-				</xsl:if>
-				<xsl:choose>
-				<xsl:when test="$countX != $countY">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: number of X coordinates (</xsl:text><xsl:value-of select="$countX"/><xsl:text>) does not match number of Y coordinates (</xsl:text><xsl:value-of select="$countY"/><xsl:text>)</xsl:text><xsl:value-of select="$newline"/>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:if test="$countX &lt; $numpointsmin or ($numpointsmax != 'n' and $countX &gt; $numpointsmax)">
-					<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
-					<xsl:text>: number of coordinates incorrect - got </xsl:text><xsl:value-of select="$countX"/>
-					<xsl:text> - expected </xsl:text>
+				
+				<xsl:if test="$graphicType">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for graphicType = </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+					</xsl:if>
 					<xsl:choose>
-					<xsl:when test="$numpointsmin = $numpointsmax">
-						<xsl:value-of select="$numpointsmax"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="$numpointsmin"/>
-						<xsl:text>-</xsl:text>
-						<xsl:value-of select="$numpointsmax"/>
-					</xsl:otherwise>
+						<xsl:when test="$graphicType = 'POINT'">
+							<xsl:if test="count(point) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'MULTIPOINT'">
+							<xsl:if test="count(multipoint) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'POLYLINE'">
+							<xsl:if test="count(polyline) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'CIRCLE'">
+							<xsl:if test="count(circle) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'ELLIPSE'">
+							<xsl:if test="count(ellipse) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected </xsl:text><xsl:value-of select="$graphicType"/><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'ELLIPSE_OR_POLYLINE'">
+							<xsl:if test="count(ellipse) = 0 and count(polyline) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected ELLIPSE or POLYLINE</xsl:text><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'POLYLINE_CIRCLE_ELLIPSE'">
+							<xsl:if test="count(ellipse) = 0 and count(circle) = 0 and count(polyline) = 0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected ELLIPSE, CIRCLE or POLYLINE</xsl:text><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:when test="$graphicType = 'NOT_MULTIPOINT'">
+							<xsl:if test="count(multipoint)&gt;0">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Incorrect graphic type - expected not MULIPOINT</xsl:text><xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:when>
+						<xsl:otherwise>
+						</xsl:otherwise>
 					</xsl:choose>
-					<xsl:value-of select="$newline"/>
+				</xsl:if>
+				
+				<xsl:variable name="countX" select="count(*/x)"/>
+				<xsl:variable name="countY" select="count(*/y)"/>
+				
+				<xsl:if test="count(ellipse) &gt; 0">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking ellipse countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
 					</xsl:if>
-				</xsl:otherwise>
-				</xsl:choose>
+					<xsl:if test="$countX != 4">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
+						<xsl:text>: number of coordinates incorrect for ELLIPSE - got </xsl:text><xsl:value-of select="$countX"/>
+						<xsl:text> - expected 4</xsl:text>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:if test="count(circle) &gt; 0">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking ellipse countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:if test="$countX != 2">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
+						<xsl:text>: number of coordinates incorrect for CIRCLE - got </xsl:text><xsl:value-of select="$countX"/>
+						<xsl:text> - expected 2</xsl:text>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:if test="count(point) &gt; 0">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking point countX = </xsl:text><xsl:value-of select="$countX"/><xsl:text> and countY = </xsl:text><xsl:value-of select="$countY"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:if test="$countX != 1">
+						<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
+						<xsl:text>: number of coordinates incorrect for POINT - got </xsl:text><xsl:value-of select="$countX"/>
+						<xsl:text> - expected 1</xsl:text>
+						<xsl:value-of select="$newline"/>
+					</xsl:if>
+				</xsl:if>
+				
+				<xsl:if test="$numpointsmin">
+					<xsl:if test="$optionDescribeChecking='T'">
+						<xsl:text>Checking for numpointsmin = </xsl:text><xsl:value-of select="$numpointsmin"/><xsl:text> and numpointsmax = </xsl:text><xsl:value-of select="$numpointsmax"/><xsl:value-of select="$newline"/>
+					</xsl:if>
+					<xsl:choose>
+						<xsl:when test="$countX != $countY">
+							<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: number of X coordinates (</xsl:text><xsl:value-of select="$countX"/><xsl:text>) does not match number of Y coordinates (</xsl:text><xsl:value-of select="$countY"/><xsl:text>)</xsl:text><xsl:value-of select="$newline"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:if test="$countX &lt; $numpointsmin or ($numpointsmax != 'n' and $countX &gt; $numpointsmax)">
+								<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/>
+								<xsl:text>: number of coordinates incorrect - got </xsl:text><xsl:value-of select="$countX"/>
+								<xsl:text> - expected </xsl:text>
+								<xsl:choose>
+									<xsl:when test="$numpointsmin = $numpointsmax">
+										<xsl:value-of select="$numpointsmax"/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$numpointsmin"/>
+										<xsl:text>-</xsl:text>
+										<xsl:value-of select="$numpointsmax"/>
+									</xsl:otherwise>
+								</xsl:choose>
+								<xsl:value-of select="$newline"/>
+							</xsl:if>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:if>
+				
+				
 			</xsl:if>
 		</xsl:for-each>
 
@@ -638,11 +747,23 @@
 			<xsl:text>CheckContentItem: Did not match: </xsl:text>
 			<xsl:value-of select="$valueType"/>
 			<xsl:text> </xsl:text>
-			<xsl:call-template name="describeCodeWanted">
-				<xsl:with-param name="cv"  select="$cvConceptName"/>
-				<xsl:with-param name="csd" select="$csdConceptName"/>
-				<xsl:with-param name="cm"  select="$cmConceptName"/>
-			</xsl:call-template>
+			<xsl:if test="string-length($cvConceptName) &gt; 0">
+				<xsl:call-template name="describeCodeWanted">
+					<xsl:with-param name="cv"  select="$cvConceptName"/>
+					<xsl:with-param name="csd" select="$csdConceptName"/>
+					<xsl:with-param name="cm"  select="$cmConceptName"/>
+				</xsl:call-template>
+			</xsl:if>
+			<xsl:if test="string-length($cvAltConceptName) &gt; 0">
+				<xsl:call-template name="describeCodeWanted">
+					<xsl:with-param name="cv"  select="$cvAltConceptName"/>
+					<xsl:with-param name="csd" select="$csdAltConceptName"/>
+					<xsl:with-param name="cm"  select="$cmConceptName"/>
+				</xsl:call-template>
+			</xsl:if>
+			<xsl:if test="string-length($conceptNameCID) &gt; 0">
+				<xsl:text>CID </xsl:text><xsl:value-of select="$conceptNameCID"/>
+			</xsl:if>
 			<xsl:value-of select="$newline"/>
 		</xsl:if>
 		<xsl:choose>
@@ -663,7 +784,35 @@
 
 </xsl:template>
 
+<!-- use this one when we want to prefer SCT over SRT etc., i.e., for warnings and errors, not for matching codes -->
 <xsl:template name="getPreferredCodingSchemeDesignator">
+	<xsl:param name="csd"/>
+
+	<xsl:choose>
+	<xsl:when test="$csd = 'SRT'">
+		<xsl:text>SCT</xsl:text>
+	</xsl:when>
+	<xsl:when test="$csd = 'SNM3'">
+		<xsl:text>SCT</xsl:text>
+	</xsl:when>
+	<xsl:when test="$csd = '99SDM'">
+		<xsl:text>SCT</xsl:text>
+	</xsl:when>
+	<xsl:when test="$csd = '99IHERADTF'">
+		<xsl:text>DCM</xsl:text>
+	</xsl:when>
+	<xsl:when test="$csd = 'IHERADTF'">
+		<xsl:text>DCM</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:value-of select="$csd"/>
+	</xsl:otherwise>
+	</xsl:choose>
+
+</xsl:template>
+
+<!-- use this one when we want to use SRT for matching SRT codes -->
+<xsl:template name="getPreferredCodingSchemeDesignatorForSameScheme">
 	<xsl:param name="csd"/>
 
 	<xsl:choose>
@@ -689,15 +838,10 @@
 	<xsl:param name="bde"/>
 
 	<xsl:choose>
+	<!-- Do not check for SRT here, since will be in context group and warning about using preferred SCT will happen elsewhere -->
 	<xsl:when test="$csd = 'SNM3'">
 		<xsl:variable name="csdPreferred">SRT</xsl:variable>
-		<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-			<xsl:with-param name="locationdescription" select="$locationdescription"/>
-			<xsl:with-param name="cm" select="$cm"/>
-			<xsl:with-param name="cv" select="$cv"/>
-			<xsl:with-param name="csdDeprecated" select="$csd"/>
-			<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
-		</xsl:call-template>
+		<!-- Do not call codingSchemeDesignatorIsDeprecated - will happen elsewhere -->
 		<xsl:call-template name="checkCodeIsInContextGroup">
 			<xsl:with-param name="locationdescription" select="$locationdescription"/>
 			<xsl:with-param name="cm" select="$cm"/>
@@ -709,13 +853,7 @@
 	</xsl:when>
 	<xsl:when test="$csd = '99SDM'">
 		<xsl:variable name="csdPreferred">SRT</xsl:variable>
-		<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-			<xsl:with-param name="locationdescription" select="$locationdescription"/>
-			<xsl:with-param name="cm" select="$cm"/>
-			<xsl:with-param name="cv" select="$cv"/>
-			<xsl:with-param name="csdDeprecated" select="$csd"/>
-			<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
-		</xsl:call-template>
+		<!-- Do not call codingSchemeDesignatorIsDeprecated - will happen elsewhere -->
 		<xsl:call-template name="checkCodeIsInContextGroup">
 			<xsl:with-param name="locationdescription" select="$locationdescription"/>
 			<xsl:with-param name="cm" select="$cm"/>
@@ -726,14 +864,16 @@
 		</xsl:call-template>
 	</xsl:when>
 	<xsl:when test="$csd = 'ISO639_1'">
-		<xsl:variable name="csdPreferred">RFC3066</xsl:variable>
-		<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
-			<xsl:with-param name="locationdescription" select="$locationdescription"/>
-			<xsl:with-param name="cm" select="$cm"/>
-			<xsl:with-param name="cv" select="$cv"/>
-			<xsl:with-param name="csdDeprecated" select="$csd"/>
-			<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
-		</xsl:call-template>
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
 		<xsl:call-template name="checkCodeIsInContextGroup">
 			<xsl:with-param name="locationdescription" select="$locationdescription"/>
 			<xsl:with-param name="cm" select="$cm"/>
@@ -744,14 +884,116 @@
 		</xsl:call-template>
 	</xsl:when>
 	<xsl:when test="$csd = 'ISO639_2'">
-		<xsl:variable name="csdPreferred">RFC3066</xsl:variable>
-		<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:call-template name="checkCodeIsInContextGroup">
 			<xsl:with-param name="locationdescription" select="$locationdescription"/>
 			<xsl:with-param name="cm" select="$cm"/>
+			<xsl:with-param name="csd" select="$csdPreferred"/>
 			<xsl:with-param name="cv" select="$cv"/>
-			<xsl:with-param name="csdDeprecated" select="$csd"/>
-			<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			<xsl:with-param name="cid" select="$cid"/>
+			<xsl:with-param name="bde" select="$bde"/>
 		</xsl:call-template>
+	</xsl:when>
+	<xsl:when test="$csd = 'IETF4646'">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:call-template name="checkCodeIsInContextGroup">
+			<xsl:with-param name="locationdescription" select="$locationdescription"/>
+			<xsl:with-param name="cm" select="$cm"/>
+			<xsl:with-param name="csd" select="$csdPreferred"/>
+			<xsl:with-param name="cv" select="$cv"/>
+			<xsl:with-param name="cid" select="$cid"/>
+			<xsl:with-param name="bde" select="$bde"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:when test="$csd = 'RFC4646'">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:call-template name="checkCodeIsInContextGroup">
+			<xsl:with-param name="locationdescription" select="$locationdescription"/>
+			<xsl:with-param name="cm" select="$cm"/>
+			<xsl:with-param name="csd" select="$csdPreferred"/>
+			<xsl:with-param name="cv" select="$cv"/>
+			<xsl:with-param name="cid" select="$cid"/>
+			<xsl:with-param name="bde" select="$bde"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:when test="$csd = 'RFC3066'">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:call-template name="checkCodeIsInContextGroup">
+			<xsl:with-param name="locationdescription" select="$locationdescription"/>
+			<xsl:with-param name="cm" select="$cm"/>
+			<xsl:with-param name="csd" select="$csdPreferred"/>
+			<xsl:with-param name="cv" select="$cv"/>
+			<xsl:with-param name="cid" select="$cid"/>
+			<xsl:with-param name="bde" select="$bde"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:when test="$csd = 'IANARFC1766'">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:call-template name="checkCodeIsInContextGroup">
+			<xsl:with-param name="locationdescription" select="$locationdescription"/>
+			<xsl:with-param name="cm" select="$cm"/>
+			<xsl:with-param name="csd" select="$csdPreferred"/>
+			<xsl:with-param name="cv" select="$cv"/>
+			<xsl:with-param name="cid" select="$cid"/>
+			<xsl:with-param name="bde" select="$bde"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:when test="$csd = 'RFC1766'">
+		<xsl:variable name="csdPreferred">RFC5646</xsl:variable>
+		<xsl:if test="$optionCheckDeprecatedCodingScheme='T'">
+			<xsl:call-template name="codingSchemeDesignatorIsDeprecated">
+				<xsl:with-param name="locationdescription" select="$locationdescription"/>
+				<xsl:with-param name="cm" select="$cm"/>
+				<xsl:with-param name="cv" select="$cv"/>
+				<xsl:with-param name="csdDeprecated" select="$csd"/>
+				<xsl:with-param name="csdPreferred" select="$csdPreferred"/>
+			</xsl:call-template>
+		</xsl:if>
 		<xsl:call-template name="checkCodeIsInContextGroup">
 			<xsl:with-param name="locationdescription" select="$locationdescription"/>
 			<xsl:with-param name="cm" select="$cm"/>
@@ -827,7 +1069,7 @@
 	
 	<xsl:choose>
 	<xsl:when test="string-length($foundCodeMeaning) = 0">
-		<xsl:text>Error: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Code </xsl:text>
+		<xsl:text>Warning: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Code </xsl:text>
 		<xsl:call-template name="describeCodeActual">
 			<xsl:with-param name="cv" select="$cv"/>
 			<xsl:with-param name="csd" select="$csd"/>
@@ -871,8 +1113,8 @@
 	<xsl:variable name="actualQuote">'</xsl:variable>
 	<xsl:variable name="cmWantedQuoteSubstituted"><xsl:value-of select="translate($cmWanted,$escapedQuote,$actualQuote)"/></xsl:variable>       <!-- recover escaped quotes -->
 
-	<xsl:if test="($optionMatchCaseOfCodeMeaning='T' and $cmEncountered != $cmWantedQuoteSubstituted)
-			   or ($optionMatchCaseOfCodeMeaning='F' and translate($cmEncountered,$lowercase,$uppercase) != translate($cmWantedQuoteSubstituted,$lowercase,$uppercase))">
+	<xsl:if test="($optionCheckCodeMeaning='T' and $optionMatchCaseOfCodeMeaning='T' and $cmEncountered != $cmWantedQuoteSubstituted)
+			   or ($optionCheckCodeMeaning='T' and $optionMatchCaseOfCodeMeaning='F' and translate($cmEncountered,$lowercase,$uppercase) != translate($cmWantedQuoteSubstituted,$lowercase,$uppercase))">
 		<xsl:text>Warning: </xsl:text><xsl:value-of select="$locationdescription"/><xsl:text>: Code </xsl:text>
 		<xsl:call-template name="describeCodeActual">
 			<xsl:with-param name="cv" select="$cv"/>

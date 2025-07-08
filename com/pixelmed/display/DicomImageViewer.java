@@ -1,6 +1,32 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.BrowserPaneChangeEvent;
+import com.pixelmed.display.event.FrameSelectionChangeEvent; 
+import com.pixelmed.display.event.FrameSortOrderChangeEvent; 
+import com.pixelmed.display.event.SourceImageSelectionChangeEvent;
+import com.pixelmed.display.event.SourceSpectrumSelectionChangeEvent;
+import com.pixelmed.display.event.StatusChangeEvent;
+import com.pixelmed.display.event.WellKnownContext; 
+
+import com.pixelmed.apps.TiledPyramid;
+import com.pixelmed.dicom.*;
+import com.pixelmed.event.ApplicationEventDispatcher; 
+import com.pixelmed.event.EventContext;
+import com.pixelmed.event.SelfRegisteringListener;
+import com.pixelmed.geometry.*;
+import com.pixelmed.validate.*;
+import com.pixelmed.database.*;
+import com.pixelmed.network.*;
+import com.pixelmed.query.*;
+
+import com.pixelmed.utils.CapabilitiesAvailable;
+import com.pixelmed.utils.CopyStream;
+import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.utils.FloatFormatter;
+import com.pixelmed.utils.MessageLogger;
+//import com.pixelmed.transfermonitor.TransferMonitor;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -13,31 +39,12 @@ import javax.swing.event.*;
 import javax.swing.tree.*;
 import javax.swing.border.*;
 
+import javax.vecmath.*;
+
 import apple.dts.samplecode.osxadapter.OSXAdapter;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.display.event.FrameSelectionChangeEvent; 
-import com.pixelmed.display.event.FrameSortOrderChangeEvent; 
-import com.pixelmed.display.event.StatusChangeEvent; 
-import com.pixelmed.display.event.WellKnownContext; 
-
-import com.pixelmed.dicom.*;
-import com.pixelmed.event.ApplicationEventDispatcher; 
-import com.pixelmed.event.EventContext;
-import com.pixelmed.event.SelfRegisteringListener;
-import com.pixelmed.validate.*;
-import com.pixelmed.database.*;
-import com.pixelmed.network.*;
-import com.pixelmed.query.*;
-import com.pixelmed.utils.*;
-//import com.pixelmed.transfermonitor.TransferMonitor;
-
-// for localizer ...
-
-import javax.vecmath.*;
-import com.pixelmed.geometry.*;
-
-import com.pixelmed.utils.CopyStream;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an entire application for displaying and viewing images and
@@ -55,9 +62,9 @@ import com.pixelmed.utils.CopyStream;
 public class DicomImageViewer extends ApplicationFrame implements 
 		KeyListener,MouseListener
 	{
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageViewer.java,v 1.255 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageViewer.java,v 1.231 2013/02/01 13:53:20 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomImageViewer.class);
 
 	/***/
 	static final char screenSnapShotKeyChar = 'K';
@@ -87,6 +94,7 @@ public class DicomImageViewer extends ApplicationFrame implements
 	protected JList displayListOfPossibleReferenceImagesForImages;
 	protected JList displayListOfPossibleBackgroundImagesForSpectra;
 	protected JList displayListOfPossibleReferenceImagesForSpectra;
+	protected JList displayListOfPossibleReferenceImagesForTiledImages;
 	protected JScrollPane databaseTreeScrollPane;
 	protected JScrollPane dicomdirTreeScrollPane;
 	protected JScrollPane scrollPaneOfCurrentAttributes;
@@ -109,26 +117,26 @@ public class DicomImageViewer extends ApplicationFrame implements
 	 * @param	e
 	 */
 	public void keyPressed(KeyEvent e) {
-//System.err.println("Key pressed event"+e);
+		slf4jlogger.trace("Key pressed event {}",e);
 	}
 
 	/**
 	 * @param	e
 	 */
 	public void keyReleased(KeyEvent e) {
-//System.err.println("Key released event"+e);
+		slf4jlogger.trace("Key released event {}",e);
 	}
 
 	/**
 	 * @param	e
 	 */
 	public void keyTyped(KeyEvent e) {
-//System.err.println("Key typed event "+e);
-//System.err.println("Key typed char "+e.getKeyChar());
+		slf4jlogger.trace("Key typed event {}",e);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Key typed char {}",e.getKeyChar());
 		if (e.getKeyChar() == screenSnapShotKeyChar) {
 			Rectangle extent = this.getBounds();
 			File snapShotFile = takeSnapShot(extent);
-System.err.println("Snapshot to file "+snapShotFile);
+			slf4jlogger.info("Snapshot to file {}",snapShotFile);
 		}
 	}
 
@@ -141,7 +149,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	 * @param	e
 	 */
 	public void mouseEntered(MouseEvent e) {
-//System.err.println("mouseEntered event"+e);
+		slf4jlogger.trace("mouseEntered event {}",e);
 		requestFocus();		// In order to allow us to receive KeyEvents
 	}
 
@@ -266,7 +274,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	
 		public OurFrameSelectionChangeListener(EventContext eventContext) {
 			super("com.pixelmed.display.event.FrameSelectionChangeEvent",eventContext);
-//System.err.println("DicomImageViewer.OurFrameSelectionChangeListener():");
+			slf4jlogger.debug("OurFrameSelectionChangeListener():");
 		}
 		
 		/**
@@ -274,7 +282,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 		 */
 		public void changed(com.pixelmed.event.Event e) {
 			FrameSelectionChangeEvent fse = (FrameSelectionChangeEvent)e;
-//System.err.println("DicomImageViewer.OurFrameSelectionChangeListener.changed(): event="+fse);
+			slf4jlogger.debug("OurFrameSelectionChangeListener.changed(): event={}",fse);
 			currentSourceIndex = fse.getIndex();	// track this for when a new localizer is selected for posting - fix for [bugs.mrmf] (000074)
 			// DO remap currentSourceIndex through currentSourceSortOrder
 			if (currentSourceSortOrder != null) {
@@ -294,7 +302,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	
 		public OurFrameSortOrderChangeListener(EventContext eventContext) {
 			super("com.pixelmed.display.event.FrameSortOrderChangeEvent",eventContext);
-//System.err.println("DicomImageViewer.OurFrameSortOrderChangeListener():");
+			slf4jlogger.debug("OurFrameSortOrderChangeListener():");
 		}
 		
 		/**
@@ -302,7 +310,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 		 */
 		public void changed(com.pixelmed.event.Event e) {
 			FrameSortOrderChangeEvent fso = (FrameSortOrderChangeEvent)e;
-//System.err.println("DicomImageViewer.OurFrameSortOrderChangeListener.changed(): event="+fso);
+			slf4jlogger.debug("OurFrameSortOrderChangeListener.changed(): event={}",fso);
 			currentSourceIndex = fso.getIndex();		// track this for when a new localizer is selected for posting - fix for [bugs.mrmf] (000074)
 			currentSourceSortOrder  = fso.getSortOrder();
 			// DO NOT remap currentSourceIndex through currentSourceSortOrder
@@ -329,6 +337,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	private JPanel queryControlsPanel;
 	private JPanel spectroscopyControlsPanel;
 	private JPanel structuredReportTreeControlsPanel;
+	private JPanel tiledDisplayControlsPanel;
 
 	private SourceImageVOILUTSelectorPanel sourceImageVOILUTSelectorPanel;
 	private SourceImageWindowLinearCalculationSelectorPanel sourceImageWindowLinearCalculationSelectorPanel;
@@ -342,7 +351,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	
 		public OurBrowserPaneChangeListener(EventContext eventContext) {
 			super("com.pixelmed.display.event.BrowserPaneChangeEvent",eventContext);
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener():");
+			slf4jlogger.debug("OurBrowserPaneChangeListener():");
 		}
 		
 		/**
@@ -351,36 +360,59 @@ System.err.println("Snapshot to file "+snapShotFile);
 		public void changed(com.pixelmed.event.Event e) {
 			BrowserPaneChangeEvent bpce = (BrowserPaneChangeEvent)e;
 			if (bpce.getType() == BrowserPaneChangeEvent.IMAGE) {
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener.changed() to IMAGE");
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to IMAGE");
 				browserPane.setEnabledAt(browserPane.indexOfComponent(displayControlsPanel),true);
 				browserPane.setSelectedComponent(displayControlsPanel);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(spectroscopyControlsPanel),false);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),false);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),false);
 			}
 			else if (bpce.getType() == BrowserPaneChangeEvent.DICOMDIR) {
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener.changed() to DICOMDIR");
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to DICOMDIR");
 				browserPane.setSelectedComponent(dicomdirControlsPanel);
 			}
 			else if (bpce.getType() == BrowserPaneChangeEvent.DATABASE) {
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener.changed() to DATABASE");
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to DATABASE");
 				browserPane.setSelectedComponent(databaseControlsPanel);
 				// will trigger loading of database on detection of selection changed
 			}
 			else if (bpce.getType() == BrowserPaneChangeEvent.SPECTROSCOPY) {
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener.changed() to SPECTROSCOPY");
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to SPECTROSCOPY");
 				browserPane.setEnabledAt(browserPane.indexOfComponent(spectroscopyControlsPanel),true);
 				browserPane.setSelectedComponent(spectroscopyControlsPanel);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(displayControlsPanel),false);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),false);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),false);
 			}
 			else if (bpce.getType() == BrowserPaneChangeEvent.SR) {
-//System.err.println("DicomImageViewer.OurBrowserPaneChangeListener.changed() to SR");
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to SR");
 				browserPane.setEnabledAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),true);
 				browserPane.setSelectedComponent(structuredReportTreeControlsPanel);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(displayControlsPanel),false);
 				browserPane.setEnabledAt(browserPane.indexOfComponent(spectroscopyControlsPanel),false);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),false);
+			}
+			else if (bpce.getType() == BrowserPaneChangeEvent.TILEDIMAGE) {
+				slf4jlogger.debug("OurBrowserPaneChangeListener.changed() to TILEDIMAGE");
+				browserPane.setEnabledAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),true);
+				browserPane.setSelectedComponent(tiledDisplayControlsPanel);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(displayControlsPanel),false);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(spectroscopyControlsPanel),false);
+				browserPane.setEnabledAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),false);
 			}
 		}
+	}
+	
+	// activating and inactivating sort panels (001045)
+	
+	SourceImageSortOrderPanel displaySortPanel;
+	TiledSourceImageSortOrderPanel tiledDisplaySortPanel;
+	SourceSpectrumSortOrderPanel spectroscopySortPanel;
+	
+	private void inactivateAllSortPanels() {
+		displaySortPanel.setActive(false);
+		tiledDisplaySortPanel.setActive(false);
+		spectroscopySortPanel.setActive(false);
 	}
 	
 	// methods to do the work ...
@@ -395,8 +427,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 		}
 		catch (Throwable e) {	// NoClassDefFoundError may be thrown if no vecmath support available, which is an Error, not an Exception
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(e.toString()));
-			//System.err.println(ex);
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return imageGeometry;
 	}
@@ -411,8 +442,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 		}
 		catch (DicomException e) {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(e.toString()));
-			//System.err.println(ex);
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return spectroscopyVolumeLocalization;
 	}
@@ -436,8 +466,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 		}
 		catch (Exception e) {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(e.toString()));
-			//System.err.println(e);
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		finally {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
@@ -455,6 +484,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	 * @param	spectroscopy
 	 */
 	private void loadReferenceImagePanel(String dicomFileName,JPanel referenceImagePanel,boolean spectroscopy) {
+		slf4jlogger.debug("loadReferenceImagePanel(): dicomFileName = {}",dicomFileName);
 		AttributeList list = new AttributeList();
 		SourceImage sImg = null;
 		try {
@@ -471,14 +501,14 @@ System.err.println("Snapshot to file "+snapShotFile);
 		}
 		catch (Exception e) {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(e.toString()));
-			//System.err.println(e);
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		finally {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 		}
 	
-		if (sImg != null && sImg.getNumberOfBufferedImages() > 0) {		
+		if (sImg != null && sImg.getNumberOfBufferedImages() > 0) {
+			slf4jlogger.debug("loadReferenceImagePanel(): sImg has frames");
 			GeometryOfVolume imageGeometry = getNewGeometryOfVolume(list);
 
 			SingleImagePanel ip = new SingleImagePanel(sImg,WellKnownContext.REFERENCEPANEL,imageGeometry);
@@ -491,12 +521,15 @@ System.err.println("Snapshot to file "+snapShotFile);
 			//imagePanel[0]=ip;
 
 			if (spectroscopy) {
+				slf4jlogger.debug("loadReferenceImagePanel(): spectroscopy");
 				spectroscopyLocalizerManager.setReferenceImagePanel(ip);
 			}
 			else {
+				slf4jlogger.debug("loadReferenceImagePanel(): image");
 				imageLocalizerManager.setReferenceImagePanel(ip);
 			}
 			
+			slf4jlogger.debug("loadReferenceImagePanel(): dispatch SourceImageSelectionChangeEvent in REFERENCEPANEL context");
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new SourceImageSelectionChangeEvent(WellKnownContext.REFERENCEPANEL,sImg,null/*sortOrder*/,0,list,imageGeometry));
 				
@@ -520,7 +553,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	 * @param	list
 	 */
 	private void loadMultiPanelWithImage(JPanel multiPanel,SourceImage sImg,AttributeList list) {
-//System.err.println("DicomImageViewer.loadMultiPanelWithImage():");
+		slf4jlogger.debug("loadMultiPanelWithImage():");
 		if (sImg != null && sImg.getNumberOfBufferedImages() > 0) {
 			GeometryOfVolume imageGeometry = getNewGeometryOfVolume(list);
 			PixelSpacing pixelSpacing = new PixelSpacing(list,imageGeometry);
@@ -543,8 +576,57 @@ System.err.println("Snapshot to file "+snapShotFile);
 			multiPanel.add(ip);
 			//imagePanel[0]=ip;
 
+			inactivateAllSortPanels();					// (001045)
+			displaySortPanel.setActive(true);
+			
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new SourceImageSelectionChangeEvent(WellKnownContext.MAINPANEL,sImg,null/*sortOrder*/,0,list,imageGeometry));
+		}
+	}
+	
+	/**
+	 * @param	multiPanel
+	 * @param	sImg
+	 * @param	list
+	 */
+	private void loadMultiPanelWithTiledImage(JPanel multiPanel,SourceImage sImg,AttributeList list) {
+		slf4jlogger.debug("loadMultiPanelWithTiledImage():");
+		if (sImg != null && sImg.getNumberOfBufferedImages() > 0) {
+			GeometryOfVolume imageGeometry = getNewGeometryOfVolume(list);
+			PixelSpacing pixelSpacing = new PixelSpacing(list,imageGeometry);
+			//SingleImagePanel ip = new SingleImagePanel(sImg,WellKnownContext.MAINPANEL,imageGeometry);
+			SingleImagePanel ip = new SingleImagePanelWithLineDrawing(sImg,WellKnownContext.MAINPANEL,imageGeometry);
+			//SingleImagePanel ip = new SingleImagePanelWithRegionDetection(sImg,WellKnownContext.MAINPANEL,imageGeometry);
+			ip.setPixelSpacingInSourceImage(pixelSpacing.getSpacing(),pixelSpacing.getDescription());
+			
+			ip.setDemographicAndTechniqueAnnotations(new DemographicAndTechniqueAnnotations(list,imageGeometry),"SansSerif",Font.PLAIN,10,Color.pink);
+			ip.setOrientationAnnotations(new OrientationAnnotations(list,imageGeometry),"SansSerif",Font.PLAIN,20,Color.pink);
+			
+			//sourceImageVOILUTSelectorPanel.sendEventCorrespondingToCurrentButtonState();				// will get to new SingleImagePanel via MainImagePanelVOILUTSelectionEventSink
+			//sourceImageWindowLinearCalculationSelectorPanel.sendEventCorrespondingToCurrentButtonState();
+			//sourceImageWindowingAccelerationSelectorPanel.sendEventCorrespondingToCurrentButtonState();
+			//sourceImageGraphicDisplaySelectorPanel.sendEventCorrespondingToCurrentButtonState();
+
+			SingleImagePanel.deconstructAllSingleImagePanelsInContainer(multiPanel);
+			SpectraPanel.deconstructAllSpectraPanelsInContainer(multiPanel);
+			multiPanel.removeAll();
+			multiPanel.add(ip);
+			//imagePanel[0]=ip;
+			
+			inactivateAllSortPanels();					// (001045)
+			tiledDisplaySortPanel.setActive(true);
+
+			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
+				new SourceImageSelectionChangeEvent(WellKnownContext.MAINPANEL,sImg,null/*sortOrder*/,0,list,imageGeometry));
+			
+			// delay until this point so we can use the TiledIndex created for TiledDisplaySortPanel
+			try {
+				TiledFramesIndex index = tiledDisplaySortPanel.getTiledFramesIndex();
+				TiledPyramid.setClipRectForIncompletelyFilledTilesIfNecessary(sImg,index,list);
+			}
+			catch (DicomException e) {
+				slf4jlogger.error("Could not set clipping rectangle for tiled image",e);
+			}
 		}
 	}
 	
@@ -555,7 +637,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	 * @param	list
 	 */
 	private Dimension loadMultiPanelWithSpectra(JPanel multiPanel,SourceSpectra sSpectra,AttributeList list) {
-//System.err.println("loadMultiPanelWithSpectra:");
+		slf4jlogger.debug("loadMultiPanelWithSpectra:");
 		Dimension multiPanelDimension = null;
 		if (sSpectra != null) {
 			float[][] spectra = sSpectra.getSpectra();
@@ -571,6 +653,9 @@ System.err.println("Snapshot to file "+snapShotFile);
 			SpectraPanel.deconstructAllSpectraPanelsInContainer(multiPanel);
 			multiPanel.removeAll();
 			multiPanel.add(sp);
+
+			inactivateAllSortPanels();					// (001045)
+			spectroscopySortPanel.setActive(true);
 			
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new SourceSpectrumSelectionChangeEvent(WellKnownContext.MAINPANEL,spectra,spectra.length,null,0,list,spectroscopyGeometry,spectroscopyVolumeLocalization));
@@ -604,10 +689,9 @@ System.err.println("Snapshot to file "+snapShotFile);
 				String                        queryHost = presentationAddress.getHostname();
 				int			      queryPort = presentationAddress.getPort();
 				String                       queryModel = networkApplicationInformation.getApplicationEntityMap().getQueryModel(queryCalledAETitle);
-				int                     queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
 				
 				if (NetworkApplicationProperties.isStudyRootQueryModel(queryModel) || queryModel == null) {
-					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle,queryDebugLevel);
+					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle);
 					stringForTitle=":"+remoteAEForQuery;
 				}
 				else {
@@ -615,13 +699,13 @@ System.err.println("Snapshot to file "+snapShotFile);
 				}
 			}
 			catch (Exception e) {		// if an AE's property has no value, or model not supported
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		if (browserPane != null) {
 			browserPane.setTitleAt(tabNumberOfRemoteInBrowserPane,"Remote"+stringForTitle);
 		}
-//System.err.println("DicomImageViewer.setCurrentRemoteQueryInformationModel(): now "+currentRemoteQueryInformationModel);
+		slf4jlogger.debug("setCurrentRemoteQueryInformationModel(): now {}",currentRemoteQueryInformationModel);
 	}
 	
 	/***/
@@ -637,7 +721,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 	private void setCurrentRemoteQueryFilter(AttributeList filter) {currentRemoteQueryFilter=filter; }	
 	/***/
 	private AttributeList getCurrentRemoteQueryFilter() {
-//System.err.println("DicomImageViewer.getCurrentRemoteQueryFilter(): now "+currentRemoteQueryFilter);
+		slf4jlogger.debug("getCurrentRemoteQueryFilter(): now {}",currentRemoteQueryFilter);
 		return currentRemoteQueryFilter;
 	}
 
@@ -793,7 +877,7 @@ System.err.println("Snapshot to file "+snapShotFile);
 					}
 				}
 			}
-System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed missing currentRemoteQuerySelectionLevel to be "+currentRemoteQuerySelectionLevel);
+			slf4jlogger.info("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed missing currentRemoteQuerySelectionLevel to be {}",currentRemoteQuerySelectionLevel);
 		}
 	}
 
@@ -855,7 +939,7 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 		 * @param	imagePanel
 		 * @param	referenceImagePanelForImages
 		 * @param	referenceImagePanelForSpectra
-		 * @exception	DicomException
+		 * @throws	DicomException
 		 */
 		public OurDicomDirectoryBrowser(AttributeList list) throws DicomException {
 			super(list,lastDirectoryPath,dicomdirTreeScrollPane,scrollPaneOfCurrentAttributes);
@@ -871,7 +955,7 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 		/**
 		 */
 		protected void doSomethingMoreWithWhateverWasSelected() {
-//System.err.println("DicomImageViewer.OurDicomDirectoryBrowser.doSomethingMoreWithWhateverWasSelected():");
+			slf4jlogger.debug("OurDicomDirectoryBrowser.doSomethingMoreWithWhateverWasSelected():");
 			String dicomFileName = getCurrentFilePathSelection();
 			if (dicomFileName != null) {
 				loadDicomFileOrDirectory(dicomFileName,multiPanel,
@@ -884,7 +968,7 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 	/***/
 	private class OurDatabaseTreeBrowser extends DatabaseTreeBrowser {
 		/**
-		 * @exception	DicomException
+		 * @throws	DicomException
 		 */
 		public OurDatabaseTreeBrowser() throws DicomException {
 			super(databaseInformationModel,databaseTreeScrollPane,scrollPaneOfCurrentAttributes);
@@ -905,7 +989,7 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 		/**
 		 */
 		protected void doSomethingMoreWithWhateverWasSelected() {
-//System.err.println("DicomImageViewer.OurDatabaseTreeBrowser.doSomethingMoreWithWhateverWasSelected():");
+			slf4jlogger.debug("OurDatabaseTreeBrowser.doSomethingMoreWithWhateverWasSelected():");
 			String dicomFileName = getCurrentFilePathSelection();
 			if (dicomFileName != null) {
 				loadDicomFileOrDirectory(dicomFileName,multiPanel,
@@ -922,7 +1006,7 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 		 * @param	m
 		 * @param	treeBrowserScrollPane
 		 * @param	attributeBrowserScrollPane
-		 * @exception	DicomException
+		 * @throws	DicomException
 		 */
 		OurQueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,JScrollPane treeBrowserScrollPane,JScrollPane attributeBrowserScrollPane) throws DicomException {
 			super(q,m,treeBrowserScrollPane,attributeBrowserScrollPane);
@@ -999,21 +1083,24 @@ System.err.println("DicomImageViewer.setCurrentRemoteQuerySelection(): Guessed m
 		if (dicomFileName != null) {
 			cursorChanger.setWaitCursor();
 			try {
-System.err.println("Open: "+dicomFileName);
+				slf4jlogger.info("Open: {}",dicomFileName);
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Reading and parsing DICOM file ..."));
 				File file = FileUtilities.getFileFromNameInsensitiveToCaseIfNecessary(dicomFileName);
 				dicomFileName = file.getAbsolutePath();		// set to what we actually used, since may be kept around for later imports, etc.
+				boolean deferredDecompression = CompressedFrameDecoder.canDecompress(file);
+				slf4jlogger.info("DicomImageViewer(): deferredDecompression = {}",deferredDecompression);
 				DicomInputStream i = new DicomInputStream(file);
 				AttributeList list = new AttributeList();
-//long startTime = System.currentTimeMillis();
+				long startTime = System.currentTimeMillis();
+				list.setDecompressPixelData(!deferredDecompression);
 				list.read(i);
 				i.close();
-//long currentTime = System.currentTimeMillis();
-//System.err.println("DicomImageViewer.loadDicomFileOrDirectory(): reading AttributeList took = "+(currentTime-startTime)+" ms");
-//startTime=currentTime;
+				long currentTime = System.currentTimeMillis();
+				slf4jlogger.debug("loadDicomFileOrDirectory(): reading AttributeList took = {} ms",(currentTime-startTime));
+				startTime=currentTime;
 				new AttributeTreeBrowser(list,attributeTreeScrollPane);
-//currentTime = System.currentTimeMillis();
-//System.err.println("DicomImageViewer.loadDicomFileOrDirectory(): making AttributeTreeBrowser took = "+(currentTime-startTime)+" ms");
+				currentTime = System.currentTimeMillis();
+				slf4jlogger.debug("loadDicomFileOrDirectory(): making AttributeTreeBrowser took = {} ms",(currentTime-startTime));
 				// choose type of object based on SOP Class
 				// Note that DICOMDIRs don't have SOPClassUID, so check MediaStorageSOPClassUID first
 				// then only if not found (e.g. and image with no meta-header, use SOPClassUID from SOP Common Module
@@ -1023,14 +1110,49 @@ System.err.println("Open: "+dicomFileName);
 					a = list.get(TagFromName.SOPClassUID);
 					useSOPClassUID = (a != null && a.getVM() == 1) ? a.getStringValues()[0] : null;
 				}
-				
-				if (SOPClass.isDirectory(useSOPClassUID)) {
+				slf4jlogger.debug("loadDicomFileOrDirectory(): useSOPClassUID = {} ({})",useSOPClassUID,SOPClassDescriptions.getDescriptionFromUID(useSOPClassUID));
+				if (useSOPClassUID == null) {
+					throw new DicomException("Missing SOP Class UID");
+				}
+				else if (SOPClass.isDirectory(useSOPClassUID)) {
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Building tree from DICOMDIR ..."));
 					OurDicomDirectoryBrowser dicomdirBrowser = new OurDicomDirectoryBrowser(list);
 					currentDicomDirectory = dicomdirBrowser.getDicomDirectory();	// need access to this later for referenced stuff handling
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new BrowserPaneChangeEvent(WellKnownContext.MAINPANEL,BrowserPaneChangeEvent.DICOMDIR));
 				}
-				else if (SOPClass.isImageStorage(useSOPClassUID)) {
+				else if (SOPClass.isTiledImageStorage(useSOPClassUID)) {
+					slf4jlogger.debug("loadDicomFileOrDirectory(): Tiled images");
+					//imagePanel.removeAll();
+					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Building tiled images ..."));
+					SourceImage sImg = new SourceImage(list);
+					// clip regions for incomplete edge tiles set later in loadMultiPanelWithTiledImage
+					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Loading tiled images and attributes ..."));
+					
+					currentSourceIndex=0;
+					currentSourceSortOrder=null;
+					getModelOfCurrentAttributesForCurrentFrameBrowser().initializeModelFromAttributeList(list);
+					getModelOfCurrentAttributesForCurrentFrameBrowser().selectValuesForDifferentFrame(currentSourceIndex);
+					getTableOfCurrentAttributesForCurrentFrameBrowser().setColumnWidths();
+					scrollPaneOfCurrentAttributes.setViewportView(getTableOfCurrentAttributesForCurrentFrameBrowser());
+					getModelOfCurrentAttributesForAllFramesBrowser().initializeModelFromAttributeList(list);
+					getTableOfCurrentAttributesForAllFramesBrowser().setColumnWidths();
+					attributeFrameTableScrollPane.setViewportView(getTableOfCurrentAttributesForAllFramesBrowser());
+					
+					loadMultiPanelWithTiledImage(imagePanel,sImg,list);
+					
+					referenceImageListMappedToFilenames=getImageListMappedToFilenamesForReferenceOrBackground(list,false);
+					displayListOfPossibleReferenceImagesForImages.setListData(referenceImageListMappedToFilenames.keySet().toArray());
+					//imagePanel.revalidate();
+					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new BrowserPaneChangeEvent(WellKnownContext.MAINPANEL,BrowserPaneChangeEvent.TILEDIMAGE));
+					setAttributeListForDatabaseImport(list);		// warning ... this will keep bulk data hanging around :(
+					setCurrentlyDisplayedInstanceFilePath(dicomFileName);
+					// set the current selection path in case we want to import or transfer the file we have just loaded
+					Vector names = new Vector();
+					names.add(dicomFileName);
+					setCurrentFilePathSelection(names);
+				}
+				else if (SOPClass.isImageStorage(useSOPClassUID) || useSOPClassUID.equals(SOPClass.RTDoseStorage)) {
+					slf4jlogger.debug("loadDicomFileOrDirectory(): Images or RT Dose");
 					//imagePanel.removeAll();
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Building images ..."));
 					SourceImage sImg = new SourceImage(list);
@@ -1060,6 +1182,7 @@ System.err.println("Open: "+dicomFileName);
 					setCurrentFilePathSelection(names);
 				}
 				else if (SOPClass.isSpectroscopy(useSOPClassUID)) {
+					slf4jlogger.debug("loadDicomFileOrDirectory(): Spectra");
 					//imagePanel.removeAll();
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Building spectra ..."));
 					SourceSpectra sSpectra = new SourceSpectra(list);
@@ -1091,7 +1214,7 @@ System.err.println("Open: "+dicomFileName);
 					setCurrentFilePathSelection(names);
 				}
 				else if (SOPClass.isStructuredReport(useSOPClassUID) || list.isSRDocument()) {
-//System.err.println("DicomImageViewer.loadDicomFileOrDirectory(): SOPClass.isStructuredReport or AttributeList.isSRDocument()");
+					slf4jlogger.debug("loadDicomFileOrDirectory(): SOPClass.isStructuredReport or AttributeList.isSRDocument()");
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Building SR ..."));
 					//StructuredReport sSR = new StructuredReport(list);
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Loading SR and attributes ..."));
@@ -1115,8 +1238,7 @@ System.err.println("Open: "+dicomFileName);
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(e.toString()));
-				//System.err.println(e);
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			// make label really wide, else doesn't completely repaint on status update
 			cursorChanger.restoreCursor();
@@ -1157,18 +1279,21 @@ System.err.println("Open: "+dicomFileName);
 	 * @param	affectedSOPInstance
 	 */
 	private void sendDicomFileOverDicomNetwork(String dicomFileName,String ae,String hostname,int port,
-			String calledAETitle,String callingAETitle,String affectedSOPClass,String affectedSOPInstance) {
+			String calledAETitle,String callingAETitle,
+			int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize,
+			String affectedSOPClass,String affectedSOPInstance) {
 		if (dicomFileName != null) {
 			cursorChanger.setWaitCursor();
 			try {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Sending image "+dicomFileName+" to "+ae+" ..."));
-				int storageSCUDebugLevel = networkApplicationProperties.getStorageSCUDebugLevel();
 				int storageSCUCompressionLevel = networkApplicationProperties.getStorageSCUCompressionLevel();
-				new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,dicomFileName,affectedSOPClass,affectedSOPInstance,
-					storageSCUCompressionLevel,storageSCUDebugLevel);
+				new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,
+					ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,
+					dicomFileName,affectedSOPClass,affectedSOPInstance,
+					storageSCUCompressionLevel);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1274,7 +1399,7 @@ System.err.println("Open: "+dicomFileName);
 									if (filename != null && sopClassUID != null && SOPClass.isImageStorage(sopClassUID)
 									 && !imageListMappedToFilenames.containsKey(description)) {
 										imageListMappedToFilenames.put(description,filename);
-//System.err.println("Potential reference in same Frame of Reference: "+description+" "+filename);
+										slf4jlogger.debug("Potential reference in same Frame of Reference: {} {}",description,filename);
 									}
 								}
 							}
@@ -1282,7 +1407,7 @@ System.err.println("Open: "+dicomFileName);
 					}
 				}
 				catch (DicomException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 			// NB. since always checks for description key, will not use a reference from the DICOMDIR
@@ -1292,8 +1417,8 @@ System.err.println("Open: "+dicomFileName);
 				if (attributeLists != null) {
 					for (int j=0; j<attributeLists.size(); ++j) {
 						AttributeList referencedList = (AttributeList)(attributeLists.get(j));
-//System.err.println("Same Frame Of Reference:");
-//System.err.println(referencedList);
+						slf4jlogger.debug("Same Frame Of Reference:");
+						slf4jlogger.debug(referencedList.toString());
 						if (referencedList != null) {
 							String description = DescriptionFactory.makeImageDescription(referencedList);
 							String sopInstanceUID = Attribute.getSingleStringValueOrNull(referencedList,TagFromName.ReferencedSOPInstanceUIDInFile);
@@ -1313,7 +1438,7 @@ System.err.println("Open: "+dicomFileName);
 									// no duplicates ...
 									if (filename != null && !imageListMappedToFilenames.containsKey(description)) {
 										imageListMappedToFilenames.put(description,filename);
-//System.err.println("Potential reference in same Frame of Reference: "+description+" "+filename);
+										slf4jlogger.debug("Potential reference in same Frame of Reference: {} {}",description,filename);
 									}
 								}
 							}
@@ -1348,23 +1473,23 @@ System.err.println("Open: "+dicomFileName);
 		
 		/***/
 		public void valueChanged(ListSelectionEvent e) {
-//System.err.println("The class of the ListSelectionEvent source is " + e.getSource().getClass().getName());
+			slf4jlogger.debug("The class of the ListSelectionEvent source is " + e.getSource().getClass().getName());
 			JList list = (JList)(e.getSource());
-//System.err.println("Selection event is "+e);
+			slf4jlogger.debug("Selection event is {}",e);
 			if (list.isSelectionEmpty()) {
 				// such as when list has been reloaded ...
 				lastSelectedDicomFileName=null;		// Fixes [bugs.mrmf] (000070) Localizer/spectra background sometimes doesn't load on selection, or reselection
 			}
 			else {
-//System.err.println("List selection is not empty");
+				slf4jlogger.debug("List selection is not empty");
 				String key = (String)list.getSelectedValue();
 				if (key != null) {
-//System.err.println("List selection key is not null = "+key);
+					slf4jlogger.debug("List selection key is not null = {}",key);
 					String dicomFileName = (String)referenceImageListMappedToFilenames.get(key);
-//System.err.println("List selection dicomFileName = "+dicomFileName);
+					slf4jlogger.debug("List selection dicomFileName = {}",dicomFileName);
 					// collapse redundant duplicate events
 					if (dicomFileName != null && (lastSelectedDicomFileName == null || !dicomFileName.equals(lastSelectedDicomFileName))) {
-//System.err.println("New selection "+key+" "+dicomFileName);
+						slf4jlogger.debug("New selection {} {}",key,dicomFileName);
 						lastSelectedDicomFileName=dicomFileName;
 						loadReferenceImagePanel(dicomFileName,referenceImagePanel,spectroscopy);
 					}
@@ -1385,7 +1510,7 @@ System.err.println("Open: "+dicomFileName);
 		
 		/***/
 		public void valueChanged(ListSelectionEvent e) {
-//System.err.println("The class of the ListSelectionEvent source is " + e.getSource().getClass().getName());
+			slf4jlogger.debug("The class of the ListSelectionEvent source is " + e.getSource().getClass().getName());
 			JList list = (JList)(e.getSource());
 
 			if (list.isSelectionEmpty()) {
@@ -1398,7 +1523,7 @@ System.err.println("Open: "+dicomFileName);
 					String dicomFileName = (String)backgroundImageListMappedToFilenames.get(key);
 					// collapse redundant duplicate events
 					if (dicomFileName != null && (lastSelectedDicomFileName == null || !dicomFileName.equals(lastSelectedDicomFileName))) {
-//System.err.println("New selection "+key+" "+dicomFileName);
+						slf4jlogger.debug("New selection {} {}",key,dicomFileName);
 						lastSelectedDicomFileName=dicomFileName;
 						loadBackgroundImageForSpectra(dicomFileName);
 					}
@@ -1409,13 +1534,13 @@ System.err.println("Open: "+dicomFileName);
 	
 	/***/
 	private String showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(String question,String buttonText,String defaultSelection) {
-//System.err.println("DicomImageViewer.showInputDialogToSelectNetworkTargetByLocalApplicationEntityName()");
+		slf4jlogger.debug("showInputDialogToSelectNetworkTargetByLocalApplicationEntityName()");
 		String ae = defaultSelection;
 		if (networkApplicationProperties != null) {
-//System.err.println("DicomImageViewer.showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(): have networkApplicationProperties");
+			slf4jlogger.debug("showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(): have networkApplicationProperties");
 			Set localNamesOfRemoteAEs = networkApplicationInformation.getListOfLocalNamesOfApplicationEntities();
 			if (localNamesOfRemoteAEs != null) {
-//System.err.println("DicomImageViewer.showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(): got localNamesOfRemoteAEs");
+				slf4jlogger.debug("showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(): got localNamesOfRemoteAEs");
 				String sta[] = new String[localNamesOfRemoteAEs.size()];
 				int i=0;
 				Iterator it = localNamesOfRemoteAEs.iterator();
@@ -1475,7 +1600,7 @@ System.err.println("Open: "+dicomFileName);
 		 * @param	event
 		 */
 		public void actionPerformed(ActionEvent event) {
-//System.err.println("QueryFilterActionListener.actionPerformed()");
+			slf4jlogger.debug("QueryFilterActionListener.actionPerformed()");
 			queryTreeScrollPane.setViewportView(new FilterPanel(getCurrentRemoteQueryFilter()));
 			//scrollPaneOfCurrentAttributes.setViewportView(null);
 		}
@@ -1493,7 +1618,7 @@ System.err.println("Open: "+dicomFileName);
 			}
 			// else do nothing, since no unique key to specify what to retrieve
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	
@@ -1511,27 +1636,27 @@ System.err.println("Open: "+dicomFileName);
 			if (getCurrentRemoteQuerySelectionLevel() == null) {	// they have selected the root of the tree
 				QueryTreeRecord parent = getCurrentRemoteQuerySelectionQueryTreeRecord();
 				if (parent != null) {
-System.err.println("Retrieve: everything from "+getCurrentRemoteQuerySelectionRetrieveAE());
+					slf4jlogger.info("Retrieve: everything from {}",getCurrentRemoteQuerySelectionRetrieveAE());
 					Enumeration children = parent.children();
 					if (children != null) {
 						while (children.hasMoreElements()) {
 							QueryTreeRecord r = (QueryTreeRecord)(children.nextElement());
 							if (r != null) {
 								setCurrentRemoteQuerySelection(r.getUniqueKeys(),r.getUniqueKey(),r.getAllAttributesReturnedInIdentifier());
-System.err.println("Retrieve: "+getCurrentRemoteQuerySelectionLevel()+" "+getCurrentRemoteQuerySelectionUniqueKey().getSingleStringValueOrEmptyString()+" from "+getCurrentRemoteQuerySelectionRetrieveAE());
+								slf4jlogger.info("Retrieve: {} {} from {}",getCurrentRemoteQuerySelectionLevel(),getCurrentRemoteQuerySelectionUniqueKey().getSingleStringValueOrEmptyString(),getCurrentRemoteQuerySelectionRetrieveAE());
 								performRetrieve(getCurrentRemoteQuerySelectionUniqueKeys(),getCurrentRemoteQuerySelectionLevel(),getCurrentRemoteQuerySelectionRetrieveAE());
 							}
 						}
 					}
-System.err.println("Retrieve done");
+					slf4jlogger.info("Retrieve done");
 					setCurrentRemoteQuerySelection(null,null,null);
 				}
 			}
 			else {
-//System.err.println("DicomImageViewer.QueryRetrieveActionListener.actionPerformed(): "+getCurrentRemoteQuerySelectionUniqueKeys()+" from="+getCurrentRemoteQuerySelectionRetrieveAE()+" level="+getCurrentRemoteQuerySelectionLevel());
-System.err.println("Retrieve: "+getCurrentRemoteQuerySelectionLevel()+" "+getCurrentRemoteQuerySelectionUniqueKey().getSingleStringValueOrEmptyString()+" from "+getCurrentRemoteQuerySelectionRetrieveAE());
+				slf4jlogger.debug("QueryRetrieveActionListener.actionPerformed(): {} from={} level={}",getCurrentRemoteQuerySelectionUniqueKeys(),getCurrentRemoteQuerySelectionRetrieveAE(),getCurrentRemoteQuerySelectionLevel());
+				slf4jlogger.info("Retrieve: {} {} from {}",getCurrentRemoteQuerySelectionLevel(),getCurrentRemoteQuerySelectionUniqueKey().getSingleStringValueOrEmptyString(),getCurrentRemoteQuerySelectionRetrieveAE());
 				performRetrieve(getCurrentRemoteQuerySelectionUniqueKeys(),getCurrentRemoteQuerySelectionLevel(),getCurrentRemoteQuerySelectionRetrieveAE());
-System.err.println("Retrieve done");
+				slf4jlogger.info("Retrieve done");
 			}
 			cursorChanger.restoreCursor();
 		}
@@ -1560,7 +1685,7 @@ System.err.println("Retrieve done");
 					new OurQueryTreeBrowser(queryInformationModel,treeModel,queryTreeScrollPane,scrollPaneOfCurrentAttributes);
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			cursorChanger.restoreCursor();
 		}
@@ -1576,10 +1701,10 @@ System.err.println("Retrieve done");
 	}
 					
 	protected void purgeFilesAndDatabaseInformation(DatabaseTreeRecord databaseSelection) throws DicomException, IOException {
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): "+databaseSelection);
+		slf4jlogger.debug("purgeFilesAndDatabaseInformation(): {}",databaseSelection);
 		if (databaseSelection != null) {
 			InformationEntity ie = databaseSelection.getInformationEntity();
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): ie = "+ie);
+			slf4jlogger.debug("purgeFilesAndDatabaseInformation(): ie = {}",ie);
 			if (ie == null /* the root of the tree, i.e., everything */ || !ie.equals(InformationEntity.INSTANCE)) {
 				// Do it one study at a time, in the order in which the patients and studies are sorted in the tree
 				Enumeration children = databaseSelection.children();
@@ -1593,7 +1718,7 @@ System.err.println("Retrieve done");
 				}
 				// AFTER we have processed all the children, if any, we can delete ourselves, unless we are the root
 				if (ie != null) {
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): removeFromParent having recursed over children "+databaseSelection);
+					slf4jlogger.debug("purgeFilesAndDatabaseInformation(): removeFromParent having recursed over children {}",databaseSelection);
 					databaseSelection.removeFromParent();
 				}
 			}
@@ -1601,19 +1726,19 @@ System.err.println("Retrieve done");
 				// Instance level ... may need to delete files
 				String fileName = databaseSelection.getLocalFileNameValue();
 				String fileReferenceType = databaseSelection.getLocalFileReferenceTypeValue();
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): fileReferenceType = "+fileReferenceType+" for file "+fileName);
+				slf4jlogger.debug("purgeFilesAndDatabaseInformation(): fileReferenceType = {} for file {}",fileReferenceType,fileName);
 				if (fileReferenceType != null && fileReferenceType.equals(DatabaseInformationModel.FILE_COPIED)) {
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): deleting fileName "+fileName);
+					slf4jlogger.debug("purgeFilesAndDatabaseInformation(): deleting fileName {}",fileName);
 					try {
 						if (!new File(fileName).delete()) {
-							System.err.println("Failed to delete local copy of file "+fileName);
+							slf4jlogger.warn("Failed to delete local copy of file {}",fileName);
 						}
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
-//System.err.println("DicomImageViewer.purgeFilesAndDatabaseInformation(): removeFromParent instance level "+databaseSelection);
+				slf4jlogger.debug("purgeFilesAndDatabaseInformation(): removeFromParent instance level {}",databaseSelection);
 				databaseSelection.removeFromParent();
 			}
 		}
@@ -1633,13 +1758,13 @@ System.err.println("Retrieve done");
 				purgeFilesAndDatabaseInformation(databaseSelections);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			try {
 				new OurDatabaseTreeBrowser();
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done purging"));
 			cursorChanger.restoreCursor();
@@ -1653,7 +1778,7 @@ System.err.println("Retrieve done");
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -1672,19 +1797,58 @@ System.err.println("Retrieve done");
 			try {
 				new OurDatabaseTreeBrowser();
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
 	
+	// derived from on DicomCleaner.OurMediaImporter - should refactor :(
+
+	protected class OurDatabaseMediaImporter extends DatabaseMediaImporter {
+		boolean acceptAnyTransferSyntax;
+		
+		public OurDatabaseMediaImporter(String mediaDirectoryPath,File savedInstancesFolder,StoredFilePathStrategy storedFilePathStrategy,DatabaseInformationModel databaseInformationModel,MessageLogger logger,boolean acceptAnyTransferSyntax) {
+			super(mediaDirectoryPath,savedInstancesFolder,storedFilePathStrategy,databaseInformationModel,logger);
+			this.acceptAnyTransferSyntax = acceptAnyTransferSyntax;
+		}
+		
+		protected boolean canUseBzip = CapabilitiesAvailable.haveBzip2Support();
+
+		// override base class isOKToImport(), which rejects unsupported compressed transfer syntaxes
+		
+		protected boolean isOKToImport(String sopClassUID,String transferSyntaxUID) {
+			slf4jlogger.debug("isOKToImport(): transferSyntaxUID {}",transferSyntaxUID);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("isOKToImport(): {}",(transferSyntaxUID != null && transferSyntaxUID.length() > 0) ? new TransferSyntax(transferSyntaxUID).dump() : "");
+			slf4jlogger.debug("isOKToImport(): sopClassUID {}",sopClassUID);
+			slf4jlogger.debug("isOKToImport(): isImageStorage {}",SOPClass.isImageStorage(sopClassUID));
+			boolean isOK = sopClassUID != null
+				&& (SOPClass.isImageStorage(sopClassUID) || (SOPClass.isNonImageStorage(sopClassUID) && ! SOPClass.isDirectory(sopClassUID)))
+				&& (transferSyntaxUID == null	/* missing from meta information or no meta information, so assume EVRLE is OK (001136) */
+				 || (acceptAnyTransferSyntax && new TransferSyntax(transferSyntaxUID).isRecognized())
+				 || transferSyntaxUID.equals(TransferSyntax.ImplicitVRLittleEndian)
+				 || transferSyntaxUID.equals(TransferSyntax.ExplicitVRLittleEndian)
+				 || transferSyntaxUID.equals(TransferSyntax.ExplicitVRBigEndian)
+				 || transferSyntaxUID.equals(TransferSyntax.DeflatedExplicitVRLittleEndian)
+				 || (transferSyntaxUID.equals(TransferSyntax.PixelMedBzip2ExplicitVRLittleEndian) && canUseBzip)
+				 || transferSyntaxUID.equals(TransferSyntax.RLE)
+				 || transferSyntaxUID.equals(TransferSyntax.JPEGBaseline)
+				 || CapabilitiesAvailable.haveJPEGLosslessCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLossless) || transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1))
+				 || CapabilitiesAvailable.haveJPEG2000Part1Codec() && (transferSyntaxUID.equals(TransferSyntax.JPEG2000) || transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless))
+				 || CapabilitiesAvailable.haveJPEGLSCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLS) || transferSyntaxUID.equals(TransferSyntax.JPEGNLS))
+				);
+			slf4jlogger.debug("isOKToImport(): {}",isOK);
+			return isOK;
+		}
+	}
+
 	/***/
 	private class DatabaseImportFromFilesActionListener implements ActionListener {
 		/***/
-		private DatabaseMediaImporter importer;
+		private OurDatabaseMediaImporter importer;
 		/**
 		 */
 		public DatabaseImportFromFilesActionListener() {
-			this.importer = new DatabaseMediaImporter(null/*initial path*/,savedImagesFolder,storedFilePathStrategy,databaseInformationModel,/*null*/new OurMessageLogger());
+			this.importer = new OurDatabaseMediaImporter(null/*initial path*/,savedImagesFolder,storedFilePathStrategy,databaseInformationModel,/*null*/new OurMessageLogger(),false/*acceptAnyTransferSyntax*/);
 		}
 
 		/**
@@ -1693,11 +1857,11 @@ System.err.println("Retrieve done");
 		public void actionPerformed(ActionEvent event) {
 			cursorChanger.setWaitCursor();
 			try {
-//System.err.println("DicomImageViewer.DatabaseImportFromFilesActionListener.actionPerformed(): caling importer.choosePathAndImportDicomFiles()");
+				slf4jlogger.debug("DatabaseImportFromFilesActionListener.actionPerformed(): calling importer.choosePathAndImportDicomFiles()");
 				importer.choosePathAndImportDicomFiles(DicomImageViewer.this.getContentPane());
 				new OurDatabaseTreeBrowser();
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1707,18 +1871,19 @@ System.err.println("Retrieve done");
 	/**
 	 * @param	list
 	 * @param	fileName
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void copyFileAndImportToDatabase(AttributeList list,String fileName) throws DicomException, IOException {
+		slf4jlogger.debug("copyFileAndImportToDatabase():");
 		String sopInstanceUID = Attribute.getSingleStringValueOrNull(list,TagFromName.SOPInstanceUID);
 		if (sopInstanceUID == null) {
 			throw new DicomException("Cannot get SOP Instance UID to make file name for local copy when inserting into database");
 		}
 		String localCopyFileName=storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedImagesFolder,sopInstanceUID).getPath();
-//System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): uid = "+sopInstanceUID+" path ="+localCopyFileName);
+		slf4jlogger.debug("copyFileAndImportToDatabase(): uid = {} path = {}",sopInstanceUID,localCopyFileName);
 		if (fileName.equals(localCopyFileName)) {
-System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and output filenames identical - presumably copying from our own database back into our own database, so doing nothing");
+			slf4jlogger.info("copyFileAndImportToDatabase(): input and output filenames identical - presumably copying from our own database back into our own database, so doing nothing");
 		}
 		else {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Copying object ..."));
@@ -1742,7 +1907,7 @@ System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and ou
 			try {
 				copyFileAndImportToDatabase(getAttributeListForDatabaseImport(),getCurrentlyDisplayedInstanceFilePath());
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1761,7 +1926,8 @@ System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and ou
 		public void actionPerformed(ActionEvent event) {
 			cursorChanger.setWaitCursor();
 			Vector paths = getCurrentFilePathSelections();
-			if (paths != null) {
+			slf4jlogger.debug("ImportFromSelectionToDatabaseActionListener.actionPerformed(): paths={}",paths);
+			if (paths != null && paths.size() > 0) {
 				for (int j=0; j< paths.size(); ++j) {
 					String dicomFileName = (String)(paths.get(j));
 					if (dicomFileName != null) {
@@ -1774,7 +1940,7 @@ System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and ou
 							//databaseInformationModel.insertObject(list,dicomFileName);
 							copyFileAndImportToDatabase(list,file.getAbsolutePath());
 						} catch (Exception e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
@@ -1796,13 +1962,13 @@ System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and ou
 		 */
 		public void actionPerformed(ActionEvent event) {
 			Vector paths = getCurrentFilePathSelections();
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): paths="+paths);
+			slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): paths={}",paths);
 			if (paths != null && paths.size() > 0) {
 				//boolean coerce = JOptionPane.showConfirmDialog(null,"Change identifiers during send ?  ","Send ...",
 				//	JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
 				//if (coerce) {
 				//	CoercionModel coercionModel = new CoercionModel(paths);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): CoercionModel="+coercionModel);
+				//slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): CoercionModel={}",coercionModel);
 				//}
 			
 				Properties properties = getProperties();
@@ -1815,35 +1981,39 @@ System.err.println("DicomImageViewer.copyFileAndImportToDatabase(): input and ou
 						PresentationAddress presentationAddress = networkApplicationInformation.getApplicationEntityMap().getPresentationAddress(calledAETitle);
 						String                         hostname = presentationAddress.getHostname();
 						int                                port = presentationAddress.getPort();
+						int            ourMaximumLengthReceived = networkApplicationProperties.getInitiatorMaximumLengthReceived();
+						int             socketReceiveBufferSize = networkApplicationProperties.getInitiatorSocketReceiveBufferSize();
+						int                socketSendBufferSize = networkApplicationProperties.getInitiatorSocketSendBufferSize();
 						
 						String affectedSOPClass = null;
 						String affectedSOPInstance = null;
 				
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): ae="+ae);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): hostname="+hostname);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): port="+port);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): calledAETitle="+calledAETitle);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): callingAETitle="+callingAETitle);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): affectedSOPClass="+affectedSOPClass);
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): affectedSOPInstance="+affectedSOPInstance);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): ae={}",ae);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): hostname={}",hostname);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): port={}",port);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): calledAETitle={}",calledAETitle);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): callingAETitle={}",callingAETitle);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): affectedSOPClass={}",affectedSOPClass);
+				slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): affectedSOPInstance={}",affectedSOPInstance);
 
 						for (int j=0; j< paths.size(); ++j) {
 							String dicomFileName = (String)(paths.get(j));
 							if (dicomFileName != null) {
 								try {
-//System.err.println("NetworkSendCurrentSelectionActionListener.actionPerformed(): dicomFileName="+dicomFileName);
-System.err.println("Send: "+dicomFileName);
+									slf4jlogger.debug("NetworkSendCurrentSelectionActionListener.actionPerformed(): dicomFileName={}",dicomFileName);
+									slf4jlogger.info("Send: {}",dicomFileName);
 									File file = FileUtilities.getFileFromNameInsensitiveToCaseIfNecessary(dicomFileName);
 									sendDicomFileOverDicomNetwork(file.getAbsolutePath(),ae,hostname,port,calledAETitle,callingAETitle,
+										ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,
 										affectedSOPClass,affectedSOPInstance);
 								} catch (Exception e) {
-									e.printStackTrace(System.err);
+									slf4jlogger.error("",e);
 								}
 							}
 						}
 					}
 					catch (Exception e) {		// if an AE's property has no value
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				// else user cancelled operation in JOptionPane.showInputDialog() so gracefully do nothing
@@ -1871,7 +2041,7 @@ System.err.println("Send: "+dicomFileName);
 					new XMLRepresentationOfDicomObjectFactory().createDocumentAndWriteIt(list,new BufferedOutputStream(new FileOutputStream(xmlFileName)));
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1899,7 +2069,7 @@ System.err.println("Send: "+dicomFileName);
 					new XMLRepresentationOfStructuredReportObjectFactory().createDocumentAndWriteIt(list,new BufferedOutputStream(new FileOutputStream(xmlFileName)));
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1937,7 +2107,7 @@ System.err.println("Send: "+dicomFileName);
 				outputDialog.setVisible(true);
 
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1975,7 +2145,7 @@ System.err.println("Send: "+dicomFileName);
 				outputDialog.setVisible(true);
 					
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done.                                                   "));
 			cursorChanger.restoreCursor();
@@ -1994,17 +2164,17 @@ System.err.println("Send: "+dicomFileName);
 		 * @param	dicomFileName
 		 * @param	transferSyntax
 		 * @param	callingAETitle
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String dicomFileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
-//System.err.println("DicomImageViewer.OurReceivedObjectHandler.sendReceivedObjectIndication() dicomFileName: "+dicomFileName);
+			slf4jlogger.debug("OurReceivedObjectHandler.sendReceivedObjectIndication() dicomFileName: {}",dicomFileName);
 			if (dicomFileName != null) {
-System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+transferSyntax);
+				slf4jlogger.info("Received: {} from {} in {}",dicomFileName,callingAETitle,transferSyntax);
 				try {
-//long startTime = System.currentTimeMillis();
+					long startTime = System.currentTimeMillis();
 					// no need for case insensitive check here ... was locally created
 					FileInputStream fis = new FileInputStream(dicomFileName);
 					DicomInputStream i = new DicomInputStream(new BufferedInputStream(fis));
@@ -2012,13 +2182,14 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 					list.read(i,TagFromName.PixelData);
 					i.close();
 					fis.close();
-//long afterReadTime = System.currentTimeMillis();
-//System.err.println("Received: time to read list "+(afterReadTime-startTime)+" ms");
+					long afterReadTime = System.currentTimeMillis();
+					slf4jlogger.debug("Received: time to read list {} ms",(afterReadTime-startTime));
 					databaseInformationModel.insertObject(list,dicomFileName,DatabaseInformationModel.FILE_COPIED);
-//long afterInsertTime = System.currentTimeMillis();
-//System.err.println("Received: time to insert in database "+(afterInsertTime-afterReadTime)+" ms");
+					long afterInsertTime = System.currentTimeMillis();
+					slf4jlogger.debug("Received: time to insert in database {} ms",(afterInsertTime-afterReadTime));
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to insert {} received from {} in {} into database",dicomFileName,callingAETitle,transferSyntax);
+					slf4jlogger.error("",e);
 				}
 			}
 
@@ -2042,18 +2213,18 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		 * @param	event
 		 */
 		public void actionPerformed(ActionEvent event) {
-//System.err.println("SortAttributesActionListener.SortAttributesActionListener.actionPerformed()");
+			slf4jlogger.debug("SortAttributesActionListener.SortAttributesActionListener.actionPerformed()");
 			String choice = attributeTreeSortOrderButtons.getSelection().getActionCommand();
-//System.err.println("SortAttributesActionListener.SortAttributesActionListener.actionPerformed(): choice="+choice);
+			slf4jlogger.debug("SortAttributesActionListener.SortAttributesActionListener.actionPerformed(): choice={}",choice);
 			AttributeTreeBrowser.setSortByName(attributeTreeScrollPane,choice != null && choice.equals(ByName));
 
 		}
 	}
 		
 	public void osxFileHandler(String fileName) {
-//System.err.println("DicomImageViewer.osxFileHandler(): fileName = "+fileName);
+		slf4jlogger.debug("osxFileHandler(): fileName = {}",fileName);
 		lastDirectoryPath = new File(fileName).getParent();		// needed, since otherwise can't load children inside DICOMDIR
-//System.err.println("DicomImageViewer.osxFileHandler(): setting lastDirectoryPath = "+lastDirectoryPath);
+		slf4jlogger.debug("osxFileHandler(): setting lastDirectoryPath = {}",lastDirectoryPath);
 		loadDicomFileOrDirectory(fileName);
 	}
 
@@ -2063,7 +2234,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 	// See OSXAdapter.java to see how this is done without directly referencing any Apple APIs
 	public void registerForMacOSXEvents() {
 		if (System.getProperty("os.name").toLowerCase(java.util.Locale.US).startsWith("mac os x")) {
-//System.err.println("DicomImageViewer.registerForMacOSXEvents(): on MacOSX");
+			slf4jlogger.debug("registerForMacOSXEvents(): on MacOSX");
 			try {
 				// Generate and register the OSXAdapter, passing it a hash of all the methods we wish to
 				// use as delegates for various com.apple.eawt.ApplicationListener methods
@@ -2073,7 +2244,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 				OSXAdapter.setFileHandler(this, getClass().getDeclaredMethod("osxFileHandler", new Class[] { String.class }));
 			} catch (NoSuchMethodException e) {
 				// trap it, since we don't want to fail just because we cannot register events
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -2085,8 +2256,8 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 	private void doCommonConstructorStuff(String title,String dicomFileName) {
 		registerForMacOSXEvents();
 		
-//Font defaultFont=new JLabel().getFont();
-//System.err.println("defaultFont="+defaultFont);
+		Font defaultFont=new JLabel().getFont();
+		slf4jlogger.debug("defaultFont={}",defaultFont);
 //{
 //Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 //for (int i=0; i<fonts.length; ++i) System.err.println("font "+fonts[i]);
@@ -2120,7 +2291,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		}
 		
 		Properties properties = getProperties();
-//System.err.println("properties="+properties);
+		slf4jlogger.debug("properties={}",properties);
 
 		databaseApplicationProperties = new DatabaseApplicationProperties(properties);
 		
@@ -2133,22 +2304,22 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 			try {
 				savedImagesFolder = databaseApplicationProperties.getSavedImagesFolderCreatingItIfNecessary();
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 
 			// Start up database ...
 		
-//System.err.println("Starting up database ...");
+			slf4jlogger.debug("Starting up database ...");
 			databaseInformationModel=null;
 			try {
 				databaseInformationModel = new PatientStudySeriesConcatenationInstanceModel(makePathToFileInUsersHomeDirectory(databaseApplicationProperties.getDatabaseFileName()),databaseApplicationProperties.getDatabaseServerName());
 				//databaseInformationModel = new StudySeriesInstanceModel(makePathToFileInUsersHomeDirectory(dataBaseFileName));
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		
-//System.err.println("Starting up network configuration information sources ...");
+		slf4jlogger.debug("Starting up network configuration information sources ...");
 		try {
 			networkApplicationProperties = new NetworkApplicationProperties(properties,true/*addPublicStorageSCPsIfNoRemoteAEsConfigured*/);
 		}
@@ -2159,28 +2330,28 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 			NetworkApplicationInformationFederated federatedNetworkApplicationInformation = new NetworkApplicationInformationFederated();
 			federatedNetworkApplicationInformation.startupAllKnownSourcesAndRegister(networkApplicationProperties);
 			networkApplicationInformation = federatedNetworkApplicationInformation;
-//System.err.println("networkApplicationInformation ...\n"+networkApplicationInformation);
+			slf4jlogger.debug("networkApplicationInformation ...\n{}",networkApplicationInformation);
 		}
 		
 		// Start up DICOM association listener in background for receiving images and responding to echoes ...
-//System.err.println("Starting up DICOM association listener ...");
+		slf4jlogger.debug("Starting up DICOM association listener ...");
 		if (networkApplicationProperties != null) { 
 			try {
 				int port = networkApplicationProperties.getListeningPort();
 				String calledAETitle = networkApplicationProperties.getCalledAETitle();
-				int storageSCPDebugLevel = networkApplicationProperties.getStorageSCPDebugLevel();
-				int queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
-				new Thread(new StorageSOPClassSCPDispatcher(port,calledAETitle,savedImagesFolder,storedFilePathStrategy,new OurReceivedObjectHandler(),
-					databaseInformationModel == null ? null : databaseInformationModel.getQueryResponseGeneratorFactory(queryDebugLevel),
-					databaseInformationModel == null ? null : databaseInformationModel.getRetrieveResponseGeneratorFactory(queryDebugLevel),
+				new Thread(new StorageSOPClassSCPDispatcher(port,calledAETitle,
+					networkApplicationProperties.getAcceptorMaximumLengthReceived(),networkApplicationProperties.getAcceptorSocketReceiveBufferSize(),networkApplicationProperties.getAcceptorSocketSendBufferSize(),
+					savedImagesFolder,storedFilePathStrategy,new OurReceivedObjectHandler(),
+					databaseInformationModel == null ? null : databaseInformationModel.getQueryResponseGeneratorFactory(),
+					databaseInformationModel == null ? null : databaseInformationModel.getRetrieveResponseGeneratorFactory(),
 					networkApplicationInformation,
 					//new UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy(),
 					//new AnyExplicitStoreFindMoveGetPresentationContextSelectionPolicy(),
-					false/*secureTransport*/,
-					storageSCPDebugLevel)).start();
+					false/*secureTransport*/
+					)).start();
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 
@@ -2189,7 +2360,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		// ShutdownHook will run regardless of whether Command-Q (on Mac) or window closed ...
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
-//System.err.println("DicomImageViewer.ShutdownHook.run()");
+				slf4jlogger.debug("ShutdownHook.run()");
 				if (databaseInformationModel != null) {		// may have failed to be initialized for some reason
 					databaseInformationModel.close();	// we want to shut it down and compact it before exiting
 				}
@@ -2200,7 +2371,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 			}
 		});
 
-//System.err.println("Building GUI ...");
+		slf4jlogger.debug("Building GUI ...");
 
 		cursorChanger = new SafeCursorChanger(this);
 		
@@ -2276,7 +2447,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 			displayControlsPanel.add(displayControlsSubPanel,BorderLayout.CENTER);
 			displayControlsSubPanel.setLayout(new BorderLayout());
 
-			SourceImageSortOrderPanel displaySortPanel = new SourceImageSortOrderPanel(WellKnownContext.MAINPANEL);
+			displaySortPanel = new SourceImageSortOrderPanel(WellKnownContext.MAINPANEL);
 			displayControlsSubPanel.add(displaySortPanel,BorderLayout.NORTH);
 
 			{
@@ -2341,7 +2512,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		spectroscopyValidateButton.setToolTipText("Validate displayed spectra against standard IOD");
 		spectroscopyButtonsPanel.add(spectroscopyValidateButton);
 		
-		SourceSpectrumSortOrderPanel spectroscopySortPanel = new SourceSpectrumSortOrderPanel(WellKnownContext.MAINPANEL);
+		spectroscopySortPanel = new SourceSpectrumSortOrderPanel(WellKnownContext.MAINPANEL);
 		spectroscopyControlsPanel.add(spectroscopySortPanel,BorderLayout.CENTER);
 		
 		{
@@ -2502,6 +2673,80 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		structuredReportTreeScrollPane=new JScrollPane();
 		structuredReportTreeControlsPanel.add(structuredReportTreeScrollPane,BorderLayout.CENTER);
 		
+		tiledDisplayControlsPanel = new JPanel();
+		//tiledDisplayControlsPanel.setLayout(new GridLayout(3,1));
+		tiledDisplayControlsPanel.setLayout(new BorderLayout());
+		JPanel tiledDisplayButtonsPanel = new JPanel();
+		//tiledDisplayControlsPanel.add(tiledDisplayButtonsPanel);
+		tiledDisplayControlsPanel.add(tiledDisplayButtonsPanel,BorderLayout.NORTH);
+		tiledDisplayButtonsPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		//tiledDisplayControlsPanel.setBorder(emptyBorder);
+		JButton tiledDisplayFileButton = new JButton("File...");
+		tiledDisplayFileButton.setToolTipText("Choose a DICOM image or spectroscopy file to display or DICOMDIR file to browse");
+		tiledDisplayButtonsPanel.add(tiledDisplayFileButton);
+		JButton tiledDisplayImportButton = new JButton("Import");
+		tiledDisplayImportButton.setToolTipText("Import a copy of displayed image into the local database");
+		tiledDisplayButtonsPanel.add(tiledDisplayImportButton);
+		JButton tiledDisplaySendButton = new JButton("Send...");
+		tiledDisplaySendButton.setToolTipText("Send displayed image via DICOM network");
+		tiledDisplayButtonsPanel.add(tiledDisplaySendButton);
+		JButton tiledDisplayXMLButton = new JButton("XML...");
+		tiledDisplayXMLButton.setToolTipText("Save displayed image attributes to XML file");
+		tiledDisplayButtonsPanel.add(tiledDisplayXMLButton);
+		JButton tiledDisplayValidateButton = new JButton("Validate...");
+		tiledDisplayValidateButton.setToolTipText("Validate displayed image against standard IOD");
+		tiledDisplayButtonsPanel.add(tiledDisplayValidateButton);
+		
+		{
+			JPanel tiledDisplayControlsSubPanel = new JPanel();
+			tiledDisplayControlsPanel.add(tiledDisplayControlsSubPanel,BorderLayout.CENTER);
+			tiledDisplayControlsSubPanel.setLayout(new BorderLayout());
+
+			tiledDisplaySortPanel = new TiledSourceImageSortOrderPanel(WellKnownContext.MAINPANEL);
+			tiledDisplayControlsSubPanel.add(tiledDisplaySortPanel,BorderLayout.NORTH);
+
+			{
+				JPanel tiledDisplayControlsSubSubPanel = new JPanel();
+				tiledDisplayControlsSubSubPanel.setLayout(new GridLayout(5,1));
+				tiledDisplayControlsSubPanel.add(tiledDisplayControlsSubSubPanel,BorderLayout.SOUTH);
+
+				//sourceImageVOILUTSelectorPanel = new SourceImageVOILUTSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
+				//tiledDisplayControlsSubSubPanel.add(sourceImageVOILUTSelectorPanel);
+		
+				//sourceImageWindowLinearCalculationSelectorPanel = new SourceImageWindowLinearCalculationSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
+				//tiledDisplayControlsSubSubPanel.add(sourceImageWindowLinearCalculationSelectorPanel);
+		
+				//sourceImageWindowingAccelerationSelectorPanel = new SourceImageWindowingAccelerationSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
+				//tiledDisplayControlsSubSubPanel.add(sourceImageWindowingAccelerationSelectorPanel);
+		
+				//sourceImageGraphicDisplaySelectorPanel = new SourceImageGraphicDisplaySelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
+				//tiledDisplayControlsSubSubPanel.add(sourceImageGraphicDisplaySelectorPanel);
+		
+				//sourceImageShutterSelectorPanel = new SourceImageShutterSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
+				//tiledDisplayControlsSubSubPanel.add(sourceImageShutterSelectorPanel);
+			}
+		}
+		
+		// Commented out, since not yet set up to do anything sensible, and referenceImagePanelForTiledImages not implemented yet
+		// Will need to use new referenceImagePanelForTiledImages and NOT referenceImagePanelForImages, else breaks non-tiled image use of referenceImagePanelForImages (001209)
+		//{
+		//	JPanel referenceSubPanel = new JPanel(new BorderLayout());
+		//	tiledDisplayControlsPanel.add(referenceSubPanel,BorderLayout.SOUTH);
+		//
+		//	JPanel referenceImageSubPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));		// nest these to make image centered and not fill width with black
+		//	referenceSubPanel.add(referenceImageSubPanel,BorderLayout.CENTER);
+		//	referenceImageSubPanel.add(referenceImagePanelForTiledImages);
+		//
+		//	displayListOfPossibleReferenceImagesForTiledImages = new JList();
+		//	displayListOfPossibleReferenceImagesForTiledImages.setVisibleRowCount(4);	// need enough height for vertical scroll bar to show, including if horizontal scroll activates
+		//	JScrollPane scrollingDisplayListOfPossibleReferenceImages = new JScrollPane(displayListOfPossibleReferenceImagesForTiledImages);
+		//
+		//	referenceSubPanel.add(scrollingDisplayListOfPossibleReferenceImages,BorderLayout.NORTH);
+		//
+		//	displayListOfPossibleReferenceImagesForTiledImages.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		//	displayListOfPossibleReferenceImagesForTiledImages.addListSelectionListener(new OurReferenceListSelectionListener(referenceImagePanelForTiledImages,false));
+		//}
+		
 		browserPane = new JTabbedPane();
 		//browserPane.setBorder(emptyBorder);
 		//browserPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);	// this is (effectively) what recent Mac JREs do, though they also select new tabs (unlike Windows and Metal)
@@ -2514,6 +2759,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		browserPane.addTab("Spectra", spectroscopyControlsPanel);
 		browserPane.addTab("Attributes",attributeTreeControlsPanel);
 		browserPane.addTab("Frames", attributeFrameTableScrollPane);
+		browserPane.addTab("Tiles", tiledDisplayControlsPanel);
 
 		int tabNumberOfRemoteInBrowserPane = browserPane.indexOfComponent(queryControlsPanel);
 
@@ -2525,10 +2771,12 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		browserPane.setToolTipTextAt(browserPane.indexOfComponent(attributeTreeControlsPanel),"Tree of attributes and values for currently displayed image");
 		browserPane.setToolTipTextAt(browserPane.indexOfComponent(attributeFrameTableScrollPane),"Table of all per-frame varying attributes for this object");
 		browserPane.setToolTipTextAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),"Tree of current structured report content");
+		browserPane.setToolTipTextAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),"Controls for the currently displayed tiled image");
 
 		browserPane.setEnabledAt(browserPane.indexOfComponent(displayControlsPanel),false);
 		browserPane.setEnabledAt(browserPane.indexOfComponent(spectroscopyControlsPanel),false);
 		browserPane.setEnabledAt(browserPane.indexOfComponent(structuredReportTreeControlsPanel),false);
+		browserPane.setEnabledAt(browserPane.indexOfComponent(tiledDisplayControlsPanel),false);
 
 		browserPane.addChangeListener(new ChangeListener() {
 				// This method is called whenever the selected tab changes
@@ -2536,13 +2784,13 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 				JTabbedPane pane = (JTabbedPane)evt.getSource();
 				// Get current tab
 				int sel = pane.getSelectedIndex();
-//System.err.println("browserPane.ChangeListener(): selection "+sel);
+				slf4jlogger.debug("browserPane.ChangeListener(): selection {}",sel);
 				if (sel == browserPane.indexOfComponent(databaseControlsPanel)) {
 					try {
 						new OurDatabaseTreeBrowser();
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			}
@@ -2555,7 +2803,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		
 		JLabel statusBar = getStatusBar();
 
-//System.err.println("Loading DICOM file or chooser ...");
+		slf4jlogger.debug("Loading DICOM file or chooser ...");
 		if (dicomFileName == null) {
 			lastDirectoryPath = null;
 		}
@@ -2573,7 +2821,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		}
 
 		// Add action listeners for various buttons now that all the various display components are available for them to remember ..
-//System.err.println("Building action listeners ...");
+		slf4jlogger.debug("Building action listeners ...");
 		DicomFileOrDirectoryLoadActionListener dicomFileOrDirectoryLoadActionListener = 
 			new DicomFileOrDirectoryLoadActionListener(multiPanel,
 				referenceImagePanelForImages,
@@ -2583,12 +2831,14 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		displayFileButton.addActionListener(dicomFileOrDirectoryLoadActionListener);
 		spectroscopyFileButton.addActionListener(dicomFileOrDirectoryLoadActionListener);
 		structuredReportTreeFileButton.addActionListener(dicomFileOrDirectoryLoadActionListener);
+		tiledDisplayFileButton.addActionListener(dicomFileOrDirectoryLoadActionListener);
 		
 		ImportCurrentlyDisplayedInstanceToDatabaseActionListener importCurrentlyDisplayedInstanceToDatabaseActionListener = new ImportCurrentlyDisplayedInstanceToDatabaseActionListener();
 			
 		displayImportButton.addActionListener(importCurrentlyDisplayedInstanceToDatabaseActionListener);
 		spectroscopyImportButton.addActionListener(importCurrentlyDisplayedInstanceToDatabaseActionListener);
 		structuredReportTreeImportButton.addActionListener(importCurrentlyDisplayedInstanceToDatabaseActionListener);
+		tiledDisplayImportButton.addActionListener(importCurrentlyDisplayedInstanceToDatabaseActionListener);
 
 		dicomdirImportButton.addActionListener(new ImportFromSelectionToDatabaseActionListener());
 
@@ -2613,22 +2863,25 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		displaySendButton.addActionListener(dicomFileOrDirectoryOrDatabaseSendActionListener);
 		spectroscopySendButton.addActionListener(dicomFileOrDirectoryOrDatabaseSendActionListener);
 		structuredReportTreeSendButton.addActionListener(dicomFileOrDirectoryOrDatabaseSendActionListener);
+		tiledDisplaySendButton.addActionListener(dicomFileOrDirectoryOrDatabaseSendActionListener);
 		databaseSendButton.addActionListener(dicomFileOrDirectoryOrDatabaseSendActionListener);
 		
 		SaveCurrentlyDisplayedImageToXMLActionListener saveCurrentlyDisplayedImageToXMLActionListener = 
 			new SaveCurrentlyDisplayedImageToXMLActionListener();
 		displayXMLButton.addActionListener(saveCurrentlyDisplayedImageToXMLActionListener);
 		spectroscopyXMLButton.addActionListener(saveCurrentlyDisplayedImageToXMLActionListener);
+		tiledDisplayXMLButton.addActionListener(saveCurrentlyDisplayedImageToXMLActionListener);
 		
 		SaveCurrentlyDisplayedStructuredReportToXMLActionListener saveCurrentlyDisplayedStructuredReportToXMLActionListener = 
 			new SaveCurrentlyDisplayedStructuredReportToXMLActionListener();
 		structuredReportTreeXMLButton.addActionListener(saveCurrentlyDisplayedStructuredReportToXMLActionListener);
 		
-//System.err.println("Building ValidateCurrentlyDisplayedImageActionListener ...");
+		slf4jlogger.debug("Building ValidateCurrentlyDisplayedImageActionListener ...");
 		ValidateCurrentlyDisplayedImageActionListener validateCurrentlyDisplayedImageActionListener = 
 			new ValidateCurrentlyDisplayedImageActionListener();
 		displayValidateButton.addActionListener(validateCurrentlyDisplayedImageActionListener);
 		spectroscopyValidateButton.addActionListener(validateCurrentlyDisplayedImageActionListener);
+		tiledDisplayValidateButton.addActionListener(validateCurrentlyDisplayedImageActionListener);
 		
 		ValidateCurrentlyDisplayedStructuredReportActionListener validateCurrentlyDisplayedStructuredReportActionListener = 
 			new ValidateCurrentlyDisplayedStructuredReportActionListener();
@@ -2680,7 +2933,7 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 		setUndecorated(isFullScreen);
 		setResizable(!isFullScreen);
 		if (isFullScreen) {
-//System.err.println("Full screen ...");
+			slf4jlogger.debug("Full screen ...");
 			devices[0].setFullScreenWindow(this);
 			validate();
 		}
@@ -2727,12 +2980,15 @@ System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+tra
 	/**
 	 * <p>The method to invoke the application.</p>
 	 *
-	 * @param	arg	optionally, a single file which may be a DICOM object or DICOMDIR; if absent a file dialog is presented
+	 * @param	arg	optionally, a single file which may be a DICOM object or DICOMDIR
 	 */
 	public static void main(String arg[]) {
 		String dicomFileName = null;
 		if (arg.length == 1) {
-			dicomFileName=arg[0];
+			dicomFileName=arg[0].trim();
+			if (dicomFileName.length() == 0) {
+				dicomFileName = null;
+			}
 		}
 		
 		if (System.getProperty("mrj.version") != null) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.convert;
 
@@ -13,9 +13,18 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
+/**
+ * <p>A class for extracting NIfTI-1 image input format headers.</p>
+ *
+ * @author	dclunie
+ */
 public class NIfTI1Header {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/NIfTI1Header.java,v 1.4 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/NIfTI1Header.java,v 1.16 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NIfTI1Header.class);
 	
 	public static final int FIXED_HEADER_LENGTH = 348;
 	public static final int MAGIC_OFFSET = FIXED_HEADER_LENGTH - 4;
@@ -271,6 +280,26 @@ public class NIfTI1Header {
 	public float[] srow_z = new float[4];
 	public byte[] intent_name = new byte[16];
 	public byte[] magic = new byte[4];
+	
+	public static boolean isNIfTI1SingleFileMagicNumber(byte[] bytes,int offset) {
+		return bytes[offset] == 0x6E /*'n'*/ && bytes[offset+1] == 0x2B /*'+'*/  && bytes[offset+2] == 0x31 /*'1'*/ && bytes[offset+3] == 0x00;
+	}
+
+	public static boolean isNIfTI1DualFileMagicNumber(byte[] bytes,int offset) {
+		return bytes[offset] == 0x6E /*'n'*/ && bytes[offset+1] == 0x69 /*'i'*/  && bytes[offset+2] == 0x31 /*'1'*/ && bytes[offset+3] == 0x00;
+	}
+	
+	public boolean isNIfTI1SingleFileMagicNumber() {
+		return isNIfTI1SingleFileMagicNumber(bytes,MAGIC_OFFSET);
+	}
+	
+	public boolean isNIfTI1DualFileMagicNumber() {
+		return isNIfTI1DualFileMagicNumber(bytes,MAGIC_OFFSET);
+	}
+	
+	public static File getImageDataFile(File headerFile) {
+		return new File(headerFile.getParent(),headerFile.getName().replaceFirst("[.][^.]*$",".img"));
+	}
 
 	public NIfTI1Header(File inputFile) throws IOException, NIfTI1Exception {
 		BinaryInputStream fhin = new BinaryInputStream(inputFile,false/*assume little endian to start*/);
@@ -279,7 +308,8 @@ public class NIfTI1Header {
 		fhin.close();
 //System.err.println("Entire header = "+com.pixelmed.utils.HexDump.dump(bytes));
 //System.err.println("Magic number = "+com.pixelmed.utils.HexDump.dump(bytes,MAGIC_OFFSET,4));
-		if (bytes[MAGIC_OFFSET] == 0x6E /*'n'*/ && bytes[MAGIC_OFFSET+1] == 0x2B /*'+'*/  && bytes[MAGIC_OFFSET+2] == 0x31 /*'1'*/ && bytes[MAGIC_OFFSET+3] == 0x00) {
+		if (isNIfTI1SingleFileMagicNumber()
+		 || isNIfTI1DualFileMagicNumber()) {
 			BinaryInputStream hin = new BinaryInputStream(new ByteArrayInputStream(bytes),false/*assume little endian to start*/);
 			hin.mark(4);
 			// one is theoretically supposed to use dim[0] to determine byte order, but no reason not to use the earlier sizeof_hdr
@@ -292,52 +322,52 @@ public class NIfTI1Header {
 					throw new NIfTI1Exception("Cannot determine NIfTI-1 endianness from sizeof_hdr byte order since does not match required size");
 				}
 				bigEndian = true;
-System.err.println("Is BigEndian");
+				slf4jlogger.info("Is BigEndian");
 			}
 			else {
 				bigEndian = false;
-System.err.println("Is LittleEndian");
+				slf4jlogger.info("Is LittleEndian");
 			}
-System.err.println("Have NIfTI-1 header");
+			slf4jlogger.info("Have NIfTI-1 header");
 			
 			hin.skip(35);
 			dim_info = (byte)hin.readUnsigned8();
-System.err.println("dim_info = "+((int)dim_info&0xff));
+			slf4jlogger.info("dim_info = {}",((int)dim_info&0xff));
 			for (int i=0; i<dim.length; ++i) {
 				dim[i] = (short)hin.readUnsigned16();
-System.err.println("dim["+i+"] = "+dim[i]);
+				slf4jlogger.info("dim{} = {}",i,dim[i]);
 			}
 			intent_p1 = hin.readFloat();
-System.err.println("intent_p1 = "+intent_p1);
+			slf4jlogger.info("intent_p1 = {}",intent_p1);
 			intent_p2 = hin.readFloat();
-System.err.println("intent_p2 = "+intent_p2);
+			slf4jlogger.info("intent_p2 = {}",intent_p2);
 			intent_p3 = hin.readFloat();
-System.err.println("intent_p3 = "+intent_p3);
+			slf4jlogger.info("intent_p3 = {}",intent_p3);
 			intent_code = (short)hin.readUnsigned16();
 			intent = Intent.getIntent(intent_code);
-System.err.println("intent = "+((int)intent_code&0xffff)+" "+intent);
+			slf4jlogger.info("intent = {} {}",((int)intent_code&0xffff),intent);
 			datatype_code = (short)hin.readUnsigned16();
 			datatype = DataType.getDataType(datatype_code);
-System.err.println("datatype = "+((int)datatype_code&0xffff)+" "+datatype);
+			slf4jlogger.info("datatype = {} {}",((int)datatype_code&0xffff),datatype);
 			bitpix = (short)hin.readUnsigned16();
-System.err.println("bitpix = "+((int)bitpix&0xffff));
+			slf4jlogger.info("bitpix = {}",((int)bitpix&0xffff));
 			slice_start = (short)hin.readUnsigned16();
-System.err.println("slice_start = "+((int)slice_start&0xffff));
+			slf4jlogger.info("slice_start = {}",((int)slice_start&0xffff));
 			for (int i=0; i<pixdim.length; ++i) {
 				pixdim[i] = hin.readFloat();
-System.err.println("pixdim["+i+"] = "+pixdim[i]);
+				slf4jlogger.info("pixdim[{}] = {}",i,pixdim[i]);
 			}
 			vox_offset = hin.readFloat();
-System.err.println("vox_offset = "+vox_offset);
+			slf4jlogger.info("vox_offset = {}",vox_offset);
 			scl_slope = hin.readFloat();
-System.err.println("scl_slope = "+scl_slope);
+			slf4jlogger.info("scl_slope = {}",scl_slope);
 			scl_inter = hin.readFloat();
-System.err.println("scl_inter = "+scl_inter);
+			slf4jlogger.info("scl_inter = {}",scl_inter);
 			slice_end = (short)hin.readUnsigned16();
-System.err.println("slice_end = "+((int)slice_end&0xffff));
+			slf4jlogger.info("slice_end = {}",((int)slice_end&0xffff));
 			slice_code = (byte)hin.readUnsigned8();
 			slice_order = SliceOrder.getSliceOrder(slice_code);
-System.err.println("slice_code = "+((int)slice_code&0xff)+" "+slice_order);
+			slf4jlogger.info("slice_code = {} {}",((int)slice_code&0xff),slice_order);
 
 			// From nifti1.h ...
 			//	Bits 0..2 of xyzt_units specify the units of pixdim[1..3]
@@ -349,59 +379,59 @@ System.err.println("slice_code = "+((int)slice_code&0xff)+" "+slice_order);
 			xyzt_units_code_temporal = (byte)(xyzt_units_code & 0x1c);
 			xyzt_units_spatial  = Units.getUnits(xyzt_units_code_spatial);
 			xyzt_units_temporal = Units.getUnits(xyzt_units_code_temporal);
-System.err.println("xyzt_units_code = " +((int)xyzt_units_code&0xff));
-System.err.println("xyzt_units_spatial = " +((int)xyzt_units_code_spatial &0xff)+" "+xyzt_units_spatial);
-System.err.println("xyzt_units_temporal = "+((int)xyzt_units_code_temporal&0xff)+" "+xyzt_units_temporal);
+			slf4jlogger.info("xyzt_units_code = {}",((int)xyzt_units_code&0xff));
+			slf4jlogger.info("xyzt_units_spatial = {} {}",((int)xyzt_units_code_spatial&0xff),xyzt_units_spatial);
+			slf4jlogger.info("xyzt_units_temporal = {} {}",((int)xyzt_units_code_temporal&0xff),xyzt_units_temporal);
 
 			cal_max = hin.readFloat();
-System.err.println("cal_max = "+cal_max);
+			slf4jlogger.info("cal_max = {}",cal_max);
 			cal_min = hin.readFloat();
-System.err.println("cal_min = "+cal_min);
+			slf4jlogger.info("cal_min = {}",cal_min);
 			slice_duration = hin.readFloat();
-System.err.println("slice_duration = "+slice_duration);
+			slf4jlogger.info("slice_duration = {}",slice_duration);
 			toffset = hin.readFloat();
-System.err.println("toffset = "+toffset);
+			slf4jlogger.info("toffset = {}",toffset);
 	
 			hin.skip(8);
 			
 			hin.readInsistently(description,0,description.length);
-System.err.println("description = "+new String(description,Charset.forName("US-ASCII")));
+			slf4jlogger.info("description = {}",new String(description,Charset.forName("US-ASCII")));
 			hin.readInsistently(aux_file,0,aux_file.length);
-System.err.println("aux_file = "+new String(aux_file,Charset.forName("US-ASCII")));
+			slf4jlogger.info("aux_file = {}",new String(aux_file,Charset.forName("US-ASCII")));
 			qform_code = (short)hin.readUnsigned16();
 			qform = CoordinateTransform.getCoordinateTransform(qform_code);
-System.err.println("qform = "+((int)qform_code&0xffff)+" "+qform);
+			slf4jlogger.info("qform = {} {}",((int)qform_code&0xffff),qform);
 			sform_code = (short)hin.readUnsigned16();
 			sform = CoordinateTransform.getCoordinateTransform(sform_code);
-System.err.println("sform = "+((int)sform_code&0xffff)+" "+sform);
+			slf4jlogger.info("sform = {} {}",((int)sform_code&0xffff),sform);
 			quatern_b = hin.readFloat();
-System.err.println("quatern_b = "+quatern_b);
+			slf4jlogger.info("quatern_b = {}",quatern_b);
 			quatern_c = hin.readFloat();
-System.err.println("quatern_c = "+quatern_c);
+			slf4jlogger.info("quatern_c = {}",quatern_c);
 			quatern_d = hin.readFloat();
-System.err.println("quatern_d = "+quatern_d);
+			slf4jlogger.info("quatern_d = {}",quatern_d);
 			qoffset_x = hin.readFloat();
-System.err.println("qoffset_x = "+qoffset_x);
+			slf4jlogger.info("qoffset_x = {}",qoffset_x);
 			qoffset_y = hin.readFloat();
-System.err.println("qoffset_y = "+qoffset_y);
+			slf4jlogger.info("qoffset_y = {}",qoffset_y);
 			qoffset_z = hin.readFloat();
-System.err.println("qoffset_z = "+qoffset_z);
+			slf4jlogger.info("qoffset_z = {}",qoffset_z);
 			for (int i=0; i<srow_x.length; ++i) {
 				srow_x[i] = hin.readFloat();
-System.err.println("srow_x["+i+"] = "+srow_x[i]);
+				slf4jlogger.info("srow_x[{}] = {}",i,srow_x[i]);
 			}
 			for (int i=0; i<srow_y.length; ++i) {
 				srow_y[i] = hin.readFloat();
-System.err.println("srow_y["+i+"] = "+srow_y[i]);
+				slf4jlogger.info("srow_y[{}] = {}",i,srow_y[i]);
 			}
 			for (int i=0; i<srow_z.length; ++i) {
 				srow_z[i] = hin.readFloat();
-System.err.println("srow_z["+i+"] = "+srow_z[i]);
+				slf4jlogger.info("srow_z[{}] = {}",i,srow_z[i]);
 			}
 			hin.readInsistently(intent_name,0,intent_name.length);
-System.err.println("intent_name = "+new String(intent_name,Charset.forName("US-ASCII")));
+			slf4jlogger.info("intent_name = {}",new String(intent_name,Charset.forName("US-ASCII")));
 			hin.readInsistently(magic,0,magic.length);
-System.err.println("magic = "+new String(magic,Charset.forName("US-ASCII")));
+			slf4jlogger.info("magic = {}",new String(magic,Charset.forName("US-ASCII")));
 
 		}
 		else {
@@ -426,7 +456,7 @@ System.err.println("magic = "+new String(magic,Charset.forName("US-ASCII")));
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

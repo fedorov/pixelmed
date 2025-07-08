@@ -1,26 +1,37 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
 /**
- * <p>This class represents a concept that has a coded representation.</p>
+ * <p>This class represents a concept that is uniquely identifiable.</p>
  * 
  * @author	dclunie
  */
 public class Concept {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/Concept.java,v 1.3 2013/01/02 00:35:14 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/Concept.java,v 1.14 2025/01/29 10:58:05 dclunie Exp $";
 	
-	protected String conceptUniqueIdentifier;		// usually a UMLS CUID
+	protected String conceptUniqueIdentifier;		// usually a UMLS CUI
 	
 	public String getConceptUniqueIdentifier() { return conceptUniqueIdentifier; }
 	
+	/**
+	 * <p>Create a concept.</p>
+	 *
+	 * @param	conceptUniqueIdentifier			the unique identifier of the concept, usually a UMLS CUI; required to be unique within the scope of comparisons using {@link #equals(Object) equals(Object)}
+	 */
 	public Concept(String conceptUniqueIdentifier) {
 		this.conceptUniqueIdentifier=conceptUniqueIdentifier;
 	}
 	
 	protected Concept() {};
 	
+	/**
+	 * <p>Indicates whether some other object is "equal to" this one.</p>
+	 *
+	 * @param	o			the reference object with which to compare.
+	 * @return				true if the same object or different objects with equal values of conceptUniqueIdentifier
+	 */
 	public boolean equals(Object o) {
 		boolean areEqual = false;
 		if (this == o) {

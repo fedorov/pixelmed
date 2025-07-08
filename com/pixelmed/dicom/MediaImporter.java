@@ -1,6 +1,14 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
+
+import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.utils.MessageLogger;
+import com.pixelmed.utils.PrintStreamMessageLogger;		// used in main method for testing
+import com.pixelmed.utils.ThreadUtilities;
+import com.pixelmed.display.DialogMessageLogger;		// used in main method for testing
+import com.pixelmed.display.SafeFileChooser;
+import com.pixelmed.display.SafeProgressBarUpdaterThread;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,13 +25,8 @@ import java.awt.FileDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JProgressBar;
 
-import com.pixelmed.utils.FileUtilities;
-import com.pixelmed.utils.MessageLogger;
-import com.pixelmed.utils.PrintStreamMessageLogger;		// used in main method for testing
-import com.pixelmed.utils.ThreadUtilities;
-import com.pixelmed.display.DialogMessageLogger;		// used in main method for testing
-import com.pixelmed.display.SafeFileChooser;
-import com.pixelmed.display.SafeProgressBarUpdaterThread;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is designed to support the importation of DICOM files from
@@ -41,8 +44,9 @@ import com.pixelmed.display.SafeProgressBarUpdaterThread;
  * @author	dclunie
  */
 public class MediaImporter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MediaImporter.java,v 1.28 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MediaImporter.java,v 1.12 2013/01/20 19:47:20 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MediaImporter.class);		// cannot use normal name "logger" since already published as protected attribute for MessageLogger
 
 	protected String mediaDirectoryPath;
 	protected MessageLogger logger;
@@ -117,8 +121,8 @@ public class MediaImporter {
 	 * <p>Can only be invoked on the AWT Event Dispatch Thread.</p>
 	 *
 	 * @param		parent			the parent component of the dialog; can be <code>null</code>
-	 * @exception	IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
-	 * @exception	DicomException		thrown if the DICOMDIR file cannot be parsed
+	 * @throws		IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
+	 * @throws		DicomException		thrown if the DICOMDIR file cannot be parsed
 	 */
 	public void choosePathAndImportDicomFiles(Component parent) throws IOException, DicomException {
 		String pathName = null;
@@ -129,19 +133,19 @@ public class MediaImporter {
 		boolean useJFileChooser = true;
 
 		if (useJFileChooser) {
-System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using JFileChooser because not broken Java 7 on Mac OS X");
-//System.err.println("MediaImporter.choosePathAndImportDicomFiles(): about to construct JFileChooser");
+			slf4jlogger.info("choosePathAndImportDicomFiles(): using JFileChooser because not broken Java 7 on Mac OS X");
+			slf4jlogger.debug("choosePathAndImportDicomFiles(): about to construct JFileChooser");
 			SafeFileChooser chooser = new SafeFileChooser(mediaDirectoryPath);
 			chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-//System.err.println("MediaImporter.choosePathAndImportDicomFiles(): about to chooser.showOpenDialog");
+			slf4jlogger.debug("choosePathAndImportDicomFiles(): about to chooser.showOpenDialog");
 			if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
-//System.err.println("MediaImporter.choosePathAndImportDicomFiles(): back with APPROVE_OPTION");
+				slf4jlogger.debug("choosePathAndImportDicomFiles(): back with APPROVE_OPTION");
 				mediaDirectoryPath=chooser.getCurrentDirectory().getAbsolutePath();	// keep around for next time
 				pathName = chooser.getSelectedFile().getAbsolutePath();
 			}
 		}
 		else {
-System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDialog instead of JFileChooser because broken on Java 7 on Mac OS X");
+			slf4jlogger.info("choosePathAndImportDicomFiles(): using FileDialog instead of JFileChooser because broken on Java 7 on Mac OS X");
 			FileDialog chooser = new FileDialog(parent instanceof java.awt.Frame ? (java.awt.Frame)parent : null,"Import", FileDialog.LOAD);
 			System.setProperty("apple.awt.fileDialogForDirectories","true");
 			chooser.setDirectory(mediaDirectoryPath);
@@ -150,9 +154,10 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 			pathName = new File(mediaDirectoryPath,chooser.getFile()).getAbsolutePath();	// since getFile() returns relative path only
 			System.setProperty("apple.awt.fileDialogForDirectories","false");
 		}
-//System.err.println("MediaImporter.choosePathAndImportDicomFiles(): mediaDirectoryPath = "+mediaDirectoryPath);
-//System.err.println("MediaImporter.choosePathAndImportDicomFiles(): pathName = "+pathName);
+		slf4jlogger.debug("choosePathAndImportDicomFiles(): mediaDirectoryPath = {}",mediaDirectoryPath);
+		slf4jlogger.debug("choosePathAndImportDicomFiles(): pathName = {}",pathName);
 		if (pathName != null) {
+			slf4jlogger.debug("choosePathAndImportDicomFiles(): calling importDicomFiles()");
 			importDicomFiles(pathName);
 		}
 	}
@@ -166,8 +171,8 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 	 *
 	 * <p>Can only be invoked on the AWT Event Dispatch Thread.</p>
 	 *
-	 * @exception	IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
-	 * @exception	DicomException		thrown if the DICOMDIR file cannot be parsed
+	 * @throws		IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
+	 * @throws		DicomException		thrown if the DICOMDIR file cannot be parsed
 	 */
 	public void choosePathAndImportDicomFiles() throws IOException, DicomException {
 		choosePathAndImportDicomFiles(null);
@@ -176,19 +181,32 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 	/**
 	 * <p>Check for valid information, and that the file is not compressed or not a suitable storage object for import.</p>
 	 *
-	 * @param	sopClassUID
-	 * @param	transferSyntaxUID
+	 * @param	sopClassUID			the SOP Class UID of the file
+	 * @param	transferSyntaxUID	the Transfer Syntax UID of the file
+	 * @return						true if is suitable
 	 */
 	protected boolean isOKToImport(String sopClassUID,String transferSyntaxUID) {
-		return sopClassUID != null
+		slf4jlogger.debug("isOKToImport(): sopClassUID={}, transferSyntaxUID={}",sopClassUID,transferSyntaxUID);
+		boolean isOK = sopClassUID != null
 		    && (SOPClass.isImageStorage(sopClassUID) || (SOPClass.isNonImageStorage(sopClassUID) && ! SOPClass.isDirectory(sopClassUID)))
 		    && transferSyntaxUID != null
 		    && (transferSyntaxUID.equals(TransferSyntax.ImplicitVRLittleEndian)
 		     || transferSyntaxUID.equals(TransferSyntax.ExplicitVRLittleEndian)
 		     || transferSyntaxUID.equals(TransferSyntax.ExplicitVRBigEndian));
+		slf4jlogger.debug("isOKToImport(): {}",isOK);
+		return isOK;
 	}
 
 	protected SafeProgressBarUpdaterThread progressBarUpdater;
+
+	// copied from SynchronizeFromRemoteSCP ... should refactor :(
+	protected static class OurReadTerminationStrategy implements AttributeList.ReadTerminationStrategy {
+		public boolean terminate(AttributeList attributeList,AttributeTag tag,long byteOffset) {
+			return tag.getGroup() > 0x0008;
+		}
+	}
+	
+	protected final static AttributeList.ReadTerminationStrategy terminateAfterIdentifyingGroup = new OurReadTerminationStrategy();
 	
 	/**
 	 * <p>Read a DICOMDIR file, and then import any DICOM files that it references.</p>
@@ -200,10 +218,11 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 	 *
 	 * @param	pathName		the path name to a DICOMDIR file or folder containing a DICOMDIR file
 	 *
-	 * @exception	IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
-	 * @exception	DicomException		thrown if the DICOMDIR file cannot be parsed
+	 * @throws		IOException		thrown if the DICOMDIR file (but not any referenced files) cannot be opened or read
+	 * @throws		DicomException		thrown if the DICOMDIR file cannot be parsed
 	 */
 	public void importDicomFiles(String pathName) throws IOException, DicomException {
+		slf4jlogger.debug("importDicomFiles(): pathName = {}",pathName);
 		if (progressBar != null) {
 			//ThreadUtilities.checkIsEventDispatchThreadElseException();
 			progressBarUpdater = new SafeProgressBarUpdaterThread(progressBar);
@@ -236,6 +255,7 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 				}
 			}
 			if (dicomdirFile != null) {
+				slf4jlogger.debug("importDicomFiles(): Found DICOMDIR at = {}",dicomdirFile);
 				logLn("Found DICOMDIR at: "+dicomdirFile);
 				DicomInputStream i = new DicomInputStream(new BufferedInputStream(new FileInputStream(dicomdirFile)));
 				AttributeList list = new AttributeList();
@@ -256,12 +276,14 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 					String mediaFileName = (String)it.next();
 					if (mediaFileName != null) {
 						boolean goodToGo = false;
+						String sopClassUID = "";
+						String transferSyntaxUID = "";
 						DicomDirectoryRecord record = (DicomDirectoryRecord)(allDicomFiles.get(mediaFileName));
 						if (record != null) {
 							AttributeList rlist = ((DicomDirectoryRecord)record).getAttributeList();
 							if (rlist != null) {
-								String sopClassUID = Attribute.getSingleStringValueOrNull(rlist,TagFromName.ReferencedSOPClassUIDInFile);
-								String transferSyntaxUID = Attribute.getSingleStringValueOrNull(rlist,TagFromName.ReferencedTransferSyntaxUIDInFile);
+								sopClassUID = Attribute.getSingleStringValueOrNull(rlist,TagFromName.ReferencedSOPClassUIDInFile);
+								transferSyntaxUID = Attribute.getSingleStringValueOrNull(rlist,TagFromName.ReferencedTransferSyntaxUIDInFile);
 								if (sopClassUID == null || transferSyntaxUID == null) {
 									// the directory record is invalid; these should be present
 									// don't give up though ... try reading the meta-information header ...
@@ -294,11 +316,12 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 							}
 						}
 						if (goodToGo) {
-							logLn("Is a suitable DICOMDIR referenced file: "+mediaFileName);
-							doSomethingWithDicomFileOnMedia(mediaFileName);
+							//logLn("Is a suitable DICOMDIR referenced file: "+mediaFileName);
+							doSomethingWithDicomFileOnMedia(mediaFileName,transferSyntaxUID,sopClassUID);
 						}
 						else {
-							logLn("Not a suitable DICOMDIR referenced file: "+mediaFileName);
+							//logLn("Not a suitable DICOMDIR referenced file: "+mediaFileName);
+							doSomethingWithUnwantedFileOnMedia(mediaFileName,transferSyntaxUID,sopClassUID);
 						}
 					}
 					++count;
@@ -310,6 +333,7 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 				}
 			}
 			else {
+				slf4jlogger.debug("importDicomFiles(): Perform listFilesRecursively() on {}",path);
 				ArrayList listOfAllFiles = FileUtilities.listFilesRecursively(path);
 				if (progressBarUpdater != null) {
 					progressBarUpdater.setValue(0);
@@ -321,35 +345,64 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 				Iterator it = listOfAllFiles.iterator();
 				while (it.hasNext()) {
 					File mediaFile = (File)it.next();
+					slf4jlogger.debug("importDicomFiles(): Have next mediaFile {}",mediaFile);
 					if (mediaFile != null) {
 						// It might or might not be a DICOM file ... only way to tell is to try it
 						try {
+							String sopClassUID = "";
+							String transferSyntaxUID = "";
 							DicomInputStream i = new DicomInputStream(new BufferedInputStream(new FileInputStream(mediaFile)));
 							boolean goodToGo = false;
 							if (i.haveMetaHeader()) {
+								slf4jlogger.debug("importDicomFiles(): Have haveMetaHeader");
 								AttributeList list = new AttributeList();
 								list.readOnlyMetaInformationHeader(i);
-								String sopClassUID = Attribute.getSingleStringValueOrNull(list,TagFromName.MediaStorageSOPClassUID);
-								String transferSyntaxUID = Attribute.getSingleStringValueOrNull(list,TagFromName.TransferSyntaxUID);
+								sopClassUID = Attribute.getSingleStringValueOrNull(list,TagFromName.MediaStorageSOPClassUID);
+								transferSyntaxUID = Attribute.getSingleStringValueOrNull(list,TagFromName.TransferSyntaxUID);
+								if (sopClassUID == null || sopClassUID.length() == 0) {		// work around incomplete meta information header if GE PACS internal files (000905)
+									logLn("Have meta information header, but missing SOP Class UID so reading from data set: "+mediaFile);
+									list.read(i,terminateAfterIdentifyingGroup);
+									sopClassUID = Attribute.getSingleStringValueOrNull(list,TagFromName.SOPClassUID);
+								}
+								if (isOKToImport(sopClassUID,transferSyntaxUID)) {
+									slf4jlogger.debug("importDicomFiles(): isOKToImport");
+									goodToGo=true;
+								}
+								else {
+									slf4jlogger.debug("importDicomFiles(): Is a DICOM file but bad meta-header, not a storage object, or is compressed with a scheme that is not supported: {}  SOP Class={}, Transfer Syntax={}",mediaFile,sopClassUID,transferSyntaxUID);
+									logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed with a scheme that is not supported: "
+										+mediaFile+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
+								}
+							}
+							else {
+								// no meta information header ... assume default Transfer Syntax and try to read SOP Class IOD ...
+								slf4jlogger.debug("importDicomFiles(): No meta information header, so guessing is a DICOM file in implicit VR and attempting to get SOP Class UID");
+								logLn("No meta information header, so guessing is a DICOM file in implicit VR and attempting to get SOP Class UID: "+mediaFile);
+								AttributeList list = new AttributeList();
+								list.read(i,terminateAfterIdentifyingGroup);
+								sopClassUID = Attribute.getSingleStringValueOrNull(list,TagFromName.SOPClassUID);
+								transferSyntaxUID = TransferSyntax.ImplicitVRLittleEndian;
 								if (isOKToImport(sopClassUID,transferSyntaxUID)) {
 									goodToGo=true;
 								}
 								else {
-									logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed: "
+									logLn("Is not a DICOM file, or not a storage object, or is compressed with a scheme that is not supported: "
 										+mediaFile+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
 								}
 							}
 							i.close();	// do this BEFORE calling the handler, just in case
 							if (goodToGo) {
-								logLn("Is a DICOM file: "+mediaFile);
-								doSomethingWithDicomFileOnMedia(mediaFile.getPath());
+								//logLn("Is a DICOM file that is wanted: "+mediaFile);
+								doSomethingWithDicomFileOnMedia(mediaFile.getPath(),transferSyntaxUID,sopClassUID);
 							}
 							else {
-								logLn("Not a DICOM PS 3.10 file: "+mediaFile);
+								//logLn("Not a DICOM PS 3.10 file or not one that is wanted: "+mediaFile);
+								doSomethingWithUnwantedFileOnMedia(mediaFile.getPath(),transferSyntaxUID,sopClassUID);
 							}
 						}
 						catch (Exception e) {
-								logLn("Not a DICOM file: "+mediaFile);
+							//logLn("Not a DICOM file: "+mediaFile);
+							doSomethingWithUnwantedFileOnMedia(mediaFile.getPath(),"","");
 						}
 					}
 					++count;
@@ -365,10 +418,51 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 	}
 	
 	/**
-	 * <p>Do something with the referenced DICOM file that has been encountered.</p>
+	 * <p>Do something with the unwanted (possibly DICOM file) that has been encountered.</p>
 	 *
 	 * <p>This method needs to be implemented in a sub-class to do anything useful.
 	 * The default method does nothing.</p>
+	 *
+	 * <p>"Unwanted" files are those that are not DICOM files or DICOM files for which {@link MediaImporter#isOKToImport(String,String) isOKToImport(String sopClassUID,String transferSyntaxUID)} returns false.</p>
+	 *
+	 * <p>This method does not define any exceptions and hence must handle any
+	 * errors locally.</p>
+	 *
+	 * @param	mediaFileName		the fully qualified path name to a DICOM file
+	 * @param	transferSyntaxUID	the Transfer Syntax of the Data Set if a DICOM file, from the DICOMDIR or Meta Information Header
+	 * @param	sopClassUID			the SOP Class of the Data Set if a DICOM file, from the DICOMDIR or Meta Information Header
+	 */
+	protected void doSomethingWithUnwantedFileOnMedia(String mediaFileName,String transferSyntaxUID,String sopClassUID) {
+		logLn("Not a DICOM file, not a DICOM PS 3.10 file or not one that is wanted: "+mediaFileName);
+	}
+	
+	/**
+	 * <p>Do something with the referenced DICOM file that has been encountered.</p>
+	 *
+	 * <p>This method may be implemented in a sub-class to do something useful that requires knowledge of the Transfer Syntax or SOP Class.
+	 * The default method calls the simpler method {@link MediaImporter#doSomethingWithDicomFileOnMedia(String) doSomethingWithDicomFileOnMedia(String mediaFileName)}.</p>
+	 *
+	 * <p>"Wanted" files are those that are DICOM files for which {@link MediaImporter#isOKToImport(String,String) isOKToImport(String sopClassUID,String transferSyntaxUID)} returns true.</p>
+	 *
+	 * <p>This method does not define any exceptions and hence must handle any
+	 * errors locally.</p>
+	 *
+	 * @param	mediaFileName		the fully qualified path name to a DICOM file
+	 * @param	transferSyntaxUID	the Transfer Syntax of the Data Set in the DICOM file, from the DICOMDIR or Meta Information Header
+	 * @param	sopClassUID			the SOP Class of the Data Set in the DICOM file, from the DICOMDIR or Meta Information Header
+	 */
+	protected void doSomethingWithDicomFileOnMedia(String mediaFileName,String transferSyntaxUID,String sopClassUID) {
+		doSomethingWithDicomFileOnMedia(mediaFileName);
+	}
+	
+	/**
+	 * <p>Do something with the referenced DICOM file that has been encountered.</p>
+	 *
+	 * <p>This method needs to be implemented in a sub-class to do anything useful,
+	 * unless {@link MediaImporter#doSomethingWithDicomFileOnMedia(String,String,String) doSomethingWithDicomFileOnMedia(String mediaFileName,String transferSyntaxUID,String sopClassUID)} has been overridden instead.
+	 * The default method does nothing.</p>
+	 *
+	 * <p>"Wanted" files are those that are DICOM files for which {@link MediaImporter#isOKToImport(String,String) isOKToImport(String sopClassUID,String transferSyntaxUID)} returns true.</p>
 	 *
 	 * <p>This method does not define any exceptions and hence must handle any
 	 * errors locally.</p>
@@ -377,6 +471,7 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 	 */
 	protected void doSomethingWithDicomFileOnMedia(String mediaFileName) {
 		//logLn("MediaImporter.doSomethingWithDicomFile(): "+mediaFileName);
+		logLn("Is a DICOM PS3.10 file that is wanted: "+mediaFileName);
 	}
 	
 	/**
@@ -443,23 +538,23 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 					importer.choosePathAndImportDicomFiles(parent);
 				}
 				catch (DicomException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);
 				}
 				catch (IOException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);
 				}
 			}
 			catch (NoSuchMethodException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 			catch (InstantiationException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 			catch (IllegalAccessException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 			catch (java.lang.reflect.InvocationTargetException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 		}
 	}
@@ -488,7 +583,7 @@ System.err.println("MediaImporter.choosePathAndImportDicomFiles(): using FileDia
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

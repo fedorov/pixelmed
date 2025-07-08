@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -16,7 +16,7 @@ import javax.swing.tree.*;
  */
 public class AttributeTreeRecord implements Comparable, TreeNode {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTreeRecord.java,v 1.11 2005/06/10 13:38:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTreeRecord.java,v 1.22 2025/01/29 10:58:06 dclunie Exp $";
 
 	AttributeTreeRecord parent;
 	Collection children;
@@ -58,9 +58,6 @@ public class AttributeTreeRecord implements Comparable, TreeNode {
 	
 	// Methods to implement Comparable (allows parent to sort)
 
-	/**
-	 * @param	o
-	 */
 	public int compareTo(Object o) {
 		AttributeTreeRecord cf = (AttributeTreeRecord)o;
 		Attribute cfAttribute = cf.getAttribute();
@@ -93,9 +90,6 @@ public class AttributeTreeRecord implements Comparable, TreeNode {
 		}
 	}
 
-	/**
-	 * @param	o
-	 */
 	public boolean equals(Object o) {
 		return compareTo(o) == 0;
 	}
@@ -234,7 +228,7 @@ public class AttributeTreeRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * @param	child
+	 * @param	child	the child to remove
 	 */
 	public void removeChild(AttributeTreeRecord child) {
 		children.remove(child);
@@ -250,10 +244,10 @@ public class AttributeTreeRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * <p>Add a sibling to the current node, keeping the children sorted..</p>
+	 * <p>Add a sibling to the current node, keeping the children sorted.</p>
 	 *
-	 * @param	sibling		the sibling to add
-	 * @exception	DicomException
+	 * @param		sibling				the sibling to add
+	 * @throws	DicomException		if attempt to add sibling to node without parent
 	 */
 	public void addSibling(AttributeTreeRecord sibling) throws DicomException {
 		if (parent == null) {

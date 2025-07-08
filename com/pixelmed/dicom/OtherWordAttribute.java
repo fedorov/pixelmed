@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class OtherWordAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherWordAttribute.java,v 1.14 2008/02/21 04:45:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherWordAttribute.java,v 1.26 2025/01/29 10:58:07 dclunie Exp $";
 
 	private short[] values;
 
@@ -38,8 +38,8 @@ public class OtherWordAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherWordAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -52,8 +52,8 @@ public class OtherWordAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherWordAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -63,8 +63,8 @@ public class OtherWordAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		values=null;
@@ -80,8 +80,8 @@ public class OtherWordAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
@@ -100,10 +100,29 @@ public class OtherWordAttribute extends Attribute {
 		str.append(" []");		// i.e. don't really dump values ... too many
 		return str.toString();
 	}
+	
+	/**
+	 * @param	v
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v,boolean big) throws DicomException {
+		int shortLength = v.length/2;
+		short[] shortValues = new short[shortLength];
+		int j = 0;
+		for (int i=0; i<shortLength; ++i) {
+			short v1 =  (short)(v[j++]&0xff);
+			short v2 =  (short)(v[j++]&0xff);
+			shortValues[i] = (short) (big
+				? (v1 << 8) | v2
+				: (v2 << 8) | v1);
+		}
+		setValues(shortValues);
+	}
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void setValues(short[] v) throws DicomException {
 		values=v;
@@ -112,7 +131,6 @@ public class OtherWordAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
 	 */
 	public void removeValues() {
 		values=null;
@@ -121,9 +139,37 @@ public class OtherWordAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public short[] getShortValues() throws DicomException { return values; }
+
+	/**
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public byte[] getByteValues(boolean big) throws DicomException {
+		byte[] byteValues = null;
+		if (values != null) {
+			int shortLength = values.length;
+			byteValues = new byte[shortLength*2];
+			int j = 0;
+			if (big) {
+				for (int i=0; i<shortLength; ++i) {
+					short v = values[i];
+					byteValues[j++]=(byte)(v>>8);
+					byteValues[j++]=(byte)v;
+				}
+			}
+			else {
+				for (int i=0; i<shortLength; ++i) {
+					short v = values[i];
+					byteValues[j++]=(byte)v;
+					byteValues[j++]=(byte)(v>>8);
+				}
+			}
+		}
+		return byteValues;
+	}
 
 	/**
 	 * <p>Get the value representation of this attribute (OW).</p>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -7,6 +7,7 @@ import com.pixelmed.dicom.AttributeList;
 import com.pixelmed.dicom.AttributeTag;
 import com.pixelmed.dicom.ClinicalTrialsAttributes;
 import com.pixelmed.dicom.CodedSequenceItem;
+import com.pixelmed.dicom.CodingSchemeIdentification;
 import com.pixelmed.dicom.CompositeInstanceContext;
 import com.pixelmed.dicom.DateTimeAttribute;
 import com.pixelmed.dicom.DicomException;
@@ -19,7 +20,6 @@ import com.pixelmed.dicom.SequenceItem;
 import com.pixelmed.dicom.TagFromName;
 import com.pixelmed.dicom.TransferSyntax;
 import com.pixelmed.dicom.VersionAndConstants;
-
 
 import com.pixelmed.utils.MessageLogger;
 import com.pixelmed.utils.PrintStreamMessageLogger;
@@ -35,8 +35,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>A class containing an application for merging the composite context of multiple instances for consistency.</p>
+ * <p>A class containing an application for merging the patient composite context of multiple instances for consistency.</p>
  *
  * <p>Patient identity is determined by being within the same study (having the same Study Instance UID), or referencing each others SOP Instance UIDs.</p>
  *
@@ -48,11 +51,14 @@ import java.util.UUID;
  *
  * <p>Various known dummy values are treated as if they were zero length or absent if conflicting with non-dummy values.</p>
  *
+ * @see com.pixelmed.apps.MergeCompositeContextForOneEntitySelectively
+ *
  * @author	dclunie
  */
 public class MergeCompositeContext {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MergeCompositeContext.java,v 1.24 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MergeCompositeContext.java,v 1.9 2012/09/28 21:10:23 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MergeCompositeContext.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 	
@@ -126,9 +132,9 @@ public class MergeCompositeContext {
 				String newValue = a.getSingleStringValueOrEmptyString();
 				if (!newValue.equals(groupValue)) {
 					String describeTag = tag + " " + groupList.getDictionary().getFullNameFromTag(tag);
-System.err.println("mergePatientContext(): in group "+group.identity+" for "+describeTag+" values differ between existing group value <"+groupValue+"> and new value <"+newValue+">");
+slf4jlogger.info("mergePatientContext(): in group "+group.identity+" for "+describeTag+" values differ between existing group value <"+groupValue+"> and new value <"+newValue+">");
 					if (newValue.length() > 0 && (groupValue.length() == 0 || isNonZeroLengthDummyValue(groupValue))) {
-System.err.println("mergePatientContext(): in group "+group.identity+" for "+describeTag+" replacing absent/empty/dummy existing group value with new value <"+newValue+">");
+slf4jlogger.info("mergePatientContext(): in group "+group.identity+" for "+describeTag+" replacing absent/empty/dummy existing group value with new value <"+newValue+">");
 						groupList.put(a);
 					}
 				}
@@ -138,7 +144,7 @@ System.err.println("mergePatientContext(): in group "+group.identity+" for "+des
 	}
 	
 	protected void mergeGroups(Group g1,Group g2) {
-System.err.println("mergeGroups(): seq "+g1.identity+" and "+g2.identity);
+slf4jlogger.info("mergeGroups(): seq "+g1.identity+" and "+g2.identity);
 //System.err.println("mergeGroups(): seq "+g1.sequenceNumber+" and "+g2.sequenceNumber);
 		if (g1.sequenceNumber > g2.sequenceNumber) {
 //System.err.println("mergeGroups(): swapping before merging into "+g2.sequenceNumber);
@@ -183,14 +189,14 @@ System.err.println("mergeGroups(): seq "+g1.identity+" and "+g2.identity);
 								group = mapOfSOPInstanceUIDToGroup.get(referencedSOPInstanceUID);
 //System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get() = "+group);
 								if (group != null) {
-System.err.println("Adding SOP Instance UID "+sopInstanceUID+" of StudyInstanceUID "+studyInstanceUID+" based on contained Referenced SOP Instance UID "+referencedSOPInstanceUID+" to group "+group.identity);
+slf4jlogger.info("Adding SOP Instance UID "+sopInstanceUID+" of StudyInstanceUID "+studyInstanceUID+" based on contained Referenced SOP Instance UID "+referencedSOPInstanceUID+" to group "+group.identity);
 									break;
 								}
 							}
 						}
 					}
 					else {
-System.err.println("Adding SOP Instance UID "+sopInstanceUID+" based on StudyInstanceUID "+studyInstanceUID+" to group "+group.identity);
+slf4jlogger.info("Adding SOP Instance UID "+sopInstanceUID+" based on StudyInstanceUID "+studyInstanceUID+" to group "+group.identity);
 					}
 				}
 				else {
@@ -200,7 +206,7 @@ System.err.println("Adding SOP Instance UID "+sopInstanceUID+" based on StudyIns
 				if (group == null) {				// i.e., no references or did not find any of the references in existing groups
 //System.err.println("addToGroups(): creating new group");
 					group = new Group();
-System.err.println("Creating new group for SOP Instance UID "+sopInstanceUID+" based on StudyInstanceUID "+studyInstanceUID+" group "+group.identity);
+slf4jlogger.info("Creating new group for SOP Instance UID "+sopInstanceUID+" based on StudyInstanceUID "+studyInstanceUID+" group "+group.identity);
 					groups.add(group);
 				}
 			}
@@ -208,11 +214,11 @@ System.err.println("Creating new group for SOP Instance UID "+sopInstanceUID+" b
 			if (studyInstanceUID.length() > 0) {
 				Group studyGroup = mapOfStudyInstanceUIDToGroup.get(studyInstanceUID);
 				if (studyGroup == null) {
-System.err.println("addToGroups(): mapOfStudyInstanceUIDToGroup.put(studyInstanceUID "+studyInstanceUID+")");
+slf4jlogger.info("addToGroups(): mapOfStudyInstanceUIDToGroup.put(studyInstanceUID "+studyInstanceUID+")");
 					mapOfStudyInstanceUIDToGroup.put(studyInstanceUID,group);
 				}
 				else if (studyGroup != group) {
-System.err.println("addToGroups(): mapOfStudyInstanceUIDToGroup.get(studyInstanceUID "+studyInstanceUID+") != null and != current group");
+slf4jlogger.info("addToGroups(): mapOfStudyInstanceUIDToGroup.get(studyInstanceUID "+studyInstanceUID+") != null and != current group");
 					mergeGroups(group,studyGroup);
 				}
 			}
@@ -223,7 +229,7 @@ System.err.println("addToGroups(): mapOfStudyInstanceUIDToGroup.get(studyInstanc
 				mapOfSOPInstanceUIDToGroup.put(sopInstanceUID,group);
 			}
 			else if (instanceGroup != group) {
-System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(sopInstanceUID "+sopInstanceUID+") != null and != current group");
+slf4jlogger.info("addToGroups(): mapOfSOPInstanceUIDToGroup.get(sopInstanceUID "+sopInstanceUID+") != null and != current group");
 				mergeGroups(group,instanceGroup);
 			}
 			
@@ -236,7 +242,7 @@ System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(sopInstanceUID
 						mapOfSOPInstanceUIDToGroup.put(referencedSOPInstanceUID,group);
 					}
 					else if (instanceGroup != group) {
-System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPInstanceUID "+referencedSOPInstanceUID+") != null and != current group");
+slf4jlogger.info("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPInstanceUID "+referencedSOPInstanceUID+") != null and != current group");
 						mergeGroups(group,instanceGroup);
 					}
 				}
@@ -273,7 +279,7 @@ System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPI
 					}
 
 					{
-						CompositeInstanceContext cic = new CompositeInstanceContext(list);
+						CompositeInstanceContext cic = new CompositeInstanceContext(list,false/*forSR*/);
 						// remove all except patient context ...
 						cic.removeStudy();
 						cic.removeSeries();
@@ -292,7 +298,8 @@ System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPI
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -349,6 +356,8 @@ System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPI
 							"Vers. "+VersionAndConstants.getBuildDate(),					// Software Version(s)
 							"Merged patient context");
 								
+						CodingSchemeIdentification.replaceCodingSchemeIdentificationSequenceWithCodingSchemesUsedInAttributeList(list);
+						list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
 						list.removeGroupLengthAttributes();
 						list.removeMetaInformationHeaderAttributes();
 						list.remove(TagFromName.DataSetTrailingPadding);
@@ -378,22 +387,41 @@ System.err.println("addToGroups(): mapOfSOPInstanceUIDToGroup.get(referencedSOPI
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
 	
+	/**
+	 * <p>Merge the patient composite context of multiple instances for consistency.</p>
+	 *
+	 * @param	src				source folder or DICOMDIR
+	 * @param	dstFolderName	destination folder
+	 * @param	logger			logger to send progress, warnings and errors
+	 * @throws	IOException		if there is a problem reading or writing
+	 * @throws	DicomException	if there is a problem parsing or extracting required content
+	 */
 	public MergeCompositeContext(String src,String dstFolderName,MessageLogger logger) throws IOException, DicomException {
 //System.err.println("MergeCompositeContext(): dstFolderName = "+dstFolderName);
 		this.dstFolderName = dstFolderName;
 		MediaImporter firstPassImporter = new OurFirstPassMediaImporter(logger);
 		firstPassImporter.importDicomFiles(src);
-System.err.print(dumpGroups());
+		slf4jlogger.info(dumpGroups());
 		MediaImporter secondPassImporter = new OurSecondPassMediaImporter(logger);
 		secondPassImporter.importDicomFiles(src);
 
 	}
 	
+	/**
+	 * <p>Merge the patient composite context of multiple instances for consistency.</p>
+	 *
+	 * @param	srcs			source folders or DICOMDIRs
+	 * @param	dstFolderName	destination folder
+	 * @param	logger			logger to send progress, warnings and errors
+	 * @throws	IOException		if there is a problem reading or writing
+	 * @throws	DicomException	if there is a problem parsing or extracting required content
+	 */
 	public MergeCompositeContext(String[] srcs,String dstFolderName,MessageLogger logger) throws IOException, DicomException {
 //System.err.println("MergeCompositeContext(): dstFolderName = "+dstFolderName);
 		this.dstFolderName = dstFolderName;
@@ -401,7 +429,7 @@ System.err.print(dumpGroups());
 		for (String src : srcs) {
 			firstPassImporter.importDicomFiles(src);
 		}
-System.err.print(dumpGroups());
+		slf4jlogger.info(dumpGroups());
 		MediaImporter secondPassImporter = new OurSecondPassMediaImporter(logger);
 		for (String src : srcs) {
 			secondPassImporter.importDicomFiles(src);
@@ -441,7 +469,7 @@ System.err.print(dumpGroups());
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

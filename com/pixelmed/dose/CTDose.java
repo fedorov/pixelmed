@@ -1,6 +1,10 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
+
+import com.pixelmed.anatproc.CodedConcept;
+
+import com.pixelmed.dicom.*;
 
 import java.io.IOException;
 
@@ -11,13 +15,13 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.pixelmed.anatproc.CodedConcept;
-
-import com.pixelmed.dicom.*;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStructuredReportFactory {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDose.java,v 1.32 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDose.java,v 1.48 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CTDose.class);
 	
 	protected static double headToBodyDLPConversionFactor = 0.5d;
 	
@@ -183,10 +187,14 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 			ContentItem root = (ContentItem)(sr.getRoot());
 			if (root != null) {
 				if (root instanceof ContentItemFactory.ContainerContentItem && root.getConceptNameCodingSchemeDesignator().equals("DCM") && root.getConceptNameCodeValue().equals("113701")) {	// "X-Ray Radiation Dose Report"
+					// ignore (do not extract and record) DTID 1204 "Language of Content Item and Descendants" since only recognizing codes not meanings, and will always rewrite it as english anyway
 					ContentItem procedureReported = root.getNamedChild("DCM","121058");
 					if (procedureReported != null && procedureReported instanceof ContentItemFactory.CodeContentItem) {
 						CodedSequenceItem procedureReportedCode = ((ContentItemFactory.CodeContentItem)procedureReported).getConceptCode();
-						if (procedureReportedCode != null && procedureReportedCode.getCodingSchemeDesignator().equals("SRT") && procedureReportedCode.getCodeValue().equals("P5-08000")) {		// "Computed Tomography X-Ray"
+						if (procedureReportedCode != null
+						 && ((procedureReportedCode.getCodingSchemeDesignator().equals("SRT") && procedureReportedCode.getCodeValue().equals("P5-08000"))
+						  || (procedureReportedCode.getCodingSchemeDesignator().equals("SCT") && procedureReportedCode.getCodeValue().equals("77477000")))
+						) {		// "Computed Tomography X-Ray"
 
 							observerContext = new CommonDoseObserverContext();
 							observerContext.setRecordingDeviceObserverContext(new RecordingDeviceObserverContext(root));
@@ -213,7 +221,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 											}
 										}
 										else {
-											System.err.println("CT Accumulated Dose Data DLP units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
+											slf4jlogger.warn("CT Accumulated Dose Data DLP units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
 										}
 									}
 									{
@@ -239,11 +247,11 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 															}
 														}
 														else {
-															System.err.println("CT Accumulated Dose Data DLP Sub-Total units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
+															slf4jlogger.warn("CT Accumulated Dose Data DLP Sub-Total units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
 														}
 													}
 													else {
-														System.err.println("CT Accumulated Dose Data DLP Sub-Total has no phantom type specified - ignoring value");		// do not throw exception, since want to parse rest of content
+														slf4jlogger.warn("CT Accumulated Dose Data DLP Sub-Total has no phantom type specified - ignoring value");		// do not throw exception, since want to parse rest of content
 													}
 												}
 											}
@@ -251,7 +259,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 									}
 								}
 								else {
-									System.err.println("CT Accumulated Dose Data DLP not found");		// do not throw exception, since want to parse rest of content
+									slf4jlogger.warn("CT Accumulated Dose Data DLP not found");		// do not throw exception, since want to parse rest of content
 								}
 							}
 							else {
@@ -419,7 +427,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 			dlpTotal = formatter.format(getDLPTotalCombinedFromHeadAndBodyPhantomValues(dDLPSubTotalHead,dDLPSubTotalBody));
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return dlpTotal;
 	}
@@ -437,38 +445,38 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 		for (CTDoseAcquisition a : acquisitions) {
 			if (a != null) {
 				String aDLP = a.getDLP();
-				if (aDLP != null && aDLP.length() > 0) {	// check for zero length else NumberFromatException
+				if (aDLP != null && aDLP.length() > 0) {	// check for zero length else NumberFormatException
 					try {
 						double dlp = Double.parseDouble(aDLP);
 						CTPhantomType phantom = a.getPhantomType();
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): acquisition phantom "+phantom+" DLP "+dlp);
+						slf4jlogger.debug("getDLPTotalFromAcquisitions(): acquisition phantom {} DLP {}",phantom,dlp);
 						if (phantom == null) {
 							dlpSubTotalUnspecifiedFromAcquisitions += dlp;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): added DLP "+dlp+" to dlpSubTotalUnspecifiedFromAcquisitions, now "+dlpSubTotalUnspecifiedFromAcquisitions);
+							slf4jlogger.debug("getDLPTotalFromAcquisitions(): added DLP {} to dlpSubTotalUnspecifiedFromAcquisitions, now {}",dlp,dlpSubTotalUnspecifiedFromAcquisitions);
 						}
 						else {
 							if (commonPhantom == null) {
 								commonPhantom = phantom;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): first time added DLP "+dlp+" to dlpTotalFromAcquisitions, now "+dlpTotalFromAcquisitions);
+								slf4jlogger.debug("getDLPTotalFromAcquisitions(): first time added DLP {} to dlpTotalFromAcquisitions, now {}",dlp,dlpTotalFromAcquisitions);
 								dlpTotalFromAcquisitions += dlp;
 							}
 							else if (commonPhantom.equals(phantom)) {
 								dlpTotalFromAcquisitions += dlp;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): same phantom added DLP "+dlp+" to dlpTotalFromAcquisitions, now "+dlpTotalFromAcquisitions);
+								slf4jlogger.debug("getDLPTotalFromAcquisitions(): same phantom added DLP {} to dlpTotalFromAcquisitions, now {}",dlp,dlpTotalFromAcquisitions);
 							}
 							else {
 								commonPhantom = CTPhantomType.MIXED;
 								dlpTotalFromAcquisitions = 0;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): mixed phantom set dlpTotalFromAcquisitions to zero");
+								slf4jlogger.debug("getDLPTotalFromAcquisitions(): mixed phantom set dlpTotalFromAcquisitions to zero");
 							}
 							
 							if (phantom.equals(CTPhantomType.HEAD16)) {
 								dlpSubTotalHeadFromAcquisitions += dlp;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): added DLP "+dlp+" to dlpSubTotalHeadFromAcquisitions, now "+dlpSubTotalHeadFromAcquisitions);
+								slf4jlogger.debug("getDLPTotalFromAcquisitions(): added DLP {} to dlpSubTotalHeadFromAcquisitions, now {}",dlp,dlpSubTotalHeadFromAcquisitions);
 							}
 							else if (phantom.equals(CTPhantomType.BODY32)) {
 								dlpSubTotalBodyFromAcquisitions += dlp;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): added DLP "+dlp+" to dlpSubTotalBodyFromAcquisitions, now "+dlpSubTotalBodyFromAcquisitions);
+								slf4jlogger.debug("getDLPTotalFromAcquisitions(): added DLP {} to dlpSubTotalBodyFromAcquisitions, now {}",dlp,dlpSubTotalBodyFromAcquisitions);
 							}
 						}
 						
@@ -481,11 +489,13 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 		}
 		if (commonPhantom == null) {
 			dlpTotalFromAcquisitions = dlpSubTotalUnspecifiedFromAcquisitions;
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): no phantom using dlpSubTotalUnspecifiedFromAcquisitions as dlpTotalFromAcquisitions "+dlpTotalFromAcquisitions);
+			slf4jlogger.debug("getDLPTotalFromAcquisitions(): no phantom using dlpSubTotalUnspecifiedFromAcquisitions as dlpTotalFromAcquisitions {}",dlpTotalFromAcquisitions);
 		}
 		else if (commonPhantom.equals(CTPhantomType.MIXED) && dlpTotalFromAcquisitions == 0 && dlpSubTotalHeadFromAcquisitions > 0 && dlpSubTotalBodyFromAcquisitions > 0) {
+			slf4jlogger.debug("getDLPTotalFromAcquisitions(): mixed phantom using dlpSubTotalHeadFromAcquisitions {}",dlpSubTotalHeadFromAcquisitions);
+			slf4jlogger.debug("getDLPTotalFromAcquisitions(): mixed phantom using dlpSubTotalBodyFromAcquisitions {}",dlpSubTotalBodyFromAcquisitions);
 			dlpTotalFromAcquisitions = getDLPTotalCombinedFromHeadAndBodyPhantomValues(dlpSubTotalHeadFromAcquisitions,dlpSubTotalBodyFromAcquisitions);
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): mixed phantom using calculated combined "+dlpTotalFromAcquisitions);
+			slf4jlogger.debug("getDLPTotalFromAcquisitions(): mixed phantom using calculated combined {}",dlpTotalFromAcquisitions);
 		}
 		java.text.DecimalFormat formatter = (java.text.DecimalFormat)(java.text.NumberFormat.getInstance(java.util.Locale.US));
 		formatter.setMaximumFractionDigits(2);
@@ -493,7 +503,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 		formatter.setDecimalSeparatorAlwaysShown(true);		// i.e., a period even if fraction is zero
 		formatter.setGroupingUsed(false);					// i.e., no comma at thousands
 		String formatted = formatter.format(dlpTotalFromAcquisitions);
-//System.err.println("CTDose.getDLPTotalFromAcquisitions(): returns formatted string "+formatted+" for "+Double.toString(dlpTotalFromAcquisitions));
+		slf4jlogger.debug("getDLPTotalFromAcquisitions(): returns formatted string {} for {}",formatted,Double.toString(dlpTotalFromAcquisitions));
 		return formatted;
 	}
 	
@@ -522,7 +532,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 				this.defaultAnatomy = defaultAnatomyConcept.getCodedSequenceItem();
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -601,7 +611,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 					buffer.append(formattedDate);
 				}
 				catch (java.text.ParseException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 			else {
@@ -687,6 +697,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 				+"<th>DLP "+CTPhantomType.BODY32.toString()+" mGy.cm</th>"
 				+"<th>Manufacturer</th>"
 				+"<th>Model</th>"
+				+"<th>Station</th>"
 				+"<th>From</th>"
 				+"</tr>\n";
 	}
@@ -751,7 +762,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 					formattedDate = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(dateTime);
 				}
 				catch (java.text.ParseException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 			buffer.append(formattedDate);
@@ -789,16 +800,28 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 		{
 			String manufacturer = "";
 			String manufacturerModelName = "";
+			String stationName = "";
 			if (observerContext != null) {
-				DeviceParticipant dp = observerContext.getDeviceParticipant();
-				if (dp != null) {
-					manufacturer = dp.getManufacturer();
-					if (manufacturer == null) {
-						manufacturer = "";
+				{
+					DeviceParticipant dp = observerContext.getDeviceParticipant();
+					if (dp != null) {
+						manufacturer = dp.getManufacturer();
+						if (manufacturer == null) {
+							manufacturer = "";
+						}
+						manufacturerModelName = dp.getModelName();
+						if (manufacturerModelName == null) {
+							manufacturerModelName = "";
+						}
 					}
-					manufacturerModelName = dp.getModelName();
-					if (manufacturerModelName == null) {
-						manufacturerModelName = "";
+				}
+				{
+					RecordingDeviceObserverContext rdoc = observerContext.getRecordingDeviceObserverContext();
+					if (rdoc != null) {
+						stationName = rdoc.getName();
+						if (stationName == null) {
+							stationName = "";
+						}
 					}
 				}
 			}
@@ -810,6 +833,9 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 				if (manufacturerModelName.length() == 0) {
 					manufacturerModelName = Attribute.getSingleStringValueOrEmptyString(contextList,TagFromName.ManufacturerModelName);
 				}
+				if (stationName.length() == 0) {
+					stationName = Attribute.getSingleStringValueOrEmptyString(contextList,TagFromName.StationName);
+				}
 			}
 
 			buffer.append("<td>");
@@ -818,6 +844,10 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 
 			buffer.append("<td>");
 			buffer.append(manufacturerModelName);
+			buffer.append("</td>");
+
+			buffer.append("<td>");
+			buffer.append(stationName);
 			buffer.append("</td>");
 		}
 
@@ -864,8 +894,9 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 				new CodedSequenceItem("113701","DCM","X-Ray Radiation Dose Report"),
 				true/*continuityOfContentIsSeparate*/,
 				"DCMR","10011");
-			ContentItem procedureReported = cif.new CodeContentItem(root,"HAS CONCEPT MOD",new CodedSequenceItem("121058","DCM","Procedure reported"),new CodedSequenceItem("P5-08000","SRT","Computed Tomography X-Ray"));
-			cif.new CodeContentItem(procedureReported,"HAS CONCEPT MOD",new CodedSequenceItem("G-C0E8","SRT","Has Intent"),new CodedSequenceItem("R-408C3","SRT","Diagnostic Intent"));
+			cif.new CodeContentItem(root,"HAS CONCEPT MOD",new CodedSequenceItem("121049","DCM","Language of Content Item and Descendants"),new CodedSequenceItem("en","RFC5646","English"));
+			ContentItem procedureReported = cif.new CodeContentItem(root,"HAS CONCEPT MOD",new CodedSequenceItem("121058","DCM","Procedure reported"),new CodedSequenceItem("77477000","SCT","Computed Tomography X-Ray"));
+			cif.new CodeContentItem(procedureReported,"HAS CONCEPT MOD",new CodedSequenceItem("363703001","SCT","Has Intent"),new CodedSequenceItem("261004008","SCT","Diagnostic Intent"));
 		
 			if (observerContext != null) {
 				Map<RecordingDeviceObserverContext.Key,ContentItem> cimap = observerContext.getRecordingDeviceObserverContext().getStructuredReportFragment();
@@ -1002,6 +1033,26 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 			java.util.Date currentDateTime = new java.util.Date();
 			{ Attribute a = new DateAttribute(TagFromName.InstanceCreationDate); a.addValue(new java.text.SimpleDateFormat("yyyyMMdd").format(currentDateTime)); list.put(a); }
 			{ Attribute a = new TimeAttribute(TagFromName.InstanceCreationTime); a.addValue(new java.text.SimpleDateFormat("HHmmss.SSS").format(currentDateTime)); list.put(a); }
+			
+			{
+				java.util.TimeZone currentTz = java.util.TimeZone.getDefault();
+				String currentTzInDICOMFormat = DateTimeAttribute.getTimeZone(currentTz,currentDateTime);	// use this rather than DateTimeAttribute.getCurrentTimeZone() because already have currentDateTime and currentTz
+				String timezoneOffsetFromUTC = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TimezoneOffsetFromUTC);
+				if (timezoneOffsetFromUTC.length() > 0) {
+					if (!currentTzInDICOMFormat.equals(timezoneOffsetFromUTC)) {	// easier to compare DICOM strings than figure out offsets vs. raw offsets etc. from java.util.TimeZone
+						// different timezone now than in images :(
+						// need to fix up any existing dates and times :(
+						slf4jlogger.warn("write(): TimezoneOffsetFromUTC from images {} is different from current timezone {} - removing and not adding current",timezoneOffsetFromUTC,currentTzInDICOMFormat);
+						list.remove(TagFromName.TimezoneOffsetFromUTC);
+					}
+					// else good to go ... already in list and already correct (same for source images and our new instance)
+				}
+				else  {
+//System.err.println("CTDose.write(): adding TimezoneOffsetFromUTC "+currentTzInDICOMFormat);
+					{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue(currentTzInDICOMFormat); list.put(a); }
+				}
+			}
+
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.InstanceCreatorUID); a.addValue(VersionAndConstants.instanceCreatorUID); list.put(a); }
 			
 		}
@@ -1019,6 +1070,7 @@ public class CTDose implements RadiationDoseStructuredReport, RadiationDoseStruc
 			"Creation of Radiation Dose SR"																// ContributionDescription
 		);
 		list.insertSuitableSpecificCharacterSetForAllStringValues();
+		CodingSchemeIdentification.replaceCodingSchemeIdentificationSequenceWithCodingSchemesUsedInAttributeList(list);
 		list.removeMetaInformationHeaderAttributes();
 		FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,useAET);
         list.write(filename);

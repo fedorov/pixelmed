@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,7 +22,7 @@ import javax.swing.tree.*;
  */
 public class ContentItemWithReference extends ContentItem {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemWithReference.java,v 1.1 2013/01/23 23:04:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemWithReference.java,v 1.12 2025/01/29 10:58:06 dclunie Exp $";
 	
 	protected String referencedContentItemIdentifier;
 	
@@ -51,8 +51,8 @@ public class ContentItemWithReference extends ContentItem {
 	 *
 	 * @param	p								the parent
 	 * @param	relationshipType				added only if not null or zero length
-	 * @param	referencedContentItemIdentifier
-	 * @throws	DicomException
+	 * @param	referencedContentItemIdentifier	identifier of reference content item
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ContentItemWithReference(ContentItem p,String relationshipType,String referencedContentItemIdentifier) throws DicomException {
 		super(p,relationshipType);
@@ -117,17 +117,6 @@ public class ContentItemWithReference extends ContentItem {
 	
 	// Convenience methods
 	
-	/**
-	 * Test if the coded concept name of the content item matches the specified code value and coding scheme designator.
-	 *
-	 * This is more robust than checking code meaning, which may have synomyms, and there is no need to also test code meaning.
-	 *
-	 * Does NOT follow references.
-	 *
-	 * @param	csdWanted
-	 * @param	cvWanted
-	 * @return					true if matches
-	 */
 	public boolean contentItemNameMatchesCodeValueAndCodingSchemeDesignator(String cvWanted,String csdWanted) { return false; }
 }
 

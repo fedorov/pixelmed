@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -18,7 +18,7 @@ import com.pixelmed.dicom.*;
  */
 class DisplayDicomDirectoryBrowser extends DicomDirectoryBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayDicomDirectoryBrowser.java,v 1.5 2003/02/23 14:42:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayDicomDirectoryBrowser.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 
 	private int frameWidthWanted;
 	private int frameHeightWanted;
@@ -29,7 +29,7 @@ class DisplayDicomDirectoryBrowser extends DicomDirectoryBrowser {
 	 * @param	frame
 	 * @param	frameWidthWanted
 	 * @param	frameHeightWanted
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DisplayDicomDirectoryBrowser(AttributeList list,String parentFilePath,JFrame frame,
 			int frameWidthWanted,int frameHeightWanted) throws DicomException {

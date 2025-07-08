@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -10,7 +10,7 @@ import javax.swing.tree.*;
  */
 public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryRecord.java,v 1.19 2012/04/05 03:52:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryRecord.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
 
 	DicomDirectoryRecord parent;
 	Collection children;
@@ -23,9 +23,6 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 
 	// Methods to implement Comparable (allows parent to sort)
 
-	/**
-	 * @param	o
-	 */
 	public int compareTo(Object o) {
 //System.err.println("DicomDirectoryRecord.compareTo(): comparing classes "+this.getClass()+" with "+o.getClass());
 		return compareToThatReturnsZeroOnlyIfSameObject(o);
@@ -45,9 +42,6 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	// DicomDirectoryRecordFactory do NOT override equals() (though they may
 	// override compareTo()
 
-	/**
-	 * @param	o
-	 */
 	public boolean equals(Object o) {
 		boolean areEqual = super.equals(o);
 //System.err.println("DicomDirectoryRecord.equals(): comparing classes "+this.getClass()+" with "+o.getClass()+" with result "+areEqual);
@@ -57,27 +51,40 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 
 	// Methods to help with Comparable support
 	
-	/***/
+	/**
+	 * <p>Make the value that will be retured on a call to {@link com.pixelmed.dicom.DicomDirectoryRecord#getStringValue() getStringValue()}.</p>
+	 */
 	abstract protected void makeStringValue();
 
-	/***/
+	/**
+	 * <p>Make the value that will be retured on a call to {@link com.pixelmed.dicom.DicomDirectoryRecord#getIntegerValue() getIntegerValue()}.</p>
+	 */
 	abstract protected void makeIntegerValue();
 
-	/***/
+	/**
+	 * @return	a {@link java.lang.String String} describing this directory record containing identifiers, dates, etc.
+	 */
 	protected String getStringValue() {
 		return stringValue;
 	}
 
-	/***/
+	/**
+	 * @return	an integer describing this directory record derived from an appropriate number for the entity that the record represents
+	 */
 	protected int getIntegerValue() {
 		return integerValue;
 	}
 
-	/***/
+	/**
+	 * @return	the uid for the entity that the directory record represents
+	 */
 	protected final String getUIDForComparison() { return uid; }
 
 	/**
-	 * @param	o
+	 * <p>Compares this directory record with the specified directory record for order based on whether they are the same Java object.</p>
+	 *
+	 * @param	o	the directory record to compare with
+	 * @return		zero if equals() otherwise 1
 	 */
 	private int compareToThatReturnsZeroOnlyIfSameObject(Object o) {	// private so that this cannot be overridden
 //System.err.println("DicomDirectoryRecord.compareToThatReturnsZeroOnlyIfSameObject(): comparing classes "+this.getClass()+" with "+o.getClass());
@@ -87,7 +94,13 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	}
 	
 	/**
-	 * @param	record
+	 * <p>Compares this object with the specified directory record for order based on string value.</p>
+	 *
+	 * <p>Considers whether same record type, same string value, and if so, orders by UID.</p>
+	 *
+	 * @param	record						the directory record to compare with
+	 * @param	mustBeSameObjectToBeEqual	if true requires them to be the same Java object, not just the same UID
+	 * @return								a negative integer, zero, or a positive integer as this object is less than, equal to, or greater than the directory record.
 	 */
 	protected final int compareToByStringValue(DicomDirectoryRecord record,boolean mustBeSameObjectToBeEqual) {
 //System.err.println("DicomDirectoryRecord.compareToByStringValue(): comparing classes "+this.getClass()+" with "+record.getClass());
@@ -116,7 +129,13 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * @param	record
+	 * <p>Compares this object with the specified directory record for order based on integer value.</p>
+	 *
+	 * <p>Considers whether same record type, same integer value, and if so orders by string value, then by UID.</p>
+	 *
+	 * @param	record						the directory record to compare with
+	 * @param	mustBeSameObjectToBeEqual	if true requires them to be the same Java object, not just the same UID
+	 * @return								a negative integer, zero, or a positive integer as this object is less than, equal to, or greater than the directory record.
 	 */
 	protected final int compareToByIntegerValue(DicomDirectoryRecord record,boolean mustBeSameObjectToBeEqual) {
 //System.err.println("DicomDirectoryRecord.compareToByIntegerValue(): comparing classes "+this.getClass()+" with "+record.getClass());
@@ -149,21 +168,10 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 
 	// Methods to implement TreeNode ...
 
-	/**
-	 * <p>Returns the parent node of this node.</p>
-	 *
-	 * @return	the parent node, or null if the root
-	 */
 	public TreeNode getParent() {
 		return parent;
 	}
 
-	/**
-	 * <p>Returns the child at the specified index.</p>
-	 *
-	 * @param	index	the index of the child to be returned, numbered from 0
-	 * @return		the child <code>TreeNode</code> at the specified index
-	 */
 	public TreeNode getChildAt(int index) {
 		int n=children.size();
 		if (array == null) {
@@ -172,12 +180,6 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 		return index < n ? array[index] : null;
 	}
 
-	/**
-	 * <p>Returns the index of the specified child from amongst this node's children, if present.</p>
-	 *
-	 * @param	child	the child to search for amongst this node's children
-	 * @return		the index of the child, or -1 if not present
-	 */
 	public int getIndex(TreeNode child) {
 //System.err.println("getIndexOfChild: looking for "+child);
 		if (children != null) {
@@ -195,38 +197,18 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 		return -1;
 	}
 
-	/**
-	 * <p> Always returns true, since children may always be added.</p>
-	 *
-	 * @return	always true
-	 */
 	public boolean getAllowsChildren() {
 		return true;
 	}
 
-	/**
-	 * <p> Returns true if the receiver is a leaf (has no children).</p>
-	 *
-	 * @return	true if the receiver is a leaf
-	 */
 	public boolean isLeaf() {
 		return getChildCount() == 0;
 	}
 
-	/**
-	 * <p>Return the number of children that this node contains.</p>
-	 *
-	 * @return	the number of children, 0 if none
-	 */
 	public int getChildCount() {
 		return children == null ? 0 : children.size();
 	}
 
-	/**
-	 * <p>Returns the children of this node as an {@link java.util.Enumeration Enumeration}.</p>
-	 *
-	 * @return	the children of this node
-	 */
 	public Enumeration children() {
 		return children == null ? null : new Vector(children).elements();
 	}
@@ -234,8 +216,8 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	// Methods specific to this kind of node ...
 
 	/**
-	 * @param	p
-	 * @param	l
+	 * @param	p	directory record
+	 * @param	l	list of attributes
 	 */
 	public DicomDirectoryRecord(DicomDirectoryRecord p,AttributeList l) {
 		parent=p;
@@ -245,7 +227,7 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * @param	child
+	 * @param	child	child directory record to add
 	 */
 	public void addChild(DicomDirectoryRecord child) {
 		if (children == null) children=new TreeSet();	// is sorted
@@ -254,7 +236,7 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * @param	child
+	 * @param	child	child directory record to remove
 	 */
 	public void removeChild(DicomDirectoryRecord child) {
 		children.remove(child);
@@ -262,8 +244,8 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	}
 
 	/**
-	 * @param	sibling
-	 * @exception	DicomException
+	 * @param	sibling			sibling to add
+	 * @throws	DicomException	if no parent
 	 */
 	public void addSibling(DicomDirectoryRecord sibling) throws DicomException {
 		if (parent == null) {
@@ -277,13 +259,15 @@ public abstract class DicomDirectoryRecord implements Comparable, TreeNode {
 	/**
 	 * <p>Set the parent node of this node.</p>
 	 *
-	 * @param	parent
+	 * @param	parent	parent directory record
 	 */
 	public void setParent(DicomDirectoryRecord parent) {
 		this.parent = parent;
 	}
 
-	/***/
+	/**
+	 * @return a list of attributes for this directory record
+	 */
 	public AttributeList getAttributeList() { return list; }
 }
 

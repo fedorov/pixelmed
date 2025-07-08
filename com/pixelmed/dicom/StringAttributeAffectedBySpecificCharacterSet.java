@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -12,7 +12,7 @@ import java.io.*;
  */
 abstract public class StringAttributeAffectedBySpecificCharacterSet extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttributeAffectedBySpecificCharacterSet.java,v 1.5 2003/09/22 21:21:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttributeAffectedBySpecificCharacterSet.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 	
 	/**
 	 * @param	t
@@ -34,8 +34,8 @@ abstract public class StringAttributeAffectedBySpecificCharacterSet extends Stri
 	 * @param	vl
 	 * @param	i
 	 * @param	specificCharacterSet
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	protected StringAttributeAffectedBySpecificCharacterSet(AttributeTag t,long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl,i,specificCharacterSet);

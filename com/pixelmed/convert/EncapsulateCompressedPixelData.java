@@ -8,7 +8,18 @@ import com.pixelmed.dicom.TransferSyntax;
 
 import java.io.File;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
+/**
+ * <p>A class to create a DICOM image format file encoded in a compressed transfer syntax with the compressed bitstreams supplied from files.</p>
+ *
+ * @author	dclunie
+ */
 public class EncapsulateCompressedPixelData {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/EncapsulateCompressedPixelData.java,v 1.3 2019/02/24 14:16:44 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(EncapsulateCompressedPixelData.class);
 
 	/**
 	 * <p>Create a DICOM image format file encoded in a compressed transfer syntax with the compressed bitstreams supplied from files.</p>
@@ -43,7 +54,7 @@ public class EncapsulateCompressedPixelData {
 				
  				OtherByteAttributeMultipleCompressedFrames aPixelData = new OtherByteAttributeMultipleCompressedFrames(TagFromName.PixelData,frameFiles);
 				list.put(aPixelData);
-				
+				// do not insertSuitableSpecificCharacterSetForAllStringValues() - input is assumed to be correct in this respect and we are not messing with the list (001158)
 				list.write(arg[0],transferSyntaxUID,true/*useMeta*/,true/*useBufferedStream*/);
 			}
 			else {
@@ -53,7 +64,7 @@ public class EncapsulateCompressedPixelData {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 

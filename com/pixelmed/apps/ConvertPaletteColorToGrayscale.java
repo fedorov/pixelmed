@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -10,14 +10,20 @@ import java.awt.*;
 import java.awt.color.*; 
 import java.awt.image.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class of static methods to convert PALETTE COLOR to MONOCHROME2 images.</p>
  *
  * @author	dclunie
  */
 public class ConvertPaletteColorToGrayscale {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertPaletteColorToGrayscale.java,v 1.16 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ConvertPaletteColorToGrayscale.class);
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertPaletteColorToGrayscale.java,v 1.4 2013/02/01 13:53:20 dclunie Exp $";
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
 
 	/**
 	 * <p>Read a DICOM image input format file with a Photometric Interpretation of PALETTE COLOR, and from it create a DICOM image of Photometric Interpretation MONOCHROME2.</p>
@@ -104,7 +110,7 @@ public class ConvertPaletteColorToGrayscale {
 				{ Attribute a = new UnsignedShortAttribute(TagFromName.BitsAllocated); a.addValue(8); list.put(a); }
 				{ Attribute a = new UnsignedShortAttribute(TagFromName.HighBit); a.addValue(7); list.put(a); }
 				
-				list.remove(TagFromName.UltrasoundColorDataPresent);
+				list.remove(dictionary.getTagFromName("UltrasoundColorDataPresent"));
 				
 				list.remove(TagFromName.RedPaletteColorLookupTableDescriptor);
 				list.remove(TagFromName.GreenPaletteColorLookupTableDescriptor);
@@ -149,7 +155,7 @@ public class ConvertPaletteColorToGrayscale {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

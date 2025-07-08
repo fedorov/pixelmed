@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -42,7 +42,7 @@ public class TestCodingSchemeIdentification extends TestCase {
 		
 		String codingSchemeRegistry1 = "HL7";
 		String codingSchemeUID1 = "2.16.840.1.113883.6.4";
-		String codingSchemeName1 = "ICD-10 Procedure Coding System";
+		String codingSchemeName1 = "ICD-10-PCS";
 	
 		String codeValue2 = "T-A0100";
 		String codingSchemeDesignator2 = "SRT";
@@ -50,7 +50,15 @@ public class TestCodingSchemeIdentification extends TestCase {
 		
 		String codingSchemeRegistry2 = "HL7";
 		String codingSchemeUID2 = "2.16.840.1.113883.6.96";
-		String codingSchemeName2 = "SNOMED-CT using SNOMED-RT style values";
+		String codingSchemeName2 = "SNOMED CT using SNOMED-RT style values";
+	
+		String codeValue3 = "209001";
+		String codingSchemeDesignator3 = "99PMP";
+		String codeMeaning3 = "Finding";
+		
+		String codingSchemeRegistry3 = "";
+		String codingSchemeUID3 = "1.3.6.1.4.1.5962.98.1";
+		String codingSchemeName3 = "PixelMed Publishing";
 	
 		AttributeList list = new AttributeList();
 		{
@@ -65,16 +73,24 @@ public class TestCodingSchemeIdentification extends TestCase {
 			a.addItem(item.getAttributeList());
 			list.put(a);
 		}
+		{
+			SequenceAttribute a = new SequenceAttribute(TagFromName.ConceptCodeSequence);
+			CodedSequenceItem item = new CodedSequenceItem(codeValue3,codingSchemeDesignator3,codeMeaning3);
+			a.addItem(item.getAttributeList());
+			list.put(a);
+		}
 	
 		{
 			CodingSchemeIdentification csi = CodingSchemeIdentification.getCodingSchemesFromExistingAttributeList(list);
 			assertTrue("Checking CodingSchemeIdentification was constructed",csi != null);
 			SequenceAttribute a = csi.getAsSequenceAttribute();
 			assertTrue("Checking CodingSchemeIdentification returned SequenceAttribute",a != null);
-			assertTrue("Checking CodingSchemeIdentification returned SequenceAttribute with one item",a.getNumberOfItems() == 2);
 			if (a != null) {
 				list.put(a);
 			}
+//System.err.println(list);
+//System.err.println("a.getNumberOfItems() = "+a.getNumberOfItems());
+			assertTrue("Checking CodingSchemeIdentification returned SequenceAttribute with three items",a.getNumberOfItems() == 3);
 		}
 
 		{
@@ -92,6 +108,13 @@ public class TestCodingSchemeIdentification extends TestCase {
 			assertEquals("Checking CodingSchemeIdentification item codingSchemeRegistry",codingSchemeRegistry2,item.getCodingSchemeRegistry());
 			assertEquals("Checking CodingSchemeIdentification item codingSchemeUID",codingSchemeUID2,item.getCodingSchemeUID());
 			assertEquals("Checking CodingSchemeIdentification item codingSchemeName",codingSchemeName2,item.getCodingSchemeName());
+			
+			item = csi.getByCodingSchemeDesignator(codingSchemeDesignator3);
+			assertTrue("Checking CodingSchemeIdentification contains item",item != null);
+			assertEquals("Checking CodingSchemeIdentification item codeValue",codingSchemeDesignator3,item.getCodingSchemeDesignator());
+			assertEquals("Checking CodingSchemeIdentification item codingSchemeRegistry",codingSchemeRegistry3,item.getCodingSchemeRegistry());
+			assertEquals("Checking CodingSchemeIdentification item codingSchemeUID",codingSchemeUID3,item.getCodingSchemeUID());
+			assertEquals("Checking CodingSchemeIdentification item codingSchemeName",codingSchemeName3,item.getCodingSchemeName());
 			
 		}
 	}

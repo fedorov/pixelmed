@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -38,6 +38,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to read a map of Study, Series, SOP Instance and Frame of Reference UIDs pairs, and then remap occurences in a set of DICOM files to the other member of the pair.</p>
@@ -50,8 +52,9 @@ import java.util.Set;
  * @author	dclunie
  */
 public class RemapUIDs {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RemapUIDs.java,v 1.14 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RemapUIDs.java,v 1.3 2012/09/28 21:10:23 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DoseReporterWithLegacyOCRAndAutoSendToRegistry.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 
@@ -110,7 +113,7 @@ public class RemapUIDs {
 					}
 				}
 				catch (DicomException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 			else if (a instanceof SequenceAttribute) {
@@ -176,7 +179,8 @@ public class RemapUIDs {
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -197,7 +201,7 @@ public class RemapUIDs {
 				}
 			}
 			else {
-				System.err.println("Ignoring too few or too many UIDs (pair of 2 required): "+line);
+				slf4jlogger.warn("Ignoring too few or too many UIDs (pair of 2 required): {}",line);
 			}
 		}
 		in.close();
@@ -233,7 +237,7 @@ public class RemapUIDs {
 			new RemapUIDs(arg[0],arg[1],arg[2]);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
@@ -37,7 +37,7 @@ Vector shapes = localizerPoster.getOutlineOnLocalizerForThisGeometry(postImageGe
  */
 public abstract class LocalizerPoster {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPoster.java,v 1.17 2009/11/14 14:10:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPoster.java,v 1.28 2025/01/29 10:58:08 dclunie Exp $";
 
 	/***/
 	protected Vector3d localizerRow;
@@ -67,7 +67,7 @@ public abstract class LocalizerPoster {
 	 *
 	 * @param	row				the row direction cosines
 	 * @param	column				the column direction cosines
-	 * @exception	IllegalArgumentException	thrown if not
+	 * @throws	IllegalArgumentException	thrown if not
 	 */
 	public static void validateDirectionCosines(Vector3d row,Vector3d column) throws IllegalArgumentException {
 		if (Math.abs(row.lengthSquared()-1) > 0.001) {
@@ -87,7 +87,7 @@ public abstract class LocalizerPoster {
 	 * @param	row				the row direction cosines
 	 * @param	column				the column direction cosines
 	 * @param	normal				the normal to the row and column plane (the slice direction)
-	 * @exception	IllegalArgumentException	thrown if not
+	 * @throws	IllegalArgumentException	thrown if not
 	 */
 	public static void validateDirectionCosines(Vector3d row,Vector3d column,Vector3d normal) throws IllegalArgumentException {
 		if (Math.abs(row.lengthSquared()-1) > 0.001) {

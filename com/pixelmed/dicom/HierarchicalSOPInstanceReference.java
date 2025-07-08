@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class HierarchicalSOPInstanceReference {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/HierarchicalSOPInstanceReference.java,v 1.2 2012/08/11 17:17:45 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/HierarchicalSOPInstanceReference.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 
 	protected String studyInstanceUID;
 	protected String seriesInstanceUID;
@@ -270,7 +270,7 @@ public class HierarchicalSOPInstanceReference {
 	/**
 	 * <p>Dump the references in an a file (whether it is an SR file or not).</p>
 	 *
-	 * @param	arg
+	 * @param	arg	DICOM file
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -291,7 +291,7 @@ public class HierarchicalSOPInstanceReference {
 				System.err.println(HierarchicalSOPInstanceReference.toString(map));
 			}
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

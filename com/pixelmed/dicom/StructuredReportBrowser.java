@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -25,7 +25,7 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  */
 public class StructuredReportBrowser extends JFrame {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReportBrowser.java,v 1.10 2010/05/31 17:32:02 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReportBrowser.java,v 1.22 2025/01/29 10:58:07 dclunie Exp $";
 
 	private JTree tree;
 	private StructuredReport treeModel;
@@ -36,7 +36,7 @@ public class StructuredReportBrowser extends JFrame {
 	 * <p>Implicitly builds a tree from the attribute list.</p>
 	 *
 	 * @param	list				the list of attributes in which the structured report is encoded
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReportBrowser(AttributeList list) throws DicomException {
 		this(list,"SR Tree");
@@ -49,7 +49,7 @@ public class StructuredReportBrowser extends JFrame {
 	 *
 	 * @param	list				the list of attributes in which the structured report is encoded
 	 * @param	title
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReportBrowser(AttributeList list,String title) throws DicomException {
 		super(title);
@@ -129,7 +129,7 @@ public class StructuredReportBrowser extends JFrame {
 			System.err.println("display tree");
 			tree.setVisible(true);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

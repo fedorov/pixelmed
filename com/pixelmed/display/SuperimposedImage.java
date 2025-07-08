@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -7,6 +7,9 @@ import com.pixelmed.geometry.GeometryOfVolume;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class that supports matching the geometry of a superimposed image
@@ -19,9 +22,11 @@ import java.awt.image.BufferedImage;
  */
 
 public class SuperimposedImage {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedImage.java,v 1.18 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedImage.java,v 1.3 2013/10/16 16:08:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SuperimposedImage.class);
 	
+	//public static final double DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE = 1.5d;	// mm
 	public static final double DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE = 0.125d;	// mm
 	//public static final double DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE = 0.01d;	// mm
 	
@@ -43,13 +48,16 @@ public class SuperimposedImage {
 		double signedDifference = superimposedDistanceAlongNormal - underlyingDistanceAlongNormal;
 		double difference = Math.abs(signedDifference);
 		boolean result = difference <= toleranceDistance;
-//System.err.println("SuperimposedImage.isSliceCloseEnoughToSuperimpose(): distance along normal superimposed = "+superimposedDistanceAlongNormal+" underlying = "+underlyingDistanceAlongNormal+" difference = "+difference+" toleranceDistance = "+toleranceDistance+" is "+(result ? "" : "NOT ")+"close enough");
-		if (!result) {
-			double[] normal = geometryOfSuperimposedSlice.getNormalArray();
-			double[] correctionRequired = new double[3];
-			correctionRequired[0] = normal[0] * signedDifference;
-			correctionRequired[1] = normal[1] * signedDifference;
-			correctionRequired[2] = normal[2] * signedDifference;
+		if (result) {
+			slf4jlogger.info("isSliceCloseEnoughToSuperimpose(): distance along normal superimposed = {} underlying = {} difference = {} toleranceDistance = {} is close enough",superimposedDistanceAlongNormal,underlyingDistanceAlongNormal,difference,toleranceDistance);
+		}
+		else {
+//System.err.println("SuperimposedImage.isSliceCloseEnoughToSuperimpose(): distance along normal superimposed = "+superimposedDistanceAlongNormal+" underlying = "+underlyingDistanceAlongNormal+" difference = "+difference+" toleranceDistance = "+toleranceDistance+" is NOT close enough");
+//			double[] normal = geometryOfSuperimposedSlice.getNormalArray();
+//			double[] correctionRequired = new double[3];
+//			correctionRequired[0] = normal[0] * signedDifference;
+//			correctionRequired[1] = normal[1] * signedDifference;
+//			correctionRequired[2] = normal[2] * signedDifference;
 //System.err.println("SuperimposedImage.isSliceCloseEnoughToSuperimpose(): correction to superimposed TLHC required = ("+correctionRequired[0]+","+correctionRequired[1]+","+correctionRequired[2]+")");
 		}
 		return result;
@@ -81,6 +89,7 @@ public class SuperimposedImage {
 		private BufferedImage bufferedImage;
 		private double columnOrigin;
 		private double rowOrigin;
+		private GeometryOfSlice geometryOfSuperimposedSlice;
 	
 		/**
 		 * @return	a BufferedImage if a superimposed frame that is close enough can be found, otherwise null
@@ -100,6 +109,7 @@ public class SuperimposedImage {
 			bufferedImage = null;
 			columnOrigin = 0;
 			rowOrigin = 0;
+			geometryOfSuperimposedSlice = null;
 			
 			if (underlyingGeometry != null) {
 //System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): underlyingFrame = "+underlyingFrame);
@@ -108,7 +118,7 @@ public class SuperimposedImage {
 				if (geometryOfUnderlyingSlice != null && superimposedGeometry != null) {
 					int superimposedFrame = superimposedGeometry.findClosestSliceInSamePlane(geometryOfUnderlyingSlice);
 //System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): closest superimposed frame = "+superimposedFrame);
-					GeometryOfSlice geometryOfSuperimposedSlice = superimposedGeometry.getGeometryOfSlice(superimposedFrame);
+					geometryOfSuperimposedSlice = superimposedGeometry.getGeometryOfSlice(superimposedFrame);
 //System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): geometryOfSuperimposedSlice = "+geometryOfSuperimposedSlice);
 					// closest slice may not be "close enough", so check that normal distance is (near) zero (e.g., Z positions are the same in the axial case)
 					if (isSliceCloseEnoughToSuperimpose(geometryOfSuperimposedSlice,geometryOfUnderlyingSlice,toleranceDistance)) {
@@ -126,6 +136,22 @@ public class SuperimposedImage {
 									BufferedImage originalBufferedImage = superimposedSourceImage.getBufferedImage(superimposedFrame);
 //System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): originalBufferedImage = "+originalBufferedImage);
 									if (originalBufferedImage != null) {
+										//{
+										//	int voxelCount=0;
+										//	java.awt.image.ColorModel cm = originalBufferedImage.getColorModel();
+										//	for (int y = 0; y < originalBufferedImage.getHeight(); y++) {
+										//		for (int x = 0; x < originalBufferedImage.getWidth(); x++) {
+										//			int pixel = originalBufferedImage.getRGB(x, y);
+										//			if (cm.getRed(pixel) == 0 && cm.getGreen(pixel) == 0 && cm.getBlue(pixel) == 0) {
+										//			}
+										//			else {
+										//				++voxelCount;
+										//			}
+										//		}
+										//	}
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): originalBufferedImage voxelCount = "+voxelCount);
+										//}
+
 										double[] underlyingSpacing = geometryOfUnderlyingSlice.getVoxelSpacingArray();
 										double[] superimposedSpacing = geometryOfSuperimposedSlice.getVoxelSpacingArray();
 										double useScaleFactor = superimposedSpacing[0] / underlyingSpacing[0];
@@ -136,14 +162,14 @@ public class SuperimposedImage {
 										transform.concatenate(java.awt.geom.AffineTransform.getScaleInstance(useScaleFactor,useScaleFactor));
 //System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): transform = "+transform);
 
-										columnOrigin = 0;
-										rowOrigin = 0;
-									
 										// http://docs.oracle.com/javase/tutorial/2d/images/examples/SeeThroughImageApplet.java
-										bufferedImage = new BufferedImage((int)Math.ceil(originalBufferedImage.getWidth()*useScaleFactor),(int)Math.ceil(originalBufferedImage.getHeight()*useScaleFactor),BufferedImage.TYPE_INT_ARGB);
+										// need to make the new image large enough to account for the row and column offset in the transform, else gets clipped
+										bufferedImage = new BufferedImage((int)Math.ceil(originalBufferedImage.getWidth()*useScaleFactor+columnOrigin),(int)Math.ceil(originalBufferedImage.getHeight()*useScaleFactor+rowOrigin),BufferedImage.TYPE_INT_ARGB);
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): new BufferedImage = "+bufferedImage);
 										Graphics2D g2d = bufferedImage.createGraphics();
 										g2d.transform(transform);
 										g2d.drawImage(originalBufferedImage,0,0,null);
+										//int voxelCount=0;
 										// now make it transparent (alpha of 0) where has zero RGB values
 										// http://stackoverflow.com/questions/7405955/making-a-certain-color-on-a-bufferedimage-become-transparent
 										{
@@ -156,20 +182,50 @@ public class SuperimposedImage {
 													if (cm.getRed(pixel) == 0 && cm.getGreen(pixel) == 0 && cm.getBlue(pixel) == 0) {
 														bufferedImage.setRGB(x,y,0);	// sets R,G,B, and A to zero
 													}
+													//else {
+													//	++voxelCount;
+													//}
 												}
 											}
 										}
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): new BufferedImage voxelCount = "+voxelCount);
+
+										columnOrigin = 0;		// we have already accounted for the offset, so caller does not have to
+										rowOrigin = 0;
 									}
 								}
 							}
 						}
 					}
+					else {
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage(): not close enough to superimpose");
+					}
 				}
+				else {
+					slf4jlogger.error("AppliedToUnderlyingImage(): missing geometryOfUnderlyingSlice or superimposedGeometry");
+				}
+			}
+			else {
+				slf4jlogger.error("SuperimposedImage.AppliedToUnderlyingImage(): missing underlyingGeometry");
 			}
 		}
 		
 		public String toString() {
 			return "(bufferedImage="+(bufferedImage == null ? "null" : bufferedImage.toString())+",columnOrigin="+columnOrigin+",rowOrigin="+rowOrigin+")";
+		}
+
+		public void notificationOfCurrentLocationIn3DSpace(double[] currentLocationIn3DSpace) {
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage.notificationOfCurrentLocationIn3DSpace(): 3D ("+java.util.Arrays.toString(currentLocationIn3DSpace)+")");
+			double[] frameLocation = geometryOfSuperimposedSlice.lookupImageCoordinate(currentLocationIn3DSpace);
+//System.err.println("SuperimposedImage.AppliedToUnderlyingImage.notificationOfCurrentLocationIn3DSpace(): 2D ("+java.util.Arrays.toString(frameLocation)+")");
+			if (bufferedImage != null) {
+				int x = (int)(frameLocation[0]);
+				int y = (int)(frameLocation[1]);
+				int pixel = bufferedImage.getRGB(x,y);
+				if (pixel != 0) {
+					slf4jlogger.info("AppliedToUnderlyingImage.notificationOfCurrentLocationIn3DSpace(): Hit on non-zero at 3D ({}) at 2D ({},{})",java.util.Arrays.toString(currentLocationIn3DSpace),x,y);
+				}
+			}
 		}
 	}
 	

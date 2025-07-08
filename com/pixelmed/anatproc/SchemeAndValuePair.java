@@ -1,16 +1,22 @@
-/* Copyright (c) 2001-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
 import com.pixelmed.dicom.CodedSequenceItem;
 
 /**
+ * <p>This class represents a concept by a combination of CodingSchemeDesignator and CodeValue.</p>
  * 
+ * <p>Typically used as a index key with which to look up a concept (disregarding its text CodeMeaning).</p>
+ * 
+ * @see CodedConcept
+ * @see DictionaryOfConcepts
+ *
  * @author	dclunie
  */
 public class SchemeAndValuePair {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/SchemeAndValuePair.java,v 1.1 2007/06/22 19:59:11 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/SchemeAndValuePair.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
 	
 	protected String codeValue;
 	protected String codingSchemeDesignator;

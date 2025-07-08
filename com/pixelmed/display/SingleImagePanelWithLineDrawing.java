@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -33,6 +33,9 @@ import com.pixelmed.display.event.RegionSelectionChangeEvent;
 
 import com.pixelmed.geometry.GeometryOfVolume;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>Implements a component that extends a SingleImagePanel to also draw regions.</p>
  *
@@ -41,9 +44,9 @@ import com.pixelmed.geometry.GeometryOfVolume;
  * @author	dclunie
  */
 class SingleImagePanelWithLineDrawing extends SingleImagePanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithLineDrawing.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithLineDrawing.java,v 1.4 2013/06/19 12:48:41 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(WindowCenterAndWidth.class);
 
 	// Constructors ...
 
@@ -200,10 +203,12 @@ class SingleImagePanelWithLineDrawing extends SingleImagePanel {
 			NumberFormat formatter = new DecimalFormat("###.#");
 			String annotation = formatter.format(distanceInPixels)+" pixels";
 			if (pixelSpacingInSourceImage > 0) {
+				slf4jlogger.debug("endInteractiveDrawing(): pixelSpacingInSourceImage >0, ={}",pixelSpacingInSourceImage);
 				annotation = formatter.format(distanceInPixels*pixelSpacingInSourceImage)+" mm" + (typeOfPixelSpacing == null ? " " : (" ("+typeOfPixelSpacing+")"));
 			}
-			else if (imageGeometry != null) {
+			else if (imageGeometry != null && imageGeometry.hasFrameInformation()) {
 				// else perhaps are non-square, etc. ... see if we can do it between 3D points
+				slf4jlogger.info("endInteractiveDrawing(): imageGeometry != null and hasFrameInformation()");
 				int useSrcImageIndex = currentSrcImageSortOrder == null ? currentSrcImageIndex : currentSrcImageSortOrder[currentSrcImageIndex];
 				double[] startLocationIn3DSpace = new double[3];
 				double[] endLocationIn3DSpace = new double[3];
@@ -217,9 +222,10 @@ class SingleImagePanelWithLineDrawing extends SingleImagePanel {
 			}
 			else {
 				// else perhaps are non-square, non-3D, etc.
+				slf4jlogger.debug("endInteractiveDrawing(): no information - use pixels");
 				annotation = formatter.format(distanceInPixels)+" pixels";
 			}
-System.err.println("Length="+distanceInPixels+" pixels, "+annotation);
+			slf4jlogger.debug("endInteractiveDrawing(): Length={} pixels, {}",distanceInPixels,annotation);
 			interactiveDrawingShapes = null;
 			if (persistentDrawingShapes == null) {
 				persistentDrawingShapes = new Vector();

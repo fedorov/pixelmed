@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -25,14 +25,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to process a set of multiple files and check that all referenced SOP Instances are present within the set.</p>
  *
  * @author	dclunie
  */
 public class CheckAllUIDReferencesResolve {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CheckAllUIDReferencesResolve.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CheckAllUIDReferencesResolve.java,v 1.1 2012/09/08 16:22:51 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CheckAllUIDReferencesResolve.class);
 	
 	private SetOfDicomFiles dicomFilesRead = new SetOfDicomFiles();
 
@@ -59,7 +63,7 @@ public class CheckAllUIDReferencesResolve {
 				}
 			}
 			catch (Exception e) {
-				System.err.println("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {} exception ",mediaFileName,e);
 			}
 		}
 	}
@@ -86,7 +90,7 @@ public class CheckAllUIDReferencesResolve {
 				Set<String> setOfReferencedSOPInstanceUIDs = list.findAllNestedReferencedSOPInstanceUIDs();
 				for (String referencedSOPInstanceUID : setOfReferencedSOPInstanceUIDs) {
 					if (mapOfSOPInstanceUIDToDicomFile.get(referencedSOPInstanceUID) ==  null) {
-						System.err.println("In file "+dicomFile.getFileName()+" was a reference to SOP Instance UID "+referencedSOPInstanceUID+" that is not present in the set of files");
+						slf4jlogger.info("In file {} was a reference to SOP Instance UID {} that is not present in the set of files",dicomFile.getFileName(),referencedSOPInstanceUID);
 					}
 					//else {
 					//	System.err.println("In file "+dicomFile.getFileName()+" was a reference to SOP Instance UID "+referencedSOPInstanceUID+" that is present in the set of files");
@@ -111,7 +115,7 @@ public class CheckAllUIDReferencesResolve {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

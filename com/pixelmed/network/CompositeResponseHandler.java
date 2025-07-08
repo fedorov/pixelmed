@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -7,6 +7,9 @@ import com.pixelmed.dicom.*;
 
 import java.util.*;
 import java.io.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This abstract class provides a mechanism to process each PDU of a composite response as it is received,
@@ -23,8 +26,9 @@ import java.io.*;
  * @author	dclunie
  */
 abstract public class CompositeResponseHandler extends ReceivedDataHandler {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CompositeResponseHandler.java,v 1.15 2013/04/27 01:23:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CompositeResponseHandler.java,v 1.29 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompositeResponseHandler.class);
 
 	/***/
 	protected byte[] commandReceived;
@@ -41,62 +45,75 @@ abstract public class CompositeResponseHandler extends ReceivedDataHandler {
 	 * Construct a handler to process each PDU of a composite response as it is received,
 	 * evaluating the status of the response for success.
 	 *
-	 * @param	debugLevel	0 for no debugging, > 0 for increasingly verbose debugging
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #CompositeResponseHandler()} instead.
+	 * @param	debugLevel	ignored
 	 */
 	public CompositeResponseHandler(int debugLevel) {
-		super(debugLevel);
+		this();
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	/**
+	 * Construct a handler to process each PDU of a composite response as it is received,
+	 * evaluating the status of the response for success.
+	 */
+	public CompositeResponseHandler() {
+		super();
 		commandReceived=null;
 		dataReceived=null;
 		success=false;
 		done=false;
 		allowData=false;
 	}
+
 	
 	/**
-	 * Extract an {@link AttributeList AttributeList} from the concatenated bytes
+	 * Extract an {@link com.pixelmed.dicom.AttributeList AttributeList} from the concatenated bytes
 	 * that have been assembled from one or more PDUs and which make up an entire
 	 * Command or Dataset.
 	 *
-	 * @param	bytes			the concatenated PDU bytes up to and including the last fragment
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getAttributeListFromCommandOrData(byte[],String)} instead.
+	 * @param	bytes				the concatenated PDU bytes up to and including the last fragment
 	 * @param	transferSyntaxUID	the Transfer Syntax to use to interpret the bytes
-	 * @param	debugLevel		integer debug level
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @param	debugLevel	ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public static AttributeList getAttributeListFromCommandOrData(byte[] bytes,String transferSyntaxUID,int debugLevel) throws DicomNetworkException, DicomException, IOException {
-if (debugLevel > 2) System.err.println(HexDump.dump(bytes));
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		return getAttributeListFromCommandOrData(bytes,transferSyntaxUID);
+	}
+	
+	/**
+	 * Extract an {@link com.pixelmed.dicom.AttributeList AttributeList} from the concatenated bytes
+	 * that have been assembled from one or more PDUs and which make up an entire
+	 * Command or Dataset.
+	 *
+	 * @param	bytes				the concatenated PDU bytes up to and including the last fragment
+	 * @param	transferSyntaxUID	the Transfer Syntax to use to interpret the bytes
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public static AttributeList getAttributeListFromCommandOrData(byte[] bytes,String transferSyntaxUID) throws DicomNetworkException, DicomException, IOException {
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(HexDump.dump(bytes));
 		AttributeList list = new AttributeList();
 		list.read(new DicomInputStream(new ByteArrayInputStream(bytes),transferSyntaxUID,false));
-if (debugLevel > 2) System.err.print(list);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(list.toString());
 		return list;
 	}
 
 	/**
-	 * Extract an {@link AttributeList AttributeList} from the concatenated bytes
+	 * Extract an {@link com.pixelmed.dicom.AttributeList AttributeList} from the concatenated bytes
 	 * that have been assembled from one or more PDUs and which make up an entire
 	 * Command or Dataset.
 	 *
 	 * @param	bytes			the concatenated PDU bytes up to and including the last fragment
 	 * @param	transferSyntaxUID	the Transfer Syntax to use to interpret the bytes
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
-	 */
-	private AttributeList getAttributeListFromCommandOrData(byte[] bytes,String transferSyntaxUID) throws DicomNetworkException, DicomException, IOException {
-		return getAttributeListFromCommandOrData(bytes,transferSyntaxUID,debugLevel);
-	}
-
-	/**
-	 * Extract an {@link AttributeList AttributeList} from the concatenated bytes
-	 * that have been assembled from one or more PDUs and which make up an entire
-	 * Command or Dataset.
-	 *
-	 * @param	bytes			the concatenated PDU bytes up to and including the last fragment
-	 * @param	transferSyntaxUID	the Transfer Syntax to use to interpret the bytes
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	static public String dumpAttributeListFromCommandOrData(byte[] bytes,String transferSyntaxUID) throws DicomNetworkException, DicomException, IOException {
 		String dump = null;
@@ -106,7 +123,7 @@ if (debugLevel > 2) System.err.print(list);
 			dump = list.toString();
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 			dump = null;
 		}
 		return dump;
@@ -118,13 +135,13 @@ if (debugLevel > 2) System.err.print(list);
 	 *
 	 * @param	pdata		the PDU that was received
 	 * @param	association	the association on which the PDU was received
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public void sendPDataIndication(PDataPDU pdata,Association association) throws DicomNetworkException, DicomException, IOException {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": CompositeResponseHandler:");
-if (debugLevel > 1) super.dumpPDVList(pdata.getPDVList());
+		slf4jlogger.debug("sendPDataIndication():");
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug(super.dumpPDVListToString(pdata.getPDVList()));
 		// append to command ...
 		LinkedList pdvList = pdata.getPDVList();
 		ListIterator i = pdvList.listIterator();
@@ -133,7 +150,7 @@ if (debugLevel > 1) super.dumpPDVList(pdata.getPDVList());
 			if (pdv.isCommand()) {
 				commandReceived=ByteArray.concatenate(commandReceived,pdv.getValue());	// handles null cases
 				if (pdv.isLastFragment()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": CompositeResponseHandler: last fragment of command seen");
+					slf4jlogger.debug("sendPDataIndication(): last fragment of command seen");
 					AttributeList list = getAttributeListFromCommandOrData(commandReceived,TransferSyntax.Default);
 					commandReceived=null;
 					evaluateStatusAndSetSuccess(list);
@@ -144,7 +161,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Compos
 				if (allowData) {
 					dataReceived=ByteArray.concatenate(dataReceived,pdv.getValue());	// handles null cases
 					if (pdv.isLastFragment()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": CompositeResponseHandler: last fragment of data seen");
+						slf4jlogger.debug("sendPDataIndication(): last fragment of data seen");
 						AttributeList list = getAttributeListFromCommandOrData(dataReceived,
 							association.getTransferSyntaxForPresentationContextID(pdv.getPresentationContextID()));
 						makeUseOfDataSet(list);

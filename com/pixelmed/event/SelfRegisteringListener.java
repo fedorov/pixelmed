@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.event;
 
@@ -8,7 +8,7 @@ package com.pixelmed.event;
 public abstract class SelfRegisteringListener extends Listener {
 
 	/***/
-	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/SelfRegisteringListener.java,v 1.3 2005/10/01 11:18:40 dclunie Exp $";
+	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/SelfRegisteringListener.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	classOfEventHandled
@@ -28,6 +28,12 @@ public abstract class SelfRegisteringListener extends Listener {
 	//}
 
 	/**
+	 * <p>Create a listener that is registered with the ApplicationEventDispatcher.</p>
+	 *
+	 * <p>The caller of this constructor needs to keep a strong reference (e.g., dialog or application scope variable) to
+	 * keep the listener hanging around and receiving events, since the ApplicationEventDispatcher uses only a
+	 * WeakReference, which may go away during garbage collection.</p>
+	 *
 	 * @param	className
 	 * @param	eventContext
 	 */

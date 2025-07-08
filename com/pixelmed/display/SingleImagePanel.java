@@ -1,6 +1,36 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.event.ApplicationEventDispatcher;
+import com.pixelmed.event.Event;
+import com.pixelmed.event.EventContext;
+import com.pixelmed.event.SelfRegisteringListener;
+
+import com.pixelmed.display.event.ApplyShutterChangeEvent;
+import com.pixelmed.display.event.FrameSelectionChangeEvent;
+import com.pixelmed.display.event.FrameSortOrderChangeEvent;
+import com.pixelmed.display.event.GraphicDisplayChangeEvent;
+import com.pixelmed.display.event.StatusChangeEvent;
+import com.pixelmed.display.event.VOIFunctionChangeEvent;
+import com.pixelmed.display.event.WindowingAccelerationValueChangeEvent;
+import com.pixelmed.display.event.WindowLinearCalculationChangeEvent;
+import com.pixelmed.display.event.WindowCenterAndWidthChangeEvent;
+
+import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.DicomException;
+import com.pixelmed.dicom.DisplayShutter;
+import com.pixelmed.dicom.ModalityTransform;
+import com.pixelmed.dicom.Overlay;
+import com.pixelmed.dicom.RealWorldValueTransform;
+import com.pixelmed.dicom.SUVTransform;
+import com.pixelmed.dicom.VOITransform;
+
+import com.pixelmed.utils.ColorUtilities;
+import com.pixelmed.utils.FloatFormatter;
+
+import com.pixelmed.geometry.GeometryOfSlice;
+import com.pixelmed.geometry.GeometryOfVolume;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -60,36 +90,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Set;
 import java.util.Vector;
 
-import com.pixelmed.event.ApplicationEventDispatcher;
-import com.pixelmed.event.Event;
-import com.pixelmed.event.EventContext;
-import com.pixelmed.event.SelfRegisteringListener;
-
-import com.pixelmed.display.event.ApplyShutterChangeEvent;
-import com.pixelmed.display.event.FrameSelectionChangeEvent;
-import com.pixelmed.display.event.FrameSortOrderChangeEvent;
-import com.pixelmed.display.event.GraphicDisplayChangeEvent;
-import com.pixelmed.display.event.StatusChangeEvent;
-import com.pixelmed.display.event.VOIFunctionChangeEvent;
-import com.pixelmed.display.event.WindowingAccelerationValueChangeEvent;
-import com.pixelmed.display.event.WindowLinearCalculationChangeEvent;
-import com.pixelmed.display.event.WindowCenterAndWidthChangeEvent;
-
-import com.pixelmed.dicom.AttributeList;
-import com.pixelmed.dicom.DisplayShutter;
-import com.pixelmed.dicom.ModalityTransform;
-import com.pixelmed.dicom.Overlay;
-import com.pixelmed.dicom.RealWorldValueTransform;
-import com.pixelmed.dicom.SUVTransform;
-import com.pixelmed.dicom.VOITransform;
-
-import com.pixelmed.utils.ColorUtilities;
-import com.pixelmed.utils.FloatFormatter;
-
-import com.pixelmed.geometry.GeometryOfSlice;
-import com.pixelmed.geometry.GeometryOfVolume;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Implements a component that can display a single or multi-frame image in a
@@ -116,9 +121,9 @@ import com.pixelmed.geometry.GeometryOfVolume;
  * @author	dclunie
  */
 public class SingleImagePanel extends JComponent implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanel.java,v 1.214 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanel.java,v 1.186 2013/10/16 16:26:44 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SingleImagePanel.class);
 
 	/***/
 	SourceImage sImg;
@@ -174,6 +179,8 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 		cachedPreWindowedImage=null;
 		cachedResizedSelectedRegionImage=null;
 	}
+	
+	protected Set<SuperimposedImage.AppliedToUnderlyingImage> activeSuperimposedImagesAppliedToUnderlyingImage = new HashSet<SuperimposedImage.AppliedToUnderlyingImage>();
 
 	/**
 	 * whether or not to use the supplied VOI LUT, rather than a linear or sigmoid window function
@@ -500,21 +507,21 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	}
 	
 	public void displayReset() {
-//System.err.println("SingleImagePanel.displayReset()");
+		slf4jlogger.debug("displayReset()");
 		dirtySource();
 		useDisplayedAreaSelection=null;
 		establishInitialWindowOrVOILUT();
 	}
 
 	public void displaySelectedMagnificationRatio(double ratio) {
-//System.err.println("SingleImagePanel.displaySelectedMagnificationRatio(): ratio ="+ratio);
+		slf4jlogger.debug("displaySelectedMagnificationRatio(): ratio ={}",ratio);
 		dirtySource();
 		// originalDisplayedAreaSelection should never be null ... would have been initialized with default on first paintComponent();
 		try {
 			useDisplayedAreaSelection = (DisplayedAreaSelection)originalDisplayedAreaSelection.clone();
 		}
 		catch (Exception e) {				// e.g., CloneNotSupportedException ... should never happen
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 			useDisplayedAreaSelection = null;
 		}
 		if (useDisplayedAreaSelection != null) {
@@ -620,7 +627,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set the VOI function to the (default) window center/width linear transformation.</p>
 	 */
 	public final void setVOIFunctionToLinear() {
-//System.err.println("SingleImagePanel.setVOIFunctionToLinear()");
+		slf4jlogger.debug("setVOIFunctionToLinear()");
 		useVOIFunction = 0;
 	}
 
@@ -628,7 +635,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set the VOI function to a non-linear transformation using a logistic (sigmoid) curve with window center and width as parameters.</p>
 	 */
 	public final void setVOIFunctionToLogistic() {
-//System.err.println("SingleImagePanel.setVOIFunctionToLogistic()");
+		slf4jlogger.debug("setVOIFunctionToLogistic()");
 		useVOIFunction = 1;
 	}
 	
@@ -639,7 +646,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set the VOI linear function to use the exact window center/width linear transformation when applying to rescaled pixels.</p>
 	 */
 	public final void setWindowLinearCalculationToExact() {
-//System.err.println("SingleImagePanel.setWindowLinearCalculationToExact()");
+		slf4jlogger.debug("setWindowLinearCalculationToExact()");
 		useWindowLinearExactCalculationInsteadOfDICOMStandardMethod = true;
 	}
 
@@ -649,17 +656,17 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>The DICOM offset subtracts 0.5 from the window center and subtracts 1.0 from the window width before applying to rescaled pixels.</p>
 	 */
 	public final void setWindowLinearCalculationToDicom() {
-//System.err.println("SingleImagePanel.setWindowLinearCalculationToDicom()");
+		slf4jlogger.debug("setWindowLinearCalculationToDicom()");
 		useWindowLinearExactCalculationInsteadOfDICOMStandardMethod = false;
 	}
 	
-	private double windowingAccelerationValue = 1;
+	private double windowingAccelerationValue = 50;
 
 	/**
 	 * <p>Set the windowing acceleration value to use.</p>
 	 */
 	public final void setWindowingAccelerationValue(double value) {
-//System.err.println("SingleImagePanel.setWindowingAccelerationValue(): to "+value);
+		slf4jlogger.debug("setWindowingAccelerationValue(): to {}",value);
 		windowingAccelerationValue = value;
 	}
 
@@ -672,7 +679,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set whether or not to show graphics such as overlays.</p>
 	 */
 	public final void setShowOverlays(boolean showOverlays) {
-//System.err.println("SingleImagePanel.setShowOverlays(): "+showOverlays);
+		slf4jlogger.debug("setShowOverlays(): {}",showOverlays);
 		this.showOverlays = showOverlays;
 	}
 
@@ -680,7 +687,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set whether or not to apply shutter.</p>
 	 */
 	public final void setApplyShutter(boolean applyShutter) {
-//System.err.println("SingleImagePanel.setApplyShutter(): "+applyShutter);
+		slf4jlogger.debug("setApplyShutter(): {}",applyShutter);
 		this.applyShutter = applyShutter;
 	}
 
@@ -688,7 +695,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 * <p>Set whether or not to show superimposed images.</p>
 	 */
 	public final void setShowSuperimposedImages(boolean showSuperimposedImages) {
-//System.err.println("SingleImagePanel.setShowSuperimposedImages(): "+showSuperimposedImages);
+		slf4jlogger.debug("setShowSuperimposedImages(): {}",showSuperimposedImages);
 		this.showSuperimposedImages = showSuperimposedImages;
 	}
 
@@ -702,6 +709,9 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	int lastx;
 	/***/
 	int lasty;
+	
+	int currentx;	// these are used to cache current mouse position in case we need to update status bar values when frame changed but mouse location not moved (since RWVM may be different per frame) (000840)
+	int currenty;
 
 	/***/
 	int lastmiddley;
@@ -737,7 +747,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	
 	/**
 	 * if -1, then use statistical value first time then user adjusted values subsequently
-	 * if >= 0, then use selected VOI transform (if there is one for that frame)
+	 * if greater than or equal to 0, then use selected VOI transform (if there is one for that frame)
 	 */
 	int currentVOITransformInUse;
 
@@ -775,6 +785,12 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			displayReset();
 			repaint();
 		}
+		else if (e.getKeyCode() == KeyEvent.VK_S) {			// reset display to original displayed area selection, and reset windowing
+			dirtySource();
+			establishStatisticalWindow();
+			repaint();
+		}
+
 		else if (e.getKeyCode() == KeyEvent.VK_1) {			// reset display to original displayed area selection but with 1:1 display:image pixel magnification ratio
 			displaySelectedMagnificationRatio(1);
 			repaint();
@@ -972,9 +988,19 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	 */
 	public void mouseMoved(MouseEvent e) {
 //System.err.println(e.getX()+" "+e.getY());
-		{
-			double x = e.getX();
-			double y = e.getY();
+		currentx = e.getX();	// keep track of these in case needed by OurFrameSelectionChangeListener.changed() (000840)
+		currenty = e.getY();
+		updateStatusBarValues(currentx,currenty);
+	}
+	
+	/**
+	 * @param	x
+	 * @param	y
+	 */
+	public void updateStatusBarValues(int x,int y) {	// called by mouseMoved() or OurFrameSelectionChangeListener.changed() since mapping may be different for different frames (000840)
+//System.err.println(x+" "+y);
+		String str = null;
+		if (currentSrcImageIndex != -1) {	// (001074)
 			Point2D point = getImageCoordinateFromWindowCoordinate(x,y);
 			double subPixelX = point.getX();
 			double subPixelY = point.getY();		
@@ -987,6 +1013,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			sbuf.append(",");
 			sbuf.append(FloatFormatter.toString(subPixelY,Locale.US));
 			if (imageGeometry != null) {
+//System.err.println("Have imageGeometry");
 				imageGeometry.lookupImageCoordinate(currentLocationIn3DSpace,subPixelX,subPixelY,useSrcImageIndex);
 				{
 					// check round trip
@@ -996,7 +1023,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 //System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoordinate(): ("+subPixelX+","+subPixelY+") -> ("+roundtrip[0]+","+roundtrip[1]+") for 3D ("+currentLocationIn3DSpace[0]+","+currentLocationIn3DSpace[1]+","+currentLocationIn3DSpace[2]+")");
 						if (Double.isNaN(roundtrip[0]) || Double.isInfinite(roundtrip[0]) || Math.abs(roundtrip[0] - subPixelX) > 0.01
 						 || Double.isNaN(roundtrip[1]) || Double.isInfinite(roundtrip[1]) || Math.abs(roundtrip[1] - subPixelY) > 0.01) {
-System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoordinate(): failed ("+subPixelX+","+subPixelY+") != ("+roundtrip[0]+","+roundtrip[1]+") for 3D ("+currentLocationIn3DSpace[0]+","+currentLocationIn3DSpace[1]+","+currentLocationIn3DSpace[2]+")");
+							slf4jlogger.info("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoordinate(): failed ("+subPixelX+","+subPixelY+") != ("+roundtrip[0]+","+roundtrip[1]+") for 3D ("+currentLocationIn3DSpace[0]+","+currentLocationIn3DSpace[1]+","+currentLocationIn3DSpace[2]+")");
 						}
 					}
 				}
@@ -1008,10 +1035,14 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 					sbuf.append(",");
 					sbuf.append(FloatFormatter.toString(currentLocationIn3DSpace[2],Locale.US));
 				}
+				
+				for (SuperimposedImage.AppliedToUnderlyingImage si : activeSuperimposedImagesAppliedToUnderlyingImage) {
+					si.notificationOfCurrentLocationIn3DSpace(currentLocationIn3DSpace);
+				}
 			}
 			sbuf.append(")");
 		
-			BufferedImage src = sImg.getBufferedImage(useSrcImageIndex);
+			BufferedImage src = sImg.getBufferedImage(useSrcImageIndex);	// (001076) not fixed yet :(
 			int wholePixelXFromZero = (int)subPixelX;	// just truncate (not round) ... 0 becomes 0, 0.5 becomes 0, 1.0 is next pixel and becomes 1, only extreme BLHC of BLHC pixel goes out of bounds
 			int wholePixelYFromZero = (int)subPixelY;		
 			if (wholePixelXFromZero >= 0 && wholePixelXFromZero < src.getWidth() && wholePixelYFromZero >= 0 && wholePixelYFromZero < src.getHeight()) {	// check avoids occasional ArrayIndexOutOfBoundsException exception
@@ -1035,6 +1066,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 					storedPixelValue=storedPixelValueInt;
 				}
 				if (realWorldValueTransform != null) {
+//System.err.println("mouseMoved(): Have realWorldValueTransform");
 					sbuf.append(" = ");
 					sbuf.append(realWorldValueTransform.toString(useSrcImageIndex,storedPixelValue));
 					sbuf.append(" [");
@@ -1047,9 +1079,12 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 					sbuf.append(suvTransform.toString(useSrcImageIndex,storedPixelValue));
 				}
 			}
-			
-			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(sbuf.toString()));
+			str = sbuf.toString();
 		}
+		else {
+			str = "No frame selected";	//(001074)
+		}
+		ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent(str));
 	}
 
 	/**
@@ -1143,6 +1178,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 				currentSrcImageIndex=newCurrentSrcImageIndex;
 				dirtySource(); 
 				repaint();
+				updateStatusBarValues(currentx,currenty);	// since mapping may be different for different frames (000840)
 			}
 			else {
 //System.err.println("SingleImagePanel.OurFrameSelectionChangeListener.changed(): same value");
@@ -1406,12 +1442,45 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 			boolean signed,boolean inverted,double useSlope,double useIntercept,boolean hasPad,int pad,int padRangeLimit,
 			int largestGray,int bitsPerEntry,int numberOfEntries,
 			short[] redTable,short[] greenTable,short[] blueTable) {
-//System.err.println("SingleImagePanel.applyWindowCenterAndWidthWithPaletteColor():");
+		slf4jlogger.debug("applyWindowCenterAndWidthWithPaletteColor():");
 		return WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(src,center,width,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,
 			largestGray,bitsPerEntry,numberOfEntries,redTable,greenTable,blueTable);
 	}
 	
+	/**
+	 * @param	src
+	 * @param	center
+	 * @param	width
+	 */
+	public static final BufferedImage applyWindowCenterAndWidthLinearToColorImage(BufferedImage src,double center,double width) {
+		return WindowCenterAndWidth.applyWindowCenterAndWidthLinearToColorImage(src,center,width);
+	}
+	
 	// Common constructor support ...
+
+	protected void establishStatisticalWindow() {
+		slf4jlogger.debug("establishStatisticalWindow(): Deriving window statistically");
+		//if (iMean != 0.0 && iSD != 0.0) {
+//System.err.println("Using mean and SD");
+		//	windowWidth=iSD*2.0;
+		//	windowCenter=iMean;
+		//}
+		//else {
+			slf4jlogger.debug("useSlope {}",useSlope);
+			slf4jlogger.debug("useIntercept {}",useIntercept);
+			slf4jlogger.debug("imgMin {}",imgMin);
+			slf4jlogger.debug("imgMax {}",imgMax);
+			double ourMin = imgMin*useSlope+useIntercept;
+			double ourMax = imgMax*useSlope+useIntercept;
+			slf4jlogger.debug("ourMin {}",ourMin);
+			slf4jlogger.debug("ourMax {}",ourMax);
+			//windowWidth=(ourMax-ourMin)/2.0;
+			windowWidth=(ourMax-ourMin);
+			windowCenter=(ourMax+ourMin)/2.0;
+			currentVOITransformInUse=-1;		// flag not to mess with values when scrolling through frames
+			slf4jlogger.debug("establishStatisticalWindow(): Initially using statistically derived center {} and width {}",windowCenter,windowWidth);
+		//}
+	}
 
 	protected void establishInitialWindowOrVOILUT() {
 		// choose the initial window center and width or VOI LUT ...
@@ -1429,7 +1498,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 		voiLUTEntryMax=0;
 		voiLUTTopOfEntryRange=0;
 		
-//System.err.println("SingleImagePanel.establishInitialWindowOrVOILUT(): Looking at voiTransform "+voiTransform);
+		slf4jlogger.debug("establishInitialWindowOrVOILUT(): Looking at voiTransform {}",voiTransform);
 		if (voiTransform != null) {
 			final int nTransforms = voiTransform.getNumberOfTransforms(currentSrcImageIndex);
 			
@@ -1438,7 +1507,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 			currentVOITransformInUse=0;
 			while (currentVOITransformInUse < nTransforms) {
 				if (voiTransform.isLUTTransform(currentSrcImageIndex,currentVOITransformInUse)) {
-//System.err.println("SingleImagePanel.doCommonConstructorStuff(): found possible LUT "+currentVOITransformInUse);
+					slf4jlogger.debug("doCommonConstructorStuff(): found possible LUT {}",currentVOITransformInUse);
 					 voiLUTNumberOfEntries=voiTransform.getNumberOfEntries (currentSrcImageIndex,currentVOITransformInUse);
 					voiLUTFirstValueMapped=voiTransform.getFirstValueMapped(currentSrcImageIndex,currentVOITransformInUse);
 					    voiLUTBitsPerEntry=voiTransform.getBitsPerEntry    (currentSrcImageIndex,currentVOITransformInUse);
@@ -1448,7 +1517,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 					 voiLUTTopOfEntryRange=voiTransform.getTopOfEntryRange (currentSrcImageIndex,currentVOITransformInUse);
 					if (voiLUTData != null && voiLUTData.length == voiLUTNumberOfEntries) {
 						useVOILUTNotFunction=true;	// only if LUT is "good"
-//System.err.println("SingleImagePanel.establishInitialWindowOrVOILUT(): using good LUT "+currentVOITransformInUse);
+						slf4jlogger.debug("establishInitialWindowOrVOILUT(): using good LUT {}",currentVOITransformInUse);
 						// initialize "pseudo-window" to scale input values used to index LUT to identity transformation (i.e., apply LUT exactly as supplied)
 						// note that the choice of identity values is arbitrary, but is chosen this way so that the numerical values "make sense" to the user
 						// must be consistent with identity values specified in applyVOILUT() invocation
@@ -1469,7 +1538,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 						useVOILUTNotFunction=false;
 						windowWidth=voiTransform.getWidth(currentSrcImageIndex,currentVOITransformInUse);
 						windowCenter=voiTransform.getCenter(currentSrcImageIndex,currentVOITransformInUse);
-//System.err.println("SingleImagePanel.establishInitialWindowOrVOILUT(): Initially using preselected center "+windowCenter+" and width "+windowWidth);
+						slf4jlogger.debug("establishInitialWindowOrVOILUT(): Initially using preselected center {} and width {}",windowCenter,windowWidth);
 						break;
 					}
 					++currentVOITransformInUse;
@@ -1477,27 +1546,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 			}
 		}
 		if (!useVOILUTNotFunction && windowWidth <= 0) {			// if no LUT, use supplied window only if there was one, and if its width was not zero or negative (center may legitimately be zero)
-//System.err.println("SingleImagePanel.doCommonConstructorStuff(): Deriving window statistically");
-		//if (iMean != 0.0 && iSD != 0.0) {
-//System.err.println("Using mean and SD");
-		//	windowWidth=iSD*2.0;
-		//	windowCenter=iMean;
-		//}
-		//else {
-//System.err.println("useSlope "+useSlope);
-//System.err.println("useIntercept "+useIntercept);
-//System.err.println("imgMin "+imgMin);
-//System.err.println("imgMax "+imgMax);
-			double ourMin = imgMin*useSlope+useIntercept;
-			double ourMax = imgMax*useSlope+useIntercept;
-//System.err.println("ourMin "+ourMin);
-//System.err.println("ourMax "+ourMax);
-			//windowWidth=(ourMax-ourMin)/2.0;
-			windowWidth=(ourMax-ourMin);
-			windowCenter=(ourMax+ourMin)/2.0;
-			currentVOITransformInUse=-1;		// flag not to mess with values when scrolling through frames
-//System.err.println("SingleImagePanel.establishInitialWindowOrVOILUT(): Initially using statistically derived center "+windowCenter+" and width "+windowWidth);
-		//}
+			establishStatisticalWindow();
 		}
 	}	
 
@@ -1517,11 +1566,11 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 			int[] sortOrder,
 			Vector preDefinedShapes,Vector preDefinedText,
 			GeometryOfVolume imageGeometry) {
-//System.err.println("SingleImagePanel.doCommonConstructorStuff():");
+		slf4jlogger.debug("doCommonConstructorStuff():");
 		this.sImg = sImg;
 		boolean convertNonGrayscale = false;
 		if (sImg != null && sImg.getNumberOfBufferedImages() > 0) {
-//System.err.println("SingleImagePanel.doCommonConstructorStuff(): sImg != null");
+			slf4jlogger.debug("doCommonConstructorStuff(): sImg != null");
 			BufferedImage img=sImg.getBufferedImage(0);
 		//	SampleModel sampleModel = img.getSampleModel();
 			if (img != null && img.getRaster().getNumBands() > 1) {
@@ -1531,7 +1580,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 		//		}
 			}
 		}
-//System.err.println("SingleImagePanel.doCommonConstructorStuff(): convertNonGrayscale = "+convertNonGrayscale);
+		slf4jlogger.debug("doCommonConstructorStuff(): convertNonGrayscale = {}",convertNonGrayscale);
 		try {
 			useConvertToMostFavorableImageType =
 			//	   (System.getProperty("mrj.version") != null && Double.parseDouble(System.getProperty("mrj.version")) < 4)	|| // because slow otherwise
@@ -1541,7 +1590,7 @@ System.err.println("Round trip imageGeometry.getGeometryOfSlice().lookupImageCoo
 		}
 		catch (NumberFormatException e) {
 		}
-System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMostFavorableImageType = "+useConvertToMostFavorableImageType);
+		slf4jlogger.debug("doCommonConstructorStuff(): useConvertToMostFavorableImageType = {}",useConvertToMostFavorableImageType);
 		
 		addKeyListener(this);
 		addMouseListener(this);
@@ -1587,7 +1636,7 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 			signBit=0;
 			signMask=0;
 			if (signed) {
-//System.err.println("signed="+signed);
+				slf4jlogger.debug("signed={}",signed);
 				// the source image will already have been sign extended to the data type size
 				// so we don't need to worry about other than exactly 8 and 16 bits
 				if (img.getSampleModel().getDataType() == DataBuffer.TYPE_BYTE) {
@@ -1599,8 +1648,8 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 					signMask=0xffff8000;
 				}
 			}
-//System.err.println("signMask=0x"+Integer.toHexString(signMask));
-//System.err.println("signBit=0x"+Integer.toHexString(signBit));
+			slf4jlogger.debug("signMask=0x{}",Integer.toHexString(signMask));
+			slf4jlogger.debug("signBit=0x{}",Integer.toHexString(signBit));
 		}
 		
 		this.suvTransform=sImg.getSUVTransform();
@@ -1617,17 +1666,17 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 		if (modalityTransform != null) {
 			    useSlope = modalityTransform.getRescaleSlope    (currentSrcImageIndex);
 			useIntercept = modalityTransform.getRescaleIntercept(currentSrcImageIndex);
-//System.err.println("Initially using preselected rescale slope "+useSlope+" and intercept "+useIntercept);
+			slf4jlogger.debug("Initially using preselected rescale slope {} and intercept {}",useSlope,useIntercept);
 		}
 		else {
 			useSlope=1.0;
 			useIntercept=0.0;
-//System.err.println("Initially using default rescale slope "+useSlope+" and intercept "+useIntercept);
+			slf4jlogger.debug("Initially using default rescale slope {} and intercept {}",useSlope,useIntercept);
 		}
 		
 		establishInitialWindowOrVOILUT();
 		
-//System.err.println("SingleImagePanel.doCommonConstructorStuff(): setting preDefinedShapes");
+		slf4jlogger.debug("doCommonConstructorStuff(): setting preDefinedShapes");
 		this.preDefinedShapes=preDefinedShapes;
 		this.preDefinedText=preDefinedText;
 		
@@ -1696,7 +1745,7 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 	}
 
 	public void deconstruct() {
-//System.err.println("SingleImagePanel.deconstruct()");
+		slf4jlogger.debug("deconstruct()");
 		// avoid "listener leak"
 		if (ourWindowCenterAndWidthChangeListener != null) {
 //System.err.println("SingleImagePanel.deconstruct(): removing ourWindowCenterAndWidthChangeListener");
@@ -1740,7 +1789,7 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 	 */
 	 public static void deconstructAllSingleImagePanelsInContainer(Container container) {
 		Component[] components = container.getComponents();				
-//System.err.println("SingleImagePanel.deconstructAllSingleImagePanelsInContainer(): deconstructing old SingleImagePanels components.length="+components.length);
+		slf4jlogger.debug("deconstructAllSingleImagePanelsInContainer(): deconstructing old SingleImagePanels components.length={}",components.length);
 		for (int i=0; i<components.length; ++i) {
 			Component component = components[i];
 			if (component instanceof SingleImagePanel) {
@@ -1750,7 +1799,7 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 	}
 
 	protected void finalize() throws Throwable {
-//System.err.println("SingleImagePanel.finalize()");
+		slf4jlogger.debug("finalize()");
 		deconstruct();		// just in case wasn't already called, and garbage collection occurs
 		super.finalize();
 	}
@@ -1763,35 +1812,35 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 	
 //	public void paint(Graphics g) {
 //System.err.println("SingleImagePanel.paint(): start");
-//		try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
+//		try { throw new Exception(); } catch (Exception e) { slf4jlogger.error("",e); }
 //		super.paint(g);
 //System.err.println("SingleImagePanel.paint(): end");
 //	}
 	
 //	public void update(Graphics g) {
 //System.err.println("SingleImagePanel.update(): start");
-//		try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
+//		try { throw new Exception(); } catch (Exception e) { slf4jlogger.error("",e); }
 //		super.update(g);
 //System.err.println("SingleImagePanel.update(): end");
 //	}
 
 //	public void repaint() {
 //System.err.println("SingleImagePanel.repaint(): start");
-//		try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
+//		try { throw new Exception(); } catch (Exception e) { slf4jlogger.error("",e); }
 //		super.repaint();
 //System.err.println("SingleImagePanel.repaint(): end");
 //	}
 
 //	public void repaint(Rectangle r) {
 //System.err.println("SingleImagePanel.repaint(): start");
-//		try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
+//		try { throw new Exception(); } catch (Exception e) { slf4jlogger.error("",e); }
 //		super.repaint(r);
 //System.err.println("SingleImagePanel.repaint(): end");
 //	}
 	
 //	public void repaint(long tm, int x, int y, int width, int height) {
 //System.err.println("SingleImagePanel.repaint(): start");
-//		try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
+//		try { throw new Exception(); } catch (Exception e) { slf4jlogger.error("",e); }
 //		super.repaint(tm,x,y,width,height);
 //System.err.println("SingleImagePanel.repaint(): end");
 //	}
@@ -1801,527 +1850,584 @@ System.err.println("SingleImagePanel.doCommonConstructorStuff(): useConvertToMos
 	 * @param	g
 	 */
 	public void paintComponent(Graphics g) {
-//System.err.println("SingleImagePanel.paintComponent(): start");
-//try { throw new Exception(); } catch (Exception e) { e.printStackTrace(System.err); }
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("paintComponent(): start");
+		long startTime = System.currentTimeMillis();
 		Cursor was = getCursor();
 		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		
-		int useSrcImageIndex = currentSrcImageSortOrder == null ? currentSrcImageIndex : currentSrcImageSortOrder[currentSrcImageIndex];
-//System.err.println("SingleImagePanel.paintComponent() useSrcImageIndex: "+useSrcImageIndex);
-		BufferedImage useSrcImage = sImg.getBufferedImage(useSrcImageIndex);
-//System.err.println("SingleImagePanel.paintComponent() useSrcImage is BufferedImage as follows:"); BufferedImageUtilities.describeImage(useSrcImage,System.err);
-
-		if (ybr) {
-			// do this BEFORE any interpolation, else get artifacts at edges
-//System.err.println("SingleImagePanel.paintComponent(): attempting to convert YBR to RGB for display");
-			BufferedImage convertedImage = BufferedImageUtilities.convertYBRToRGB(useSrcImage);
-			if (convertedImage != null) {
-				useSrcImage = convertedImage;
+		if (currentSrcImageIndex != -1) {
+			
+			int useSrcImageIndex = currentSrcImageSortOrder == null ? currentSrcImageIndex : currentSrcImageSortOrder[currentSrcImageIndex];
+			slf4jlogger.debug("paintComponent() useSrcImageIndex: {}",useSrcImageIndex);
+			BufferedImage useSrcImage = sImg.getBufferedImage(useSrcImageIndex);
+			slf4jlogger.debug("paintComponent(): useSrcImage BufferedImage: {}",useSrcImage);
+			slf4jlogger.debug("paintComponent(): useSrcImage is BufferedImage as follows:");
+			if (slf4jlogger.isDebugEnabled()) BufferedImageUtilities.describeImage(useSrcImage,System.err);
+			
+			if (ybr) {
+				// do this BEFORE any interpolation, else get artifacts at edges
+				slf4jlogger.debug("paintComponent(): attempting to convert YBR to RGB for display");
+				BufferedImage convertedImage = BufferedImageUtilities.convertYBRToRGB(useSrcImage);
+				if (convertedImage != null) {
+					slf4jlogger.debug("paintComponent(): YBR to RGB conversion succeeded");
+					useSrcImage = convertedImage;
+					dirtySource();
+				}
+				else {
+					slf4jlogger.debug("paintComponent(): YBR to RGB conversion failed - just use what we have");
+				}
+			}
+			
+			Rectangle windowSize = this.getBounds();
+			slf4jlogger.debug("paintComponent():windowSize = {}",windowSize);
+			
+			// the following is not sensitive to selection area change ... in future may need to make this explicit on resize event ... :(
+			if (cachedWindowSize != null && (windowSize.width != cachedWindowSize.width && windowSize.height != cachedWindowSize.height)) {		// do not care about position
+				slf4jlogger.debug("paintComponent(): window size changed, so flushing cache and resetting selection to original");
 				dirtySource();
+				useDisplayedAreaSelection=null;
 			}
-			else {
-System.err.println("SingleImagePanel.paintComponent(): YBR to RGB conversion failed - just use what we have");
+			cachedWindowSize = windowSize;
+			
+			if (useDisplayedAreaSelection == null) {
+				if (originalDisplayedAreaSelection == null) {
+					originalDisplayedAreaSelection = new DisplayedAreaSelection(useSrcImage.getWidth(),useSrcImage.getHeight());		// default is entire image
+				}
+				slf4jlogger.debug("setDisplayedAreaSelection(): originalDisplayedAreaSelection = {}",originalDisplayedAreaSelection);
+				useDisplayedAreaSelection = originalDisplayedAreaSelection.shapeSelectionToMatchAvailableWindow(windowSize);
+				slf4jlogger.debug("paintComponent(): useDisplayedAreaSelection (after shapping to match available window size) = {}",useDisplayedAreaSelection);
 			}
-		}
-
-		Rectangle windowSize = this.getBounds();
-//System.err.println("SingleImagePanel.paintComponent():windowSize = "+windowSize);
-
-		// the following is not sensitive to selection area change ... in future may need to make this explicit on resize event ... :(
-		if (cachedWindowSize != null && (windowSize.width != cachedWindowSize.width && windowSize.height != cachedWindowSize.height)) {		// do not care about position
-//System.err.println("SingleImagePanel.paintComponent(): window size changed, so flushing cache and resetting selection to original");
-			dirtySource();
-			useDisplayedAreaSelection=null;
-		}
-		cachedWindowSize = windowSize;
-
-		if (useDisplayedAreaSelection == null) {
-			if (originalDisplayedAreaSelection == null) {
-				originalDisplayedAreaSelection = new DisplayedAreaSelection(useSrcImage.getWidth(),useSrcImage.getHeight());		// default is entire image
+			
+			double useScaleFactor = ((double)windowSize.width)/useDisplayedAreaSelection.getSelectionWidth();
+			slf4jlogger.debug("paintComponent(): useScaleFactor = {}",useScaleFactor);
+			
+			imageToWindowCoordinateTransform = AffineTransform.getTranslateInstance(-useDisplayedAreaSelection.getXOffset()*useScaleFactor,-useDisplayedAreaSelection.getYOffset()*useScaleFactor);
+			imageToWindowCoordinateTransform.concatenate(AffineTransform.getScaleInstance(useScaleFactor,useScaleFactor));
+			if (preTransformImageRelativeCoordinates != null) {
+				imageToWindowCoordinateTransform.concatenate(preTransformImageRelativeCoordinates);
 			}
-//System.err.println("SingleImagePanel.setDisplayedAreaSelection(): originalDisplayedAreaSelection = "+originalDisplayedAreaSelection);
-			useDisplayedAreaSelection = originalDisplayedAreaSelection.shapeSelectionToMatchAvailableWindow(windowSize);
-//System.err.println("SingleImagePanel.paintComponent(): useDisplayedAreaSelection (after shapping to match available window size) = "+useDisplayedAreaSelection);
-		}
-
-		double useScaleFactor = ((double)windowSize.width)/useDisplayedAreaSelection.getSelectionWidth();
-//System.err.println("SingleImagePanel.paintComponent(): useScaleFactor = "+useScaleFactor);
-
-		imageToWindowCoordinateTransform = AffineTransform.getTranslateInstance(-useDisplayedAreaSelection.getXOffset()*useScaleFactor,-useDisplayedAreaSelection.getYOffset()*useScaleFactor);
-		imageToWindowCoordinateTransform.concatenate(AffineTransform.getScaleInstance(useScaleFactor,useScaleFactor));
-		if (preTransformImageRelativeCoordinates != null) {
-			imageToWindowCoordinateTransform.concatenate(preTransformImageRelativeCoordinates);
-		}
-//System.err.println("SingleImagePanel.paintComponent(): imageToWindowCoordinateTransform = "+imageToWindowCoordinateTransform);
-		try {
-			windowToImageCoordinateTransform = imageToWindowCoordinateTransform.createInverse();
-		}
-		catch (NoninvertibleTransformException e) {
-			e.printStackTrace(System.err);
-			windowToImageCoordinateTransform=null;
-		}
-//System.err.println("SingleImagePanel.paintComponent(): windowToImageCoordinateTransform = "+windowToImageCoordinateTransform);
-		
-		if (cachedPreWindowedImage == null) {
-//System.err.println("SingleImagePanel.paintComponent(): cachedPreWindowedImage is null");
-			if (cachedResizedSelectedRegionImage == null) {
-//System.err.println("SingleImagePanel.paintComponent(): resizing prior to windowing");
-				if (cachedResizedImage == null) {
-					if (resampler == null) {
-						resampler = new BufferedImageUtilities();
+			slf4jlogger.debug("paintComponent(): imageToWindowCoordinateTransform = {}",imageToWindowCoordinateTransform);
+			try {
+				windowToImageCoordinateTransform = imageToWindowCoordinateTransform.createInverse();
+			}
+			catch (NoninvertibleTransformException e) {
+				slf4jlogger.error("",e);
+				windowToImageCoordinateTransform=null;
+			}
+			slf4jlogger.debug("paintComponent(): windowToImageCoordinateTransform = {}",windowToImageCoordinateTransform);
+			
+			if (cachedPreWindowedImage == null) {
+				slf4jlogger.debug("paintComponent(): cachedPreWindowedImage is null");
+				if (cachedResizedSelectedRegionImage == null) {
+					slf4jlogger.debug("paintComponent(): resizing prior to windowing");
+					if (cachedResizedImage == null) {
+						if (resampler == null) {
+							resampler = new BufferedImageUtilities();
+						}
+						long resampleTime = System.currentTimeMillis();
+						int backgroundValuePriorToWindowing = sImg.getBackgroundValue();
+						
+						int  srcWidth = useSrcImage.getWidth();
+						slf4jlogger.debug("paintComponent(): resizing srcWidth {}",srcWidth);
+						int srcHeight = useSrcImage.getHeight();
+						slf4jlogger.debug("paintComponent(): resizing srcHeight {}",srcHeight);
+						int  dstWidth = (int)Math.round(srcWidth*useScaleFactor);
+						if (dstWidth <= 0) {
+							dstWidth = 1;
+						}
+						slf4jlogger.debug("paintComponent(): resizing dstWidth {}",dstWidth);
+						int dstHeight = (int)Math.round(srcHeight*useScaleFactor);
+						if (dstHeight <= 0) {	// (001141)
+							dstHeight = 1;
+						}
+						slf4jlogger.debug("paintComponent(): resizing dstHeight {}",dstHeight);
+						cachedResizedImage=resampler.resample(useSrcImage,
+															  srcWidth,
+															  srcHeight,
+															  0,
+															  0,
+															  dstWidth,
+															  dstHeight,
+															  signed,
+															  backgroundValuePriorToWindowing);
+						slf4jlogger.debug("paintComponent(): resizing with resampler - done in {} ms",(System.currentTimeMillis()-resampleTime));
+						slf4jlogger.debug("paintComponent(): resampled BufferedImage: {}",cachedResizedImage);
+						slf4jlogger.debug("paintComponent(): resampled BufferedImage is as follows:");
+						if (slf4jlogger.isDebugEnabled()) BufferedImageUtilities.describeImage(cachedResizedImage,System.err);
 					}
-//long resampleTime = System.currentTimeMillis();
-					int backgroundValuePriorToWindowing = sImg.getBackgroundValue();
-
-					int srcWidth = useSrcImage.getWidth();
-					int srcHeight = useSrcImage.getHeight();
-					cachedResizedImage=resampler.resample(useSrcImage,
-						srcWidth,
-						srcHeight,
-						0,
-						0,
-						(int)Math.round(srcWidth*useScaleFactor),
-						(int)Math.round(srcHeight*useScaleFactor),
-						signed,
-						backgroundValuePriorToWindowing);
-//System.err.println("SingleImagePanel.paintComponent(): resizing with resampler - done in "+(System.currentTimeMillis()-resampleTime)+" ms");
-//System.err.println("SingleImagePanel.paintComponent(): resampled BufferedImage is as follows:"); BufferedImageUtilities.describeImage(cachedResizedImage,System.err);
-				}
-//long getSubimageTime = System.currentTimeMillis();
-				int scaledSelectionX = (int)Math.round(useDisplayedAreaSelection.getXOffset()*useScaleFactor);
-				int scaledSelectionY = (int)Math.round(useDisplayedAreaSelection.getYOffset()*useScaleFactor);
-				int scaledSelectionWidth = (int)Math.round(useDisplayedAreaSelection.getSelectionWidth()*useScaleFactor);
-				int scaledSelectionHeight = (int)Math.round(useDisplayedAreaSelection.getSelectionHeight()*useScaleFactor);
-//System.err.println("SingleImagePanel.paintComponent(): before clipping to image area - scaledSelectionX = "+scaledSelectionX);
-//System.err.println("SingleImagePanel.paintComponent(): before clipping to image area - scaledSelectionY = "+scaledSelectionY);
-//System.err.println("SingleImagePanel.paintComponent(): before clipping to image area - scaledSelectionWidth = "+scaledSelectionWidth);
-//System.err.println("SingleImagePanel.paintComponent(): before clipping to image area - scaledSelectionHeight = "+scaledSelectionHeight);
-
-				if (scaledSelectionX < 0) {
-					offsetDrawingOfResizedSelectedRegionImageX = - scaledSelectionX;
-					//scaledSelectionWidth -= offsetDrawingOfResizedSelectedRegionImageX;
-					scaledSelectionX = 0;
-				}
-				else {
-					offsetDrawingOfResizedSelectedRegionImageX = 0;
-				}
+					long getSubimageTime = System.currentTimeMillis();
+					int scaledSelectionX = (int)Math.round(useDisplayedAreaSelection.getXOffset()*useScaleFactor);
+					int scaledSelectionY = (int)Math.round(useDisplayedAreaSelection.getYOffset()*useScaleFactor);
+					int scaledSelectionWidth = (int)Math.round(useDisplayedAreaSelection.getSelectionWidth()*useScaleFactor);
+					int scaledSelectionHeight = (int)Math.round(useDisplayedAreaSelection.getSelectionHeight()*useScaleFactor);
+					slf4jlogger.debug("paintComponent(): before clipping to image area - scaledSelectionX = {}",scaledSelectionX);
+					slf4jlogger.debug("paintComponent(): before clipping to image area - scaledSelectionY = {}",scaledSelectionY);
+					slf4jlogger.debug("paintComponent(): before clipping to image area - scaledSelectionWidth = {}",scaledSelectionWidth);
+					slf4jlogger.debug("paintComponent(): before clipping to image area - scaledSelectionHeight = {}",scaledSelectionHeight);
 					
-				if (scaledSelectionY < 0) {
-					offsetDrawingOfResizedSelectedRegionImageY = - scaledSelectionY;
-					//scaledSelectionHeight -= offsetDrawingOfResizedSelectedRegionImageY;
-					scaledSelectionY = 0;
-				}
-				else {
-					offsetDrawingOfResizedSelectedRegionImageY = 0;
-				}
-
-				int cachedResizedImageWidth = cachedResizedImage.getWidth();
-//System.err.println("SingleImagePanel.paintComponent(): cachedResizedImageWidth = "+cachedResizedImageWidth);
-				if (scaledSelectionX + scaledSelectionWidth > cachedResizedImageWidth) {
-					scaledSelectionWidth = cachedResizedImageWidth - scaledSelectionX;
-				}
-				else if (scaledSelectionX + scaledSelectionWidth < cachedResizedImageWidth) {	// use all available image to the right, i.e., if panning beyond original selection
-					scaledSelectionWidth = cachedResizedImageWidth - scaledSelectionX;
-				}
-				if (scaledSelectionWidth < 0) {
-					scaledSelectionWidth = 0;
-				}
-
-				int cachedResizedImageHeight = cachedResizedImage.getHeight();
-//System.err.println("SingleImagePanel.paintComponent(): cachedResizedImageHeight = "+cachedResizedImageHeight);
-				if (scaledSelectionY + scaledSelectionHeight > cachedResizedImageHeight) {
-					scaledSelectionHeight = cachedResizedImageHeight - scaledSelectionY;
-				}
-				else if (scaledSelectionY + scaledSelectionHeight < cachedResizedImageHeight) {	// use all available image to the bottom, i.e., if panning beyond original selection
-					scaledSelectionHeight = cachedResizedImageHeight - scaledSelectionY;
-				}
-				if (scaledSelectionHeight < 0) {
-					scaledSelectionHeight = 0;
-				}
-
-//System.err.println("SingleImagePanel.paintComponent(): after clipping to image area - scaledSelectionX = "+scaledSelectionX);
-//System.err.println("SingleImagePanel.paintComponent(): after clipping to image area - scaledSelectionY = "+scaledSelectionY);
-//System.err.println("SingleImagePanel.paintComponent(): after clipping to image area - scaledSelectionWidth = "+scaledSelectionWidth);
-//System.err.println("SingleImagePanel.paintComponent(): after clipping to image area - scaledSelectionHeight = "+scaledSelectionHeight);
-//System.err.println("SingleImagePanel.paintComponent(): offsetDrawingOfResizedSelectedRegionImageX = "+offsetDrawingOfResizedSelectedRegionImageX);
-//System.err.println("SingleImagePanel.paintComponent(): offsetDrawingOfResizedSelectedRegionImageY = "+offsetDrawingOfResizedSelectedRegionImageY);
-
-				cachedResizedSelectedRegionImage = 
+					if (scaledSelectionX < 0) {
+						offsetDrawingOfResizedSelectedRegionImageX = - scaledSelectionX;
+						//scaledSelectionWidth -= offsetDrawingOfResizedSelectedRegionImageX;
+						scaledSelectionX = 0;
+					}
+					else {
+						offsetDrawingOfResizedSelectedRegionImageX = 0;
+					}
+					
+					if (scaledSelectionY < 0) {
+						offsetDrawingOfResizedSelectedRegionImageY = - scaledSelectionY;
+						//scaledSelectionHeight -= offsetDrawingOfResizedSelectedRegionImageY;
+						scaledSelectionY = 0;
+					}
+					else {
+						offsetDrawingOfResizedSelectedRegionImageY = 0;
+					}
+					
+					int cachedResizedImageWidth = cachedResizedImage.getWidth();
+					slf4jlogger.debug("paintComponent(): cachedResizedImageWidth = {}",cachedResizedImageWidth);
+					if (scaledSelectionX + scaledSelectionWidth > cachedResizedImageWidth) {
+						scaledSelectionWidth = cachedResizedImageWidth - scaledSelectionX;
+					}
+					else if (scaledSelectionX + scaledSelectionWidth < cachedResizedImageWidth) {	// use all available image to the right, i.e., if panning beyond original selection
+						scaledSelectionWidth = cachedResizedImageWidth - scaledSelectionX;
+					}
+					if (scaledSelectionWidth < 0) {
+						scaledSelectionWidth = 0;
+					}
+					
+					int cachedResizedImageHeight = cachedResizedImage.getHeight();
+					slf4jlogger.debug("paintComponent(): cachedResizedImageHeight = {}",cachedResizedImageHeight);
+					if (scaledSelectionY + scaledSelectionHeight > cachedResizedImageHeight) {
+						scaledSelectionHeight = cachedResizedImageHeight - scaledSelectionY;
+					}
+					else if (scaledSelectionY + scaledSelectionHeight < cachedResizedImageHeight) {	// use all available image to the bottom, i.e., if panning beyond original selection
+						scaledSelectionHeight = cachedResizedImageHeight - scaledSelectionY;
+					}
+					if (scaledSelectionHeight < 0) {
+						scaledSelectionHeight = 0;
+					}
+					
+					slf4jlogger.debug("paintComponent(): after clipping to image area - scaledSelectionX = {}",scaledSelectionX);
+					slf4jlogger.debug("paintComponent(): after clipping to image area - scaledSelectionY = {}",scaledSelectionY);
+					slf4jlogger.debug("paintComponent(): after clipping to image area - scaledSelectionWidth = {}",scaledSelectionWidth);
+					slf4jlogger.debug("paintComponent(): after clipping to image area - scaledSelectionHeight = {}",scaledSelectionHeight);
+					slf4jlogger.debug("paintComponent(): offsetDrawingOfResizedSelectedRegionImageX = {}",offsetDrawingOfResizedSelectedRegionImageX);
+					slf4jlogger.debug("paintComponent(): offsetDrawingOfResizedSelectedRegionImageY = {}",offsetDrawingOfResizedSelectedRegionImageY);
+					
+					cachedResizedSelectedRegionImage =
 					scaledSelectionHeight > 0 && scaledSelectionWidth > 0
 					? cachedResizedImage.getSubimage(scaledSelectionX,scaledSelectionY,scaledSelectionWidth,scaledSelectionHeight)
 					: null;
-//System.err.println("SingleImagePanel.paintComponent(): selecting subimage from resized image - done in "+(System.currentTimeMillis()-getSubimageTime)+" ms");
-			}
-			useSrcImage=cachedResizedSelectedRegionImage;
-			
-//System.err.println("SingleImagePanel.paintComponent(): Before windowing (if needed), getNumComponents() == "+useSrcImage.getColorModel().getNumComponents());
-
-			if (useSrcImage == null) {		// e.g., nothing left to draw since panned offscreen
-				cachedPreWindowedImage = null;
-			}
-			else  if (useSrcImage.getColorModel().getNumComponents() == 1) {
-			
-				// First, find pre-selected VOI for this frame, if any
+					slf4jlogger.debug("paintComponent(): selecting subimage from resized image - done in {} ms",(System.currentTimeMillis()-getSubimageTime));
+				}
+				useSrcImage=cachedResizedSelectedRegionImage;
 				
-//System.err.println("currentVOITransformInUse "+currentVOITransformInUse);
-				if (currentVOITransformInUse != -1
-				 && !useVOILUTNotFunction
-				 && voiTransform != null
-				 && voiTransform.getNumberOfTransforms(useSrcImageIndex) > currentVOITransformInUse) {
-					windowWidth=voiTransform.getWidth(useSrcImageIndex,currentVOITransformInUse);
-					windowCenter=voiTransform.getCenter(useSrcImageIndex,currentVOITransformInUse);
-//System.err.println("For new frame "+useSrcImageIndex+" using preselected center "+windowCenter+" and width "+windowWidth);
+				if (useSrcImage == null) {		// e.g., nothing left to draw since panned offscreen
+					cachedPreWindowedImage = null;
 				}
 				else {
-					//currentVOITransformInUse=-1;
-					// Just leave it alone (but don't disable use of selection for other frames)
-//System.err.println("For new frame "+useSrcImageIndex+" using user selected center "+windowCenter+" and width "+windowWidth);
-				}
-				
-				// Second, find rescale attributes for this frame
-				
-				if (modalityTransform != null) {
-					    useSlope = modalityTransform.getRescaleSlope    (useSrcImageIndex);
-					useIntercept = modalityTransform.getRescaleIntercept(useSrcImageIndex);
-//System.err.println("For new frame "+useSrcImageIndex+" using preselected rescale slope "+useSlope+" and intercept "+useIntercept);
-				}
-				else {
-					useSlope=1.0;
-					useIntercept=0.0;
-//System.err.println("For new frame "+useSrcImageIndex+" using default rescale slope "+useSlope+" and intercept "+useIntercept);
-				}
-				
-				// Finally, actually build the destination image
-//System.err.println("SingleImagePanel.paintComponent() useVOILUTNotFunction = "+useVOILUTNotFunction);
-//System.err.println("SingleImagePanel.paintComponent() numberOfEntries = "+numberOfEntries);
-//System.err.println("SingleImagePanel.paintComponent() redTable = "+redTable);
-//System.err.println("SingleImagePanel.paintComponent() useVOIFunction = "+useVOIFunction);
-//long applyVOITime = System.currentTimeMillis();
-				if (useVOILUTNotFunction) {
-					cachedPreWindowedImage = applyVOILUT(useSrcImage,windowCenter,windowWidth,voiLUTIdentityWindowCenter,voiLUTIdentityWindowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,
-						voiLUTNumberOfEntries,voiLUTFirstValueMapped,voiLUTBitsPerEntry,voiLUTData,voiLUTEntryMin,voiLUTEntryMax,voiLUTTopOfEntryRange);
-				}
-				else if (numberOfEntries != 0 && redTable != null) {
-					cachedPreWindowedImage = applyWindowCenterAndWidthWithPaletteColor(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,
-						largestGray,bitsPerEntry,numberOfEntries,redTable,greenTable,blueTable);
-				}
-				else if (useVOIFunction == 1) {
-					cachedPreWindowedImage = applyWindowCenterAndWidthLogistic(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit);
-				}
-				else {
-					cachedPreWindowedImage = applyWindowCenterAndWidthLinear(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,useWindowLinearExactCalculationInsteadOfDICOMStandardMethod);
-				}
-//System.err.println("SingleImagePanel.paintComponent(): VOI/window applied in "+(System.currentTimeMillis()-applyVOITime)+" ms");
-			}
-			else {
-//System.err.println("SingleImagePanel.paintComponent() using useSrcImage as cachedPreWindowedImage="+useSrcImage);
-				cachedPreWindowedImage=useSrcImage;
-			}
-//System.err.println("SingleImagePanel.paintComponent() mrj.version="+System.getProperty("mrj.version"));
-			if (cachedPreWindowedImage != null && useConvertToMostFavorableImageType) {
-//long conversionTime = System.currentTimeMillis();
-				cachedPreWindowedImage=BufferedImageUtilities.convertToMostFavorableImageType(cachedPreWindowedImage);
-//System.err.println("SingleImagePanel.paintComponent(): converted to most favorable done in "+(System.currentTimeMillis()-conversionTime)+" ms");
-			}
-		}
-		else {
-//System.err.println("SingleImagePanel.paintComponent(): using cachedPreWindowedImage");
-		}
-				
-//long drawImageTime = System.currentTimeMillis();
-		Graphics2D g2d=(Graphics2D)g;
-		if (cachedPreWindowedImage != null) {
-//System.err.println("SingleImagePanel.paintComponent(): same size draw");
-//System.err.println("SingleImagePanel.paintComponent(): applyShutter = "+applyShutter);
-			Shape holdClip = null;
-			if (applyShutter && displayShutter != null) {
-				holdClip = g2d.getClip();
-				if (displayShutter.isCircularShutter()) {
-					Point2D tlhc = imageToWindowCoordinateTransform.transform(displayShutter.getCircularShutterTLHC(),null);
-					double tlhcX = tlhc.getX();
-					double tlhcY = tlhc.getY();
-					Point2D brhc = imageToWindowCoordinateTransform.transform(displayShutter.getCircularShutterBRHC(),null);
-					double brhcX = brhc.getX();
-					double brhcY = brhc.getY();
-					g2d.clip(new Ellipse2D.Double(tlhcX,tlhcY,brhcX-tlhcX,brhcY-tlhcY));
-				}
-				if (displayShutter.isRectangularShutter()) {
-					Point2D tlhc = imageToWindowCoordinateTransform.transform(displayShutter.getRectangularShutterTLHC(),null);
-					double tlhcX = tlhc.getX();
-					double tlhcY = tlhc.getY();
-					Point2D brhc = imageToWindowCoordinateTransform.transform(displayShutter.getRectangularShutterBRHC(),null);
-					double brhcX = brhc.getX();
-					double brhcY = brhc.getY();
-					g2d.clip(new Rectangle2D.Double(tlhcX,tlhcY,brhcX-tlhcX,brhcY-tlhcY));
-				}
-				if (displayShutter.isPolygonalShutter()) {
-					Point2D[] points = displayShutter.getVerticesOfPolygonalShutterAsPoint2D();
-					Polygon polygon = new Polygon();
-					for (int i=0; i<points.length; ++i) {
-						Point2D point = imageToWindowCoordinateTransform.transform(points[i],null);
-						polygon.addPoint((int)(point.getX()),(int)(point.getY()));
-					}
-					g2d.clip(polygon);
-				}
-			}
-			g2d.drawImage(cachedPreWindowedImage,offsetDrawingOfResizedSelectedRegionImageX,offsetDrawingOfResizedSelectedRegionImageY,this);
-			if (holdClip != null) {
-				g2d.setClip(holdClip);
-			}
-		}
-//System.err.println("SingleImagePanel.paintComponent(): draw cachedPreWindowedImage into dst image done in "+(System.currentTimeMillis()-drawImageTime)+" ms");
-
-//long drawAnnotationsTime = System.currentTimeMillis();
-		Color interactiveColor = Color.red;
-		Color persistentColor = Color.green;
-		Color selectedColor = Color.red;
-		Color localizerColor = Color.green;
-		Color volumeLocalizationColor = Color.blue;
-		Color preDefinedColor = Color.yellow;
-		Color perFrameDrawingColor = Color.red;
-		int lineWidth = 2;	// in display (not source image) pixels
-		Font preDefinedFont = new Font("SansSerif",Font.BOLD,14);
-		Font persistentFont = new Font("SansSerif",Font.BOLD,10);
-		
-		// draw any graphics that are displayed area relative ...
-				
-		if (demographicAndTechniqueAnnotations != null) {
-			g2d.setColor(demographicAndTechniqueColor);
-			g2d.setFont(demographicAndTechniqueFont);
-
-			Iterator i = demographicAndTechniqueAnnotations.iterator(useSrcImageIndex);
-			while (i.hasNext()) {
-				TextAnnotationPositioned.drawPositionedString((TextAnnotationPositioned)i.next(),g2d,this,5,5);
-			}
-
-		}
-		
-		{
-			g2d.setColor(orientationColor);
-			g2d.setFont(orientationFont);
-			// draw orientation
-			if (orientationAnnotations != null) {
-				String rowOrientation = orientationAnnotations.getRowOrientation(useSrcImageIndex);
-				if (rowOrientation != null && rowOrientation.length() > 0) {
-					TextAnnotationPositioned.drawVerticallyCenteredString(rowOrientation,showOrientationsLeftSide,g2d,this,5);
-				}
-				String columnOrientation = orientationAnnotations.getColumnOrientation(useSrcImageIndex);
-				if (columnOrientation != null && columnOrientation.length() > 0) {
-					TextAnnotationPositioned.drawHorizontallyCenteredString(columnOrientation,false/*isTop*/,g2d,this,5);
-				}
-			}
-			
-			if (showZoomFactor) {
-				double scaleFactor = Math.abs(imageToWindowCoordinateTransform.getScaleX());		// -ve if flipped; should check same in both axes ? :(
-				String sZoomFactor = "1:" + FloatFormatter.toString(scaleFactor,Locale.US);
-//System.err.println("SingleImagePanel.paintComponent(): sZoomFactor = "+sZoomFactor);
-				TextAnnotationPositioned.drawVerticallyCenteredString(sZoomFactor,showZoomFactorLeftSide,g2d,this,2,5);
-				String sDisplayPixelSize = "[" + FloatFormatter.toString(pixelSpacingInSourceImage/scaleFactor,Locale.US) + "mm]";
-				TextAnnotationPositioned.drawVerticallyCenteredString(sDisplayPixelSize,showZoomFactorLeftSide,g2d,this,3,5);
-			}
-		}
-
-		if (sideAndViewAnnotationString != null) {
-			g2d.setColor(sideAndViewAnnotationColor);
-			g2d.setFont(sideAndViewAnnotationFont);
-			TextAnnotationPositioned.drawPositionedString(
-				new TextAnnotationPositioned(sideAndViewAnnotationString,showSideAndViewAnnotationLeftSide,true/*fromTop*/,0/*row*/),
-					g2d,this,sideAndViewAnnotationVerticalOffset,5
-			);
-		}
-
-		// draw any text that are image relative, but using display relative font size
-		// by transforming point BEFORE changing graphics context to image relative
-		
-		if (persistentDrawingText != null) {
-			g2d.setColor(persistentColor);
-			g2d.setFont(persistentFont);
-			Iterator i = persistentDrawingText.iterator();
-			while (i.hasNext()) {
-				TextAnnotation text = (TextAnnotation)i.next();
-				Point2D imageRelativeAnchorPoint = text.getAnchorPoint();
-				Point2D windowRelativeAnchorPoint = imageToWindowCoordinateTransform.transform(imageRelativeAnchorPoint,null);
-				String string = text.getString();
-				int margin = 5;
-				int stringWidth  = (int)(g2d.getFontMetrics().getStringBounds(string,g2d).getWidth());
-				DrawingUtilities.drawShadowedString(string,
-					showOrientationsLeftSide ? margin : getBounds().width - margin - stringWidth,
-					(int)windowRelativeAnchorPoint.getY(),			// always left or right since sometimes doesn't fit (clipped on right) if drawn at anchor point:(
-					g2d);
-			}
-		}
-
-		// draw any graphics that are image relative, by applying a scaled AffineTransform to the graphics context ...
-
-//System.err.println("SingleImagePanel.paintComponent(): draw any graphics");
-		
-		g2d.transform(imageToWindowCoordinateTransform);
-		// want the stroke line width specified in display (not source image) pixels
-		g2d.setStroke(new BasicStroke((float)(lineWidth/useScaleFactor)));
-
-		if (showSuperimposedImages && superimposedImages != null) {
-			for (SuperimposedImage superimposedImage : superimposedImages) {
-System.err.println("SingleImagePanel.paintComponent(): Drawing superimposed image "+superimposedImage);
-				SuperimposedImage.AppliedToUnderlyingImage superimposedImageAppliedToUnderlyingImage = superimposedImage.getAppliedToUnderlyingImage(imageGeometry,useSrcImageIndex);
-				if (superimposedImageAppliedToUnderlyingImage != null) {
-//System.err.println("SingleImagePanel.paintComponent(): Drawing superimposed image applied to underlying image "+superimposedImageAppliedToUnderlyingImage);
-					BufferedImage bufferedImage = superimposedImageAppliedToUnderlyingImage.getBufferedImage();
-					if (bufferedImage != null) {
-						double rowOrigin = superimposedImageAppliedToUnderlyingImage.getRowOrigin();
-						double columnOrigin = superimposedImageAppliedToUnderlyingImage.getColumnOrigin();
+					ColorModel colorModel = useSrcImage.getColorModel();
+					int numComponents = colorModel.getNumComponents();
+					slf4jlogger.debug("paintComponent(): Before windowing (if needed), getNumComponents() == {}",numComponents);
+					
+					if (numComponents == 1) {
 						
-						java.awt.image.RescaleOp applyColor = null;
-						int bufferedImageType = bufferedImage.getType();
-						if (bufferedImageType == BufferedImage.TYPE_INT_ARGB) {
-//System.err.println("SingleImagePanel.paintComponent(): have ARGB superimposed image so can change color and use transparency");
-							// BufferedImageOp ... use this for transparency with ARGB BufferedImage and RescaleOp to mess with alpha channel (see "http://docs.oracle.com/javase/tutorial/2d/images/drawimage.html")
-							int[] cieLabScaled = superimposedImage.getIntegerScaledCIELabPCS();
-							float redScale = 1f;
-							float greenScale = 1f;
-							float blueScale = 0f;
-							if (cieLabScaled != null) {
-								int[] srgb = ColorUtilities.getSRGBFromIntegerScaledCIELabPCS(cieLabScaled);
-								redScale = srgb[0] / 255f;
-								greenScale = srgb[1] / 255f;
-								blueScale = srgb[2] / 255f;
-							}
-							float[] scales = { redScale, greenScale, blueScale, 1f /* color and alpha */ };
-							float[] offsets = new float[4];
-							applyColor = new java.awt.image.RescaleOp(scales,offsets,null/*RenderingHints*/);
+						// First, find pre-selected VOI for this frame, if any
+						
+						slf4jlogger.debug("currentVOITransformInUse {}",currentVOITransformInUse);
+						if (currentVOITransformInUse != -1
+							&& !useVOILUTNotFunction
+							&& voiTransform != null
+							&& voiTransform.getNumberOfTransforms(useSrcImageIndex) > currentVOITransformInUse) {
+							windowWidth=voiTransform.getWidth(useSrcImageIndex,currentVOITransformInUse);
+							windowCenter=voiTransform.getCenter(useSrcImageIndex,currentVOITransformInUse);
+							slf4jlogger.debug("For new frame {} using preselected center {} and width {}",useSrcImageIndex,windowCenter,windowWidth);
 						}
 						else {
-System.err.println("SingleImagePanel.paintComponent(): not ARGB superimposed image so cannot change color and use transparency");
+							//currentVOITransformInUse=-1;
+							// Just leave it alone (but don't disable use of selection for other frames)
+							slf4jlogger.debug("For new frame {} using user selected center {} and width {}",useSrcImageIndex,windowCenter,windowWidth);
 						}
-						g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,0.5f));	// set transparency
-						g2d.drawImage(
-							bufferedImage,
-							applyColor,
-							(int)columnOrigin,	// aaargh ! ... really need to indirect the original doubles through the affine transform in case upsampled for displayed, since usually are +0.5 sub-pixel resolution :(
-							(int)rowOrigin
-						);
+						
+						// Second, find rescale attributes for this frame
+						
+						if (modalityTransform != null) {
+							useSlope     = modalityTransform.getRescaleSlope    (useSrcImageIndex);
+							useIntercept = modalityTransform.getRescaleIntercept(useSrcImageIndex);
+							slf4jlogger.debug("For new frame {} using preselected rescale slope {} and intercept {}",useSrcImageIndex,useSlope,useIntercept);
+						}
+						else {
+							useSlope=1.0;
+							useIntercept=0.0;
+							slf4jlogger.debug("For new frame {} using default rescale slope {} and intercept {}",useSrcImageIndex,useSlope,useIntercept);
+						}
+						
+						// Finally, actually build the destination image
+						slf4jlogger.debug("paintComponent() useVOILUTNotFunction = {}",useVOILUTNotFunction);
+						slf4jlogger.debug("paintComponent() numberOfEntries = {}",numberOfEntries);
+						slf4jlogger.debug("paintComponent() redTable = {}",redTable);
+						slf4jlogger.debug("paintComponent() useVOIFunction = {}",useVOIFunction);
+						long applyVOITime = System.currentTimeMillis();
+						
+						if (useVOILUTNotFunction) {
+							cachedPreWindowedImage = applyVOILUT(useSrcImage,windowCenter,windowWidth,voiLUTIdentityWindowCenter,voiLUTIdentityWindowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,
+																 voiLUTNumberOfEntries,voiLUTFirstValueMapped,voiLUTBitsPerEntry,voiLUTData,voiLUTEntryMin,voiLUTEntryMax,voiLUTTopOfEntryRange);
+						}
+						else if (numberOfEntries != 0 && redTable != null) {
+							cachedPreWindowedImage = applyWindowCenterAndWidthWithPaletteColor(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,
+																							   largestGray,bitsPerEntry,numberOfEntries,redTable,greenTable,blueTable);
+						}
+						else if (useVOIFunction == 1) {
+							cachedPreWindowedImage = applyWindowCenterAndWidthLogistic(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit);
+						}
+						else {
+							cachedPreWindowedImage = applyWindowCenterAndWidthLinear(useSrcImage,windowCenter,windowWidth,signed,inverted,useSlope,useIntercept,hasPad,pad,padRangeLimit,useWindowLinearExactCalculationInsteadOfDICOMStandardMethod);
+						}
+						slf4jlogger.debug("paintComponent(): VOI/window applied in {} ms",(System.currentTimeMillis()-applyVOITime));
+					}
+					else  if (numComponents == 3) {
+						slf4jlogger.debug("paintComponent(): is 3 component");
+						slf4jlogger.debug("currentVOITransformInUse {}",currentVOITransformInUse);
+						if (currentVOITransformInUse != -1 && voiTransform.getNumberOfTransforms(useSrcImageIndex) > currentVOITransformInUse) {
+							windowWidth=voiTransform.getWidth(useSrcImageIndex,currentVOITransformInUse);
+							windowCenter=voiTransform.getCenter(useSrcImageIndex,currentVOITransformInUse);
+							slf4jlogger.debug("For new frame {} using preselected center {} and width {}",useSrcImageIndex,windowCenter,windowWidth);
+						}
+						else {
+							//currentVOITransformInUse=-1;
+							// Just leave it alone (but don't disable use of selection for other frames)
+							slf4jlogger.debug("For new frame {} using user selected center {} and width {}",useSrcImageIndex,windowCenter,windowWidth);
+						}
+						
+						// No rescaling for color images
+						
+						// Finally, actually build the destination image
+						long applyVOITime = System.currentTimeMillis();
+						// use only linear voiTransform ... and no rescaling, no sign, no inversion (for now), no padding
+						{
+							cachedPreWindowedImage = applyWindowCenterAndWidthLinearToColorImage(useSrcImage,windowCenter,windowWidth);
+						}
+						slf4jlogger.debug("paintComponent(): VOI/window applied in {} ms",(System.currentTimeMillis()-applyVOITime));
+					}
+					else {
+						slf4jlogger.debug("paintComponent(): Not windowing, getNumComponents() = {}, currentVOITransformInUse = {}, useVOILUTNotFunction = {}",numComponents,currentVOITransformInUse,useVOILUTNotFunction);
+						slf4jlogger.debug("paintComponent(): Just using unwindowed useSrcImage as cachedPreWindowedImage={}",useSrcImage);
+						cachedPreWindowedImage=useSrcImage;
+					}
+				}
+				slf4jlogger.debug("paintComponent() mrj.version={}",System.getProperty("mrj.version"));
+				if (cachedPreWindowedImage != null && useConvertToMostFavorableImageType) {
+					long conversionTime = System.currentTimeMillis();
+					cachedPreWindowedImage=BufferedImageUtilities.convertToMostFavorableImageType(cachedPreWindowedImage);
+					slf4jlogger.debug("paintComponent(): converted to most favorable done in {} ms",(System.currentTimeMillis()-conversionTime));
+				}
+			}
+			else {
+				slf4jlogger.debug("paintComponent(): using cachedPreWindowedImage");
+			}
+			
+			long drawImageTime = System.currentTimeMillis();
+			Graphics2D g2d=(Graphics2D)g;
+			if (cachedPreWindowedImage != null) {
+				slf4jlogger.debug("paintComponent(): same size draw");
+				slf4jlogger.debug("paintComponent(): applyShutter = {}",applyShutter);
+				Shape holdClip = null;
+				if (applyShutter && displayShutter != null) {
+					holdClip = g2d.getClip();
+					if (displayShutter.isCircularShutter()) {
+						Point2D tlhc = imageToWindowCoordinateTransform.transform(displayShutter.getCircularShutterTLHC(),null);
+						double tlhcX = tlhc.getX();
+						double tlhcY = tlhc.getY();
+						Point2D brhc = imageToWindowCoordinateTransform.transform(displayShutter.getCircularShutterBRHC(),null);
+						double brhcX = brhc.getX();
+						double brhcY = brhc.getY();
+						g2d.clip(new Ellipse2D.Double(tlhcX,tlhcY,brhcX-tlhcX,brhcY-tlhcY));
+					}
+					if (displayShutter.isRectangularShutter()) {
+						Point2D tlhc = imageToWindowCoordinateTransform.transform(displayShutter.getRectangularShutterTLHC(),null);
+						double tlhcX = tlhc.getX();
+						double tlhcY = tlhc.getY();
+						Point2D brhc = imageToWindowCoordinateTransform.transform(displayShutter.getRectangularShutterBRHC(),null);
+						double brhcX = brhc.getX();
+						double brhcY = brhc.getY();
+						g2d.clip(new Rectangle2D.Double(tlhcX,tlhcY,brhcX-tlhcX,brhcY-tlhcY));
+					}
+					if (displayShutter.isPolygonalShutter()) {
+						Point2D[] points = displayShutter.getVerticesOfPolygonalShutterAsPoint2D();
+						Polygon polygon = new Polygon();
+						for (int i=0; i<points.length; ++i) {
+							Point2D point = imageToWindowCoordinateTransform.transform(points[i],null);
+							polygon.addPoint((int)(point.getX()),(int)(point.getY()));
+						}
+						g2d.clip(polygon);
+					}
+				}
+				g2d.drawImage(cachedPreWindowedImage,offsetDrawingOfResizedSelectedRegionImageX,offsetDrawingOfResizedSelectedRegionImageY,this);
+				if (holdClip != null) {
+					g2d.setClip(holdClip);
+				}
+			}
+			slf4jlogger.debug("paintComponent(): draw cachedPreWindowedImage into dst image done in {} ms",(System.currentTimeMillis()-drawImageTime));
+			
+			long drawAnnotationsTime = System.currentTimeMillis();
+			Color interactiveColor = Color.red;
+			Color persistentColor = Color.green;
+			Color selectedColor = Color.red;
+			Color localizerColor = Color.green;
+			Color volumeLocalizationColor = Color.blue;
+			Color preDefinedColor = Color.yellow;
+			Color perFrameDrawingColor = Color.red;
+			int lineWidth = 2;	// in display (not source image) pixels
+			Font preDefinedFont = new Font("SansSerif",Font.BOLD,14);
+			Font persistentFont = new Font("SansSerif",Font.BOLD,10);
+			
+			// draw any graphics that are displayed area relative ...
+			
+			if (demographicAndTechniqueAnnotations != null) {
+				g2d.setColor(demographicAndTechniqueColor);
+				g2d.setFont(demographicAndTechniqueFont);
+				
+				Iterator i = demographicAndTechniqueAnnotations.iterator(useSrcImageIndex);
+				while (i.hasNext()) {
+					TextAnnotationPositioned.drawPositionedString((TextAnnotationPositioned)i.next(),g2d,this,5,5);
+				}
+				
+			}
+			
+			{
+				g2d.setColor(orientationColor);
+				g2d.setFont(orientationFont);
+				// draw orientation
+				if (orientationAnnotations != null) {
+					String rowOrientation = orientationAnnotations.getRowOrientation(useSrcImageIndex);
+					if (rowOrientation != null && rowOrientation.length() > 0) {
+						TextAnnotationPositioned.drawVerticallyCenteredString(rowOrientation,showOrientationsLeftSide,g2d,this,5);
+					}
+					String columnOrientation = orientationAnnotations.getColumnOrientation(useSrcImageIndex);
+					if (columnOrientation != null && columnOrientation.length() > 0) {
+						TextAnnotationPositioned.drawHorizontallyCenteredString(columnOrientation,false/*isTop*/,g2d,this,5);
+					}
+				}
+				
+				if (showZoomFactor) {
+					double scaleFactor = Math.abs(imageToWindowCoordinateTransform.getScaleX());		// -ve if flipped; should check same in both axes ? :(
+					String sZoomFactor = "1:" + FloatFormatter.toString(scaleFactor,Locale.US);
+					slf4jlogger.debug("paintComponent(): sZoomFactor = {}",sZoomFactor);
+					TextAnnotationPositioned.drawVerticallyCenteredString(sZoomFactor,showZoomFactorLeftSide,g2d,this,2,5);
+					String sDisplayPixelSize = "[" + FloatFormatter.toString(pixelSpacingInSourceImage/scaleFactor,Locale.US) + "mm]";
+					TextAnnotationPositioned.drawVerticallyCenteredString(sDisplayPixelSize,showZoomFactorLeftSide,g2d,this,3,5);
+				}
+			}
+			
+			if (sideAndViewAnnotationString != null) {
+				g2d.setColor(sideAndViewAnnotationColor);
+				g2d.setFont(sideAndViewAnnotationFont);
+				TextAnnotationPositioned.drawPositionedString(
+															  new TextAnnotationPositioned(sideAndViewAnnotationString,showSideAndViewAnnotationLeftSide,true/*fromTop*/,0/*row*/),
+															  g2d,this,sideAndViewAnnotationVerticalOffset,5
+															  );
+			}
+			
+			// draw any text that are image relative, but using display relative font size
+			// by transforming point BEFORE changing graphics context to image relative
+			
+			if (persistentDrawingText != null) {
+				g2d.setColor(persistentColor);
+				g2d.setFont(persistentFont);
+				Iterator i = persistentDrawingText.iterator();
+				while (i.hasNext()) {
+					TextAnnotation text = (TextAnnotation)i.next();
+					Point2D imageRelativeAnchorPoint = text.getAnchorPoint();
+					Point2D windowRelativeAnchorPoint = imageToWindowCoordinateTransform.transform(imageRelativeAnchorPoint,null);
+					String string = text.getString();
+					int margin = 5;
+					int stringWidth  = (int)(g2d.getFontMetrics().getStringBounds(string,g2d).getWidth());
+					DrawingUtilities.drawShadowedString(string,
+														showOrientationsLeftSide ? margin : getBounds().width - margin - stringWidth,
+														(int)windowRelativeAnchorPoint.getY(),			// always left or right since sometimes doesn't fit (clipped on right) if drawn at anchor point:(
+														g2d);
+				}
+			}
+			
+			// draw any graphics that are image relative, by applying a scaled AffineTransform to the graphics context ...
+			
+			slf4jlogger.debug("paintComponent(): draw any graphics");
+			
+			g2d.transform(imageToWindowCoordinateTransform);
+			// want the stroke line width specified in display (not source image) pixels
+			g2d.setStroke(new BasicStroke((float)(lineWidth/useScaleFactor)));
+			
+			activeSuperimposedImagesAppliedToUnderlyingImage.clear();
+			if (showSuperimposedImages && superimposedImages != null) {
+				for (SuperimposedImage superimposedImage : superimposedImages) {
+					slf4jlogger.debug("paintComponent(): Drawing superimposed image {}",superimposedImage);
+					SuperimposedImage.AppliedToUnderlyingImage superimposedImageAppliedToUnderlyingImage = superimposedImage.getAppliedToUnderlyingImage(imageGeometry,useSrcImageIndex);
+					if (superimposedImageAppliedToUnderlyingImage != null) {
+						slf4jlogger.debug("paintComponent(): Drawing superimposed image applied to underlying image {}",superimposedImageAppliedToUnderlyingImage);
+						BufferedImage bufferedImage = superimposedImageAppliedToUnderlyingImage.getBufferedImage();
+						if (bufferedImage != null) {
+							activeSuperimposedImagesAppliedToUnderlyingImage.add(superimposedImageAppliedToUnderlyingImage);		// keep track of these to use for cursor hit on superimposed image
+							
+							double rowOrigin = superimposedImageAppliedToUnderlyingImage.getRowOrigin();
+							double columnOrigin = superimposedImageAppliedToUnderlyingImage.getColumnOrigin();
+							
+							java.awt.image.RescaleOp applyColor = null;
+							int bufferedImageType = bufferedImage.getType();
+							if (bufferedImageType == BufferedImage.TYPE_INT_ARGB) {
+								slf4jlogger.debug("paintComponent(): have ARGB superimposed image so can change color and use transparency");
+								// BufferedImageOp ... use this for transparency with ARGB BufferedImage and RescaleOp to mess with alpha channel (see "http://docs.oracle.com/javase/tutorial/2d/images/drawimage.html")
+								int[] cieLabScaled = superimposedImage.getIntegerScaledCIELabPCS();
+								float redScale = 1f;
+								float greenScale = 1f;
+								float blueScale = 0f;
+								if (cieLabScaled != null) {
+									int[] srgb = ColorUtilities.getSRGBFromIntegerScaledCIELabPCS(cieLabScaled);
+									redScale = srgb[0] / 255f;
+									greenScale = srgb[1] / 255f;
+									blueScale = srgb[2] / 255f;
+								}
+								float[] scales = { redScale, greenScale, blueScale, 1f /* color and alpha */ };
+								float[] offsets = new float[4];
+								applyColor = new java.awt.image.RescaleOp(scales,offsets,null/*RenderingHints*/);
+							}
+							else {
+								slf4jlogger.info("SingleImagePanel.paintComponent(): not ARGB superimposed image so cannot change color and use transparency");
+							}
+							g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,0.5f));	// set transparency
+							g2d.drawImage(
+										  bufferedImage,
+										  applyColor,
+										  (int)columnOrigin,	// aaargh ! ... really need to indirect the original doubles through the affine transform in case upsampled for displayed, since usually are +0.5 sub-pixel resolution :(
+										  (int)rowOrigin
+										  );
+						}
+						//else {
+						//	System.err.println("SingleImagePanel.paintComponent(): could not apply superimposed image to underlying image because no BufferedImage returned");
+						//}
 					}
 					//else {
-					//	System.err.println("SingleImagePanel.paintComponent(): could not apply superimposed image to underlying image because no BufferedImage returned");
+					//	System.err.println("SingleImagePanel.paintComponent(): could not apply superimposed image to underlying image because no SuperimposedImage.AppliedToUnderlyingImage returned");
 					//}
 				}
-				//else {
-				//	System.err.println("SingleImagePanel.paintComponent(): could not apply superimposed image to underlying image because no SuperimposedImage.AppliedToUnderlyingImage returned");
-				//}
 			}
-		}
-		
-		if (showOverlays && overlay != null && overlay.getNumberOfOverlays(useSrcImageIndex) > 0) {
-//System.err.println("SingleImagePanel.paintComponent(): Drawing overlays for frame "+useSrcImageIndex);
-			for (int o=0; o<16; ++o) {
-				BufferedImage overlayImage = overlay.getOverlayAsBinaryBufferedImage(useSrcImageIndex,o);
-				if (overlayImage != null) {
-//System.err.println("SingleImagePanel.paintComponent(): Drawing overlay number "+o);
-					int rowOrigin = overlay.getRowOrigin(useSrcImageIndex,o);
-					int columnOrigin = overlay.getColumnOrigin(useSrcImageIndex,o);
-					{
-						byte[] red = { (byte)0, (byte)0 };
-						byte[] green = { (byte)0, (byte)0 };
-						byte[] blue = { (byte)0, (byte)0 };
-						IndexColorModel colorModel = new IndexColorModel(
-							1 /* bits */,
-							2 /* size */,
-							red,green,blue,
-							0 /* the first index (black value) is to be transparent */);
-						BufferedImage shadowImage = new BufferedImage(colorModel,overlayImage.getRaster(),false,null);
-						g2d.drawImage(shadowImage,null,columnOrigin+1,rowOrigin+1);
+			
+			if (showOverlays && overlay != null && overlay.getNumberOfOverlays(useSrcImageIndex) > 0) {
+				slf4jlogger.debug("paintComponent(): Drawing overlays for frame {}",useSrcImageIndex);
+				for (int o=0; o<16; ++o) {
+					BufferedImage overlayImage = overlay.getOverlayAsBinaryBufferedImage(useSrcImageIndex,o);
+					if (overlayImage != null) {
+						slf4jlogger.debug("paintComponent(): Drawing overlay number {}",o);
+						int rowOrigin = overlay.getRowOrigin(useSrcImageIndex,o);
+						int columnOrigin = overlay.getColumnOrigin(useSrcImageIndex,o);
+						{
+							byte[] red = { (byte)0, (byte)0 };
+							byte[] green = { (byte)0, (byte)0 };
+							byte[] blue = { (byte)0, (byte)0 };
+							IndexColorModel colorModel = new IndexColorModel(
+																			 1 /* bits */,
+																			 2 /* size */,
+																			 red,green,blue,
+																			 0 /* the first index (black value) is to be transparent */);
+							BufferedImage shadowImage = new BufferedImage(colorModel,overlayImage.getRaster(),false,null);
+							g2d.drawImage(shadowImage,null,columnOrigin+1,rowOrigin+1);
+						}
+						g2d.drawImage(overlayImage,null,columnOrigin,rowOrigin);
 					}
-					g2d.drawImage(overlayImage,null,columnOrigin,rowOrigin);
 				}
 			}
-		}
-		
-		if (interactiveDrawingShapes != null) {
-//System.err.println("SingleImagePanel.paintComponent(): Draw interactive shapes:");
-//LocalizerPosterFactory.dumpShapes(interactiveDrawingShapes);
-			g2d.setColor(interactiveColor);
-			Iterator i = interactiveDrawingShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+			
+			if (interactiveDrawingShapes != null) {
+				slf4jlogger.debug("paintComponent(): Draw interactive shapes:");
+				//LocalizerPosterFactory.dumpShapes(interactiveDrawingShapes);
+				g2d.setColor(interactiveColor);
+				Iterator i = interactiveDrawingShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
 			}
+			
+			if (persistentDrawingShapes != null) {
+				slf4jlogger.debug("paintComponent(): Draw persistent shapes:");
+				//LocalizerPosterFactory.dumpShapes(persistentDrawingShapes);
+				g2d.setColor(persistentColor);
+				Iterator i = persistentDrawingShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
+			}
+			
+			if (selectedDrawingShapes != null) {
+				slf4jlogger.debug("paintComponent(): Draw selected shapes:");
+				//LocalizerPosterFactory.dumpShapes(persistentDrawingShapes);
+				g2d.setColor(selectedColor);
+				Iterator i = selectedDrawingShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
+			}
+			
+			if (volumeLocalizationShapes != null) {
+				slf4jlogger.debug("paintComponent(): draw volume localization shapes");
+				//LocalizerPosterFactory.dumpShapes(volumeLocalizationShapes);
+				g2d.setColor(volumeLocalizationColor);
+				Iterator i = volumeLocalizationShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
+			}
+			
+			if (localizerShapes != null) {			// do this after volumeLocalizationShapes, in case need to draw on top
+				slf4jlogger.debug("paintComponent(): draw localizer shapes");
+				//LocalizerPosterFactory.dumpShapes(localizerShapes);
+				g2d.setColor(localizerColor);
+				Iterator i = localizerShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
+			}
+			
+			if (preDefinedShapes != null) {
+				slf4jlogger.debug("paintComponent(): draw pre-defined shapes");
+				//com.pixelmed.geometry.LocalizerPosterFactory.dumpShapes(preDefinedShapes);
+				g2d.setColor(preDefinedColor);
+				Iterator i = preDefinedShapes.iterator();
+				while (i.hasNext()) {
+					DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+				}
+			}
+			
+			if (perFrameDrawingShapes != null && perFrameDrawingShapes.length > currentSrcImageIndex && perFrameDrawingShapes[currentSrcImageIndex] != null) {
+				slf4jlogger.debug("paintComponent(): draw per-frame shapes");
+				Vector<Shape> shapes = perFrameDrawingShapes[currentSrcImageIndex];
+				//com.pixelmed.geometry.LocalizerPosterFactory.dumpShapes(shapes);
+				g2d.setColor(perFrameDrawingColor);
+				Iterator i = shapes.iterator();
+				while (i.hasNext()) {
+					//DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
+					g2d.draw((Shape)i.next());
+				}
+			}
+			
+			if (preDefinedText != null) {
+				g2d.setColor(preDefinedColor);
+				g2d.setFont(preDefinedFont);
+				Iterator i = preDefinedText.iterator();
+				while (i.hasNext()) {
+					TextAnnotation text = (TextAnnotation)i.next();
+					DrawingUtilities.drawShadowedString(text.getString(),text.getAnchorPointXAsInt(),text.getAnchorPointYAsInt(),g2d);
+				}
+			}
+			slf4jlogger.debug("paintComponent(): draw annotations done in {} ms",(System.currentTimeMillis()-drawAnnotationsTime));
+			
+		}	// currentSrcImageIndex != -1
+		else {
+			this.getGraphics().clearRect(0,0,this.getBounds().width,this.getBounds().height);		// current (default black since we don't set it) background color
+			//this.getGraphics().drawRect(0,0,this.getBounds().width,this.getBounds().height);		// current (default black since we don't set it) foreground color
 		}
 
-		if (persistentDrawingShapes != null) {
-//System.err.println("SingleImagePanel.paintComponent(): Draw persistent shapes:");
-//LocalizerPosterFactory.dumpShapes(persistentDrawingShapes);
-			g2d.setColor(persistentColor);
-			Iterator i = persistentDrawingShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-			}
-		}
-
-		if (selectedDrawingShapes != null) {
-//System.err.println("SingleImagePanel.paintComponent(): Draw selected shapes:");
-//LocalizerPosterFactory.dumpShapes(persistentDrawingShapes);
-			g2d.setColor(selectedColor);
-			Iterator i = selectedDrawingShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-			}
-		}
-
-		if (volumeLocalizationShapes != null) {
-//System.err.println("SingleImagePanel.paintComponent(): draw volume localization shapes");
-//LocalizerPosterFactory.dumpShapes(volumeLocalizationShapes);
-			g2d.setColor(volumeLocalizationColor);
-			Iterator i = volumeLocalizationShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-			}
-		}
-		
-		if (localizerShapes != null) {			// do this after volumeLocalizationShapes, in case need to draw on top
-//System.err.println("SingleImagePanel.paintComponent(): draw localizer shapes");
-//LocalizerPosterFactory.dumpShapes(localizerShapes);
-			g2d.setColor(localizerColor);
-			Iterator i = localizerShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-			}
-		}
-		
-		if (preDefinedShapes != null) {
-//System.err.println("SingleImagePanel.paintComponent(): draw pre-defined shapes");
-//com.pixelmed.geometry.LocalizerPosterFactory.dumpShapes(preDefinedShapes);
-			g2d.setColor(preDefinedColor);
-			Iterator i = preDefinedShapes.iterator();
-			while (i.hasNext()) {
-				DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-			}
-		}
-		
-		if (perFrameDrawingShapes != null && perFrameDrawingShapes.length > currentSrcImageIndex && perFrameDrawingShapes[currentSrcImageIndex] != null) {
-//System.err.println("SingleImagePanel.paintComponent(): draw per-frame shapes");
-			Vector<Shape> shapes = perFrameDrawingShapes[currentSrcImageIndex];
-//com.pixelmed.geometry.LocalizerPosterFactory.dumpShapes(shapes);
-			g2d.setColor(perFrameDrawingColor);
-			Iterator i = shapes.iterator();
-			while (i.hasNext()) {
-				//DrawingUtilities.drawShadowedShape((Shape)i.next(),g2d);
-				g2d.draw((Shape)i.next());
-			}
-		}
-
-		if (preDefinedText != null) {
-			g2d.setColor(preDefinedColor);
-			g2d.setFont(preDefinedFont);
-			Iterator i = preDefinedText.iterator();
-			while (i.hasNext()) {
-				TextAnnotation text = (TextAnnotation)i.next();
-				DrawingUtilities.drawShadowedString(text.getString(),text.getAnchorPointXAsInt(),text.getAnchorPointYAsInt(),g2d);
-			}
-		}
-//System.err.println("SingleImagePanel.paintComponent(): draw annotations done in "+(System.currentTimeMillis()-drawAnnotationsTime)+" ms");
-		
 		setCursor(was);
-//System.err.println("paintComponent() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("SingleImagePanel.paintComponent(): end");
+		slf4jlogger.debug("paintComponent() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("paintComponent(): end");
 	}
 
 	/**
@@ -2331,16 +2437,22 @@ System.err.println("SingleImagePanel.paintComponent(): not ARGB superimposed ima
 		try {
 			if (arg.length == 1) {
 				JFrame p = new JFrame();
-				p.add(new SingleImagePanel(new SourceImage(arg[0])));
+				SourceImage sImg = new SourceImage(arg[0]);
 				//AttributeList list = new AttributeList();
 				//list.read(arg[0]);
-				//p.add(new SingleImagePanel(new SourceImage(list)));
-				p.setBackground(Color.BLACK);
-				p.setSize(512,512);
-				p.setVisible(true);
+				if (sImg.isImage()) {
+					p.add(new SingleImagePanel(sImg));
+					//p.add(new SingleImagePanel(new SourceImage(list)));
+					p.setBackground(Color.BLACK);
+					p.setSize(512,512);
+					p.setVisible(true);
+				}
+				else {
+					throw new DicomException("Is not an image or is not an image that can be displayed");
+				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

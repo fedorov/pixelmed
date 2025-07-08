@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -15,10 +15,15 @@ import com.pixelmed.geometry.LocalizerPoster;
 
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 class ImageLocalizerManager extends LocalizerManager {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ImageLocalizerManager.java,v 1.6 2013/02/01 13:53:20 dclunie Exp $";
-		
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ImageLocalizerManager.java,v 1.17 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageLocalizerManager.class);
+
 	/***/
 	protected GeometryOfVolume mainImageGeometry;
 	/***/
@@ -30,7 +35,7 @@ class ImageLocalizerManager extends LocalizerManager {
 	 */
 	protected void drawOutlineOnLocalizerReferenceImagePanel() {
 		if (referencedImagePanel != null && mainImageGeometry != null) {
-//System.err.println("ImageLocalizerManager.drawOutlineOnLocalizer(): setting shape and requesting repaint of reference image panel; mainIndex="+mainIndex);
+			slf4jlogger.debug("drawOutlineOnLocalizer(): setting shape and requesting repaint of reference image panel; mainIndex={}",mainIndex);
 			localizerPoster.setLocalizerGeometry((referenceImageGeometry.getGeometryOfSlices())[referenceIndex]);
 			Vector shapes = localizerPoster.getOutlineOnLocalizerForThisGeometry((mainImageGeometry.getGeometryOfSlices())[mainIndex]);
 			referencedImagePanel.setLocalizerShapes(shapes);
@@ -63,7 +68,7 @@ class ImageLocalizerManager extends LocalizerManager {
 			}
 			mainImageGeometry=sis.getGeometryOfVolume();
 			if (mainImageGeometry != null && mainImageGeometry.getGeometryOfSlices() == null) {
-//System.err.println("ImageLocalizerManager.OurMainSourceImageSelectionChangeListenerchanged(): getGeometryOfSlices() is null, so not using mainImageGeometry");
+				slf4jlogger.debug("OurMainSourceImageSelectionChangeListener.changed(): getGeometryOfSlices() is null, so not using mainImageGeometry");
 				mainImageGeometry=null;
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Selected image does not contain necessary geometry for localization."));
 			}
@@ -102,16 +107,16 @@ class ImageLocalizerManager extends LocalizerManager {
 		 * @param	e
 		 */
 		public void changed(Event e) {
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSelectionChangeListener.changed():");
+			slf4jlogger.debug("OurMainImageFrameSelectionChangeListener.changed():");
 			FrameSelectionChangeEvent fse = (FrameSelectionChangeEvent)e;
 			mainIndex = fse.getIndex();
 			if (mainImageSortOrder != null) {
 				mainIndex=mainImageSortOrder[mainIndex];
 			}
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSelectionChangeListener.changed(): referenceImageGeometry="+referenceImageGeometry);
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSelectionChangeListener.changed(): mainImageGeometry="+mainImageGeometry);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("OurMainImageFrameSelectionChangeListener.changed(): referenceImageGeometry {}",referenceImageGeometry.toString());
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("OurMainImageFrameSelectionChangeListener.changed(): mainImageGeometry {}",mainImageGeometry.toString());
 			if (referenceImageGeometry != null && mainImageGeometry != null) {	// don't do anything if no referenced image
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSelectionChangeListener.changed(): updating localizer outline");
+				slf4jlogger.debug("OurMainImageFrameSelectionChangeListener.changed(): updating localizer outline");
 				drawOutlineOnLocalizerReferenceImagePanel();
 			}
 		}
@@ -149,7 +154,7 @@ class ImageLocalizerManager extends LocalizerManager {
 		 * @param	e
 		 */
 		public void changed(com.pixelmed.event.Event e) {
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSortOrderChangeListener.changed():");
+			slf4jlogger.debug("OurMainImageFrameSortOrderChangeListener.changed():");
 			FrameSortOrderChangeEvent fso = (FrameSortOrderChangeEvent)e;
 			mainImageSortOrder = fso.getSortOrder();
 			mainIndex = fso.getIndex();
@@ -157,7 +162,7 @@ class ImageLocalizerManager extends LocalizerManager {
 				mainIndex=mainImageSortOrder[mainIndex];
 			}
 			if (referenceImageGeometry != null && mainImageGeometry != null) {	// don't do anything if no referenced image
-//System.err.println("ImageLocalizerManager.OurMainImageFrameSortOrderChangeListener.changed(): updating localizer outline");
+				slf4jlogger.debug("OurMainImageFrameSortOrderChangeListener.changed(): updating localizer outline");
 				drawOutlineOnLocalizerReferenceImagePanel();
 			}
 		}
@@ -180,7 +185,7 @@ class ImageLocalizerManager extends LocalizerManager {
 	}
 
 	public void reset() {
-//System.err.println("ImageLocalizerManager.reset():");
+		slf4jlogger.debug("reset():");
 		super.reset();
 		mainIndex=0;
 		mainImageSortOrder=null;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,23 +17,23 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  */
 public class DicomDirectoryBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryBrowser.java,v 1.20 2010/01/31 11:59:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryBrowser.java,v 1.32 2025/01/29 10:58:06 dclunie Exp $";
 
 	private JTree tree;
 	private DicomDirectory treeModel;
 	private String parentFilePath;
 
-	private HashSet defaultExcludeList;
-	private HashSet patientExcludeList;
-	private HashSet studyExcludeList;
-	private HashSet seriesExcludeList;
-	private HashSet imageExcludeList;
-	private HashSet srExcludeList;
+	private HashSet<AttributeTag> defaultExcludeList;
+	private HashSet<AttributeTag> patientExcludeList;
+	private HashSet<AttributeTag> studyExcludeList;
+	private HashSet<AttributeTag> seriesExcludeList;
+	private HashSet<AttributeTag> imageExcludeList;
+	private HashSet<AttributeTag> srExcludeList;
 
 	/**
-	 * @param	list
-	 * @param	parentFilePath
-	 * @exception	DicomException
+	 * @param	list			a list of attributes describing a DICOMDIR instance
+	 * @param	parentFilePath	the path to which all ReferencedFileIDs in the DICOMDIR are relative (i.e., the folder in which the DICONDIR is/will be stored)
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DicomDirectoryBrowser(AttributeList list,String parentFilePath) throws DicomException {
 //long startTime = System.currentTimeMillis();
@@ -47,11 +47,11 @@ public class DicomDirectoryBrowser {
 	}
 
 	/**
-	 * @param	list
-	 * @param	parentFilePath
-	 * @param	treeBrowserScrollPane
-	 * @param	attributeBrowserScrollPane
-	 * @exception	DicomException
+	 * @param	list						a list of attributes describing a DICOMDIR instance
+	 * @param	parentFilePath				the path to which all ReferencedFileIDs in the DICOMDIR are relative (i.e., the folder in which the DICONDIR is/will be stored)
+	 * @param	treeBrowserScrollPane		where to put the tree browser for the directory
+	 * @param	attributeBrowserScrollPane	where to put the attribute browser for a selected record
+	 * @throws	DicomException				if error in DICOM encoding
 	 */
 	public DicomDirectoryBrowser(AttributeList list,String parentFilePath,JScrollPane treeBrowserScrollPane,JScrollPane attributeBrowserScrollPane) throws DicomException {
 //long startTime = System.currentTimeMillis();
@@ -68,10 +68,10 @@ public class DicomDirectoryBrowser {
 	}
 
 	/**
-	 * @param	list
-	 * @param	parentFilePath
-	 * @param	frame
-	 * @exception	DicomException
+	 * @param	list			a list of attributes describing a DICOMDIR instance
+	 * @param	parentFilePath	the path to which all ReferencedFileIDs in the DICOMDIR are relative (i.e., the folder in which the DICONDIR is/will be stored)
+	 * @param	frame			where to put the browsers
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DicomDirectoryBrowser(AttributeList list,String parentFilePath,JFrame frame) throws DicomException {
 //long startTime = System.currentTimeMillis();
@@ -110,14 +110,15 @@ public class DicomDirectoryBrowser {
 	//}
 	
 	/**
-	 * @param	font
+	 * @param	font	font to use
 	 */
 	protected void setFont(Font font) {
 		tree.setFont(font);
 	}
 
 	/**
-	 * @param	parentFilePath
+	 * @param	parentFilePath	parent directory at which DICOMDIR file paths are rooted
+	 * @return					a TreeSelectionListener
 	 */
 	protected TreeSelectionListener buildTreeSelectionListenerToDoSomethingWithSelectedFiles(final String parentFilePath) {
 		return new TreeSelectionListener() {
@@ -137,7 +138,8 @@ public class DicomDirectoryBrowser {
 	}
 	
 	/**
-	 * @param	attributeBrowserScrollPane
+	 * @param	attributeBrowserScrollPane	where to display the attributes of the selected record
+	 * @return								a TreeSelectionListener
 	 */
 	protected TreeSelectionListener buildTreeSelectionListenerToDisplayAttributesOfSelectedRecord(final JScrollPane attributeBrowserScrollPane) {
 		return new TreeSelectionListener() {
@@ -149,8 +151,8 @@ public class DicomDirectoryBrowser {
 					Object lastPathComponent = tp.getLastPathComponent();
 					if (lastPathComponent instanceof DicomDirectoryRecord) {
 						DicomDirectoryRecord dirRecord = (DicomDirectoryRecord)lastPathComponent;
-						HashSet includeList = null;
-						HashSet excludeList = chooseExcludeList(dirRecord);
+						HashSet<AttributeTag> includeList = null;
+						HashSet<AttributeTag> excludeList = chooseExcludeList(dirRecord);
 						AttributeListTableBrowser table = new AttributeListTableBrowser(dirRecord.getAttributeList(),includeList,excludeList);
 						table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);		// Otherwise horizontal scroll doesn't work
 						table.setColumnWidths();
@@ -163,6 +165,7 @@ public class DicomDirectoryBrowser {
 	
 
 	/**
+	 * @return	a MouseListener to detect double click events
 	 */
 	protected MouseListener buildMouseListenerToDetectDoubleClickEvents() {
 		return new MouseAdapter() {
@@ -179,10 +182,11 @@ public class DicomDirectoryBrowser {
 
 
 	/**
-	 * @param	dirRecord
+	 * @param	dirRecord	the directory record for which we need to select an exclude list based on its DirectoryRecordType
+	 * @return				the appropriate list of attributes to exclude from display based on DirectoryRecordType, or the defaultExcludeList if DirectoryRecordType unrecognized
 	 */
-	protected HashSet chooseExcludeList(DicomDirectoryRecord dirRecord) {
-		HashSet excludeList=null;
+	protected HashSet<AttributeTag> chooseExcludeList(DicomDirectoryRecord dirRecord) {
+		HashSet<AttributeTag> excludeList=null;
 		AttributeList list = dirRecord.getAttributeList();
 		String directoryRecordType = Attribute.getSingleStringValueOrNull(list,TagFromName.DirectoryRecordType);
 		if (directoryRecordType == null) {
@@ -208,40 +212,46 @@ public class DicomDirectoryBrowser {
 	
 	/***/
 	protected void createExcludeLists() {
-		defaultExcludeList = new HashSet();
+		defaultExcludeList = new HashSet<AttributeTag>();
 		defaultExcludeList.add(TagFromName.OffsetOfTheNextDirectoryRecord);
 		defaultExcludeList.add(TagFromName.RecordInUseFlag);
 		defaultExcludeList.add(TagFromName.OffsetOfReferencedLowerLevelDirectoryEntity);
 		defaultExcludeList.add(TagFromName.DirectoryRecordType);
 		
-		patientExcludeList =  new HashSet(defaultExcludeList);
+		patientExcludeList =  new HashSet<AttributeTag>(defaultExcludeList);
 		
-		studyExcludeList =  new HashSet(defaultExcludeList);
+		studyExcludeList =  new HashSet<AttributeTag>(defaultExcludeList);
 		
-		seriesExcludeList =  new HashSet(defaultExcludeList);
+		seriesExcludeList =  new HashSet<AttributeTag>(defaultExcludeList);
 		
-		imageExcludeList =  new HashSet(defaultExcludeList);
+		imageExcludeList =  new HashSet<AttributeTag>(defaultExcludeList);
 		//imageExcludeList.add(TagFromName.ReferencedFileID);
 		//imageExcludeList.add(TagFromName.ReferencedSOPClassUIDInFile);
 		//imageExcludeList.add(TagFromName.ReferencedSOPInstanceUIDInFile);
 		//imageExcludeList.add(TagFromName.ReferencedTransferSyntaxUIDInFile);
 		
-		srExcludeList =  new HashSet(defaultExcludeList);
+		srExcludeList =  new HashSet<AttributeTag>(defaultExcludeList);
 	}
 
-	/***/
+	/**
+	 *	<p>Get this directory, initializing any structures necessary.</p>
+	 *
+	 * @return		this directory
+	 */
 	public DicomDirectory getDicomDirectory() {
 		treeModel.getMapOfSOPInstanceUIDToReferencedFileName(this.parentFilePath);	// initializes map using parentFilePath, ignore return value
 		return treeModel;
 	}
 
-	/***/
+	/**
+	 * @return		the parent file path
+	 */
 	public String getParentFilePath() { return parentFilePath; }
 
 	// Override these next methods in derived classes to do something useful
 
 	/**
-	 * @param	paths
+	 * @param	paths	the file paths selected
 	 */
 	protected void doSomethingWithSelectedFiles(Vector paths) {
 		if (paths != null) {
@@ -259,7 +269,7 @@ public class DicomDirectoryBrowser {
 	}
 
 	/**
-	 * @param	arg
+	 * @param	arg	a DICOMDIR file
 	 */
 	public static void main(String arg[]) {
 		AttributeList list = new AttributeList();
@@ -293,7 +303,7 @@ public class DicomDirectoryBrowser {
 //System.err.println("tree display took = "+(currentTime-startTime)+" ms");
 //startTime=currentTime;
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

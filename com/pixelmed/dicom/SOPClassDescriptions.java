@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,16 +11,20 @@ import java.util.HashMap;
  * @author	dclunie
  */
 public class SOPClassDescriptions {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.32 2013/10/16 00:09:18 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.71 2025/02/12 18:15:47 dclunie Exp $";
 	
 	private static SOPClassDescriptions ourself = new SOPClassDescriptions();
 	
 	private HashMap abbreviationsByUID;
 	private HashMap descriptionsByUID;
+	private HashMap keywordsByUID;
+	private HashMap uidsByKeyword;
 
 	private SOPClassDescriptions() {
 		createAbbreviationsByUID();
 		createDescriptionsByUID();
+		createKeywordsByUID();
+		createUIDsByKeyword();
 	}
 
 	/**
@@ -40,7 +44,25 @@ public class SOPClassDescriptions {
 		String description = (String)ourself.descriptionsByUID.get(sopClassUID);
 		return description == null ? "" : description;
 	}
-	
+
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			a keyword identifying the SOP Class, or an empty string if none
+	 */
+	public static String getKeywordFromUID(String sopClassUID) {
+		String keyword = (String)ourself.keywordsByUID.get(sopClassUID);
+		return keyword == null ? "" : keyword;
+	}
+
+	/**
+	 * @param	keyword	keyword for the SOP Class
+	 * @return			a UID identifying the SOP Class, or an empty string if none
+	 */
+	public static String getUIDFromKeyword(String keyword) {
+		String sopClassUID = (String)ourself.uidsByKeyword.get(keyword);
+		return sopClassUID == null ? "" : sopClassUID;
+	}
+
 	private void createAbbreviationsByUID() {
 		abbreviationsByUID = new HashMap();
 
@@ -66,6 +88,7 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.UltrasoundImageStorageRetired,"US(Ret)");
 		abbreviationsByUID.put(SOPClass.UltrasoundImageStorage,"US");
 		abbreviationsByUID.put(SOPClass.EnhancedUSVolumeStorage,"US(Vol)");
+		abbreviationsByUID.put(SOPClass.PhotoacousticImageStorage,"PA");
 		abbreviationsByUID.put(SOPClass.SecondaryCaptureImageStorage,"SC");
 		abbreviationsByUID.put(SOPClass.MultiframeSingleBitSecondaryCaptureImageStorage,"SC(MF1Bit)");
 		abbreviationsByUID.put(SOPClass.MultiframeGrayscaleByteSecondaryCaptureImageStorage,"SC(MFGrayByte)");
@@ -79,6 +102,8 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.XRay3DAngiographicImageStorage,"XA(3D)");
 		abbreviationsByUID.put(SOPClass.XRay3DCraniofacialImageStorage,"DX(3D CF)");
 		abbreviationsByUID.put(SOPClass.BreastTomosynthesisImageStorage,"MG(Tomo)");
+		abbreviationsByUID.put(SOPClass.BreastProjectionXRayImageStorageForPresentation,"MG(Proj Pres)");
+		abbreviationsByUID.put(SOPClass.BreastProjectionXRayImageStorageForProcessing,"MG(Proj Proc)");
 		
 		abbreviationsByUID.put(SOPClass.NuclearMedicineImageStorage,"NM");
 		abbreviationsByUID.put(SOPClass.VisibleLightEndoscopicImageStorage,"VL(Endo)");				// ES ?
@@ -91,8 +116,15 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.OphthalmicPhotography8BitImageStorage,"OP");
 		abbreviationsByUID.put(SOPClass.OphthalmicPhotography16BitImageStorage,"OP");
 		abbreviationsByUID.put(SOPClass.OphthalmicTomographyImageStorage,"OPT");
+		abbreviationsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyEnFaceImageStorage,"OPT");
+		abbreviationsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage,"OPT");
+		abbreviationsByUID.put(SOPClass.WideFieldOphthalmicPhotographyStereographicProjectionImageStorage,"OP");
+		abbreviationsByUID.put(SOPClass.WideFieldOphthalmicPhotography3DCoordinatesImageStorage,"OP");
 		abbreviationsByUID.put(SOPClass.VLWholeSlideMicroscopyImageStorage,"VL(WS)");	// SM ?
-		
+		abbreviationsByUID.put(SOPClass.DermoscopicPhotographyImageStorage,"DMS)");
+		abbreviationsByUID.put(SOPClass.ConfocalMicroscopyImageStorage,"CFM)");
+		abbreviationsByUID.put(SOPClass.ConfocalMicroscopyTiledPyramidalImageStorage,"CFM)");
+
 		abbreviationsByUID.put(SOPClass.PETImageStorage,"PET");
 		abbreviationsByUID.put(SOPClass.EnhancedPETImageStorage,"PET(MF)");
 		abbreviationsByUID.put(SOPClass.LegacyConvertedEnhancedPETImageStorage,"PET(MF-L)");
@@ -106,12 +138,17 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.EnhancedSRStorage,"SR(Enh)");
 		abbreviationsByUID.put(SOPClass.ComprehensiveSRStorage,"SR(Comp)");
 		abbreviationsByUID.put(SOPClass.Comprehensive3DSRStorage,"SR(Comp3D)");
+		abbreviationsByUID.put(SOPClass.ExtensibleSRStorage,"SR(Ext)");
 		abbreviationsByUID.put(SOPClass.MammographyCADSRStorage,"CAD(Mammo)");
 		abbreviationsByUID.put(SOPClass.ChestCADSRStorage,"CAD(Chest)");
 		abbreviationsByUID.put(SOPClass.ProcedureLogStorage,"LOG(Procedure)");
 		abbreviationsByUID.put(SOPClass.XRayRadiationDoseSRStorage,"DOSE(XRay)");
+		abbreviationsByUID.put(SOPClass.RadiopharmaceuticalRadiationDoseSRStorage,"DOSE(Nuc)");
 		abbreviationsByUID.put(SOPClass.ColonCADSRStorage,"CAD(Colon)");
 		abbreviationsByUID.put(SOPClass.ImplantationPlanSRStorage,"Plan(Implant)");
+		abbreviationsByUID.put(SOPClass.AcquisitionContextSRStorage,"SR(AcqCtx)");
+		abbreviationsByUID.put(SOPClass.SimplifiedAdultEchoSRStorage,"SR(Echo)");
+		abbreviationsByUID.put(SOPClass.PatientRadiationDoseSRStorage,"DOSE(Pt)");
 		abbreviationsByUID.put(SOPClass.MacularGridThicknessAndVolumeReportStorage,"SR(Macula)");
 		abbreviationsByUID.put(SOPClass.KeyObjectSelectionDocumentStorage,"KO");
 		
@@ -126,16 +163,32 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.PseudoColorSoftcopyPresentationStateStorage,"PS(Pseudo)");
 		abbreviationsByUID.put(SOPClass.BlendingSoftcopyPresentationStateStorage,"PS(Blend)");
 		abbreviationsByUID.put(SOPClass.XAXRFGrayscaleSoftcopyPresentationStateStorage,"PS(XAXRF)");
-		
+		abbreviationsByUID.put(SOPClass.GrayscalePlanarMPRVolumetricPresentationStateStorage,"PS(MPRGray)");
+		abbreviationsByUID.put(SOPClass.CompositingPlanarMPRVolumetricPresentationStateStorage,"PS(MPRComp)");
+		abbreviationsByUID.put(SOPClass.AdvancedBlendingPresentationStateStorage,"PS(Adv.Blend)");
+		abbreviationsByUID.put(SOPClass.VolumeRenderingVolumetricPresentationStateStorage,"PS(Vol)");
+		abbreviationsByUID.put(SOPClass.SegmentedVolumeRenderingVolumetricPresentationStateStorage,"PS(Vol.Seg)");
+		abbreviationsByUID.put(SOPClass.MultipleVolumeRenderingVolumetricPresentationStateStorage,"PS(Vol.Multi)");
+		abbreviationsByUID.put(SOPClass.VariableModalityLUTSoftcopyPresentationStateStorage,"PS(VarMLUT)");
+
+		abbreviationsByUID.put(SOPClass.WaveformPresentationStateStorage,"PS(WF)");
+		abbreviationsByUID.put(SOPClass.WaveformAcquisitionPresentationStateStorage,"PS(WFAcq)");
+
 		abbreviationsByUID.put(SOPClass.TwelveLeadECGStorage,"ECG(12)");
 		abbreviationsByUID.put(SOPClass.GeneralECGStorage,"ECG(Gen)");
 		abbreviationsByUID.put(SOPClass.AmbulatoryECGStorage,"ECG(Amb)");
 		abbreviationsByUID.put(SOPClass.HemodynamicWaveformStorage,"HD");
 		abbreviationsByUID.put(SOPClass.CardiacElectrophysiologyWaveformStorage,"EPS");
-		abbreviationsByUID.put(SOPClass.ArterialPulseWaveformStorage,"ART");
-		abbreviationsByUID.put(SOPClass.RespiratoryWaveformStorage,"RESP");
 		abbreviationsByUID.put(SOPClass.BasicVoiceStorage,"AU(Voice)");
 		abbreviationsByUID.put(SOPClass.GeneralAudioWaveformStorage,"AU");
+		abbreviationsByUID.put(SOPClass.ArterialPulseWaveformStorage,"ART");
+		abbreviationsByUID.put(SOPClass.RespiratoryWaveformStorage,"RESP");
+		abbreviationsByUID.put(SOPClass.MultichannelRespiratoryWaveformStorage,"RESP(M)");
+		abbreviationsByUID.put(SOPClass.RoutineScalpElectroencephalogramWaveformStorage,"EEG(Scalp)");
+		abbreviationsByUID.put(SOPClass.ElectromyogramWaveformStorage,"EMG");
+		abbreviationsByUID.put(SOPClass.ElectrooculogramWaveformStorage,"EOG");
+		abbreviationsByUID.put(SOPClass.SleepElectroencephalogramWaveformStorage,"EEG(Sleep)");
+		abbreviationsByUID.put(SOPClass.BodyPositionWaveformStorage,"POS");
 
 		abbreviationsByUID.put(SOPClass.StandaloneOverlayStorage,"OVERLAY");
 		abbreviationsByUID.put(SOPClass.StandaloneCurveStorage,"CURVE");
@@ -151,6 +204,17 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.RTIonPlanStorage,"RTPLAN(Ion)");
 		abbreviationsByUID.put(SOPClass.RTBrachyTreatmentRecordStorage,"RTRECORD(Brachy)");
 		abbreviationsByUID.put(SOPClass.RTTreatmentSummaryRecordStorage,"RTRECORD(Summary)");
+		abbreviationsByUID.put(SOPClass.RTPhysicianIntentStorage,"RT(Intent)");
+		abbreviationsByUID.put(SOPClass.RTSegmentAnnotationStorage,"RT(SegAnn)");
+		abbreviationsByUID.put(SOPClass.RTRadiationSetStorage,"RT(RadSet)");
+		abbreviationsByUID.put(SOPClass.CArmPhotonElectronRadiationStorage,"RT(CArmPE)");
+		abbreviationsByUID.put(SOPClass.TomotherapeuticRadiationStorage,"RT(Tomo)");
+		abbreviationsByUID.put(SOPClass.RoboticArmRadiationStorage,"RT(Rob)");
+		abbreviationsByUID.put(SOPClass.RTRadiationRecordSetStorage,"RT(Rec)");
+		abbreviationsByUID.put(SOPClass.RTRadiationSalvageRecordStorage,"RT(SalvRec)");
+		abbreviationsByUID.put(SOPClass.TomotherapeuticRadiationRecordStorage,"RT(TomoRec)");
+		abbreviationsByUID.put(SOPClass.CArmPhotonElectronRadiationRecordStorage,"RT(CArmPERec)");
+		abbreviationsByUID.put(SOPClass.RoboticRadiationRecordStorage,"RT(RobRec)");
 		abbreviationsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorageTrial,"RT BEAMS DELIVERY");
 		abbreviationsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorage,"RT BEAMS DELIVERY");
 
@@ -167,12 +231,16 @@ public class SOPClassDescriptions {
 
 		abbreviationsByUID.put(SOPClass.EncapsulatedPDFStorage,"ENCAP(PDF)");
 		abbreviationsByUID.put(SOPClass.EncapsulatedCDAStorage,"ENCAP(CDA)");
+		abbreviationsByUID.put(SOPClass.EncapsulatedSTLStorage,"ENCAP(STL)");
 
 		abbreviationsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"FIND(Study)");
 		abbreviationsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"MOVE(Study)");
 
 		abbreviationsByUID.put(SOPClass.SegmentationStorage,"SEG(Img)");
 		abbreviationsByUID.put(SOPClass.SurfaceSegmentationStorage,"SEG(Surf)");
+		abbreviationsByUID.put(SOPClass.TractographyResultsStorage,"TRACT");
+		abbreviationsByUID.put(SOPClass.LabelMapSegmentationStorage,"SEG(LabMap)");
+		abbreviationsByUID.put(SOPClass.HeightMapSegmentationStorage,"SEG(Height)");
 
 		abbreviationsByUID.put(SOPClass.LensometryMeasurementsStorage,"LEN");
 		abbreviationsByUID.put(SOPClass.AutorefractionMeasurementsStorage,"AR");
@@ -194,12 +262,27 @@ public class SOPClassDescriptions {
 
 		abbreviationsByUID.put(SOPClass.BasicStructuredDisplayStorage,"DISP");
 		
+		abbreviationsByUID.put(SOPClass.PrivateGEDicomMRImageInfoObject,"MR(GE)");
+		abbreviationsByUID.put(SOPClass.PrivateGEDicomCTImageInfoObject,"MR(GE)");
+		abbreviationsByUID.put(SOPClass.PrivateGEDicomDisplayImageInfoObject,"SC(GE)");
 		abbreviationsByUID.put(SOPClass.PrivateGEPETRawDataStorage,"RAWPET(GE)");
 		abbreviationsByUID.put(SOPClass.PrivateGE3DModelStorage,"3D(GE)");
 		abbreviationsByUID.put(SOPClass.PrivateGEeNTEGRAProtocolOrNMGenieStorage,"NM(GE)");
 		abbreviationsByUID.put(SOPClass.PrivateGECollageStorage,"COLLAGE(GE)");
+		abbreviationsByUID.put(SOPClass.PrivateGERTPlanStorage,"RTPLAN(GE)");
 		
 		abbreviationsByUID.put(SOPClass.PrivateSiemensCSANonImageStorage,"CSA(Siemens)");
+		abbreviationsByUID.put(SOPClass.PrivateSiemensCTMRVolumeStorage,"Vol(Siemens)");
+		abbreviationsByUID.put(SOPClass.PrivateSiemensAXFrameSetsStorage,"Frames(Siemens)");
+		
+		abbreviationsByUID.put(SOPClass.PrivateAgfaBasicAttributePresentationStateStorage,"CHANGE(Agfa)");
+		
+		abbreviationsByUID.put(SOPClass.PrivateMedicalInsight3DSoftcopyPresentationStateStorage,"PS(3D MI)");
+		
+		abbreviationsByUID.put(SOPClass.PrivateAcusonStructuredReportDetailStorage,"SR(Acuson)");
+		
+		abbreviationsByUID.put(SOPClass.PrivateTomTecAnnotationStorage,"Ann(TomTec)");
+
 		abbreviationsByUID.put(SOPClass.PrivateFujiCRImageStorage,"CR(Fuji)");
 
 		abbreviationsByUID.put(SOPClass.PrivatePhilipsCXImageStorage,"CX(Philips)");
@@ -231,12 +314,26 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.PrivatePhilipsLiveRunStorage,"XR(Live Run Philips)");
 		abbreviationsByUID.put(SOPClass.PrivatePhilipsRunStorage,"XR(Run Philips)");
 		abbreviationsByUID.put(SOPClass.PrivatePhilipsReconstructionStorage,"XR(Recon Philips)");
-		abbreviationsByUID.put(SOPClass.PrivatePhilipsPrivateXRayMFStorage,"XR(MF Philips)");
+		abbreviationsByUID.put(SOPClass.PrivatePhilipsXRayMFStorage,"XR(MF Philips)");
+		abbreviationsByUID.put(SOPClass.PrivatePhilipsHPLive3D01Storage,"US3D(HP)");
+		abbreviationsByUID.put(SOPClass.PrivatePhilipsHPLive3D02Storage,"US3D(HP)");
+		
 		abbreviationsByUID.put(SOPClass.PrivatePMODMultiframeImageStorage,"(MF PMOD)");
+		
+		abbreviationsByUID.put(SOPClass.PrivateToshibaUSImageStorage,"US(Toshiba)");
+
+		abbreviationsByUID.put(SOPClass.PrivateERADPracticeBuilderReportTextStorage,"RPT(TXT)");
+		abbreviationsByUID.put(SOPClass.PrivateERADPracticeBuilderReportDictationStorage,"RPT(DICT)");
+
+		abbreviationsByUID.put(SOPClass.PrivateDcm4cheUpgradedCTImageStorage,"CT(Dcm4che)");
+		abbreviationsByUID.put(SOPClass.PrivateDcm4cheUpgradedMRImageStorage,"MR(Dcm4che)");
+		abbreviationsByUID.put(SOPClass.PrivateDcm4cheUpgradedPETImageStorage,"PET(Dcm4che)");
+		abbreviationsByUID.put(SOPClass.PrivateDcm4cheEncapsulatedDocumentStorage,"ENCAP(Dcm4che)");
+		
 		abbreviationsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedCTImageStorage,"CT(MF-L)");
 		abbreviationsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedMRImageStorage,"MR(MF-L)");
 		abbreviationsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedPETImageStorage,"PET(MF-L)");
-		abbreviationsByUID.put(SOPClass.PrivatePixelMedLegacyFloatingPointImageStorage,"FP(MF)");
+		abbreviationsByUID.put(SOPClass.PrivatePixelMedFloatingPointImageStorage,"FP(MF)");
 
 		abbreviationsByUID.put(SOPClass.DICOSCTImageStorage,"CT(DICOS)");
 		abbreviationsByUID.put(SOPClass.DICOSDigitalXRayImageStorageForPresentation,"DX(Pres DICOS)");
@@ -275,6 +372,7 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.UltrasoundImageStorageRetired,"Ultrasound Image Storage (Retired)");
 		descriptionsByUID.put(SOPClass.UltrasoundImageStorage,"Ultrasound Image Storage");
 		descriptionsByUID.put(SOPClass.EnhancedUSVolumeStorage,"Enhanced US Volume Storage");
+		descriptionsByUID.put(SOPClass.PhotoacousticImageStorage,"Photoacoustic Image Storage");
 		descriptionsByUID.put(SOPClass.SecondaryCaptureImageStorage,"Secondary Capture Image Storage");
 		descriptionsByUID.put(SOPClass.MultiframeSingleBitSecondaryCaptureImageStorage,"Multiframe Single Bit Secondary Capture Image Storage");
 		descriptionsByUID.put(SOPClass.MultiframeGrayscaleByteSecondaryCaptureImageStorage,"Multiframe Grayscale Byte Secondary Capture Image Storage");
@@ -288,6 +386,8 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.XRay3DAngiographicImageStorage,"X-Ray 3D Angiographic Image Storage");
 		descriptionsByUID.put(SOPClass.XRay3DCraniofacialImageStorage,"X-Ray 3D Craniofacial Image Storage");
 		descriptionsByUID.put(SOPClass.BreastTomosynthesisImageStorage,"Breast Tomosynthesis Image Storage");
+		descriptionsByUID.put(SOPClass.BreastProjectionXRayImageStorageForPresentation,"Breast Projection X-Ray Image Storage - For Presentation Image Storage");
+		descriptionsByUID.put(SOPClass.BreastProjectionXRayImageStorageForProcessing,"Breast Projection X-Ray Image Storage - For Processing Image Storage");
 		descriptionsByUID.put(SOPClass.NuclearMedicineImageStorage,"Nuclear Medicine Image Storage");
 		descriptionsByUID.put(SOPClass.VisibleLightEndoscopicImageStorage,"Visible Light Endoscopic Image Storage");
 		descriptionsByUID.put(SOPClass.VideoEndoscopicImageStorage,"Video Endoscopic Image Storage");
@@ -299,7 +399,14 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.OphthalmicPhotography8BitImageStorage,"Ophthalmic Photography 8 Bit Image Storage");
 		descriptionsByUID.put(SOPClass.OphthalmicPhotography16BitImageStorage,"Ophthalmic Photography 16 Bit Image Storage");
 		descriptionsByUID.put(SOPClass.OphthalmicTomographyImageStorage,"Ophthalmic Tomography Image Storage");
+		descriptionsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyEnFaceImageStorage,"Ophthalmic Optical Coherence Tomography En Face Image Storage");
+		descriptionsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage,"Ophthalmic Optical Coherence Tomography B-scan Volume Analysis Storage");
 		descriptionsByUID.put(SOPClass.VLWholeSlideMicroscopyImageStorage,"VL Whole Slide Microscopy Image Storage");
+		descriptionsByUID.put(SOPClass.DermoscopicPhotographyImageStorage,"Dermoscopic Photography Image Storage");
+		descriptionsByUID.put(SOPClass.ConfocalMicroscopyImageStorage,"Confocal Microscopy Image Storage");
+		descriptionsByUID.put(SOPClass.ConfocalMicroscopyTiledPyramidalImageStorage,"Confocal Microscopy Tiled Pyramidal Image Storage");
+		descriptionsByUID.put(SOPClass.WideFieldOphthalmicPhotographyStereographicProjectionImageStorage,"Wide Field Ophthalmic Photography Stereographic Projection Image Storage");
+		descriptionsByUID.put(SOPClass.WideFieldOphthalmicPhotography3DCoordinatesImageStorage,"Wide Field Ophthalmic Photography 3D Coordinates Image Storage");
 		descriptionsByUID.put(SOPClass.PETImageStorage,"PET Image Storage");
 		descriptionsByUID.put(SOPClass.EnhancedPETImageStorage,"Enhanced PET Image Storage");
 		descriptionsByUID.put(SOPClass.LegacyConvertedEnhancedPETImageStorage,"Legacy Converted Enhanced PET Image Storage");
@@ -313,12 +420,17 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.EnhancedSRStorage,"Enhanced SR Storage");
 		descriptionsByUID.put(SOPClass.ComprehensiveSRStorage,"Comprehensive SR Storage");
 		descriptionsByUID.put(SOPClass.Comprehensive3DSRStorage,"Comprehensive 3D SR Storage");
+		descriptionsByUID.put(SOPClass.ExtensibleSRStorage,"Extensible SR Storage");
 		descriptionsByUID.put(SOPClass.MammographyCADSRStorage,"Mammography CAD SR Storage");
 		descriptionsByUID.put(SOPClass.ChestCADSRStorage,"Chest CAD SR Storage");
 		descriptionsByUID.put(SOPClass.ProcedureLogStorage,"Procedure Log Storage");
 		descriptionsByUID.put(SOPClass.XRayRadiationDoseSRStorage,"X-Ray Radiation Dose SR Storage");
+		descriptionsByUID.put(SOPClass.RadiopharmaceuticalRadiationDoseSRStorage,"Radiopharmaceutical Radiation Dose SR Storage");
 		descriptionsByUID.put(SOPClass.ColonCADSRStorage,"Colon CAD SR Storage");
 		descriptionsByUID.put(SOPClass.ImplantationPlanSRStorage,"Implantation Plan SR Storage");
+		descriptionsByUID.put(SOPClass.AcquisitionContextSRStorage,"Acquisition Context SR Storage");
+		descriptionsByUID.put(SOPClass.SimplifiedAdultEchoSRStorage,"Simplified Adult Echo SR Storage");
+		descriptionsByUID.put(SOPClass.PatientRadiationDoseSRStorage,"Patient Radiation Dose SR Storage");
 		descriptionsByUID.put(SOPClass.MacularGridThicknessAndVolumeReportStorage,"Macular Grid Thickness and Volume Report Storage");
 		descriptionsByUID.put(SOPClass.KeyObjectSelectionDocumentStorage,"Key Object Selection Document Storage");
 
@@ -332,16 +444,32 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.PseudoColorSoftcopyPresentationStateStorage,"Pseudo-Color Softcopy Presentation State Storage");
 		descriptionsByUID.put(SOPClass.BlendingSoftcopyPresentationStateStorage,"Blending Softcopy Presentation State Storage");
 		descriptionsByUID.put(SOPClass.XAXRFGrayscaleSoftcopyPresentationStateStorage,"XA/XRF Grayscale Softcopy Presentation State Storage");
-		
+		descriptionsByUID.put(SOPClass.GrayscalePlanarMPRVolumetricPresentationStateStorage,"Grayscale Planar MPR Volumetric Presentation State Storage");
+		descriptionsByUID.put(SOPClass.CompositingPlanarMPRVolumetricPresentationStateStorage,"Compositing Planar MPR Volumetric Presentation State Storage");
+		descriptionsByUID.put(SOPClass.AdvancedBlendingPresentationStateStorage,"Advanced Blending Presentation State Storage");
+		descriptionsByUID.put(SOPClass.VolumeRenderingVolumetricPresentationStateStorage,"Volume Rendering Volumetric Presentation State Storage");
+		descriptionsByUID.put(SOPClass.SegmentedVolumeRenderingVolumetricPresentationStateStorage,"Segmented Volume Rendering Volumetric Presentation State Storage");
+		descriptionsByUID.put(SOPClass.MultipleVolumeRenderingVolumetricPresentationStateStorage,"Multiple Volume Rendering Volumetric Presentation State Storage");
+		descriptionsByUID.put(SOPClass.VariableModalityLUTSoftcopyPresentationStateStorage,"Variable Modality LUT Softcopy Presentation State Storage");
+
+		descriptionsByUID.put(SOPClass.WaveformPresentationStateStorage,"Waveform Presentation State Storage");
+		descriptionsByUID.put(SOPClass.WaveformAcquisitionPresentationStateStorage,"Waveform Acquisition Presentation State Storage");
+
 		descriptionsByUID.put(SOPClass.TwelveLeadECGStorage,"Twelve Lead ECG Storage");
 		descriptionsByUID.put(SOPClass.GeneralECGStorage,"General ECG Storage");
 		descriptionsByUID.put(SOPClass.AmbulatoryECGStorage,"Ambulatory ECG Storage");
 		descriptionsByUID.put(SOPClass.HemodynamicWaveformStorage,"Hemodynamic Waveform Storage");
 		descriptionsByUID.put(SOPClass.CardiacElectrophysiologyWaveformStorage,"Cardiac Electrophysiology Waveform Storage");
-		descriptionsByUID.put(SOPClass.ArterialPulseWaveformStorage,"Arterial Pulse Waveform Storage");
-		descriptionsByUID.put(SOPClass.RespiratoryWaveformStorage,"Respiratory Waveform Storage");
 		descriptionsByUID.put(SOPClass.BasicVoiceStorage,"Basic Voice Storage");
 		descriptionsByUID.put(SOPClass.GeneralAudioWaveformStorage,"General Audio Waveform Storage");
+		descriptionsByUID.put(SOPClass.ArterialPulseWaveformStorage,"Arterial Pulse Waveform Storage");
+		descriptionsByUID.put(SOPClass.RespiratoryWaveformStorage,"Respiratory Waveform Storage");
+		descriptionsByUID.put(SOPClass.MultichannelRespiratoryWaveformStorage,"Multi-channel Respiratory Waveform Storage");
+		descriptionsByUID.put(SOPClass.RoutineScalpElectroencephalogramWaveformStorage,"Routine Scalp Electroencephalogram Waveform Storage");
+		descriptionsByUID.put(SOPClass.ElectromyogramWaveformStorage,"Electromyogram Waveform Storage");
+		descriptionsByUID.put(SOPClass.ElectrooculogramWaveformStorage,"Electrooculogram Waveform Storage");
+		descriptionsByUID.put(SOPClass.SleepElectroencephalogramWaveformStorage,"Sleep Electroencephalogram Waveform Storage");
+		descriptionsByUID.put(SOPClass.BodyPositionWaveformStorage,"Body Position Waveform Storage");
 
 		descriptionsByUID.put(SOPClass.StandaloneOverlayStorage,"Standalone Overlay Storage");
 		descriptionsByUID.put(SOPClass.StandaloneCurveStorage,"Standalone Curve Storage");
@@ -357,6 +485,17 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.RTIonPlanStorage,"RT Ion Plan Storage");
 		descriptionsByUID.put(SOPClass.RTBrachyTreatmentRecordStorage,"RT Brachy Treatment Record Storage");
 		descriptionsByUID.put(SOPClass.RTTreatmentSummaryRecordStorage,"RT Treatment Summary Record Storage");
+		descriptionsByUID.put(SOPClass.RTPhysicianIntentStorage,"RT Physician Intent Storage");
+		descriptionsByUID.put(SOPClass.RTSegmentAnnotationStorage,"RT Segment Annotation Storage");
+		descriptionsByUID.put(SOPClass.RTRadiationSetStorage,"RT Radiation Set Storage");
+		descriptionsByUID.put(SOPClass.CArmPhotonElectronRadiationStorage,"C-Arm Photon-Electron Radiation Storage");
+		descriptionsByUID.put(SOPClass.TomotherapeuticRadiationStorage,"Tomotherapeutic Radiation Storage");
+		descriptionsByUID.put(SOPClass.RoboticArmRadiationStorage,"Robotic-Arm Radiation Storage");
+		descriptionsByUID.put(SOPClass.RTRadiationRecordSetStorage,"RT Radiation Record Set Storage");
+		descriptionsByUID.put(SOPClass.RTRadiationSalvageRecordStorage,"RT Radiation Salvage Record Storage");
+		descriptionsByUID.put(SOPClass.TomotherapeuticRadiationRecordStorage,"Tomotherapeutic Radiation Record Storage");
+		descriptionsByUID.put(SOPClass.CArmPhotonElectronRadiationRecordStorage,"C-Arm Photon-Electron Radiation Record Storage");
+		descriptionsByUID.put(SOPClass.RoboticRadiationRecordStorage,"Robotic Radiation Record Storage");
 		descriptionsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorageTrial,"RT Beams Delivery Instruction Storage - Trial");
 		descriptionsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorage,"RT Beams Delivery Instruction Storage");
 	
@@ -373,12 +512,16 @@ public class SOPClassDescriptions {
 
 		descriptionsByUID.put(SOPClass.EncapsulatedPDFStorage,"Encapsulated PDF Storage");
 		descriptionsByUID.put(SOPClass.EncapsulatedCDAStorage,"Encapsulated CDA Storage");
+		descriptionsByUID.put(SOPClass.EncapsulatedSTLStorage,"Encapsulated STL Storage");
 
 		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"Study Root Query Retrieve Information Model Find");
 		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"Study Root Query Retrieve Information Model Move");
 		
 		descriptionsByUID.put(SOPClass.SegmentationStorage,"Segmentation Storage");
 		descriptionsByUID.put(SOPClass.SurfaceSegmentationStorage,"Surface Segmentation Storage");
+		descriptionsByUID.put(SOPClass.TractographyResultsStorage,"Tractography Results Storage");
+		descriptionsByUID.put(SOPClass.LabelMapSegmentationStorage,"Label Map Segmentation Storage");
+		descriptionsByUID.put(SOPClass.HeightMapSegmentationStorage,"Height Map Segmentation Storage");
 
 		descriptionsByUID.put(SOPClass.SurfaceScanMeshStorage,"Surface Scan Mesh Storage");
 		descriptionsByUID.put(SOPClass.SurfaceScanPointCloudStorage,"Surface Scan Point Cloud Storage");
@@ -403,12 +546,27 @@ public class SOPClassDescriptions {
 
 		descriptionsByUID.put(SOPClass.BasicStructuredDisplayStorage,"Basic Structured Display Storage");
 
+		descriptionsByUID.put(SOPClass.PrivateGEDicomMRImageInfoObject,"GE Private Dicom MR Image Info Object Storage");
+		descriptionsByUID.put(SOPClass.PrivateGEDicomCTImageInfoObject,"GE Private Dicom CT Image Info Object Storage");
+		descriptionsByUID.put(SOPClass.PrivateGEDicomDisplayImageInfoObject,"GE Private Dicom Display Image Info Object Storage");
 		descriptionsByUID.put(SOPClass.PrivateGEPETRawDataStorage,"GE Private PET Raw Data Storage");
 		descriptionsByUID.put(SOPClass.PrivateGE3DModelStorage,"GE Private 3D Model Storage");
 		descriptionsByUID.put(SOPClass.PrivateGEeNTEGRAProtocolOrNMGenieStorage,"GE Private eNTEGRA Protocol or NM Genie Storage");
 		descriptionsByUID.put(SOPClass.PrivateGECollageStorage,"GE Private Collage Storage");
+		descriptionsByUID.put(SOPClass.PrivateGERTPlanStorage,"GE Private RT Plan Storage");
 
 		descriptionsByUID.put(SOPClass.PrivateSiemensCSANonImageStorage,"Siemens Private CSA Non-Image Storage");
+		descriptionsByUID.put(SOPClass.PrivateSiemensCTMRVolumeStorage,"Siemens CT MR Volume Storage");
+		descriptionsByUID.put(SOPClass.PrivateSiemensAXFrameSetsStorage,"Siemens Private AX Frame Sets Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateAgfaBasicAttributePresentationStateStorage,"Agfa Private Basic Attribute Presentation State Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateMedicalInsight3DSoftcopyPresentationStateStorage,"Medical Insight Private 3D Softcopy Presentation State Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateAcusonStructuredReportDetailStorage,"Acuson Private SR Detail Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateTomTecAnnotationStorage,"TomTec Private Annotation Storage");
+
 		descriptionsByUID.put(SOPClass.PrivateFujiCRImageStorage,"Fuji Private CR Image Storage");
 
 		descriptionsByUID.put(SOPClass.PrivatePhilipsCXImageStorage,"Philips Private CX Image Storage");
@@ -440,12 +598,26 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.PrivatePhilipsLiveRunStorage,"Philips Private Live Run Storage");
 		descriptionsByUID.put(SOPClass.PrivatePhilipsRunStorage,"Philips Private Run Storage");
 		descriptionsByUID.put(SOPClass.PrivatePhilipsReconstructionStorage,"Philips Private Reconstruction Storage");
-		descriptionsByUID.put(SOPClass.PrivatePhilipsPrivateXRayMFStorage,"Philips Private X-Ray Multiframe Storage");
+		descriptionsByUID.put(SOPClass.PrivatePhilipsXRayMFStorage,"Philips Private X-Ray Multiframe Storage");
+		descriptionsByUID.put(SOPClass.PrivatePhilipsHPLive3D01Storage,"Philips HP Private Live3D 01 Storage");
+		descriptionsByUID.put(SOPClass.PrivatePhilipsHPLive3D02Storage,"Philips HP Private Live3D 02 Storage");
+		
 		descriptionsByUID.put(SOPClass.PrivatePMODMultiframeImageStorage,"PMOD Private Multiframe Image Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateToshibaUSImageStorage,"Toshiba Private US Image Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateERADPracticeBuilderReportTextStorage,"Private eRAD PracticeBuilder Report Text Storage");
+		descriptionsByUID.put(SOPClass.PrivateERADPracticeBuilderReportDictationStorage,"Private eRAD PracticeBuilder Report Dictation Storage");
+		
+		descriptionsByUID.put(SOPClass.PrivateDcm4cheUpgradedCTImageStorage,"Private Dcm4che Upgraded CT Image Storage");
+		descriptionsByUID.put(SOPClass.PrivateDcm4cheUpgradedMRImageStorage,"Private Dcm4che Upgraded MR Image Storage");
+		descriptionsByUID.put(SOPClass.PrivateDcm4cheUpgradedPETImageStorage,"Private Dcm4che Upgraded PET Image Storage");
+		descriptionsByUID.put(SOPClass.PrivateDcm4cheEncapsulatedDocumentStorage,"Private Dcm4che Encapsulated Document Storage");
+		
 		descriptionsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedCTImageStorage,"Private PixelMed Legacy Converted Enhanced CT Image Storage");
 		descriptionsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedMRImageStorage,"Private PixelMed Legacy Converted Enhanced MR Image Storage");
 		descriptionsByUID.put(SOPClass.PrivatePixelMedLegacyConvertedEnhancedPETImageStorage,"Private PixelMed Legacy Converted Enhanced PET Image Storage");
-		descriptionsByUID.put(SOPClass.PrivatePixelMedLegacyFloatingPointImageStorage,"Private PixelMed Floating Point Image Storage");
+		descriptionsByUID.put(SOPClass.PrivatePixelMedFloatingPointImageStorage,"Private PixelMed Floating Point Image Storage");
 		
 		descriptionsByUID.put(SOPClass.DICOSCTImageStorage,"DICOS CT Image Storage");
 		descriptionsByUID.put(SOPClass.DICOSDigitalXRayImageStorageForPresentation,"DICOS Digital X-Ray Image Storage - For Presentation");
@@ -457,6 +629,446 @@ public class SOPClassDescriptions {
 		
 		descriptionsByUID.put(SOPClass.DICONDEEddyCurrentImageStorage,"DICONDE Eddy Current Image Storage");
 		descriptionsByUID.put(SOPClass.DICONDEEddyCurrentMultiframeImageStorage,"DICONDE Eddy Current Multi-frame Image Storage");
+		
+		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"Study Root Query/Retrieve Information Model - FIND");
+		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"Study Root Query/Retrieve Information Model - MOVE");
+		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelGet ,"Study Root Query/Retrieve Information Model - GET");
+		descriptionsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelFind,"Patient Root Query/Retrieve Information Model - FIND");
+		descriptionsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelMove,"Patient Root Query/Retrieve Information Model - MOVE");
+		descriptionsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelGet ,"Patient Root Query/Retrieve Information Model - GET");
+		descriptionsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelFind,"Patient/Study Only Query/Retrieve Information Model - FIND");
+		descriptionsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove,"Patient/Study Only Query/Retrieve Information Model - MOVE");
+		descriptionsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelGet ,"Patient/Study Only Query/Retrieve Information Model - GET");
+		descriptionsByUID.put(SOPClass.ColorPaletteInformationModelFind,"Color Palette Query/Retrieve Information Model - FIND");
+		descriptionsByUID.put(SOPClass.ColorPaletteInformationModelMove,"Color Palette Query/Retrieve Information Model - MOVE");
+		descriptionsByUID.put(SOPClass.ColorPaletteInformationModelGet, "Color Palette Query/Retrieve Information Model - GET");
+	}
+	
+	private void createKeywordsByUID() {
+		keywordsByUID = new HashMap();
+
+		keywordsByUID.put(SOPClass.Verification,"Verification");
+		
+		keywordsByUID.put(SOPClass.ComputedRadiographyImageStorage,"ComputedRadiographyImageStorage");
+		keywordsByUID.put(SOPClass.DigitalXRayImageStorageForPresentation,"DigitalXRayImageStorageForPresentation");
+		keywordsByUID.put(SOPClass.DigitalXRayImageStorageForProcessing,"DigitalXRayImageStorageForProcessing");
+		keywordsByUID.put(SOPClass.DigitalMammographyXRayImageStorageForPresentation,"DigitalMammographyXRayImageStorageForPresentation");
+		keywordsByUID.put(SOPClass.DigitalMammographyXRayImageStorageForProcessing,"DigitalMammographyXRayImageStorageForProcessing");
+		keywordsByUID.put(SOPClass.DigitalIntraoralXRayImageStorageForPresentation,"DigitalIntraoralXRayImageStorageForPresentation");
+		keywordsByUID.put(SOPClass.DigitalIntraoralXRayImageStorageForProcessing,"DigitalIntraoralXRayImageStorageForProcessing");
+		keywordsByUID.put(SOPClass.CTImageStorage,"CTImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedCTImageStorage,"EnhancedCTImageStorage");
+		keywordsByUID.put(SOPClass.LegacyConvertedEnhancedCTImageStorage,"LegacyConvertedEnhancedCTImageStorage");
+		keywordsByUID.put(SOPClass.UltrasoundMultiframeImageStorageRetired,"UltrasoundMultiframeImageStorageRetired");
+		keywordsByUID.put(SOPClass.UltrasoundMultiframeImageStorage,"UltrasoundMultiframeImageStorage");
+		keywordsByUID.put(SOPClass.MRImageStorage,"MRImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedMRImageStorage,"EnhancedMRImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedMRColorImageStorage,"EnhancedMRColorImageStorage");
+		keywordsByUID.put(SOPClass.LegacyConvertedEnhancedMRImageStorage,"LegacyConvertedEnhancedMRImageStorage");
+		keywordsByUID.put(SOPClass.NuclearMedicineImageStorageRetired,"NuclearMedicineImageStorageRetired");
+		keywordsByUID.put(SOPClass.UltrasoundImageStorageRetired,"UltrasoundImageStorageRetired");
+		keywordsByUID.put(SOPClass.UltrasoundImageStorage,"UltrasoundImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedUSVolumeStorage,"EnhancedUSVolumeStorage");
+		keywordsByUID.put(SOPClass.PhotoacousticImageStorage,"PhotoacousticImageStorage");
+		keywordsByUID.put(SOPClass.SecondaryCaptureImageStorage,"SecondaryCaptureImageStorage");
+		keywordsByUID.put(SOPClass.MultiframeSingleBitSecondaryCaptureImageStorage,"MultiframeSingleBitSecondaryCaptureImageStorage");
+		keywordsByUID.put(SOPClass.MultiframeGrayscaleByteSecondaryCaptureImageStorage,"MultiframeGrayscaleByteSecondaryCaptureImageStorage");
+		keywordsByUID.put(SOPClass.MultiframeGrayscaleWordSecondaryCaptureImageStorage,"MultiframeGrayscaleWordSecondaryCaptureImageStorage");
+		keywordsByUID.put(SOPClass.MultiframeTrueColorSecondaryCaptureImageStorage,"MultiframeTrueColorSecondaryCaptureImageStorage");
+		keywordsByUID.put(SOPClass.XRayAngiographicImageStorage,"XRayAngiographicImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedXAImageStorage,"EnhancedXAImageStorage");
+		keywordsByUID.put(SOPClass.XRayRadioFlouroscopicImageStorage,"XRayRadioFlouroscopicImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedXRFImageStorage,"EnhancedXRFImageStorage");
+		keywordsByUID.put(SOPClass.XRayAngiographicBiplaneImageStorage,"XRayAngiographicBiplaneImageStorage");
+		keywordsByUID.put(SOPClass.XRay3DAngiographicImageStorage,"XRay3DAngiographicImageStorage");
+		keywordsByUID.put(SOPClass.XRay3DCraniofacialImageStorage,"XRay3DCraniofacialImageStorage");
+		keywordsByUID.put(SOPClass.BreastTomosynthesisImageStorage,"BreastTomosynthesisImageStorage");
+		keywordsByUID.put(SOPClass.BreastProjectionXRayImageStorageForPresentation,"BreastProjectionXRayImageStorageForPresentationImageStorage");
+		keywordsByUID.put(SOPClass.BreastProjectionXRayImageStorageForProcessing,"BreastProjectionXRayImageStorageForProcessingImageStorage");
+		keywordsByUID.put(SOPClass.NuclearMedicineImageStorage,"NuclearMedicineImageStorage");
+		keywordsByUID.put(SOPClass.VisibleLightEndoscopicImageStorage,"VisibleLightEndoscopicImageStorage");
+		keywordsByUID.put(SOPClass.VideoEndoscopicImageStorage,"VideoEndoscopicImageStorage");
+		keywordsByUID.put(SOPClass.VisibleLightMicroscopicImageStorage,"VisibleLightMicroscopicImageStorage");
+		keywordsByUID.put(SOPClass.VideoMicroscopicImageStorage,"VideoMicroscopicImageStorage");
+		keywordsByUID.put(SOPClass.VisibleLightSlideCoordinatesMicroscopicImageStorage,"VisibleLightSlideCoordinatesMicroscopicImageStorage");
+		keywordsByUID.put(SOPClass.VisibleLightPhotographicImageStorage,"VisibleLightPhotographicImageStorage");
+		keywordsByUID.put(SOPClass.VideoPhotographicImageStorage,"VideoPhotographicImageStorage");
+		keywordsByUID.put(SOPClass.OphthalmicPhotography8BitImageStorage,"OphthalmicPhotography8BitImageStorage");
+		keywordsByUID.put(SOPClass.OphthalmicPhotography16BitImageStorage,"OphthalmicPhotography16BitImageStorage");
+		keywordsByUID.put(SOPClass.OphthalmicTomographyImageStorage,"OphthalmicTomographyImageStorage");
+		keywordsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyEnFaceImageStorage,"OphthalmicOpticalCoherenceTomographyEnFaceImageStorage");
+		keywordsByUID.put(SOPClass.OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage,"OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage");
+		keywordsByUID.put(SOPClass.VLWholeSlideMicroscopyImageStorage,"VLWholeSlideMicroscopyImageStorage");
+		keywordsByUID.put(SOPClass.DermoscopicPhotographyImageStorage,"DermoscopicPhotographyImageStorage");
+		keywordsByUID.put(SOPClass.ConfocalMicroscopyImageStorage,"ConfocalMicroscopyImageStorage");
+		keywordsByUID.put(SOPClass.ConfocalMicroscopyTiledPyramidalImageStorage,"ConfocalMicroscopyTiledPyramidalImageStorage");
+		keywordsByUID.put(SOPClass.WideFieldOphthalmicPhotographyStereographicProjectionImageStorage,"WideFieldOphthalmicPhotographyStereographicProjectionImageStorage");
+		keywordsByUID.put(SOPClass.WideFieldOphthalmicPhotography3DCoordinatesImageStorage,"WideFieldOphthalmicPhotography3DCoordinatesImageStorage");
+		keywordsByUID.put(SOPClass.PETImageStorage,"PETImageStorage");
+		keywordsByUID.put(SOPClass.EnhancedPETImageStorage,"EnhancedPETImageStorage");
+		keywordsByUID.put(SOPClass.LegacyConvertedEnhancedPETImageStorage,"LegacyConvertedEnhancedPETImageStorage");
+		keywordsByUID.put(SOPClass.RTImageStorage,"RTImageStorage");
+		keywordsByUID.put(SOPClass.IVOCTImageStorageForPresentation,"IntravascularOCTImageStorageForPresentation");
+		keywordsByUID.put(SOPClass.IVOCTImageStorageForProcessing,"IntravascularOCTImageStorageForProcessing");
+
+		keywordsByUID.put(SOPClass.MediaStorageDirectoryStorage,"MediaStorageDirectoryStorage");
+		
+		keywordsByUID.put(SOPClass.BasicTextSRStorage,"BasicTextSRStorage");
+		keywordsByUID.put(SOPClass.EnhancedSRStorage,"EnhancedSRStorage");
+		keywordsByUID.put(SOPClass.ComprehensiveSRStorage,"ComprehensiveSRStorage");
+		keywordsByUID.put(SOPClass.Comprehensive3DSRStorage,"Comprehensive3DSRStorage");
+		keywordsByUID.put(SOPClass.ExtensibleSRStorage,"ExtensibleSRStorage");
+		keywordsByUID.put(SOPClass.MammographyCADSRStorage,"MammographyCADSRStorage");
+		keywordsByUID.put(SOPClass.ChestCADSRStorage,"ChestCADSRStorage");
+		keywordsByUID.put(SOPClass.ProcedureLogStorage,"ProcedureLogStorage");
+		keywordsByUID.put(SOPClass.XRayRadiationDoseSRStorage,"XRayRadiationDoseSRStorage");
+		keywordsByUID.put(SOPClass.RadiopharmaceuticalRadiationDoseSRStorage,"RadiopharmaceuticalRadiationDoseSRStorage");
+		keywordsByUID.put(SOPClass.ColonCADSRStorage,"ColonCADSRStorage");
+		keywordsByUID.put(SOPClass.ImplantationPlanSRStorage,"ImplantationPlanSRStorage");
+		keywordsByUID.put(SOPClass.AcquisitionContextSRStorage,"AcquisitionContextSRStorage");
+		keywordsByUID.put(SOPClass.SimplifiedAdultEchoSRStorage,"SimplifiedAdultEchoSRStorage");
+		keywordsByUID.put(SOPClass.PatientRadiationDoseSRStorage,"PatientRadiationDoseSRStorage");
+		keywordsByUID.put(SOPClass.MacularGridThicknessAndVolumeReportStorage,"MacularGridThicknessAndVolumeReportStorage");
+		keywordsByUID.put(SOPClass.KeyObjectSelectionDocumentStorage,"KeyObjectSelectionDocumentStorage");
+
+		keywordsByUID.put(SOPClass.TextSRStorageTrialRetired,"TextSRStorageTrialRetired");
+		keywordsByUID.put(SOPClass.AudioSRStorageTrialRetired,"AudioSRStorageTrialRetired");
+		keywordsByUID.put(SOPClass.DetailSRStorageTrialRetired,"DetailSRStorageTrialRetired");
+		keywordsByUID.put(SOPClass.ComprehensiveSRStorageTrialRetired,"ComprehensiveSRStorageTrialRetired");
+		
+		keywordsByUID.put(SOPClass.GrayscaleSoftcopyPresentationStateStorage,"GrayscaleSoftcopyPresentationStateStorage");
+		keywordsByUID.put(SOPClass.ColorSoftcopyPresentationStateStorage,"ColorSoftcopyPresentationStateStorage");
+		keywordsByUID.put(SOPClass.PseudoColorSoftcopyPresentationStateStorage,"PseudoColorSoftcopyPresentationStateStorage");
+		keywordsByUID.put(SOPClass.BlendingSoftcopyPresentationStateStorage,"BlendingSoftcopyPresentationStateStorage");
+		keywordsByUID.put(SOPClass.XAXRFGrayscaleSoftcopyPresentationStateStorage,"XAXRFGrayscaleSoftcopyPresentationStateStorage");
+		keywordsByUID.put(SOPClass.GrayscalePlanarMPRVolumetricPresentationStateStorage,"GrayscalePlanarMPRVolumetricPresentationStateStorage");
+		keywordsByUID.put(SOPClass.CompositingPlanarMPRVolumetricPresentationStateStorage,"CompositingPlanarMPRVolumetricPresentationStateStorage");
+		keywordsByUID.put(SOPClass.AdvancedBlendingPresentationStateStorage,"AdvancedBlendingPresentationStateStorage");
+		keywordsByUID.put(SOPClass.VolumeRenderingVolumetricPresentationStateStorage,"VolumeRenderingVolumetricPresentationStateStorage");
+		keywordsByUID.put(SOPClass.SegmentedVolumeRenderingVolumetricPresentationStateStorage,"SegmentedVolumeRenderingVolumetricPresentationStateStorage");
+		keywordsByUID.put(SOPClass.MultipleVolumeRenderingVolumetricPresentationStateStorage,"MultipleVolumeRenderingVolumetricPresentationStateStorage");
+		keywordsByUID.put(SOPClass.VariableModalityLUTSoftcopyPresentationStateStorage,"VariableModalityLUTSoftcopyPresentationStateStorage");
+
+		keywordsByUID.put(SOPClass.WaveformPresentationStateStorage,"WaveformPresentationStateStorage");
+		keywordsByUID.put(SOPClass.WaveformAcquisitionPresentationStateStorage,"WaveformAcquisitionPresentationStateStorage");
+
+		keywordsByUID.put(SOPClass.TwelveLeadECGStorage,"TwelveLeadECGStorage");
+		keywordsByUID.put(SOPClass.GeneralECGStorage,"GeneralECGStorage");
+		keywordsByUID.put(SOPClass.AmbulatoryECGStorage,"AmbulatoryECGStorage");
+		keywordsByUID.put(SOPClass.HemodynamicWaveformStorage,"HemodynamicWaveformStorage");
+		keywordsByUID.put(SOPClass.CardiacElectrophysiologyWaveformStorage,"CardiacElectrophysiologyWaveformStorage");
+		keywordsByUID.put(SOPClass.BasicVoiceStorage,"BasicVoiceStorage");
+		keywordsByUID.put(SOPClass.GeneralAudioWaveformStorage,"GeneralAudioWaveformStorage");
+		keywordsByUID.put(SOPClass.ArterialPulseWaveformStorage,"ArterialPulseWaveformStorage");
+		keywordsByUID.put(SOPClass.RespiratoryWaveformStorage,"RespiratoryWaveformStorage");
+		keywordsByUID.put(SOPClass.RespiratoryWaveformStorage,"RespiratoryWaveformStorage");
+		keywordsByUID.put(SOPClass.MultichannelRespiratoryWaveformStorage,"MultichannelRespiratoryWaveformStorage");
+		keywordsByUID.put(SOPClass.RoutineScalpElectroencephalogramWaveformStorage,"RoutineScalpElectroencephalogramWaveformStorage");
+		keywordsByUID.put(SOPClass.ElectromyogramWaveformStorage,"ElectromyogramWaveformStorage");
+		keywordsByUID.put(SOPClass.ElectrooculogramWaveformStorage,"ElectrooculogramWaveformStorage");
+		keywordsByUID.put(SOPClass.SleepElectroencephalogramWaveformStorage,"SleepElectroencephalogramWaveformStorage");
+		keywordsByUID.put(SOPClass.BodyPositionWaveformStorage,"BodyPositionWaveformStorage");
+
+		keywordsByUID.put(SOPClass.StandaloneOverlayStorage,"StandaloneOverlayStorage");
+		keywordsByUID.put(SOPClass.StandaloneCurveStorage,"StandaloneCurveStorage");
+		keywordsByUID.put(SOPClass.StandaloneModalityLUTStorage,"StandaloneModalityLUTStorage");
+		keywordsByUID.put(SOPClass.StandaloneVOILUTStorage,"StandaloneVOILUTStorage");
+		keywordsByUID.put(SOPClass.StandalonePETCurveStorage,"StandalonePETCurveStorage");
+		
+		keywordsByUID.put(SOPClass.RTDoseStorage,"RTDoseStorage");
+		keywordsByUID.put(SOPClass.RTStructureSetStorage,"RTStructureSetStorage");
+		keywordsByUID.put(SOPClass.RTBeamsTreatmentRecordStorage,"RTBeamsTreatmentRecordStorage");
+		keywordsByUID.put(SOPClass.RTIonBeamsTreatmentRecordStorage,"RTIonBeamsTreatmentRecordStorage");
+		keywordsByUID.put(SOPClass.RTPlanStorage,"RTPlanStorage");
+		keywordsByUID.put(SOPClass.RTIonPlanStorage,"RTIonPlanStorage");
+		keywordsByUID.put(SOPClass.RTBrachyTreatmentRecordStorage,"RTBrachyTreatmentRecordStorage");
+		keywordsByUID.put(SOPClass.RTTreatmentSummaryRecordStorage,"RTTreatmentSummaryRecordStorage");
+		keywordsByUID.put(SOPClass.RTPhysicianIntentStorage,"RTPhysicianIntentStorage");
+		keywordsByUID.put(SOPClass.RTSegmentAnnotationStorage,"RTSegmentAnnotationStorage");
+		keywordsByUID.put(SOPClass.RTRadiationSetStorage,"RTRadiationSetStorage");
+		keywordsByUID.put(SOPClass.CArmPhotonElectronRadiationStorage,"CArmPhotonElectronRadiationStorage");
+		keywordsByUID.put(SOPClass.TomotherapeuticRadiationStorage,"TomotherapeuticRadiationStorage");
+		keywordsByUID.put(SOPClass.RoboticArmRadiationStorage,"RoboticArmRadiationStorage");
+		keywordsByUID.put(SOPClass.RTRadiationRecordSetStorage,"RTRadiationRecordSetStorage");
+		keywordsByUID.put(SOPClass.RTRadiationSalvageRecordStorage,"RTRadiationSalvageRecordStorage");
+		keywordsByUID.put(SOPClass.TomotherapeuticRadiationRecordStorage,"TomotherapeuticRadiationRecordStorage");
+		keywordsByUID.put(SOPClass.CArmPhotonElectronRadiationRecordStorage,"CArmPhotonElectronRadiationRecordStorage");
+		keywordsByUID.put(SOPClass.RoboticRadiationRecordStorage,"RoboticRadiationRecordStorage");
+		keywordsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorageTrial,"RTBeamsDeliveryInstructionStorageTrial");
+		keywordsByUID.put(SOPClass.RTBeamsDeliveryInstructionStorage,"RTBeamsDeliveryInstructionStorage");
+	
+		keywordsByUID.put(SOPClass.MRSpectroscopyStorage,"MRSpectroscopyStorage");
+		
+		keywordsByUID.put(SOPClass.RawDataStorage,"RawDataStorage");
+
+		keywordsByUID.put(SOPClass.SpatialRegistrationStorage,"SpatialRegistrationStorage");
+		keywordsByUID.put(SOPClass.SpatialFiducialsStorage,"SpatialFiducialsStorage");
+		keywordsByUID.put(SOPClass.DeformableSpatialRegistrationStorage,"DeformableSpatialRegistrationStorage");
+
+		keywordsByUID.put(SOPClass.StereometricRelationshipStorage,"StereometricRelationshipStorage");
+		keywordsByUID.put(SOPClass.RealWorldValueMappingStorage,"RealWorldValueMappingStorage");
+
+		keywordsByUID.put(SOPClass.EncapsulatedPDFStorage,"EncapsulatedPDFStorage");
+		keywordsByUID.put(SOPClass.EncapsulatedCDAStorage,"EncapsulatedCDAStorage");
+		keywordsByUID.put(SOPClass.EncapsulatedSTLStorage,"EncapsulatedSTLStorage");
+
+		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"StudyRootQueryRetrieveInformationModelFind");
+		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"StudyRootQueryRetrieveInformationModelMove");
+		
+		keywordsByUID.put(SOPClass.SegmentationStorage,"SegmentationStorage");
+		keywordsByUID.put(SOPClass.SurfaceSegmentationStorage,"SurfaceSegmentationStorage");
+		keywordsByUID.put(SOPClass.TractographyResultsStorage,"TractographyResultsStorage");
+		keywordsByUID.put(SOPClass.LabelMapSegmentationStorage,"LabelMapSegmentationStorage");
+		keywordsByUID.put(SOPClass.HeightMapSegmentationStorage,"HeightMapSegmentationStorage");
+
+		keywordsByUID.put(SOPClass.SurfaceScanMeshStorage,"SurfaceScanMeshStorage");
+		keywordsByUID.put(SOPClass.SurfaceScanPointCloudStorage,"SurfaceScanPointCloudStorage");
+
+		keywordsByUID.put(SOPClass.LensometryMeasurementsStorage,"LensometryMeasurementsStorage");
+		keywordsByUID.put(SOPClass.AutorefractionMeasurementsStorage,"AutorefractionMeasurementsStorage");
+		keywordsByUID.put(SOPClass.KeratometryMeasurementsStorage,"KeratometryMeasurementsStorage");
+		keywordsByUID.put(SOPClass.SubjectiveRefractionMeasurementsStorage,"SubjectiveRefractionMeasurementsStorage");
+		keywordsByUID.put(SOPClass.VisualAcuityMeasurementsStorage,"VisualAcuityMeasurementsStorage");
+		keywordsByUID.put(SOPClass.SpectaclePrescriptionReportStorage,"SpectaclePrescriptionReportStorage");
+		keywordsByUID.put(SOPClass.OphthalmicAxialMeasurementsStorage,"OphthalmicAxialMeasurementsStorage");
+		keywordsByUID.put(SOPClass.IntraocularLensCalculationsStorage,"IntraocularLensCalculationsStorage");
+		keywordsByUID.put(SOPClass.OphthalmicVisualFieldStaticPerimetryMeasurementsStorage,"OphthalmicVisualFieldStaticPerimetryMeasurementsStorage");
+		keywordsByUID.put(SOPClass.OphthalmicThicknessMapStorage,"OphthalmicThicknessMapStorage");
+		keywordsByUID.put(SOPClass.CornealTopographyMapStorage,"CornealTopographyMapStorage");
+
+		keywordsByUID.put(SOPClass.ColorPaletteStorage,"ColorPaletteStorage");
+
+		keywordsByUID.put(SOPClass.GenericImplantTemplateStorage,"GenericImplantTemplateStorage");
+		keywordsByUID.put(SOPClass.ImplantAssemblyTemplateStorage,"ImplantAssemblyTemplateStorage");
+		keywordsByUID.put(SOPClass.ImplantTemplateGroupStorage,"ImplantTemplateGroupStorage");
+
+		keywordsByUID.put(SOPClass.BasicStructuredDisplayStorage,"BasicStructuredDisplayStorage");
+		
+		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"StudyRootQueryRetrieveInformationModelFind");
+		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"StudyRootQueryRetrieveInformationModelMove");
+		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelGet ,"StudyRootQueryRetrieveInformationModelGet");
+		keywordsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelFind,"PatientRootQueryRetrieveInformationModelFind");
+		keywordsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelMove,"PatientRootQueryRetrieveInformationModelMove");
+		keywordsByUID.put(SOPClass.PatientRootQueryRetrieveInformationModelGet ,"PatientRootQueryRetrieveInformationModelGet");
+		keywordsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelFind,"PatientStudyOnlyQueryRetrieveInformationModelFind");
+		keywordsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove,"PatientStudyOnlyQueryRetrieveInformationModelMove");
+		keywordsByUID.put(SOPClass.PatientStudyOnlyQueryRetrieveInformationModelGet ,"PatientStudyOnlyQueryRetrieveInformationModelGet");
+		keywordsByUID.put(SOPClass.ColorPaletteInformationModelFind,"ColorPaletteQueryRetrieveInformationModelFind");
+		keywordsByUID.put(SOPClass.ColorPaletteInformationModelMove,"ColorPaletteQueryRetrieveInformationModelMove");
+		keywordsByUID.put(SOPClass.ColorPaletteInformationModelGet, "ColorPaletteQueryRetrieveInformationModelGet");
+	}
+
+	private void createUIDsByKeyword() {
+		uidsByKeyword = new HashMap();
+
+		uidsByKeyword.put("Verification",SOPClass.Verification);
+		
+		uidsByKeyword.put("ComputedRadiographyImageStorage",SOPClass.ComputedRadiographyImageStorage);
+		uidsByKeyword.put("DigitalXRayImageStorageForPresentation",SOPClass.DigitalXRayImageStorageForPresentation);
+		uidsByKeyword.put("DigitalXRayImageStorageForProcessing",SOPClass.DigitalXRayImageStorageForProcessing);
+		uidsByKeyword.put("DigitalMammographyXRayImageStorageForPresentation",SOPClass.DigitalMammographyXRayImageStorageForPresentation);
+		uidsByKeyword.put("DigitalMammographyXRayImageStorageForProcessing",SOPClass.DigitalMammographyXRayImageStorageForProcessing);
+		uidsByKeyword.put("DigitalIntraoralXRayImageStorageForPresentation",SOPClass.DigitalIntraoralXRayImageStorageForPresentation);
+		uidsByKeyword.put("DigitalIntraoralXRayImageStorageForProcessing",SOPClass.DigitalIntraoralXRayImageStorageForProcessing);
+		uidsByKeyword.put("CTImageStorage",SOPClass.CTImageStorage);
+		uidsByKeyword.put("EnhancedCTImageStorage",SOPClass.EnhancedCTImageStorage);
+		uidsByKeyword.put("LegacyConvertedEnhancedCTImageStorage",SOPClass.LegacyConvertedEnhancedCTImageStorage);
+		uidsByKeyword.put("UltrasoundMultiframeImageStorageRetired",SOPClass.UltrasoundMultiframeImageStorageRetired);
+		uidsByKeyword.put("UltrasoundMultiframeImageStorage",SOPClass.UltrasoundMultiframeImageStorage);
+		uidsByKeyword.put("MRImageStorage",SOPClass.MRImageStorage);
+		uidsByKeyword.put("EnhancedMRImageStorage",SOPClass.EnhancedMRImageStorage);
+		uidsByKeyword.put("EnhancedMRColorImageStorage",SOPClass.EnhancedMRColorImageStorage);
+		uidsByKeyword.put("LegacyConvertedEnhancedMRImageStorage",SOPClass.LegacyConvertedEnhancedMRImageStorage);
+		uidsByKeyword.put("NuclearMedicineImageStorageRetired",SOPClass.NuclearMedicineImageStorageRetired);
+		uidsByKeyword.put("UltrasoundImageStorageRetired",SOPClass.UltrasoundImageStorageRetired);
+		uidsByKeyword.put("UltrasoundImageStorage",SOPClass.UltrasoundImageStorage);
+		uidsByKeyword.put("EnhancedUSVolumeStorage",SOPClass.EnhancedUSVolumeStorage);
+		uidsByKeyword.put("PhotoacousticImageStorage",SOPClass.PhotoacousticImageStorage);
+		uidsByKeyword.put("SecondaryCaptureImageStorage",SOPClass.SecondaryCaptureImageStorage);
+		uidsByKeyword.put("MultiframeSingleBitSecondaryCaptureImageStorage",SOPClass.MultiframeSingleBitSecondaryCaptureImageStorage);
+		uidsByKeyword.put("MultiframeGrayscaleByteSecondaryCaptureImageStorage",SOPClass.MultiframeGrayscaleByteSecondaryCaptureImageStorage);
+		uidsByKeyword.put("MultiframeGrayscaleWordSecondaryCaptureImageStorage",SOPClass.MultiframeGrayscaleWordSecondaryCaptureImageStorage);
+		uidsByKeyword.put("MultiframeTrueColorSecondaryCaptureImageStorage",SOPClass.MultiframeTrueColorSecondaryCaptureImageStorage);
+		uidsByKeyword.put("XRayAngiographicImageStorage",SOPClass.XRayAngiographicImageStorage);
+		uidsByKeyword.put("EnhancedXAImageStorage",SOPClass.EnhancedXAImageStorage);
+		uidsByKeyword.put("XRayRadioFlouroscopicImageStorage",SOPClass.XRayRadioFlouroscopicImageStorage);
+		uidsByKeyword.put("EnhancedXRFImageStorage",SOPClass.EnhancedXRFImageStorage);
+		uidsByKeyword.put("XRayAngiographicBiplaneImageStorage",SOPClass.XRayAngiographicBiplaneImageStorage);
+		uidsByKeyword.put("XRay3DAngiographicImageStorage",SOPClass.XRay3DAngiographicImageStorage);
+		uidsByKeyword.put("XRay3DCraniofacialImageStorage",SOPClass.XRay3DCraniofacialImageStorage);
+		uidsByKeyword.put("BreastTomosynthesisImageStorage",SOPClass.BreastTomosynthesisImageStorage);
+		uidsByKeyword.put("BreastProjectionXRayImageStorageForPresentationImageStorage",SOPClass.BreastProjectionXRayImageStorageForPresentation);
+		uidsByKeyword.put("BreastProjectionXRayImageStorageForProcessingImageStorage",SOPClass.BreastProjectionXRayImageStorageForProcessing);
+		uidsByKeyword.put("NuclearMedicineImageStorage",SOPClass.NuclearMedicineImageStorage);
+		uidsByKeyword.put("VisibleLightEndoscopicImageStorage",SOPClass.VisibleLightEndoscopicImageStorage);
+		uidsByKeyword.put("VideoEndoscopicImageStorage",SOPClass.VideoEndoscopicImageStorage);
+		uidsByKeyword.put("VisibleLightMicroscopicImageStorage",SOPClass.VisibleLightMicroscopicImageStorage);
+		uidsByKeyword.put("VideoMicroscopicImageStorage",SOPClass.VideoMicroscopicImageStorage);
+		uidsByKeyword.put("VisibleLightSlideCoordinatesMicroscopicImageStorage",SOPClass.VisibleLightSlideCoordinatesMicroscopicImageStorage);
+		uidsByKeyword.put("VisibleLightPhotographicImageStorage",SOPClass.VisibleLightPhotographicImageStorage);
+		uidsByKeyword.put("VideoPhotographicImageStorage",SOPClass.VideoPhotographicImageStorage);
+		uidsByKeyword.put("OphthalmicPhotography8BitImageStorage",SOPClass.OphthalmicPhotography8BitImageStorage);
+		uidsByKeyword.put("OphthalmicPhotography16BitImageStorage",SOPClass.OphthalmicPhotography16BitImageStorage);
+		uidsByKeyword.put("OphthalmicTomographyImageStorage",SOPClass.OphthalmicTomographyImageStorage);
+		uidsByKeyword.put("OphthalmicOpticalCoherenceTomographyEnFaceImageStorage",SOPClass.OphthalmicOpticalCoherenceTomographyEnFaceImageStorage);
+		uidsByKeyword.put("OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage",SOPClass.OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage);
+		uidsByKeyword.put("VLWholeSlideMicroscopyImageStorage",SOPClass.VLWholeSlideMicroscopyImageStorage);
+		uidsByKeyword.put("DermoscopicPhotographyImageStorage",SOPClass.DermoscopicPhotographyImageStorage);
+		uidsByKeyword.put("ConfocalMicroscopyImageStorage",SOPClass.ConfocalMicroscopyImageStorage);
+		uidsByKeyword.put("ConfocalMicroscopyTiledPyramidalImageStorage",SOPClass.ConfocalMicroscopyTiledPyramidalImageStorage);
+		uidsByKeyword.put("WideFieldOphthalmicPhotographyStereographicProjectionImageStorage",SOPClass.WideFieldOphthalmicPhotographyStereographicProjectionImageStorage);
+		uidsByKeyword.put("WideFieldOphthalmicPhotography3DCoordinatesImageStorage",SOPClass.WideFieldOphthalmicPhotography3DCoordinatesImageStorage);
+		uidsByKeyword.put("PETImageStorage",SOPClass.PETImageStorage);
+		uidsByKeyword.put("EnhancedPETImageStorage",SOPClass.EnhancedPETImageStorage);
+		uidsByKeyword.put("LegacyConvertedEnhancedPETImageStorage",SOPClass.LegacyConvertedEnhancedPETImageStorage);
+		uidsByKeyword.put("RTImageStorage",SOPClass.RTImageStorage);
+		uidsByKeyword.put("IntravascularOCTImageStorageForPresentation",SOPClass.IVOCTImageStorageForPresentation);
+		uidsByKeyword.put("IntravascularOCTImageStorageForProcessing",SOPClass.IVOCTImageStorageForProcessing);
+
+		uidsByKeyword.put("MediaStorageDirectoryStorage",SOPClass.MediaStorageDirectoryStorage);
+		
+		uidsByKeyword.put("BasicTextSRStorage",SOPClass.BasicTextSRStorage);
+		uidsByKeyword.put("EnhancedSRStorage",SOPClass.EnhancedSRStorage);
+		uidsByKeyword.put("ComprehensiveSRStorage",SOPClass.ComprehensiveSRStorage);
+		uidsByKeyword.put("Comprehensive3DSRStorage",SOPClass.Comprehensive3DSRStorage);
+		uidsByKeyword.put("ExtensibleSRStorage",SOPClass.ExtensibleSRStorage);
+		uidsByKeyword.put("MammographyCADSRStorage",SOPClass.MammographyCADSRStorage);
+		uidsByKeyword.put("ChestCADSRStorage",SOPClass.ChestCADSRStorage);
+		uidsByKeyword.put("ProcedureLogStorage",SOPClass.ProcedureLogStorage);
+		uidsByKeyword.put("XRayRadiationDoseSRStorage",SOPClass.XRayRadiationDoseSRStorage);
+		uidsByKeyword.put("RadiopharmaceuticalRadiationDoseSRStorage",SOPClass.RadiopharmaceuticalRadiationDoseSRStorage);
+		uidsByKeyword.put("ColonCADSRStorage",SOPClass.ColonCADSRStorage);
+		uidsByKeyword.put("ImplantationPlanSRStorage",SOPClass.ImplantationPlanSRStorage);
+		uidsByKeyword.put("AcquisitionContextSRStorage",SOPClass.AcquisitionContextSRStorage);
+		uidsByKeyword.put("SimplifiedAdultEchoSRStorage",SOPClass.SimplifiedAdultEchoSRStorage);
+		uidsByKeyword.put("PatientRadiationDoseSRStorage",SOPClass.PatientRadiationDoseSRStorage);
+		uidsByKeyword.put("MacularGridThicknessAndVolumeReportStorage",SOPClass.MacularGridThicknessAndVolumeReportStorage);
+		uidsByKeyword.put("KeyObjectSelectionDocumentStorage",SOPClass.KeyObjectSelectionDocumentStorage);
+
+		uidsByKeyword.put("TextSRStorageTrialRetired",SOPClass.TextSRStorageTrialRetired);
+		uidsByKeyword.put("AudioSRStorageTrialRetired",SOPClass.AudioSRStorageTrialRetired);
+		uidsByKeyword.put("DetailSRStorageTrialRetired",SOPClass.DetailSRStorageTrialRetired);
+		uidsByKeyword.put("ComprehensiveSRStorageTrialRetired",SOPClass.ComprehensiveSRStorageTrialRetired);
+		
+		uidsByKeyword.put("GrayscaleSoftcopyPresentationStateStorage",SOPClass.GrayscaleSoftcopyPresentationStateStorage);
+		uidsByKeyword.put("ColorSoftcopyPresentationStateStorage",SOPClass.ColorSoftcopyPresentationStateStorage);
+		uidsByKeyword.put("PseudoColorSoftcopyPresentationStateStorage",SOPClass.PseudoColorSoftcopyPresentationStateStorage);
+		uidsByKeyword.put("BlendingSoftcopyPresentationStateStorage",SOPClass.BlendingSoftcopyPresentationStateStorage);
+		uidsByKeyword.put("XAXRFGrayscaleSoftcopyPresentationStateStorage",SOPClass.XAXRFGrayscaleSoftcopyPresentationStateStorage);
+		uidsByKeyword.put("GrayscalePlanarMPRVolumetricPresentationStateStorage",SOPClass.GrayscalePlanarMPRVolumetricPresentationStateStorage);
+		uidsByKeyword.put("CompositingPlanarMPRVolumetricPresentationStateStorage",SOPClass.CompositingPlanarMPRVolumetricPresentationStateStorage);
+		uidsByKeyword.put("AdvancedBlendingPresentationStateStorage",SOPClass.AdvancedBlendingPresentationStateStorage);
+		uidsByKeyword.put("VolumeRenderingVolumetricPresentationStateStorage",SOPClass.VolumeRenderingVolumetricPresentationStateStorage);
+		uidsByKeyword.put("SegmentedVolumeRenderingVolumetricPresentationStateStorage",SOPClass.SegmentedVolumeRenderingVolumetricPresentationStateStorage);
+		uidsByKeyword.put("MultipleVolumeRenderingVolumetricPresentationStateStorage",SOPClass.MultipleVolumeRenderingVolumetricPresentationStateStorage);
+		uidsByKeyword.put("VariableModalityLUTSoftcopyPresentationStateStorage",SOPClass.VariableModalityLUTSoftcopyPresentationStateStorage);
+
+		uidsByKeyword.put("WaveformPresentationStateStorage",SOPClass.WaveformPresentationStateStorage);
+		uidsByKeyword.put("WaveformAcquisitionPresentationStateStorage",SOPClass.WaveformAcquisitionPresentationStateStorage);
+
+		uidsByKeyword.put("TwelveLeadECGStorage",SOPClass.TwelveLeadECGStorage);
+		uidsByKeyword.put("GeneralECGStorage",SOPClass.GeneralECGStorage);
+		uidsByKeyword.put("AmbulatoryECGStorage",SOPClass.AmbulatoryECGStorage);
+		uidsByKeyword.put("HemodynamicWaveformStorage",SOPClass.HemodynamicWaveformStorage);
+		uidsByKeyword.put("CardiacElectrophysiologyWaveformStorage",SOPClass.CardiacElectrophysiologyWaveformStorage);
+		uidsByKeyword.put("BasicVoiceStorage",SOPClass.BasicVoiceStorage);
+		uidsByKeyword.put("GeneralAudioWaveformStorage",SOPClass.GeneralAudioWaveformStorage);
+		uidsByKeyword.put("ArterialPulseWaveformStorage",SOPClass.ArterialPulseWaveformStorage);
+		uidsByKeyword.put("RespiratoryWaveformStorage",SOPClass.RespiratoryWaveformStorage);
+		uidsByKeyword.put("MultichannelRespiratoryWaveformStorage",SOPClass.MultichannelRespiratoryWaveformStorage);
+		uidsByKeyword.put("RoutineScalpElectroencephalogramWaveformStorage",SOPClass.RoutineScalpElectroencephalogramWaveformStorage);
+		uidsByKeyword.put("ElectromyogramWaveformStorage",SOPClass.ElectromyogramWaveformStorage);
+		uidsByKeyword.put("ElectrooculogramWaveformStorage",SOPClass.ElectrooculogramWaveformStorage);
+		uidsByKeyword.put("SleepElectroencephalogramWaveformStorage",SOPClass.SleepElectroencephalogramWaveformStorage);
+		uidsByKeyword.put("BodyPositionWaveformStorage",SOPClass.BodyPositionWaveformStorage);
+
+		uidsByKeyword.put("StandaloneOverlayStorage",SOPClass.StandaloneOverlayStorage);
+		uidsByKeyword.put("StandaloneCurveStorage",SOPClass.StandaloneCurveStorage);
+		uidsByKeyword.put("StandaloneModalityLUTStorage",SOPClass.StandaloneModalityLUTStorage);
+		uidsByKeyword.put("StandaloneVOILUTStorage",SOPClass.StandaloneVOILUTStorage);
+		uidsByKeyword.put("StandalonePETCurveStorage",SOPClass.StandalonePETCurveStorage);
+		
+		uidsByKeyword.put("RTDoseStorage",SOPClass.RTDoseStorage);
+		uidsByKeyword.put("RTStructureSetStorage",SOPClass.RTStructureSetStorage);
+		uidsByKeyword.put("RTBeamsTreatmentRecordStorage",SOPClass.RTBeamsTreatmentRecordStorage);
+		uidsByKeyword.put("RTIonBeamsTreatmentRecordStorage",SOPClass.RTIonBeamsTreatmentRecordStorage);
+		uidsByKeyword.put("RTPlanStorage",SOPClass.RTPlanStorage);
+		uidsByKeyword.put("RTIonPlanStorage",SOPClass.RTIonPlanStorage);
+		uidsByKeyword.put("RTBrachyTreatmentRecordStorage",SOPClass.RTBrachyTreatmentRecordStorage);
+		uidsByKeyword.put("RTTreatmentSummaryRecordStorage",SOPClass.RTTreatmentSummaryRecordStorage);
+		uidsByKeyword.put("RTPhysicianIntentStorage",SOPClass.RTPhysicianIntentStorage);
+		uidsByKeyword.put("RTSegmentAnnotationStorage",SOPClass.RTSegmentAnnotationStorage);
+		uidsByKeyword.put("RTRadiationSetStorage",SOPClass.RTRadiationSetStorage);
+		uidsByKeyword.put("CArmPhotonElectronRadiationStorage",SOPClass.CArmPhotonElectronRadiationStorage);
+		uidsByKeyword.put("TomotherapeuticRadiationStorage",SOPClass.TomotherapeuticRadiationStorage);
+		uidsByKeyword.put("RoboticArmRadiationStorage",SOPClass.RoboticArmRadiationStorage);
+		uidsByKeyword.put("RTRadiationRecordSetStorage",SOPClass.RTRadiationRecordSetStorage);
+		uidsByKeyword.put("RTRadiationSalvageRecordStorage",SOPClass.RTRadiationSalvageRecordStorage);
+		uidsByKeyword.put("TomotherapeuticRadiationRecordStorage",SOPClass.TomotherapeuticRadiationRecordStorage);
+		uidsByKeyword.put("CArmPhotonElectronRadiationRecordStorage",SOPClass.CArmPhotonElectronRadiationRecordStorage);
+		uidsByKeyword.put("RoboticRadiationRecordStorage",SOPClass.RoboticRadiationRecordStorage);
+		uidsByKeyword.put("RTBeamsDeliveryInstructionStorageTrial",SOPClass.RTBeamsDeliveryInstructionStorageTrial);
+		uidsByKeyword.put("RTBeamsDeliveryInstructionStorage",SOPClass.RTBeamsDeliveryInstructionStorage);
+	
+		uidsByKeyword.put("MRSpectroscopyStorage",SOPClass.MRSpectroscopyStorage);
+		
+		uidsByKeyword.put("RawDataStorage",SOPClass.RawDataStorage);
+
+		uidsByKeyword.put("SpatialRegistrationStorage",SOPClass.SpatialRegistrationStorage);
+		uidsByKeyword.put("SpatialFiducialsStorage",SOPClass.SpatialFiducialsStorage);
+		uidsByKeyword.put("DeformableSpatialRegistrationStorage",SOPClass.DeformableSpatialRegistrationStorage);
+
+		uidsByKeyword.put("StereometricRelationshipStorage",SOPClass.StereometricRelationshipStorage);
+		uidsByKeyword.put("RealWorldValueMappingStorage",SOPClass.RealWorldValueMappingStorage);
+
+		uidsByKeyword.put("EncapsulatedPDFStorage",SOPClass.EncapsulatedPDFStorage);
+		uidsByKeyword.put("EncapsulatedCDAStorage",SOPClass.EncapsulatedCDAStorage);
+		uidsByKeyword.put("EncapsulatedSTLStorage",SOPClass.EncapsulatedSTLStorage);
+
+		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelFind",SOPClass.StudyRootQueryRetrieveInformationModelFind);
+		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelMove",SOPClass.StudyRootQueryRetrieveInformationModelMove);
+		
+		uidsByKeyword.put("SegmentationStorage",SOPClass.SegmentationStorage);
+		uidsByKeyword.put("SurfaceSegmentationStorage",SOPClass.SurfaceSegmentationStorage);
+		uidsByKeyword.put("TractographyResultsStorage",SOPClass.TractographyResultsStorage);
+		uidsByKeyword.put("LabelMapSegmentationStorage",SOPClass.LabelMapSegmentationStorage);
+		uidsByKeyword.put("HeightMapSegmentationStorage",SOPClass.HeightMapSegmentationStorage);
+
+		uidsByKeyword.put("SurfaceScanMeshStorage",SOPClass.SurfaceScanMeshStorage);
+		uidsByKeyword.put("SurfaceScanPointCloudStorage",SOPClass.SurfaceScanPointCloudStorage);
+
+		uidsByKeyword.put("LensometryMeasurementsStorage",SOPClass.LensometryMeasurementsStorage);
+		uidsByKeyword.put("AutorefractionMeasurementsStorage",SOPClass.AutorefractionMeasurementsStorage);
+		uidsByKeyword.put("KeratometryMeasurementsStorage",SOPClass.KeratometryMeasurementsStorage);
+		uidsByKeyword.put("SubjectiveRefractionMeasurementsStorage",SOPClass.SubjectiveRefractionMeasurementsStorage);
+		uidsByKeyword.put("VisualAcuityMeasurementsStorage",SOPClass.VisualAcuityMeasurementsStorage);
+		uidsByKeyword.put("SpectaclePrescriptionReportStorage",SOPClass.SpectaclePrescriptionReportStorage);
+		uidsByKeyword.put("OphthalmicAxialMeasurementsStorage",SOPClass.OphthalmicAxialMeasurementsStorage);
+		uidsByKeyword.put("IntraocularLensCalculationsStorage",SOPClass.IntraocularLensCalculationsStorage);
+		uidsByKeyword.put("OphthalmicVisualFieldStaticPerimetryMeasurementsStorage",SOPClass.OphthalmicVisualFieldStaticPerimetryMeasurementsStorage);
+		uidsByKeyword.put("OphthalmicThicknessMapStorage",SOPClass.OphthalmicThicknessMapStorage);
+		uidsByKeyword.put("CornealTopographyMapStorage",SOPClass.CornealTopographyMapStorage);
+
+		uidsByKeyword.put("ColorPaletteStorage",SOPClass.ColorPaletteStorage);
+
+		uidsByKeyword.put("GenericImplantTemplateStorage",SOPClass.GenericImplantTemplateStorage);
+		uidsByKeyword.put("ImplantAssemblyTemplateStorage",SOPClass.ImplantAssemblyTemplateStorage);
+		uidsByKeyword.put("ImplantTemplateGroupStorage",SOPClass.ImplantTemplateGroupStorage);
+
+		uidsByKeyword.put("BasicStructuredDisplayStorage",SOPClass.BasicStructuredDisplayStorage);
+		
+		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelFind",SOPClass.StudyRootQueryRetrieveInformationModelFind);
+		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelMove",SOPClass.StudyRootQueryRetrieveInformationModelMove);
+		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelGet",SOPClass.StudyRootQueryRetrieveInformationModelGet );
+		uidsByKeyword.put("PatientRootQueryRetrieveInformationModelFind",SOPClass.PatientRootQueryRetrieveInformationModelFind);
+		uidsByKeyword.put("PatientRootQueryRetrieveInformationModelMove",SOPClass.PatientRootQueryRetrieveInformationModelMove);
+		uidsByKeyword.put("PatientRootQueryRetrieveInformationModelGet",SOPClass.PatientRootQueryRetrieveInformationModelGet );
+		uidsByKeyword.put("PatientStudyOnlyQueryRetrieveInformationModelFind",SOPClass.PatientStudyOnlyQueryRetrieveInformationModelFind);
+		uidsByKeyword.put("PatientStudyOnlyQueryRetrieveInformationModelMove",SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove);
+		uidsByKeyword.put("PatientStudyOnlyQueryRetrieveInformationModelGet",SOPClass.PatientStudyOnlyQueryRetrieveInformationModelGet );
+		uidsByKeyword.put("ColorPaletteQueryRetrieveInformationModelFind",SOPClass.ColorPaletteInformationModelFind);
+		uidsByKeyword.put("ColorPaletteQueryRetrieveInformationModelMove",SOPClass.ColorPaletteInformationModelMove);
+		uidsByKeyword.put("ColorPaletteQueryRetrieveInformationModelGet",SOPClass.ColorPaletteInformationModelGet);
 	}
 
 	/**
@@ -471,7 +1083,7 @@ public class SOPClassDescriptions {
 			System.err.println(getAbbreviationFromUID(SOPClass.MRSpectroscopyStorage));
 		} catch (Exception e) {
 			System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

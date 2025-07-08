@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.transfermonitor;
 
@@ -15,7 +15,7 @@ import java.io.OutputStream;
 public class MonitoredOutputStream extends OutputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/transfermonitor/MonitoredOutputStream.java,v 1.2 2008/02/22 19:14:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/transfermonitor/MonitoredOutputStream.java,v 1.12 2025/01/29 10:58:09 dclunie Exp $";
 	
 	private OutputStream out;
 

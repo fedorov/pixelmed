@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -12,6 +12,13 @@ import com.pixelmed.dicom.TagFromName;
 
 import com.pixelmed.geometry.GeometryOfVolume;
 
+import com.pixelmed.utils.ColorUtilities;
+
+import java.awt.Color;
+
+//import java.awt.image.BufferedImage;
+
+import java.io.File;
 import java.io.IOException;
 
 import java.util.SortedMap;
@@ -19,6 +26,9 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Vector;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class that supports extracting DICOM segmentation objects with one or more segments
@@ -28,8 +38,9 @@ import java.util.Vector;
  */
 
 public class SuperimposedDicomSegments {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedDicomSegments.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedDicomSegments.java,v 1.1 2013/10/16 16:08:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SuperimposedDicomSegments.class);
 	
 	/**
 	 * @param	list
@@ -45,18 +56,56 @@ public class SuperimposedDicomSegments {
 	public SuperimposedDicomSegments(String filename) throws DicomException, IOException {
 		// no need to call super(), does nothing
 		AttributeList list = new AttributeList();
+long startTime = System.currentTimeMillis();
 		list.read(filename);
+long currentTime = System.currentTimeMillis();
+slf4jlogger.info("read(): took = {} ms",(currentTime-startTime));
+		doCommonConstructorStuff(list);
+	}
+	
+	/**
+	 * @param	file
+	 */
+	public SuperimposedDicomSegments(File file) throws DicomException, IOException {
+		// no need to call super(), does nothing
+		AttributeList list = new AttributeList();
+long startTime = System.currentTimeMillis();
+		list.read(file);
+long currentTime = System.currentTimeMillis();
+slf4jlogger.info("read(): took = {} ms",(currentTime-startTime));
 		doCommonConstructorStuff(list);
 	}
 	
 	protected class SegmentInformation {
 		String segmentNumber;
-		int[] recommendedDisplayCIELabValues;
+		int[] cieLab;
 		
-		public SegmentInformation(String segmentNumber,int[] recommendedDisplayCIELabValues) {
+		public SegmentInformation(String segmentNumber,int[] cieLab) {
 			this.segmentNumber = segmentNumber;
-			this.recommendedDisplayCIELabValues = recommendedDisplayCIELabValues;
+			this.cieLab = cieLab;
 		}
+	}
+	
+	private static int[][] defaultSRGBValues = {
+		{ Color.YELLOW.getRed(), Color.YELLOW.getGreen(), Color.YELLOW.getBlue() },	// the default or when segmentNumber starts at 0 rather than 1, which it is not supposed to
+		{ Color.PINK.getRed(), Color.PINK.getGreen(), Color.PINK.getBlue() },
+		{ Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue() },
+		{ Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue() },
+		{ Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue() },
+	};
+	
+	
+	private int[] getDefaultCIELab(String segmentNumber) {
+		int[] cieLab = ColorUtilities.getIntegerScaledCIELabPCSFromSRGB(defaultSRGBValues[0]);
+		try {
+			int i = Integer.parseInt(segmentNumber);
+			if (i > 0 && i < defaultSRGBValues.length) {
+				cieLab = ColorUtilities.getIntegerScaledCIELabPCSFromSRGB(defaultSRGBValues[i]);
+			}
+		}
+		catch (NumberFormatException e) {
+		}
+		return cieLab;
 	}
 	
 	protected SortedMap<String,SegmentInformation> segmentInformationBySegmentNumber = new TreeMap<String,SegmentInformation>();
@@ -70,7 +119,10 @@ public class SuperimposedDicomSegments {
 		String sopClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
 		if (SOPClass.isImageStorage(sopClassUID)) {
 //System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): is an image");
+long startTime = System.currentTimeMillis();
 			SourceImage allFramesImage = new SourceImage(list);
+long currentTime = System.currentTimeMillis();
+slf4jlogger.info("doCommonConstructorStuff(): make SourceImage allFramesImage = {} ms",(currentTime-startTime));
 			Attribute aSegmentSequence = list.get(TagFromName.SegmentSequence);
 			Attribute aSharedFunctionalGroupsSequence = list.get(TagFromName.SharedFunctionalGroupsSequence);
 			Attribute aPerFrameFunctionalGroupsSequence = list.get(TagFromName.PerFrameFunctionalGroupsSequence);
@@ -79,7 +131,7 @@ public class SuperimposedDicomSegments {
 			 && aSegmentSequence != null && aSegmentSequence instanceof SequenceAttribute
 			 && aSharedFunctionalGroupsSequence != null && aSharedFunctionalGroupsSequence instanceof SequenceAttribute
 			 && aPerFrameFunctionalGroupsSequence != null && aPerFrameFunctionalGroupsSequence instanceof SequenceAttribute) {
-System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): have a segmentation object with one or more frames");
+				slf4jlogger.info("doCommonConstructorStuff(): have a segmentation object with one or more frames");
 				SequenceAttribute saSegmentSequence = (SequenceAttribute)aSegmentSequence;
 				int numberOfSegments = saSegmentSequence.getNumberOfItems();
 				if (numberOfSegments > 0) {
@@ -87,10 +139,13 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): have a
 						AttributeList itemList = saSegmentSequence.getItem(i).getAttributeList();
 						String segmentNumber = Attribute.getSingleStringValueOrEmptyString(itemList,TagFromName.SegmentNumber);	// theoretically supposed to start at 1 and increase by 1, but don't trust it
 						if (segmentNumber.length() > 0) {
-							int[] recommendedDisplayCIELabValues = Attribute.getIntegerValues(itemList,TagFromName.RecommendedDisplayCIELabValue);
+							int[] cieLab = Attribute.getIntegerValues(itemList,TagFromName.RecommendedDisplayCIELabValue);
+							if (cieLab == null) {
+								cieLab = getDefaultCIELab(segmentNumber);
+							}
 							SegmentInformation si = segmentInformationBySegmentNumber.get(segmentNumber);
 							if (si == null) {
-								si = new SegmentInformation(segmentNumber,recommendedDisplayCIELabValues);
+								si = new SegmentInformation(segmentNumber,cieLab);
 								segmentInformationBySegmentNumber.put(segmentNumber,si);
 							}
 							else {
@@ -103,7 +158,7 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): have a
 					}
 				}
 				else {
-System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error: No segments in segmentation object");
+					slf4jlogger.warn("doCommonConstructorStuff(): No segments in segmentation object");		// should we throw an exception ? no, allow empty SEG object :(
 				}
 				
 				SequenceAttribute saSharedFunctionalGroupsSequence = (SequenceAttribute)aSharedFunctionalGroupsSequence;
@@ -111,6 +166,7 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error:
 				SequenceAttribute sharedSegmentIdentificationSequence = (SequenceAttribute)(SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(saSharedFunctionalGroupsSequence,TagFromName.SegmentIdentificationSequence));
 				int nPerFrameFunctionalGroupsSequence = saPerFrameFunctionalGroupsSequence.getNumberOfItems();
 				if (nPerFrameFunctionalGroupsSequence == numberOfFrames) {
+startTime = System.currentTimeMillis();
 					for (int f=0; f<numberOfFrames; ++f) {
 						SequenceAttribute useSegmentIdentificationSequence = sharedSegmentIdentificationSequence;
 						if (useSegmentIdentificationSequence == null) {
@@ -134,7 +190,27 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error:
 						else {
 							throw new DicomException("Missing SegmentIdentificationSequence for frame "+f);
 						}
+						
+						// check whether or not is empty
+						//{
+						//	BufferedImage frameImage = allFramesImage.getBufferedImage(f);
+						//	int width  = frameImage.getWidth();
+						//	int height = frameImage.getHeight();
+						//	boolean empty = true;
+						//	for (int row=0; row<height; row++) {
+						//		for (int col=0; col<width; col++) {
+						//			if (frameImage.getRGB(row,col) != 0) {
+						//				empty=false;
+						//				break;
+						//			}
+						//		}
+						//		if (!empty) break;
+						//	}
+//slf4jlogger.info("doCommonConstructorStuff(): frame {} is {}empty",f,(empty ? "" : "not "));
+						//}
 					}
+currentTime = System.currentTimeMillis();
+slf4jlogger.info("doCommonConstructorStuff(): process frames = {} ms",(currentTime-startTime));
 				}
 				else {
 					throw new DicomException("Number of frames "+numberOfFrames+" does not match number of PerFrameFunctionalGroupsSequence items "+nPerFrameFunctionalGroupsSequence);
@@ -152,12 +228,15 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error:
 							parentFrameNumbers[childFrameNumber++] = parentFrameNumber.intValue();
 						}
 					}
+//startTime = System.currentTimeMillis();
 					SourceImage sourceImageForSegment = new SourceImageSubset(allFramesImage,parentFrameNumbers);
+//currentTime = System.currentTimeMillis();
+//slf4jlogger.info("doCommonConstructorStuff(): create sourceImageForSegment {} = {} ms",segmentNumber, (currentTime-startTime));
 					GeometryOfVolume geometryForSegment = new GeometryOfVolumeFromAttributeList(list,parentFrameNumbers);
 					if (!geometryForSegment.isVolumeSampledRegularlyAlongFrameDimension()) {
-System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Warning: superimposed geometry is not a single regularly sampled volume for segment "+segmentNumber);
+						slf4jlogger.warn("doCommonConstructorStuff(): Superimposed geometry is not a single regularly sampled volume for segment {}",segmentNumber);
 					}
-					superimposedImagesBySegmentNumber.put(segmentNumber,new SuperimposedImage(sourceImageForSegment,geometryForSegment,segmentInformationBySegmentNumber.get(segmentNumber).recommendedDisplayCIELabValues));
+					superimposedImagesBySegmentNumber.put(segmentNumber,new SuperimposedImage(sourceImageForSegment,geometryForSegment,segmentInformationBySegmentNumber.get(segmentNumber).cieLab));
 				}
 				
 				//superimposedGeometry = new GeometryOfVolumeFromAttributeList(list);
@@ -166,7 +245,7 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Warnin
 				//}
 			}
 			else {
-System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error: Not a valid segmentation object");
+				slf4jlogger.warn("SuperimposedDicomSegments.doCommonConstructorStuff(): Not a valid segmentation object");		// should we throw an exception ? no, allow malformed SEG object :(
 			}
 		}
 	}
@@ -177,7 +256,7 @@ System.err.println("SuperimposedDicomSegments.doCommonConstructorStuff(): Error:
 	public Vector<SuperimposedImage> getSuperimposedImages() throws DicomException {
 		Vector<SuperimposedImage> superimposedImages = new Vector<SuperimposedImage>();
 		for (String segmentNumber : superimposedImagesBySegmentNumber.keySet()) {
-System.err.println("SuperimposedDicomSegments.getSuperimposedImages(): Adding segmentNumber "+segmentNumber);
+//System.err.println("SuperimposedDicomSegments.getSuperimposedImages(): Adding segmentNumber "+segmentNumber);
 			superimposedImages.add(superimposedImagesBySegmentNumber.get(segmentNumber));
 		}
 		return superimposedImages;
@@ -188,19 +267,29 @@ System.err.println("SuperimposedDicomSegments.getSuperimposedImages(): Adding se
 	 */
 	public static void main(String arg[]) {
 		try {
-			String underlyingFileName = arg[0];
-			String superimposedFileName = arg[1];
+			String underlyingFileName = null;
+			String superimposedFileName = null;
 			
+			if (arg.length == 1) {
+				superimposedFileName = arg[0];
+			}
+			else {
+				underlyingFileName = arg[0];
+				superimposedFileName = arg[1];
+			}
+long startTime = System.currentTimeMillis();
 			SuperimposedDicomSegments superimposedSegments = new SuperimposedDicomSegments(superimposedFileName);
+long currentTime = System.currentTimeMillis();
+slf4jlogger.info("main(): SuperimposedDicomSegments took = {} ms",(currentTime-startTime));
 			Vector<SuperimposedImage> superimposedImages =  superimposedSegments.getSuperimposedImages();
-			
+
 			if (arg.length > 2) {
 				String outputFileName = arg[2];
 				ConsumerFormatImageMaker.convertFileToEightBitImage(underlyingFileName,outputFileName,"jpeg",
 					0/*windowCenter*/,0/*windowWidth*/,0/*imageWidth*/,0/*imageHeight*/,100/*imageQuality*/,ConsumerFormatImageMaker.ALL_ANNOTATIONS,
-					superimposedImages,null/*arrayOfPerFrameShapes*/,0/*debugLevel*/);
+					superimposedImages,null/*arrayOfPerFrameShapes*/);
 			}
-			else {
+			else if (arg.length > 1) {
 				AttributeList underlyingList = new AttributeList();
 				underlyingList.read(underlyingFileName);
 				SourceImage underlyingSourceImage = new SourceImage(underlyingList);
@@ -213,9 +302,10 @@ System.err.println("SuperimposedDicomSegments.getSuperimposedImages(): Adding se
 				frame.setSize(underlyingSourceImage.getWidth(),underlyingSourceImage.getHeight());
 				frame.setVisible(true);
 			}
+			// else display/save nothing ... was just testing the reading capabaility/performance
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

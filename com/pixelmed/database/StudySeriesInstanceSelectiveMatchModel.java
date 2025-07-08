@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -24,7 +24,7 @@ import java.util.Map;
 public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/StudySeriesInstanceSelectiveMatchModel.java,v 1.7 2012/10/23 19:00:30 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/StudySeriesInstanceSelectiveMatchModel.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Construct a model with the attributes from the default dictionary.</p>
@@ -32,7 +32,7 @@ public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceM
 	 * <p>The dictionary {@link com.pixelmed.database.DicomDictionaryForStudySeriesInstanceModel DicomDictionaryForStudySeriesInstanceModel} is used.</p>
 	 * 
 	 * @param	databaseFileName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceSelectiveMatchModel(String databaseFileName) throws DicomException {
 		super(databaseFileName);
@@ -45,7 +45,7 @@ public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceM
 	 * 
 	 * @param	databaseFileName
 	 * @param	databaseServerName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceSelectiveMatchModel(String databaseFileName,String databaseServerName) throws DicomException {
 		super(databaseFileName,databaseServerName);
@@ -56,7 +56,7 @@ public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceM
 	 *
 	 * @param	databaseFileName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceSelectiveMatchModel(String databaseFileName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,dictionary);
@@ -68,7 +68,7 @@ public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceM
 	 * @param	databaseFileName
 	 * @param	databaseServerName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceSelectiveMatchModel(String databaseFileName,String databaseServerName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,databaseServerName,dictionary);
@@ -78,7 +78,7 @@ public class StudySeriesInstanceSelectiveMatchModel extends StudySeriesInstanceM
 	 * @param	b
 	 * @param	list
 	 * @param	ie
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void extendStatementStringWithMatchingAttributesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 

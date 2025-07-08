@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -34,10 +34,12 @@ public class TestSafePrivatePhilipsDoseRelated extends TestCase {
 	protected void tearDown() {
 	}
 	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	public void TestSafePrivatePhilipsDoseRelated_FromTag() throws Exception {
 		assertTrue("Checking DLP is safe",					   ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x00E1,0x1021)));
+		assertTrue("Checking Acquisition Duration is safe",    ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x00E1,0x1050)));
 		assertTrue("Checking Phantom Type is safe",			   ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x01E1,0x1026)));
-		assertTrue("Checking Acquisition Duration is safe",    ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x01E1,0x1050)));
 		assertTrue("Checking Acquisition Type is safe",        ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x01F1,0x1001)));
 		assertTrue("Checking Table Velocity is safe",          ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x01F1,0x1007)));
 		assertTrue("Checking Pitch is safe",                   ClinicalTrialsAttributes.isSafePrivateAttribute("ELSCINT1",  new AttributeTag(0x01F1,0x1026)));
@@ -50,8 +52,8 @@ public class TestSafePrivatePhilipsDoseRelated extends TestCase {
 		{ Attribute a = new LongStringAttribute(new AttributeTag(0x01E1,0x0010)); a.addValue("ELSCINT1");   list.put(a); }
 		{ Attribute a = new LongStringAttribute(new AttributeTag(0x01F1,0x0010)); a.addValue("ELSCINT1");   list.put(a); }
 		assertTrue("Checking DLP is safe",					   ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x00E1,0x1021),list));
+		assertTrue("Checking Acquisition Duration is safe",	   ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x00E1,0x1050),list));
 		assertTrue("Checking Phantom Type is safe",			   ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x01E1,0x1026),list));
-		assertTrue("Checking Acquisition Duration is safe",	   ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x01E1,0x1050),list));
 		assertTrue("Checking Acquisition Type is safe",	       ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x01F1,0x1001),list));
 		assertTrue("Checking Table Velocity is safe",	       ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x01F1,0x1007),list));
 		assertTrue("Checking Pitch is safe",				   ClinicalTrialsAttributes.isSafePrivateAttribute(new AttributeTag(0x01F1,0x1026),list));
@@ -66,13 +68,13 @@ public class TestSafePrivatePhilipsDoseRelated extends TestCase {
 //System.err.print("TestSafePrivatePhilipsDoseRelated.TestSafePrivatePhilipsDoseRelated():list\n"+list);
 		list.removeUnsafePrivateAttributes();
 //System.err.print("TestSafePrivatePhilipsDoseRelated.TestSafePrivatePhilipsDoseRelated():list after removeUnsafePrivateAttributes()\n"+list);
-		AttributeList eds0l = ((SequenceAttribute)(list.get(TagFromName.ExposureDoseSequence))).getItem(1).getAttributeList();
+		AttributeList eds0l = ((SequenceAttribute)(list.get(dictionary.getTagFromName("ExposureDoseSequence")))).getItem(1).getAttributeList();
 //System.err.print("TestSafePrivatePhilipsDoseRelated.TestSafePrivatePhilipsDoseRelated():\n"+eds0l);
 		assertTrue("Checking Creator is not removed",				  eds0l.get(new AttributeTag(0x00E1,0x0010)) != null);
 		assertTrue("Checking DLP is not removed",					  eds0l.get(new AttributeTag(0x00E1,0x1021)) != null);
+		//assertTrue("Checking Acquisition Duration is not removed",  eds0l.get(new AttributeTag(0x00E1,0x1050)) != null);
 		//assertTrue("Checking Creator is not removed",				  eds0l.get(new AttributeTag(0x01E1,0x0010)) != null);
 		//assertTrue("Checking Phantom Type is not removed",		  eds0l.get(new AttributeTag(0x01E1,0x1026)) != null);
-		//assertTrue("Checking Acquisition Duration is not removed",  eds0l.get(new AttributeTag(0x01E1,0x1050)) != null);
 		//assertTrue("Checking Creator is not removed",				  eds0l.get(new AttributeTag(0x01F1,0x0010)) != null);
 		//assertTrue("Checking Acquisition Type is not removed",      eds0l.get(new AttributeTag(0x01F1,0x1001)) != null);
 		//assertTrue("Checking Table Velocity is not removed",        eds0l.get(new AttributeTag(0x01F1,0x1007)) != null);

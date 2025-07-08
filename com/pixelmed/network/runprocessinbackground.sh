@@ -16,6 +16,7 @@ shift
 
 rm -f "${processidfile}"
 
+#echo $*
 $* >"${stdoutfile}" 2>"${stderrfile}" &
 
 # head -1 is because sometimes a spurious second process is listed

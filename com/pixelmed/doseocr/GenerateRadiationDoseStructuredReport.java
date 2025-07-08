@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.doseocr;
 
@@ -10,9 +10,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class GenerateRadiationDoseStructuredReport {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/GenerateRadiationDoseStructuredReport.java,v 1.17 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/GenerateRadiationDoseStructuredReport.java,v 1.29 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(GenerateRadiationDoseStructuredReport.class);
 
 	/**
 	 * <p>Extract dose information from a screen or report, correlate it with any acquired CT slice images as required, and generate a radiation dose SR.</p>
@@ -35,9 +39,9 @@ public class GenerateRadiationDoseStructuredReport {
 		
 		if (screenFilenames != null && !screenFilenames.isEmpty()) {
 			try {
-				OCR ocr = new OCR(screenFilenames,0/*debugLevel*/);
+				OCR ocr = new OCR(screenFilenames);
 //System.err.print(ocr);
-				ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,0/*debugLevel*/,eventDataFromImages,true);
+				ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,eventDataFromImages,true);
 				if (ctDose == null) {
 					for (String screenFilename : screenFilenames) {
 //System.err.println("GenerateRadiationDoseStructuredReport.generateDoseReportInformationFromFiles(): Screen "+screenFilename);
@@ -47,19 +51,19 @@ public class GenerateRadiationDoseStructuredReport {
 //System.err.print(list);
 							if (ExposureDoseSequence.isPhilipsDoseScreenInstance(list)) {
 //System.err.println("GenerateRadiationDoseStructuredReport.generateDoseReportInformationFromFiles(): isPhilipsDoseScreenInstance");
-								ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,0/*debugLevel*/,eventDataFromImages,true);
+								ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,eventDataFromImages,true);
 								break;	// have it so no need to process any further ...
 							}
 						}
 						catch (Exception e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
 				// CompositeInstanceContext should already have been set ... do NOT overwrite it 
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return ctDose;
@@ -91,12 +95,19 @@ public class GenerateRadiationDoseStructuredReport {
 				{ Attribute a = new CodeStringAttribute(TagFromName.VerificationFlag); a.addValue("UNVERIFIED"); cic.put(a); }
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			{
 				Attribute a = list.get(TagFromName.ReferencedPerformedProcedureStepSequence);			// will have been removed from cic by removeSeries(), so put it back if present
 				if (a == null) {
 					a = new SequenceAttribute(TagFromName.ReferencedPerformedProcedureStepSequence);
+				}
+				cic.put(a);
+			}
+			{
+				Attribute a = list.get(TagFromName.TimezoneOffsetFromUTC);								// will have been removed from cic by removeInstance(), so put it back if present
+				if (a == null) {
+					a = new SequenceAttribute(TagFromName.TimezoneOffsetFromUTC);
 				}
 				cic.put(a);
 			}
@@ -175,7 +186,7 @@ public class GenerateRadiationDoseStructuredReport {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

@@ -1,6 +1,8 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.dicom.*;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -14,8 +16,6 @@ import javax.swing.event.*;
 import javax.swing.tree.*;
 import javax.swing.border.*;
 
-import com.pixelmed.dicom.*;
-
 /**
  * <p>Implements a component that can display an array of tiles, each of which
  * is a 2D graph of sample values.</p>
@@ -23,9 +23,7 @@ import com.pixelmed.dicom.*;
  * @author	dclunie
  */
 public class PlotGraph extends JComponent {
-
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/PlotGraph.java,v 1.21 2007/12/19 22:44:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/PlotGraph.java,v 1.32 2025/01/29 10:58:07 dclunie Exp $";
 	
 	/***/
 	protected class FloatArrayStatistics {
@@ -298,7 +296,7 @@ public class PlotGraph extends JComponent {
 			app.takeSnapShot(app.getBounds());
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

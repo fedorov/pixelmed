@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,7 +12,7 @@ import java.util.TreeMap;
  */
 public class ApplicationEntityMap extends TreeMap {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntityMap.java,v 1.11 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntityMap.java,v 1.21 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * <p>Add an entry for the specified AE.</p>

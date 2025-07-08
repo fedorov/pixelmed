@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -10,7 +10,13 @@ public class TestAttributeList_AllTests extends TestCase {
 	
 	public static Test suite() {
 		TestSuite suite = new TestSuite("All JUnit Tests");
+		suite.addTest(TestUnknownSequenceValueRepresentation.suite());
 		suite.addTest(TestPrivateCreatorValueRepresentation.suite());
+		suite.addTest(TestAttributeListReadTerminationStrategy.suite());
+		suite.addTest(TestDecompressedImagePixelModuleAndLossyImageCompressionHistory.suite());
+		suite.addTest(TestAttributeListReadUnspecifiedShortAttribute.suite());
+		suite.addTest(TestAttributeListWriteAndReadTextAttribute.suite());
+		suite.addTest(TestAttributeListWriteAndReadMetaInformation.suite());
 		return suite;
 	}
 	

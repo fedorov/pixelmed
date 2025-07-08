@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -8,7 +8,7 @@ package com.pixelmed.dicom;
  * @author	dclunie
  */
 public class ColorPaletteHotMetalBlue extends ColorPalette {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ColorPaletteHotMetalBlue.java,v 1.3 2012/07/02 22:30:01 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ColorPaletteHotMetalBlue.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 	
 	protected static String sopInstanceUIDStatic = "1.2.840.10008.1.5.3";
 	protected static String contentLabelStatic = "HOT_METAL_BLUE";
@@ -823,7 +823,7 @@ public class ColorPaletteHotMetalBlue extends ColorPalette {
 		}
 		catch (Exception e) {
 			System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,11 @@ import java.io.*;
  */
 public class ShortStringAttribute extends StringAttributeAffectedBySpecificCharacterSet {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ShortStringAttribute.java,v 1.11 2003/09/22 21:21:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ShortStringAttribute.java,v 1.23 2025/01/29 10:58:07 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -47,8 +51,8 @@ public class ShortStringAttribute extends StringAttributeAffectedBySpecificChara
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public ShortStringAttribute(AttributeTag t,long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl,i,specificCharacterSet);
@@ -61,8 +65,8 @@ public class ShortStringAttribute extends StringAttributeAffectedBySpecificChara
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public ShortStringAttribute(AttributeTag t,Long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl.longValue(),i,specificCharacterSet);

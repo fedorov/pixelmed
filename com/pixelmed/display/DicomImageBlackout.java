@@ -1,6 +1,30 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.dicom.Attribute;
+import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.CodedSequenceItem;
+import com.pixelmed.dicom.CodeStringAttribute;
+import com.pixelmed.dicom.CompressedFrameDecoder;
+import com.pixelmed.dicom.DicomException;
+import com.pixelmed.dicom.DicomInputStream;
+import com.pixelmed.dicom.FileMetaInformation;
+import com.pixelmed.dicom.LongStringAttribute;
+import com.pixelmed.dicom.SequenceAttribute;
+import com.pixelmed.dicom.SOPClass;
+import com.pixelmed.dicom.TagFromName;
+import com.pixelmed.dicom.TransferSyntax;
+
+import com.pixelmed.display.event.FrameSelectionChangeEvent;
+import com.pixelmed.display.event.GraphicDisplayChangeEvent;
+
+import com.pixelmed.event.ApplicationEventDispatcher;
+import com.pixelmed.event.EventContext;
+import com.pixelmed.event.SelfRegisteringListener;
+
+import com.pixelmed.utils.CapabilitiesAvailable;
+import com.pixelmed.utils.FileUtilities;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -25,6 +49,7 @@ import java.io.IOException;
 
 import java.lang.reflect.InvocationTargetException;
 
+import java.util.ResourceBundle;
 import java.util.Vector;
 
 //import javax.swing.BorderFactory;
@@ -45,26 +70,8 @@ import javax.swing.SpringLayout;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import com.pixelmed.dicom.Attribute;
-import com.pixelmed.dicom.AttributeList;
-import com.pixelmed.dicom.CodeStringAttribute;
-import com.pixelmed.dicom.DicomException;
-import com.pixelmed.dicom.DicomInputStream;
-import com.pixelmed.dicom.FileMetaInformation;
-import com.pixelmed.dicom.LongStringAttribute;
-import com.pixelmed.dicom.SOPClass;
-import com.pixelmed.dicom.TagFromName;
-import com.pixelmed.dicom.TransferSyntax;
-
-import com.pixelmed.display.event.FrameSelectionChangeEvent;
-import com.pixelmed.display.event.GraphicDisplayChangeEvent;
-
-import com.pixelmed.event.ApplicationEventDispatcher;
-import com.pixelmed.event.EventContext;
-import com.pixelmed.event.SelfRegisteringListener;
-
-
-import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class displays images and allows the user to black out burned-in annotation, and save the result.</p>
@@ -74,13 +81,15 @@ import com.pixelmed.utils.FileUtilities;
  * @author	dclunie
  */
 public class DicomImageBlackout extends JFrame  {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageBlackout.java,v 1.68 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageBlackout.java,v 1.40 2013/02/21 00:21:20 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomImageBlackout.class);
+
+	protected static String resourceBundleName  = "com.pixelmed.display.DicomImageBlackout";
+
+	protected ResourceBundle resourceBundle;
 	
 	protected String ourAETitle = "OURAETITLE";		// sub-classes might set this to something meaningful if they are active on the network, e.g., DicomCleaner
-
-	//private static final String helpText = "Buttons: left windows; middle scrolls frames; right drag draws box; right click selects box; delete key discards selection";
-	private static final String helpText = "Buttons: left windows; right drag draws box; right click selects box; delete key discards selection";
 	
 	private static final Dimension maximumMultiPanelDimension = new Dimension(800,600);
 	//private static final Dimension maximumMultiPanelDimension = Toolkit.getDefaultToolkit().getScreenSize();
@@ -97,12 +106,16 @@ public class DicomImageBlackout extends JFrame  {
 	protected AttributeList list;
 	protected SourceImage sImg;
 	protected boolean changesWereMade;
+	protected boolean usedjpegblockredaction;
+	protected boolean deferredDecompression;
+	
+	protected File redactedJPEGFile;
 	
 	protected int previousRows;
 	protected int previousColumns;
 	protected Vector previousPersistentDrawingShapes;
 
-	protected void recordStateOfDrawingShapesForNextFile() {
+	protected void recordStateOfDrawingShapesForFileChange() {
 		previousRows = sImg.getHeight();
 		previousColumns =  sImg.getWidth();
 		previousPersistentDrawingShapes = imagePanel.getPersistentDrawingShapes();
@@ -178,7 +191,7 @@ public class DicomImageBlackout extends JFrame  {
 				cineSlider=null;	// else single frame so no slider
 			}
 		}
-		if (cineSlider != null) {
+		if (cineSlider != null && cineSlider.getValue() != value) {
 			cineSlider.setValue(value);
 		}
 	}
@@ -266,7 +279,7 @@ public class DicomImageBlackout extends JFrame  {
 			loadDicomFileOrDirectory(currentFile);
 		}
 		catch (Exception e) {
-			//e.printStackTrace(System.err);
+			slf4jlogger.error("Read failed",e);
 			if (statusNotificationHandler != null) {
 				statusNotificationHandler.notify(StatusNotificationHandler.READ_FAILED,"Read failed",e);
 			}
@@ -290,10 +303,13 @@ public class DicomImageBlackout extends JFrame  {
 			SafeCursorChanger cursorChanger = new SafeCursorChanger(this);
 			cursorChanger.setWaitCursor();
 			try {
-System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+currentFile);
+				slf4jlogger.info("loadDicomFileOrDirectory(): Open {}",currentFile);
 				currentFileName = currentFile.getAbsolutePath();		// set to what we actually used, used for later save
+				deferredDecompression = CompressedFrameDecoder.canDecompress(currentFile);
+				slf4jlogger.info("loadDicomFileOrDirectory(): deferredDecompression {}",deferredDecompression);
 				DicomInputStream i = new DicomInputStream(currentFile);
 				list = new AttributeList();
+				list.setDecompressPixelData(!deferredDecompression);		// we don't want to decompress it during read if we can decompress it on the fly during display (000784)
 				list.read(i);
 				i.close();
 				String useSOPClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
@@ -322,7 +338,7 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 					throw new DicomException("unsupported SOP Class "+useSOPClassUID);
 				}
 			} catch (Exception e) {
-				//e.printStackTrace(System.err);
+				slf4jlogger.error("Read failed",e);
 				if (statusNotificationHandler != null) {
 					statusNotificationHandler.notify(StatusNotificationHandler.READ_FAILED,"Read failed",e);
 				}
@@ -346,21 +362,49 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 //System.err.println("DicomImageBlackout.ApplyActionListener.actionPerformed(): burnInOverlays = "+application.burnInOverlays);
 //System.err.println("DicomImageBlackout.ApplyActionListener.actionPerformed(): useZeroBlackoutValue = "+application.useZeroBlackoutValue);
 //System.err.println("DicomImageBlackout.ApplyActionListener.actionPerformed(): usePixelPaddingBlackoutValue = "+application.usePixelPaddingBlackoutValue);
-			recordStateOfDrawingShapesForNextFile();
+			long startTime = System.currentTimeMillis();
+			recordStateOfDrawingShapesForFileChange();
 			cursorChanger.setWaitCursor();
 			if (application.imagePanel != null && application.sImg != null && application.list != null) {
 				if (application.imagePanel != null) {
 					Vector shapes = application.imagePanel.getPersistentDrawingShapes();
-					if (shapes != null || application.burnInOverlays) {
+					if ((shapes != null && shapes.size() > 0) || application.burnInOverlays) {
 						changesWereMade = true;
+						String transferSyntaxUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID);
 						try {
-							ImageEditUtilities.blackout(application.sImg,application.list,shapes,application.burnInOverlays,application.usePixelPaddingBlackoutValue,application.useZeroBlackoutValue,0);
-							application.sImg = new SourceImage(application.list);	// remake SourceImage, in case blackout() change the AttributeList (e.g., removed overlays)
+							if (transferSyntaxUID.equals(TransferSyntax.JPEGBaseline) && !application.burnInOverlays && CapabilitiesAvailable.haveJPEGBaselineSelectiveBlockRedaction()) {
+								slf4jlogger.info("ApplyActionListener.actionPerformed(): Blackout JPEG blocks");
+								usedjpegblockredaction = true;
+								if (redactedJPEGFile != null) {
+									redactedJPEGFile.delete();
+								}
+								redactedJPEGFile = File.createTempFile("DicomImageBlackout",".dcm");
+								ImageEditUtilities.blackoutJPEGBlocks(new File(application.currentFileName),redactedJPEGFile,shapes);
+								// Need to re-read the file because we need to decompress the redacted JPEG to use to display it again
+								DicomInputStream i = new DicomInputStream(redactedJPEGFile);
+								list = new AttributeList();
+								list.setDecompressPixelData(!CompressedFrameDecoder.canDecompress(redactedJPEGFile));		// we don't want to decompress it during read if we can decompress it on the fly during display (000784)
+								list.read(i);
+								i.close();
+								// do NOT delete redactedJPEGFile, since will reuse it when "saving", and also file may need to hang around for display of cached pixel data
+								slf4jlogger.info("ApplyActionListener.actionPerformed(): Create new source image after blackout of JPEG blocks");
+								application.sImg = new SourceImage(application.list);	// remake SourceImage, in case blackout() changed the AttributeList (e.g., removed overlays)
+							}
+							else {
+								slf4jlogger.info("ApplyActionListener.actionPerformed(): Blackout decompressed image");
+								usedjpegblockredaction = false;
+								// may not have been decompressed during AttributeList reading when CompressedFrameDecoder.canDecompress(currentFile) is true,
+								// but ImageEditUtilities.blackout() can decompress on the fly because it calls SourceImage.getBufferedImage(frame);
+								// we like that because it uses less (esp. contiguous) memory
+								// but we need to make sure when writing it during Save that PhotometricInterpretation is corrected, etc. vide infra
+								ImageEditUtilities.blackout(application.sImg,application.list,shapes,application.burnInOverlays,application.usePixelPaddingBlackoutValue,application.useZeroBlackoutValue,0);
+								// do NOT need to recreate SourceImage from list ... already done by blackout()
+							}
 							application.imagePanel.dirty(application.sImg);
 							application.imagePanel.repaint();
 						}
-						catch (DicomException e) {
-							//e.printStackTrace(System.err);
+						catch (Exception e) {
+							slf4jlogger.error("Blackout failed",e);
 							if (application.statusNotificationHandler != null) {
 								application.statusNotificationHandler.notify(StatusNotificationHandler.BLACKOUT_FAILED,"Blackout failed",e);
 							}
@@ -375,6 +419,7 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 			else {
 //System.err.println("DicomImageBlackout.ApplyActionListener.actionPerformed(): no panel or image or list to do");
 			}
+			slf4jlogger.info("ApplyActionListener.actionPerformed(): total time = {}",(System.currentTimeMillis() - startTime));
 			cursorChanger.restoreCursor();
 		}
 	}
@@ -390,7 +435,8 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		
 		public void actionPerformed(ActionEvent event) {
 //System.err.println("DicomImageBlackout.SaveActionListener.actionPerformed()");
-			recordStateOfDrawingShapesForNextFile();
+			long startTime = System.currentTimeMillis();
+			recordStateOfDrawingShapesForFileChange();
 			cursorChanger.setWaitCursor();
 			boolean success = true;
 			try {
@@ -413,8 +459,23 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 			File newFile = new File(currentFileName+".new");
 //System.err.println("DicomImageBlackout.SaveActionListener.actionPerformed(): newFile = "+newFile);
 			if (success) {
+				String transferSyntaxUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID);
 				try {
-					list.correctDecompressedImagePixelModule();
+					String outputTransferSyntaxUID = null;
+					if (usedjpegblockredaction && redactedJPEGFile != null) {
+						// do not repeat the redaction, reuse redactedJPEGFile, without decompressing the pixels, so that we can update the technique stuff in the list
+						DicomInputStream i = new DicomInputStream(redactedJPEGFile);
+						list = new AttributeList();
+						list.setDecompressPixelData(false);		// do not need to display it, so no need to decompress
+						list.read(i);
+						i.close();
+						outputTransferSyntaxUID = TransferSyntax.JPEGBaseline;
+					}
+					else {
+						outputTransferSyntaxUID = TransferSyntax.ExplicitVRLittleEndian;
+						list.correctDecompressedImagePixelModule(deferredDecompression);					// make sure to correct even if decompression was deferred
+						list.insertLossyImageCompressionHistoryIfDecompressed(deferredDecompression);
+					}
 					if (burnedinflag != BurnedInAnnotationFlagAction.LEAVE_ALONE) {
 						list.remove(TagFromName.BurnedInAnnotation);
 						if (burnedinflag == BurnedInAnnotationFlagAction.ADD_AS_NO_IF_SAVED
@@ -423,19 +484,33 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 						}
 					}
 					if (changesWereMade) {
-						String existingDeidentificationMethod = Attribute.getSingleStringValueOrNull(list,TagFromName.DeidentificationMethod);
-						list.remove(TagFromName.DeidentificationMethod);
-						Attribute a = new LongStringAttribute(TagFromName.DeidentificationMethod);
-						a.addValue(
-							(existingDeidentificationMethod == null ? "" : (existingDeidentificationMethod+"; "))
-							+ "Burned in text blacked out" + (application.burnInOverlays ? "; overlays burned in" : ""));
-						list.put(a);
+						{
+							Attribute aDeidentificationMethod = list.get(TagFromName.DeidentificationMethod);
+							if (aDeidentificationMethod == null) {
+								aDeidentificationMethod = new LongStringAttribute(TagFromName.DeidentificationMethod);
+								list.put(aDeidentificationMethod);
+							}
+							if (application.burnInOverlays) {
+								aDeidentificationMethod.addValue("Overlays burned in then blacked out");
+							}
+							aDeidentificationMethod.addValue("Burned in text blacked out");
+						}
+						{
+							SequenceAttribute aDeidentificationMethodCodeSequence = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
+							if (aDeidentificationMethodCodeSequence == null) {
+								aDeidentificationMethodCodeSequence = new SequenceAttribute(TagFromName.DeidentificationMethodCodeSequence);
+								list.put(aDeidentificationMethodCodeSequence);
+							}
+							aDeidentificationMethodCodeSequence.addItem(new CodedSequenceItem("113101","DCM","Clean Pixel Data Option").getAttributeList());
+						}
 					}
 					list.removeGroupLengthAttributes();
 					list.removeMetaInformationHeaderAttributes();
 					list.remove(TagFromName.DataSetTrailingPadding);
-					FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,ourAETitle);
-					list.write(newFile,TransferSyntax.ExplicitVRLittleEndian,true,true);
+					
+					FileMetaInformation.addFileMetaInformation(list,outputTransferSyntaxUID,ourAETitle);
+					list.write(newFile,outputTransferSyntaxUID,true/*useMeta*/,true/*useBufferedStream*/);
+					
 					list = null;
 					try {
 						currentFile.delete();
@@ -449,25 +524,34 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 						}
 						success=false;
 					}
+					
+					if (redactedJPEGFile != null) {
+						redactedJPEGFile.delete();
+						redactedJPEGFile = null;
+					}
+					usedjpegblockredaction = false;
+					
 					changesWereMade = false;
 					if (application.statusNotificationHandler != null) {
 						application.statusNotificationHandler.notify(StatusNotificationHandler.SAVE_SUCCEEDED,"Save of "+currentFileName+" succeeded",null);
 					}
 				}
 				catch (DicomException e) {
-					//e.printStackTrace(System.err);
+					slf4jlogger.error("Save failed",e);
 					if (application.statusNotificationHandler != null) {
 						application.statusNotificationHandler.notify(StatusNotificationHandler.SAVE_FAILED,"Save failed",e);
 					}
 				}
 				catch (IOException e) {
-					//e.printStackTrace(System.err);
+					slf4jlogger.error("Save failed",e);
 					if (application.statusNotificationHandler != null) {
 						application.statusNotificationHandler.notify(StatusNotificationHandler.SAVE_FAILED,"Save failed",e);
 					}
 				}
+				slf4jlogger.info("SaveActionListener.actionPerformed(): time to save = {}",(System.currentTimeMillis() - startTime));
 			}
 			loadDicomFileOrDirectory(currentFile);
+			slf4jlogger.info("SaveActionListener.actionPerformed(): total time including reload for display = {}",(System.currentTimeMillis() - startTime));
 			cursorChanger.restoreCursor();
 		}
 	}
@@ -481,7 +565,7 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		
 		public void actionPerformed(ActionEvent event) {
 //System.err.println("DicomImageBlackout.NextActionListener.actionPerformed()");
-			recordStateOfDrawingShapesForNextFile();
+			recordStateOfDrawingShapesForFileChange();
 			if (changesWereMade) {
 				if (application.statusNotificationHandler != null) {
 					application.statusNotificationHandler.notify(StatusNotificationHandler.UNSAVED_CHANGES,
@@ -502,13 +586,45 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		}
 	}
 	
+	protected class PreviousActionListener implements ActionListener {
+		DicomImageBlackout application;
+
+		public PreviousActionListener(DicomImageBlackout application) {
+			this.application=application;
+		}
+		
+		public void actionPerformed(ActionEvent event) {
+//System.err.println("DicomImageBlackout.PreviousActionListener.actionPerformed()");
+			recordStateOfDrawingShapesForFileChange();
+			if (changesWereMade) {
+				if (application.statusNotificationHandler != null) {
+					application.statusNotificationHandler.notify(StatusNotificationHandler.UNSAVED_CHANGES,
+						"Changes were applied to "+dicomFileNames[currentFileNumber]+" but were discarded and not saved",null);
+				}
+			}
+			--currentFileNumber;
+			if (dicomFileNames != null && currentFileNumber >= 0) {
+				updateDisplayedFileNumber(currentFileNumber,dicomFileNames.length);
+				loadDicomFileOrDirectory(dicomFileNames[currentFileNumber]);
+			}
+			else {
+				if (application.statusNotificationHandler != null) {
+					application.statusNotificationHandler.notify(StatusNotificationHandler.COMPLETED,"Normal completion",null);
+				}
+				application.dispose();
+			}
+		}
+	}
+	
 	protected ApplyActionListener applyActionListener;
 	protected SaveActionListener saveActionListener;
 	protected NextActionListener nextActionListener;
+	protected PreviousActionListener previousActionListener;
 
 	protected JButton blackoutApplyButton;
 	protected JButton blackoutSaveButton;
 	protected JButton blackoutNextButton;
+	protected JButton blackoutPreviousButton;
 
 	protected class ApplySaveAllActionListener implements ActionListener {
 		DicomImageBlackout application;
@@ -809,54 +925,60 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		useZeroBlackoutValue = false;
 		usePixelPaddingBlackoutValue = true;
 		
-		JCheckBox keepOverlaysCheckBox = new JCheckBox("Overlays",burnInOverlays);
-		keepOverlaysCheckBox.setToolTipText("Toggle whether or not to display overlays, and if displayed burn them into the image and remove them from the header");
+		JCheckBox keepOverlaysCheckBox = new JCheckBox(resourceBundle.getString("keepOverlaysCheckBoxLabelText"),burnInOverlays);
+		keepOverlaysCheckBox.setToolTipText(resourceBundle.getString("keepOverlaysCheckBoxToolTipText"));
 		keepOverlaysCheckBox.setMnemonic(KeyEvent.VK_O);
 		blackoutButtonsPanel.add(keepOverlaysCheckBox);
 		keepOverlaysCheckBox.addChangeListener(new OverlaysChangeListener(this,ourEventContext));
 		
 		// application scope not local, since change listener needs access to make mutually exclusive with useZeroBlackoutValueCheckBox
-		usePixelPaddingBlackoutValueCheckBox = new JCheckBox("Use Padding",usePixelPaddingBlackoutValue);
-		usePixelPaddingBlackoutValueCheckBox.setToolTipText("Toggle whether or not to use the pixel padding value for blackout pixels, rather than the default minimum possible pixel value based on signedness and bit depth");
+		usePixelPaddingBlackoutValueCheckBox = new JCheckBox(resourceBundle.getString("usePixelPaddingBlackoutValueCheckBoxLabelText"),usePixelPaddingBlackoutValue);
+		usePixelPaddingBlackoutValueCheckBox.setToolTipText(resourceBundle.getString("usePixelPaddingBlackoutValueCheckBoxToolTipText"));
 		usePixelPaddingBlackoutValueCheckBox.setMnemonic(KeyEvent.VK_P);
 		blackoutButtonsPanel.add(usePixelPaddingBlackoutValueCheckBox);
 		usePixelPaddingBlackoutValueCheckBox.addChangeListener(new PixelPaddingBlackoutValueChangeListener(this,ourEventContext));
 	
 		// application scope not local, since change listener needs access to make mutually exclusive with usePixelPaddingBlackoutValueCheckBox
-		useZeroBlackoutValueCheckBox = new JCheckBox("Use Zero",useZeroBlackoutValue);
-		useZeroBlackoutValueCheckBox.setToolTipText("Toggle whether or not to use a zero value for blackout pixels, rather than the pixel padding value or default minimum possible pixel value based on signedness and bit depth");
+		useZeroBlackoutValueCheckBox = new JCheckBox(resourceBundle.getString("useZeroBlackoutValueCheckBoxLabelText"),useZeroBlackoutValue);
+		useZeroBlackoutValueCheckBox.setToolTipText(resourceBundle.getString("useZeroBlackoutValueCheckBoxToolTipText"));
 		useZeroBlackoutValueCheckBox.setMnemonic(KeyEvent.VK_Z);
 		blackoutButtonsPanel.add(useZeroBlackoutValueCheckBox);
 		useZeroBlackoutValueCheckBox.addChangeListener(new ZeroBlackoutValueChangeListener(this,ourEventContext));
 		
-		blackoutApplyButton = new JButton("Apply");
-		blackoutApplyButton.setToolTipText("Blackout the regions");
+		blackoutPreviousButton = new JButton(resourceBundle.getString("blackoutPreviousButtonLabelText"));
+		blackoutPreviousButton.setToolTipText(resourceBundle.getString("blackoutPreviousButtonToolTipText"));
+		blackoutButtonsPanel.add(blackoutPreviousButton);
+		previousActionListener = new PreviousActionListener(this);
+		blackoutPreviousButton.addActionListener(previousActionListener);
+		
+		blackoutApplyButton = new JButton(resourceBundle.getString("blackoutApplyButtonLabelText"));
+		blackoutApplyButton.setToolTipText(resourceBundle.getString("blackoutApplyButtonToolTipText"));
 		blackoutButtonsPanel.add(blackoutApplyButton);
 		applyActionListener = new ApplyActionListener(this);
 		blackoutApplyButton.addActionListener(applyActionListener);
 		
-		blackoutSaveButton = new JButton("Save");
-		blackoutSaveButton.setToolTipText("Save the blacked-out image");
+		blackoutSaveButton = new JButton(resourceBundle.getString("blackoutSaveButtonLabelText"));
+		blackoutSaveButton.setToolTipText(resourceBundle.getString("blackoutSaveButtonToolTipText"));
 		blackoutButtonsPanel.add(blackoutSaveButton);
 		saveActionListener = new SaveActionListener(this);
 		blackoutSaveButton.addActionListener(saveActionListener);
 		
-		blackoutNextButton = new JButton("Next");
-		blackoutNextButton.setToolTipText("Move to the next, skipping this image, if not already saved");
+		blackoutNextButton = new JButton(resourceBundle.getString("blackoutNextButtonLabelText"));
+		blackoutNextButton.setToolTipText(resourceBundle.getString("blackoutNextButtonToolTipText"));
 		blackoutButtonsPanel.add(blackoutNextButton);
 		nextActionListener = new NextActionListener(this);
 		blackoutNextButton.addActionListener(nextActionListener);
 		
-		JButton blackoutApplySaveAllButton = new JButton("Apply All & Save");
-		blackoutApplySaveAllButton.setToolTipText("Blackout the regions and save the blacked-out image for this and all remaining selected images");
+		JButton blackoutApplySaveAllButton = new JButton(resourceBundle.getString("blackoutApplySaveAllButtonLabelText"));
+		blackoutApplySaveAllButton.setToolTipText(resourceBundle.getString("blackoutApplySaveAllButtonToolTipText"));
 		blackoutButtonsPanel.add(blackoutApplySaveAllButton);
 		blackoutApplySaveAllButton.addActionListener(new ApplySaveAllActionListener(this));
 		
 		imagesRemainingLabel = new JLabel("0 of 0");
 		blackoutButtonsPanel.add(imagesRemainingLabel);
 
-		JButton blackoutCancelButton = new JButton("Cancel");
-		blackoutCancelButton.setToolTipText("Cancel work on this image, if not already saved, and skip all remaining images");
+		JButton blackoutCancelButton = new JButton(resourceBundle.getString("blackoutCancelButtonLabelText"));
+		blackoutCancelButton.setToolTipText(resourceBundle.getString("blackoutCancelButtonToolTipText"));
 		blackoutButtonsPanel.add(blackoutCancelButton);
 		blackoutCancelButton.addActionListener(new CancelActionListener(this));
 
@@ -870,7 +992,7 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		splitPane.setOneTouchExpandable(false);
 		splitPane.setResizeWeight(splitPaneResizeWeight);
 
-		JLabel helpBar = new JLabel(helpText);
+		JLabel helpBar = new JLabel(resourceBundle.getString("statusBarHelpText"));
 
 		mainPanel = new Box(BoxLayout.Y_AXIS);
 		mainPanel.add(splitPane);
@@ -882,14 +1004,39 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 	 *
 	 * <p>Each file will be processed sequentially, with the edited pixel data overwriting the original file.</p>
 	 *
-	 * @param	title				the string to use in the title bar of the window
 	 * @param	dicomFileNames		the list of file names to process, if null a file chooser dialog will be raised
 	 * @param	snh					an instance of {@link StatusNotificationHandler StatusNotificationHandler}; if null, a default handler will be used that writes to stderr
 	 * @param	burnedinflag		whether or not and under what circumstances to to add/change BurnedInAnnotation attribute; takes one of the values of {@link BurnedInAnnotationFlagAction BurnedInAnnotationFlagAction}
-	 * @exception	DicomException
+	 */
+	public DicomImageBlackout(String dicomFileNames[],StatusNotificationHandler snh,int burnedinflag) {
+		this(null/*title*/,dicomFileNames,snh,burnedinflag);
+	}
+
+	/**
+	 * <p>Opens a window to display the supplied list of DICOM files to allow them to have burned in annotation blacked out.</p>
+	 *
+	 * <p>Each file will be processed sequentially, with the edited pixel data overwriting the original file.</p>
+	 *
+	 * @param	title				the string to use in the title bar of the window or null if use default for locale
+	 * @param	dicomFileNames		the list of file names to process, if null a file chooser dialog will be raised
+	 * @param	snh					an instance of {@link StatusNotificationHandler StatusNotificationHandler}; if null, a default handler will be used that writes to stderr
+	 * @param	burnedinflag		whether or not and under what circumstances to to add/change BurnedInAnnotation attribute; takes one of the values of {@link BurnedInAnnotationFlagAction BurnedInAnnotationFlagAction}
 	 */
 	public DicomImageBlackout(String title,String dicomFileNames[],StatusNotificationHandler snh,int burnedinflag) {
 		super(title);
+
+		resourceBundle = ResourceBundle.getBundle(resourceBundleName);
+		if (title == null) {
+			setTitle(resourceBundle.getString("applicationTitle"));
+		}
+
+		{
+			String osname = System.getProperty("os.name");
+			if (osname != null && osname.toLowerCase().startsWith("windows")) {
+				slf4jlogger.info("disabling memory mapping for SourceImage on Windows platform");
+				SourceImage.setAllowMemoryMapping(false);	// otherwise problems with redacting large
+			}
+		}
 		this.statusNotificationHandler = snh == null ? new DefaultStatusNotificationHandler() : snh;
 		this.burnedinflag = burnedinflag;
 		//No need to setBackground(Color.lightGray) .. we set this via L&F UIManager properties for the application that uses this class
@@ -913,10 +1060,10 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 				dicomFileName=fileChooserThread.getSelectedFileName();
 			}
 			catch (InterruptedException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 			catch (InvocationTargetException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 			if (dicomFileName != null) {
 				String[] fileNames = { dicomFileName };
@@ -966,7 +1113,7 @@ System.err.println("DicomImageBlackout.loadDicomFileOrDirectory(): Open "+curren
 		// use static methods from ApplicationFrame to establish L&F, even though not inheriting from ApplicationFrame
 		ApplicationFrame.setInternationalizedFontsForGUI();
 		ApplicationFrame.setBackgroundForGUI();
-		new DicomImageBlackout("Dicom Image Blackout",arg,null,BurnedInAnnotationFlagAction.ADD_AS_NO_IF_SAVED);
+		new DicomImageBlackout(arg,null,BurnedInAnnotationFlagAction.ADD_AS_NO_IF_SAVED);
 	}
 }
 

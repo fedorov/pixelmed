@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -27,7 +27,7 @@ import com.pixelmed.display.ApplicationFrame;	// for main() test
  */
 public class StructuredReportTreeBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReportTreeBrowser.java,v 1.1 2010/11/28 18:09:24 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReportTreeBrowser.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
 
 	private JTree tree;
 	private StructuredReport treeModel;
@@ -39,7 +39,7 @@ public class StructuredReportTreeBrowser {
 	 *
 	 * @param	list				the list whose attributes to browse
 	 * @param	treeBrowserScrollPane		the scrolling pane in which the tree view of the attributes will be rendered
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReportTreeBrowser(AttributeList list,JScrollPane treeBrowserScrollPane) throws DicomException {
 		treeModel=new StructuredReport(list);
@@ -60,7 +60,7 @@ public class StructuredReportTreeBrowser {
 			list.read(arg[0]);
 		} catch (Exception e) {
 			System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 		
@@ -70,7 +70,7 @@ public class StructuredReportTreeBrowser {
 			StructuredReportTreeBrowser browser = new StructuredReportTreeBrowser(list,scrollPane);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 		af.getContentPane().add(scrollPane);

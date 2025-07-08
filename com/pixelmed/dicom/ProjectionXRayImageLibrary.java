@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -20,10 +20,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class ProjectionXRayImageLibrary extends ImageLibrary {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ProjectionXRayImageLibrary.java,v 1.15 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageLibrary.class);
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ProjectionXRayImageLibrary.java,v 1.3 2013/02/01 13:53:20 dclunie Exp $";
-	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	public static class ProjectionXRayImageLibraryEntry extends ImageLibrary.ImageLibraryEntry {
 	
 		protected CodedSequenceItem anatomicalStructure;
@@ -161,8 +167,8 @@ public class ProjectionXRayImageLibrary extends ImageLibrary {
 				}
 			}
 			
-			String positionerPrimaryAngleInDegrees = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PositionerPrimaryAngle);
-			String positionerSecondaryAngleInDegrees = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PositionerSecondaryAngle);
+			String positionerPrimaryAngleInDegrees = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("PositionerPrimaryAngle"));
+			String positionerSecondaryAngleInDegrees = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("PositionerSecondaryAngle"));
 
 			if (studyInstanceUID.length() > 0
 			 && seriesInstanceUID.length() > 0
@@ -396,13 +402,13 @@ public class ProjectionXRayImageLibrary extends ImageLibrary {
 			library.write(outputPath);
 			
 			// test round trip
-			{
-				ProjectionXRayImageLibrary roundTrip = read(outputPath);
-System.err.println("RoundTrip =\n"+roundTrip);
-			}
+			//{
+			//	ProjectionXRayImageLibrary roundTrip = read(outputPath);
+			//	System.err.println("RoundTrip =\n"+roundTrip);	// no need to use SLF4J since command line utility/test
+			//}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

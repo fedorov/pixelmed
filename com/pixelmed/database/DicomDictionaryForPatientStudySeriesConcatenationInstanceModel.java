@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -6,6 +6,8 @@ import java.util.TreeSet;
 
 import com.pixelmed.dicom.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link com.pixelmed.database.DicomDictionaryForPatientStudySeriesConcatenationInstanceModel DicomDictionaryForPatientStudySeriesConcatenationInstanceModel} class
@@ -109,13 +111,15 @@ import com.pixelmed.dicom.*;
  */
 public class DicomDictionaryForPatientStudySeriesConcatenationInstanceModel extends DicomDictionary {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDictionaryForPatientStudySeriesConcatenationInstanceModel.java,v 1.10 2010/01/31 11:59:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDictionaryForPatientStudySeriesConcatenationInstanceModel.java,v 1.21 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomDictionaryForPatientStudySeriesConcatenationInstanceModel.class);
 
 	// N.B. requires that AttributeTag implement hashCode() method
 
 	/***/
 	protected void createTagList() {
-//System.err.println("DicomDictionaryForPatientStudySeriesConcatenationInstanceModel.createTagList():");
+		slf4jlogger.debug("createTagList():");
 		tagList = new TreeSet();	// sorted, based on AttributeTag's implementation of Comparable
 
 		tagList.add(TagFromName.TransferSyntaxUID);

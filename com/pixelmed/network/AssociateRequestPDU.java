@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -8,7 +8,7 @@ import java.util.LinkedList;
  * @author	dclunie
  */
 class AssociateRequestPDU extends AssociateRequestAcceptPDU {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRequestPDU.java,v 1.8 2008/09/24 18:54:52 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRequestPDU.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	calledAETitle
@@ -21,7 +21,7 @@ class AssociateRequestPDU extends AssociateRequestAcceptPDU {
 	 * @param	userIdentityType			0 == do not send user identity negotiation subitem
 	 * @param	userIdentityPrimaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentitySecondaryField	may be null as appropriate to userIdentityType
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestPDU(String calledAETitle,String callingAETitle, String implementationClassUID, String implementationVersionName,
 			int ourMaximumLengthReceived,
@@ -43,7 +43,7 @@ class AssociateRequestPDU extends AssociateRequestAcceptPDU {
 	 * @param	userIdentityType			0 == do not send user identity negotiation subitem
 	 * @param	userIdentityPrimaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentitySecondaryField	may be null as appropriate to userIdentityType
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestPDU(String calledAETitle,String callingAETitle, String implementationClassUID, String implementationVersionName,
 			int ourMaximumLengthReceived,
@@ -62,7 +62,7 @@ class AssociateRequestPDU extends AssociateRequestAcceptPDU {
 	 * @param	ourMaximumLengthReceived	the maximum PDU length that we will offer to receive
 	 * @param	presentationContexts
 	 * @param	scuSCPRoleSelections
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestPDU(String calledAETitle,String callingAETitle, String implementationClassUID, String implementationVersionName,
 			int ourMaximumLengthReceived,
@@ -73,7 +73,7 @@ class AssociateRequestPDU extends AssociateRequestAcceptPDU {
 
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestPDU(byte[] pdu) throws DicomNetworkException {
 		super(pdu);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 import com.pixelmed.dicom.*;
@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements the SCU role of C-GET SOP Classes.</p>
@@ -54,7 +57,7 @@ try {
     new GetSOPClassSCU("theirhost","104","GETSCP","GETSCU",SOPClass.StudyRootQueryRetrieveInformationModelGet,identifier,new IdentifierHandler(),"/tmp",new OurReceivedObjectHandler(),SOPClass.getSetOfStorageSOPClasses(),true,false,false,1);
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
@@ -65,14 +68,11 @@ catch (Exception e) {
  * @author	dclunie
  */
 public class GetSOPClassSCU extends SOPClass {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/GetSOPClassSCU.java,v 1.33 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/GetSOPClassSCU.java,v 1.13 2013/04/27 01:23:50 dclunie Exp $";
-
-	/***/
-	private int debugLevel;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(GetSOPClassSCU.class);
 	
-private long totalLengthsOfAllFiles = 0;
+	private long totalLengthsOfAllFiles = 0;
 
 	/***/
 	private class CGetResponseOrCStoreRequestHandler extends ReceivedDataHandler {
@@ -112,8 +112,8 @@ private long totalLengthsOfAllFiles = 0;
 		/***/
 		protected StoredFilePathStrategy storedFilePathStrategy;
 		
-		CGetResponseOrCStoreRequestHandler(IdentifierHandler identifierHandler,File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,int debugLevel) {
-			super(debugLevel);
+		CGetResponseOrCStoreRequestHandler(IdentifierHandler identifierHandler,File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler) {
+			super();
 			this.savedImagesFolder=savedImagesFolder;
 			this.storedFilePathStrategy=storedFilePathStrategy;
 			this.identifierHandler=identifierHandler;
@@ -121,92 +121,112 @@ private long totalLengthsOfAllFiles = 0;
 		}
 
 		public void sendPDataIndication(PDataPDU pdata,Association association) throws DicomNetworkException, DicomException, IOException {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): sendPDataIndication()");
-if (debugLevel > 3) super.dumpPDVList(pdata.getPDVList());
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): finished dumping PDV list from PDU");
+			slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): sendPDataIndication()");
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): sendPDataIndication()",super.dumpPDVListToString(pdata.getPDVList()));
+			slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): finished dumping PDV list from PDU");
 			// append to command ...
 			LinkedList pdvList = pdata.getPDVList();
 			ListIterator i = pdvList.listIterator();
 			while (i.hasNext()) {
 				PresentationDataValue pdv = (PresentationDataValue)i.next();
 				presentationContextIDUsed = pdv.getPresentationContextID();
+				slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Presentation Context ID used = "+presentationContextIDUsed);
 				if (pdv.isCommand()) {
 					receivedFile=null;
 					commandReceived=ByteArray.concatenate(commandReceived,pdv.getValue());	// handles null cases
 					if (pdv.isLastFragment()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): last fragment of data seen");
-if (debugLevel > 1) System.err.println(HexDump.dump(commandReceived));
+						slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): last fragment of data seen");
+						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(HexDump.dump(commandReceived));
 						commandList = new AttributeList();
 						commandList.read(new DicomInputStream(new ByteArrayInputStream(commandReceived),TransferSyntax.Default,false));
 						commandReceived=null;
-if (debugLevel > 1) System.err.print(commandList);
+						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(commandList.toString());
 						command = Attribute.getSingleIntegerValueOrDefault(commandList,TagFromName.CommandField,0xffff);
 						if (command == MessageServiceElementCommand.C_STORE_RQ) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ");
+							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ");
 							csrq = new CStoreRequestCommandMessage(commandList);
 						}
 						else if (command == MessageServiceElementCommand.C_GET_RSP) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ");
+							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-GET-RSP");
 							cgrsp = new CGetResponseCommandMessage(commandList);
-							evaluateStatusAndSetSuccess(commandList);
+							if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-GET-RSP =\n{}",commandList.toString());
+							if (pdata.containsLastDataFragment()) {
+								slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): PDV in P-DATA-PDU contains last data fragment");
+								evaluateStatusAndSetSuccess(commandList);
+							}
+							else if (!i.hasNext()) {
+								// (001193)
+								slf4jlogger.warn("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-GET-RSP last PDV in P-DATA-PDU does not have last data fragment flag set but stop anyway unless pending");
+								evaluateStatusAndSetSuccess(commandList);
+							}
+							else {
+								// else don't evaluateStatusAndSetSuccess() until data (e.g., failed SOP instance list) received otherwise will ignore data if not pending
+								slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): PDV in P-DATA-PDU does not contain last data fragment flag set");
+							}
 						}
 						else {
 							throw new DicomNetworkException("Unexpected command 0x"+Integer.toHexString(command)+" "+MessageServiceElementCommand.toString(command));
 						}
 						// 2004/06/08 DAC removed break that was here to resolve [bugs.mrmf] (000113) StorageSCP failing when data followed command in same PDU
-if (debugLevel > 1 && i.hasNext()) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication: Data after command in same PDU");
+						if (slf4jlogger.isTraceEnabled() && i.hasNext()) slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication: Data after command in same PDU");
 					}
 				}
 				else {
 					 if (command == MessageServiceElementCommand.C_STORE_RQ) {
 						// From StorageSOPClassSCP ...
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Storing data fragment");
+						slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Storing data fragment");
 						if (out == null && savedImagesFolder != null) {		// lazy opening
+							String sopInstanceUID = csrq.getAffectedSOPClassUID();
+							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ SOP Instance UID = {}",sopInstanceUID);
+							String sopClassUID = csrq.getAffectedSOPInstanceUID();
+							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ SOP Class UID = {}",sopClassUID);
+							String transferSyntax = association.getTransferSyntaxForPresentationContextID(presentationContextIDUsed);
+							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ Transfer Syntax = {}",transferSyntax);
 							FileMetaInformation fmi = new FileMetaInformation(
-								csrq.getAffectedSOPClassUID(),
-								csrq.getAffectedSOPInstanceUID(),
-								association.getTransferSyntaxForPresentationContextID(presentationContextIDUsed),
+								sopInstanceUID,
+								sopClassUID,
+								transferSyntax,
 								association.getCalledAETitle());	// not calling, since roles reversed
 							receivedFile=storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedImagesFolder,csrq.getAffectedSOPInstanceUID());
 							//temporaryReceivedFile=File.createTempFile("PMP",null);
 							temporaryReceivedFile=new File(savedImagesFolder,FileUtilities.makeTemporaryFileName());
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Receiving and storing "+receivedFile);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Receiving and storing into temporary "+temporaryReceivedFile);
+							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Receiving and storing {}",receivedFile);
+							slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Receiving and storing into temporary {}",temporaryReceivedFile);
 							out = new BufferedOutputStream(new FileOutputStream(temporaryReceivedFile));
 							DicomOutputStream dout = new DicomOutputStream(out,TransferSyntax.ExplicitVRLittleEndian,null);
 							fmi.getAttributeList().write(dout);
 							dout.flush();
 						}
 						byte[] bytes = pdv.getValue();
-totalLengthsOfAllFiles += bytes.length;
+						totalLengthsOfAllFiles += bytes.length;
 						if (out != null) {
 							out.write(bytes);
 						}
 						if (pdv.isLastFragment()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Finished storing data in C_STORE_RQ");
+							slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Finished storing data in C_STORE_RQ");
 							if (out != null) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Closing out put stream to temporary file");
+								slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Closing output stream to temporary file");
 								out.close();
 //long lengthOfFile = temporaryReceivedFile.length();
 //System.err.println("GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): lengthOfFile = "+lengthOfFile);
 //totalLengthsOfAllFiles += lengthOfFile;
 								if (receivedFile.exists()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Deleting pre-existing file for same SOPInstanceUID");
+									slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Deleting pre-existing file for same SOPInstanceUID");
 									receivedFile.delete();		// prior to rename of temporary file, in case might cause renameTo() fail
 								}
 								if (!temporaryReceivedFile.renameTo(receivedFile)) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Could not move temporary file into place ... copying instead");
+									slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Could not move temporary file into place ... copying instead");
 									CopyStream.copy(temporaryReceivedFile,receivedFile);
 									temporaryReceivedFile.delete();
 								}
 								out=null;
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): temporaryReceivedFile exists (should be false) = "+temporaryReceivedFile.exists());
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): receivedFile exists (should be true) = "+receivedFile.exists());
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): temporaryReceivedFile exists (should be false) = {}",temporaryReceivedFile.exists());
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): receivedFile exists (should be true) = {}",receivedFile.exists());
 								if (!receivedFile.exists()) {
 									throw new DicomException("Failed to move or copy received file into place");
 								}
 							}
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Send successful C-STORE-RSP");
+							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Send successful C-STORE-RSP");
 							{
 								CStoreResponseCommandMessage csrsp = new CStoreResponseCommandMessage(
 									csrq.getAffectedSOPClassUID(),
@@ -217,7 +237,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOP
 								byte presentationContextIDForResponse = association.getSuitablePresentationContextID(csrsp.getAffectedSOPClassUID());
 								association.send(presentationContextIDForResponse,csrsp.getBytes(),null);
 							}
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Notify receivedObjectHandler");
+							slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Notify receivedObjectHandler");
 							if (receivedFile != null && receivedFile.exists() && receivedObjectHandler != null) {
 								String receivedFileName=receivedFile.getPath();
 								// Modified from StorageSOPClassSCP.receiveAndProcessOneRequestMessage() ...
@@ -234,11 +254,12 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOP
 						// data fragment is always allowed, so not allowData flag
 						dataReceived=ByteArray.concatenate(dataReceived,pdv.getValue());	// handles null cases
 						if (pdv.isLastFragment()) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.sendPDataIndication(): last fragment of data in C_GET_RSP seen");
+							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): last fragment of data in C_GET_RSP seen");
 							AttributeList list = CompositeResponseHandler.getAttributeListFromCommandOrData(dataReceived,
-								association.getTransferSyntaxForPresentationContextID(pdv.getPresentationContextID()),debugLevel);
+								association.getTransferSyntaxForPresentationContextID(pdv.getPresentationContextID()));
 							makeUseOfDataSet(list);
 							dataReceived=null;
+							evaluateStatusAndSetSuccess(commandList);
 						}
 					}
 					else {
@@ -247,14 +268,14 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOP
 					}
 				}
 			}
+			slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): finished");
 		}
 		
 		/**
 		 * @param	list
 		 */
 		protected void evaluateStatusAndSetSuccess(AttributeList list) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseHandler.evaluateStatusAndSetSuccess:");
-if (debugLevel > 1) System.err.println(list);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseHandler.evaluateStatusAndSetSuccess:\n{}",list.toString());
 			// could check all sorts of things, like:
 			// - AffectedSOPClassUID is what we sent
 			// - CommandField is 0x8020 C-Find-RSP
@@ -264,20 +285,22 @@ if (debugLevel > 1) System.err.println(list);
 			//
 			// for now just treat success or warning as success (and absence as failure)
 			status = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Status,0xffff);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseHandler.evaluateStatusAndSetSuccess: status = 0x"+Integer.toHexString(status));
+			slf4jlogger.info("CGetResponseHandler.evaluateStatusAndSetSuccess: status = 0x{}",Integer.toHexString(status));
+			//if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseHandler.evaluateStatusAndSetSuccess: status = 0x{}",Integer.toHexString(status));
 			// possible statuses at this point are:
-			// A700 Refused - Out of Resources	
-			// A900 Failed - Identifier does not match SOP Class	
+			// A701 Refused - Out of Resources - Unable to calculate number of matches
+			// A702 Refused - Out of Resources - Unable to perform sub-operations
+			// A900 Failed - Identifier does not match SOP Class
 			// Cxxx Failed - Unable to process	
-			// FE00 Cancel - Matching terminated due to Cancel request	
-			// 0000 Success - Matching is complete - No final Identifier is supplied.	
-			// FF00 Pending - Matches are continuing - Current Match is supplied and any Optional Keys were supported in the same manner as Required Keys.
-			// FF01 Pending - Matches are continuing - Warning that one or more Optional Keys were not supported for existence and/or matching for this Identifier.
+			// FE00 Cancel - Sub-operations terminated due to Cancel request
+			// B000 Warning - Sub-operations Complete - One or more Failures or Warnings
+			// 0000 Success - Sub-operations Complete - No Failures or Warnings
+			// FF00 Pending - Sub-operations are continuing
 
 			success = status == 0x0000;	// success
 			
-			if (status != 0xFF00 && status != 0xFF01) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseHandler.evaluateStatusAndSetSuccess: status no longer pending, so stop");
+			if (status != 0xFF00) {
+				slf4jlogger.trace("CGetResponseHandler.evaluateStatusAndSetSuccess: status no longer pending, so stop");
 				setDone(true);
 			}
 		}
@@ -301,8 +324,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOP
 		 * @param	list
 		 */
 		protected void makeUseOfDataSet(AttributeList list) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU.CGetResponseOrCStoreRequestHandler.makeUseOfDataSet:");
-if (debugLevel > 1) System.err.print(list);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.makeUseOfDataSet:{}",list.toString());
 			try {
 				if (identifierHandler != null) {
 					identifierHandler.doSomethingWithIdentifier(list);
@@ -310,47 +332,80 @@ if (debugLevel > 1) System.err.print(list);
 			}
 			catch (DicomException e) {
 				// do not stop ... other identifiers may be OK
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception",e);
 			}
 		}
 	}
 
 	/**
-	 * @param	hostname		their hostname or IP address
-	 * @param	port			their port
-	 * @param	calledAETitle		their AE Title
-	 * @param	callingAETitle		our AE Title
-	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelGet SOPClass.StudyRootQueryRetrieveInformationModelGet}
-	 * @param	identifier		the list of unique keys and move level
-	 * @param	identifierHandler	the handler to use for each returned identifier
-	 * @param	savedImagesFolder	the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * <p>Perform a C-GET.</p>
+	 *
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #GetSOPClassSCU(String,int,String,String,String,AttributeList,IdentifierHandler,File,StoredFilePathStrategy,ReceivedObjectHandler,Set,boolean,boolean,boolean)} instead.
+	 *
+	 * @param	hostname				their hostname or IP address
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @param	affectedSOPClass		the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelGet SOPClass.StudyRootQueryRetrieveInformationModelGet}
+	 * @param	identifier				the list of unique keys and move level
+	 * @param	identifierHandler		the handler to use for each returned identifier
+	 * @param	savedImagesFolder		the folder in which to store received data sets (may be null, to ignore received data for testing)
 	 * @param	storedFilePathStrategy	the strategy to use for naming received files and folders
 	 * @param	receivedObjectHandler	the handler to call after each data set has been received and stored
 	 * @param	setOfStorageSOPClasses	the <code>Set</code> of Storage SOP Class UIDs (as <code>String</code>) that are acceptable
-	 * @param	theirChoice		propose a single presentation context with all transfer syntaxes to allow them to choose
-	 * @param	ourChoice		propose separate presentation contexts for each transfer syntax to allow us to choose
-	 * @param	asEncoded		propose a separate presentation context for the specified transfer syntax in which the data set is known to be encoded
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @param	theirChoice				propose a single presentation context with all transfer syntaxes to allow them to choose
+	 * @param	ourChoice				propose separate presentation contexts for each transfer syntax to allow us to choose
+	 * @param	asEncoded				propose a separate presentation context for the specified transfer syntax in which the data set is known to be encoded
+	 * @param	debugLevel				ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public GetSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
 			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
 			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
 			Set setOfStorageSOPClasses,boolean theirChoice,boolean ourChoice,boolean asEncoded,
 			int debugLevel) throws DicomNetworkException, DicomException, IOException {
-		this.debugLevel=debugLevel;
-
-long startTime=System.currentTimeMillis();
+		this(hostname,port,calledAETitle,callingAETitle,affectedSOPClass,identifier,identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,setOfStorageSOPClasses,theirChoice,ourChoice,asEncoded);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Perform a C-GET.</p>
+	 *
+	 * @param	hostname				their hostname or IP address
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @param	affectedSOPClass		the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelGet SOPClass.StudyRootQueryRetrieveInformationModelGet}
+	 * @param	identifier				the list of unique keys and move level
+	 * @param	identifierHandler		the handler to use for each returned identifier
+	 * @param	savedImagesFolder		the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * @param	storedFilePathStrategy	the strategy to use for naming received files and folders
+	 * @param	receivedObjectHandler	the handler to call after each data set has been received and stored
+	 * @param	setOfStorageSOPClasses	the <code>Set</code> of Storage SOP Class UIDs (as <code>String</code>) that are acceptable
+	 * @param	compressionLevel		0=none,1=propose deflate,2=propose deflate and bzip2,3=propose all known lossless,4-all propose all known lossless and lossy
+	 * @param	theirChoice				propose a single presentation context with all transfer syntaxes to allow them to choose
+	 * @param	ourChoice				propose separate presentation contexts for each transfer syntax to allow us to choose
+	 * @param	asEncoded				propose a separate presentation context for the specified transfer syntax in which the data set is known to be encoded
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public GetSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
+			Set setOfStorageSOPClasses,int compressionLevel,boolean theirChoice,boolean ourChoice,boolean asEncoded
+			) throws DicomNetworkException, DicomException, IOException {
 		
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU(): request identifier");
-if (debugLevel > 1) System.err.print(identifier);
+		long startTime=System.currentTimeMillis();
+		
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("request identifier\n{}",identifier.toString());
 
 		Set setOfSOPClassUIDs = new HashSet();
 		setOfSOPClassUIDs.add(affectedSOPClass);
 		setOfSOPClassUIDs.addAll(setOfStorageSOPClasses);
-		LinkedList presentationContexts = PresentationContextListFactory.createNewPresentationContextList(setOfSOPClassUIDs,0/*compressionLevel*/,theirChoice,ourChoice,asEncoded);
+		LinkedList presentationContexts = PresentationContextListFactory.createNewPresentationContextList(setOfSOPClassUIDs,compressionLevel,theirChoice,ourChoice);
 		LinkedList scuSCPRoleSelections = new LinkedList();
 		{
 			Iterator i = setOfStorageSOPClasses.iterator();
@@ -360,14 +415,14 @@ if (debugLevel > 1) System.err.print(identifier);
 			}
 		}
 
-		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,scuSCPRoleSelections,false,debugLevel);
-if (debugLevel > 1) System.err.println(association);
+		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,scuSCPRoleSelections,false);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(association.toString());
 		// Decide which presentation context we are going to use ...
 		byte usePresentationContextID = association.getSuitablePresentationContextID(affectedSOPClass);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using context ID "+usePresentationContextID);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Using context ID {}",(((int)usePresentationContextID) & 0xff));
 		byte cGetRequestCommandMessage[] = new CGetRequestCommandMessage(affectedSOPClass).getBytes();
 		byte cGetIdentifier[] = new IdentifierMessage(identifier,association.getTransferSyntaxForPresentationContextID(usePresentationContextID)).getBytes();
-		CGetResponseOrCStoreRequestHandler responseHandler = new CGetResponseOrCStoreRequestHandler(identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,debugLevel);
+		CGetResponseOrCStoreRequestHandler responseHandler = new CGetResponseOrCStoreRequestHandler(identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler);
 		association.setReceivedDataHandler(responseHandler);
 		// for some reason association.send(usePresentationContextID,cGetRequestCommandMessage,cGetIdentifier) fails with Oldenburg imagectn
 		// so send the command and the identifier separately ...
@@ -375,10 +430,10 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 		// (see [bugs.mrmf] (000114) Failing to set last fragment on command when sending command and data in same PDU)
 		association.send(usePresentationContextID,cGetRequestCommandMessage,null);
 		association.send(usePresentationContextID,null,cGetIdentifier);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU: waiting for PDUs");
+		slf4jlogger.trace("waiting for PDUs");
 		try {
 			association.waitForPDataPDUsUntilHandlerReportsDone();
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOPClassSCU: got PDU, now releasing association");
+			slf4jlogger.trace("got PDU, now releasing association");
 			// State 6
 			association.release();
 		}
@@ -386,29 +441,65 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": GetSOP
 			// State 1
 			// the other end released and didn't wait for us to do it
 		}
-double totalTime = (System.currentTimeMillis()-startTime)/1000.0;
-System.err.println("Total time "+totalTime+" seconds");
-//double timePerSetOfInstances = totalTime/(repeatCount*assocnCount);
-double timePerSetOfInstances = totalTime;
-System.err.println("Time per set of instances "+timePerSetOfInstances+" seconds");
-double lengthOfFilesInMB = ((double)totalLengthsOfAllFiles)/(1024*1024);
-System.err.println("Length of files "+lengthOfFilesInMB+" MB");
-double transferRate = lengthOfFilesInMB/timePerSetOfInstances;
-System.err.println("Transfer rate "+transferRate+" MB/s");
+		if (slf4jlogger.isDebugEnabled()) {
+			double totalTime = (System.currentTimeMillis()-startTime)/1000.0;
+			slf4jlogger.debug("Total time {} seconds",totalTime);
+			//double timePerSetOfInstances = totalTime/(repeatCount*assocnCount);
+			double timePerSetOfInstances = totalTime;
+			slf4jlogger.debug("Time per set of instances {} seconds",timePerSetOfInstances);
+			double lengthOfFilesInMB = ((double)totalLengthsOfAllFiles)/(1024*1024);
+			slf4jlogger.debug("Length of files {} MB",lengthOfFilesInMB);
+			double transferRate = lengthOfFilesInMB/timePerSetOfInstances;
+			slf4jlogger.debug("Transfer rate {} MB/s",transferRate);
+		}
 		if (!responseHandler.wasSuccessful()) {
 			throw new DicomNetworkException("C-GET reports failure status 0x"+Integer.toString(responseHandler.getStatus()&0xFFFF,16));
 		}
 	}
-
+	
+	/**
+	 * <p>Perform a C-GET.</p>
+	 *
+	 * <p> Uses compressionLevel of 0 for generation of Presentation Contexts (i.e., propose only standard uncompressed Transfer Syntaxes)
+	 *
+	 * @param	hostname				their hostname or IP address
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @param	affectedSOPClass		the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelGet SOPClass.StudyRootQueryRetrieveInformationModelGet}
+	 * @param	identifier				the list of unique keys and move level
+	 * @param	identifierHandler		the handler to use for each returned identifier
+	 * @param	savedImagesFolder		the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * @param	storedFilePathStrategy	the strategy to use for naming received files and folders
+	 * @param	receivedObjectHandler	the handler to call after each data set has been received and stored
+	 * @param	setOfStorageSOPClasses	the <code>Set</code> of Storage SOP Class UIDs (as <code>String</code>) that are acceptable
+	 * @param	theirChoice				propose a single presentation context with all transfer syntaxes to allow them to choose
+	 * @param	ourChoice				propose separate presentation contexts for each transfer syntax to allow us to choose
+	 * @param	asEncoded				propose a separate presentation context for the specified transfer syntax in which the data set is known to be encoded
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public GetSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
+			Set setOfStorageSOPClasses,boolean theirChoice,boolean ourChoice,boolean asEncoded
+			) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,
+			affectedSOPClass,identifier,identifierHandler,
+			savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,
+			setOfStorageSOPClasses,0/*compressionLevel*/,theirChoice,ourChoice,asEncoded);
+	}
+	
 	/***/
 	private class OurReceivedObjectHandler extends ReceivedObjectHandler {
 		/**
 		 * @param	fileName
 		 * @param	transferSyntax		the transfer syntax in which the data set was received and is stored
 		 * @param	callingAETitle		the AE title of the caller who sent the data set
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String fileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
@@ -434,11 +525,10 @@ System.err.println("Transfer rate "+transferRate+" MB/s");
 			new GetSOPClassSCU(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],SOPClass.StudyRootQueryRetrieveInformationModelGet,
 				identifier,new IdentifierHandler(),
 				savedImagesFolder,StoredFilePathStrategy.getDefaultStrategy(),new OurReceivedObjectHandler(),
-				SOPClass.getSetOfStorageSOPClasses(),true,false,false,
-				0/*debugLevel*/);
+				SOPClass.getSetOfStorageSOPClasses(),true,false,false);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

@@ -1,8 +1,6 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.displaywave;
-
-import java.io.IOException; 
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
@@ -14,6 +12,11 @@ import com.pixelmed.dicom.SequenceAttribute;
 import com.pixelmed.dicom.SequenceItem;
 import com.pixelmed.dicom.TagFromName;
 
+import java.io.IOException; 
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class that encapsulates the features and values from a DICOM ECG source,
  * usually for the purpose of displaying it.</p>
@@ -21,9 +24,9 @@ import com.pixelmed.dicom.TagFromName;
  * @author	dclunie
  */
 public class DicomSourceECG extends SourceECG {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/DicomSourceECG.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/DicomSourceECG.java,v 1.5 2008/07/18 19:50:29 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceECG.class);
 	
 	private String[] labelsForChannelsExtractedFromCodes;
 
@@ -100,8 +103,8 @@ public class DicomSourceECG extends SourceECG {
 	 * an input stream (such as from a file or the network).</p>
 	 *
 	 * @param	i		the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public DicomSourceECG(BinaryInputStream i) throws IOException, DicomException {
 		AttributeList list = new AttributeList();
@@ -116,8 +119,8 @@ public class DicomSourceECG extends SourceECG {
 	 * an input stream (such as from a file or the network).</p>
 	 *
 	 * @param	i		the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public DicomSourceECG(DicomInputStream i) throws IOException, DicomException {
 		AttributeList list = new AttributeList();
@@ -132,7 +135,7 @@ public class DicomSourceECG extends SourceECG {
 	 * a list of DICOM attributes.</p>
 	 *
 	 * @param	list		the list of attributes that include the description and values of the ECG data
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DicomSourceECG(AttributeList list) throws DicomException {
 		if (list.get(TagFromName.WaveformSequence) != null) {
@@ -142,7 +145,7 @@ public class DicomSourceECG extends SourceECG {
 
 	/**
 	 * @param	list
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void constructSourceECG(AttributeList list) throws DicomException {
 //System.err.println("DicomSourceECG.constructSourceECG(): start");
@@ -152,7 +155,7 @@ public class DicomSourceECG extends SourceECG {
 			int numberOfMultiplexGroups = waveformSequence.getNumberOfItems();
 			if (numberOfMultiplexGroups >= 1) {
 				if (numberOfMultiplexGroups > 1) {
-System.err.println("DicomSourceECG.constructSourceECG(): using only the first Multiplex Groups - ignoring the rest (there are "+numberOfMultiplexGroups+")");
+					slf4jlogger.warn("constructSourceECG(): using only the first Multiplex Groups - ignoring the rest (there are {})",numberOfMultiplexGroups);
 				}
 				SequenceItem multiplexGroupItem = waveformSequence.getItem(0);
 				if (multiplexGroupItem != null) {

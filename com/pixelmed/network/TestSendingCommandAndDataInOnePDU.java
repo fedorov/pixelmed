@@ -1,14 +1,14 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 import com.pixelmed.utils.ByteArray;
 import com.pixelmed.dicom.*;
 
-//import java.util.ListIterator;
-//import java.util.LinkedList;
 import java.io.IOException;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements the SCU role of SOP Classes of the Storage Service Class.</p>
@@ -25,16 +25,16 @@ try {
     new TestSendingCommandAndDataInOnePDU("theirhost","104","STORESCP","STORESCU","/tmp/testfile.dcm","1.2.840.10008.5.1.4.1.1.7","1.3.6.1.4.1.5962.1.1.0.0.0.1064923879.2077.3232235877",0,0);
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
  * @author	dclunie
  */
 public class TestSendingCommandAndDataInOnePDU extends StorageSOPClassSCU {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/TestSendingCommandAndDataInOnePDU.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/TestSendingCommandAndDataInOnePDU.java,v 1.4 2012/09/03 23:47:49 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(TestSendingCommandAndDataInOnePDU.class);
 
 	/**
 	 * @param	association
@@ -44,16 +44,16 @@ public class TestSendingCommandAndDataInOnePDU extends StorageSOPClassSCU {
 	 * @param	din
 	 * @param	presentationContextID
 	 * @param	outputTransferSyntaxUID
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
-	 * @exception	AReleaseException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	AReleaseException
 	 */
 	protected boolean sendOneSOPInstance(Association association,
 			String affectedSOPClass,String affectedSOPInstance,
 			String inputTransferSyntaxUID,DicomInputStream din,
 			byte presentationContextID,String outputTransferSyntaxUID) throws AReleaseException, DicomNetworkException, DicomException, IOException {
-		CStoreResponseHandler receivedDataHandler = new CStoreResponseHandler(debugLevel);
+		CStoreResponseHandler receivedDataHandler = new CStoreResponseHandler();
 		association.setReceivedDataHandler(receivedDataHandler);
 		if (inputTransferSyntaxUID.equals(outputTransferSyntaxUID)) {
 			// din will already be positioned after meta-header and set for reading data set
@@ -80,7 +80,7 @@ public class TestSendingCommandAndDataInOnePDU extends StorageSOPClassSCU {
 		else {
 			throw new DicomException("Must be the same transfer syntax");
 		}
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": TestSendingCommandAndDataInOnePDU.sendOneSOPInstance(): about to wait for PDUs");
+		slf4jlogger.trace("sendOneSOPInstance(): about to wait for PDUs");
 		association.waitForCommandPDataPDUs();
 		return receivedDataHandler.wasSuccessful();
 	}
@@ -103,24 +103,23 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": TestSe
 	 * @param	affectedSOPClass	must be the same as the SOP Class UID contained within the data set
 	 * @param	affectedSOPInstance	must be the same as the SOP Instance UID contained within the data set
 	 * @param	compressionLevel	0=none,1=propose deflate,2=propose deflate and bzip2
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public TestSendingCommandAndDataInOnePDU(String hostname,int port,String calledAETitle,String callingAETitle,String fileName,
-			String affectedSOPClass,String affectedSOPInstance,int compressionLevel,
-			int debugLevel) throws DicomNetworkException, DicomException, IOException {
-		super(hostname,port,calledAETitle,callingAETitle,fileName,affectedSOPClass,affectedSOPInstance,compressionLevel,debugLevel);
+			String affectedSOPClass,String affectedSOPInstance,int compressionLevel
+			) throws DicomNetworkException, DicomException, IOException {
+		super(hostname,port,calledAETitle,callingAETitle,fileName,affectedSOPClass,affectedSOPInstance,compressionLevel);
 	}
 
 	/**
 	 * <p>For testing, establish an association to the specified AE and send a DICOM instance (send a C-STORE request).</p>
 	 *
-	 * @param	arg	array of seven or nine strings - their hostname, their port, their AE Title, our AE Title,
+	 * @param	arg	array of six or eight strings - their hostname, their port, their AE Title, our AE Title,
 	 *			the filename containing the instance to send,
 	 * 			optionally the SOP Class and the SOP Instance (otherwise will be read from the file),
-	 *			the compression level (0=none,1=propose deflate,2=propose deflate and bzip2) and the debugging level
+	 *			and the compression level (0=none,1=propose deflate,2=propose deflate and bzip2)
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -132,9 +131,8 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": TestSe
 			String    SOPClassUID=null;
 			String SOPInstanceUID=null;
 			int  compressionLevel=0;
-			int        debugLevel=0;
 	
-			if (arg.length == 9) {
+			if (arg.length == 8) {
 				     theirHost=arg[0];
 				     theirPort=Integer.parseInt(arg[1]);
 				  theirAETitle=arg[2];
@@ -143,9 +141,8 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": TestSe
 				   SOPClassUID=arg[5];
 				SOPInstanceUID=arg[6];
 			      compressionLevel=Integer.parseInt(arg[7]);
-				    debugLevel=Integer.parseInt(arg[8]);
 			}
-			else if (arg.length == 7) {
+			else if (arg.length == 6) {
 				     theirHost=arg[0];
 				     theirPort=Integer.parseInt(arg[1]);
 				  theirAETitle=arg[2];
@@ -154,15 +151,14 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": TestSe
 				   SOPClassUID=null;			// figured out by StorageSOPClassSCU() by reading the metaheader
 				SOPInstanceUID=null;			// figured out by StorageSOPClassSCU() by reading the metaheader
 			      compressionLevel=Integer.parseInt(arg[5]);
-				    debugLevel=Integer.parseInt(arg[6]);
 			}
 			else {
 				throw new Exception("Argument list must be 7 or 9 values");
 			}
-			new TestSendingCommandAndDataInOnePDU(theirHost,theirPort,theirAETitle,ourAETitle,fileName,SOPClassUID,SOPInstanceUID,compressionLevel,debugLevel);
+			new TestSendingCommandAndDataInOnePDU(theirHost,theirPort,theirAETitle,ourAETitle,fileName,SOPClassUID,SOPInstanceUID,compressionLevel);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

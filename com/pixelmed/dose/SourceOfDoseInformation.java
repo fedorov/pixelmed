@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -9,7 +9,7 @@ import com.pixelmed.dicom.DicomException;
 
 public class SourceOfDoseInformation {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/SourceOfDoseInformation.java,v 1.3 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/SourceOfDoseInformation.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
 
 	private String description;
 	private String abbreviation;
@@ -65,6 +65,14 @@ public class SourceOfDoseInformation {
 							}
 						}
 					}
+					else if (csd.equals("SCT")) {
+						String cv = conceptCode.getCodeValue();
+						if (cv != null) {
+							if (cv.equals("15869005")) {
+								found = SourceOfDoseInformation.DOSIMETER;
+							}
+						}
+					}
 					else if (csd.equals("SRT")) {
 						String cv = conceptCode.getCodeValue();
 						if (cv != null) {
@@ -92,7 +100,7 @@ public class SourceOfDoseInformation {
 				csi = new CodedSequenceItem("113858","DCM","MPPS Content");
 			}
 			else if (role.equals(SourceOfDoseInformation.DOSIMETER)) {
-				csi = new CodedSequenceItem("A-2C090","SRT","Dosimeter");
+				csi = new CodedSequenceItem("15869005","SCT","Dosimeter");
 			}
 			else if (role.equals(SourceOfDoseInformation.COPIED_FROM_IMAGE_ATTRIBUTES)) {
 				csi = new CodedSequenceItem("113866","DCM","Copied From Image Attributes");

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -20,13 +20,13 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  */
 public class StandaloneAttributeTreeBrowser extends JFrame {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StandaloneAttributeTreeBrowser.java,v 1.1 2006/04/27 23:19:33 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StandaloneAttributeTreeBrowser.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
 
 	/**
 	 * <p>Build and display a graphical user interface view of a tree representing a DICOM attribute list.</p>
 	 *
 	 * @param	list				the list of attributes in which the structured report is encoded
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StandaloneAttributeTreeBrowser(AttributeList list) throws DicomException {
 		super("StandaloneAttributeTreeBrowser");
@@ -54,7 +54,7 @@ public class StandaloneAttributeTreeBrowser extends JFrame {
 			StandaloneAttributeTreeBrowser tree = new StandaloneAttributeTreeBrowser(list);
 			tree.setVisible(true);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

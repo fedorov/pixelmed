@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -9,7 +9,7 @@ package com.pixelmed.utils;
  */
 public class HexDump {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/HexDump.java,v 1.11 2009/12/04 20:37:00 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/HexDump.java,v 1.22 2025/01/29 10:58:09 dclunie Exp $";
 
 	private HexDump() {}
 
@@ -266,6 +266,7 @@ public class HexDump {
 	 * @return		a string containing the multiline result
 	 */
 	public static String dump(byte[] b,int offset,int lng) {
+//Thread.currentThread().dumpStack();
 		StringBuffer sb = new StringBuffer();
 		if (b != null && lng > 0) {
 			int i=0;

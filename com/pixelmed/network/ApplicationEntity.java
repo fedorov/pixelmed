@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -8,7 +8,7 @@ package com.pixelmed.network;
  * @author	dclunie
  */
 public class ApplicationEntity {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntity.java,v 1.7 2009/12/10 18:39:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntity.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 	
 	protected String dicomAETitle;
 	protected PresentationAddress presentationAddress;

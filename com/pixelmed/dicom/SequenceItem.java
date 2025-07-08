@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -16,7 +16,7 @@ import java.util.*;
  */
 public class SequenceItem {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SequenceItem.java,v 1.10 2012/08/10 10:53:32 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SequenceItem.java,v 1.22 2025/01/29 10:58:07 dclunie Exp $";
 
 	private AttributeList list;
 	protected long byteOffset;		// value of 0 is flag that it is not set
@@ -54,6 +54,15 @@ public class SequenceItem {
 	public AttributeList getAttributeList() { return list; }
 
 	/**
+	 * <p>Set the byte offset of the start of this item.</p>
+	 *
+	 * <p>Primary use is to set it to zero when no longer needed or correct.</p>
+	 *
+	 * @param	byteOffset	the byte offset, or zero if to be cleared
+	 */
+	public void setByteOffset(long byteOffset) { this.byteOffset = byteOffset; }
+
+	/**
 	 * <p>Get the byte offset of the start of this item recorded when the item was read.</p>
 	 *
 	 * @return	the byte offset
@@ -66,8 +75,8 @@ public class SequenceItem {
 	 * <p>Always written in undefined length form.</p>
 	 *
 	 * @param	o		the output stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		byteOffset = o.getByteOffset();

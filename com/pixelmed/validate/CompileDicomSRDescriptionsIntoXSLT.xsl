@@ -19,13 +19,41 @@
 	<xslout:output method="text"/>
 
 	<xslout:template match="/DicomStructuredReport">
-	<xslout:choose>
-	<xsl:apply-templates select="defineiod"/>
-	<xslout:otherwise>
-	<xslout:text>IOD (SOP Class) unrecognized</xslout:text><xslout:value-of select="$newline"/>
-	</xslout:otherwise>
-	</xslout:choose>
+		<xslout:choose>
+			<xslout:when test="/DicomStructuredReport/DicomStructuredReportContent = ''">
+				<xslout:text>Error: Not a Structured Report - Missing or Incomplete Root Content Item</xslout:text><xslout:value-of select="$newline"/>
+			</xslout:when>
+			<xslout:when test="/DicomStructuredReport/DicomStructuredReportContent/container/@template != ''">
+				<xslout:text>Root Content Item has Template Identifier </xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportContent/container/@templatemappingresource"/><xslout:text>:</xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportContent/container/@template"/><xslout:if test="/DicomStructuredReport/DicomStructuredReportHeader/Manufacturer/value != ''"><xslout:text> (Manufacturer "</xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/Manufacturer/value"/><xslout:text>"</xslout:text><xslout:if test="/DicomStructuredReport/DicomStructuredReportHeader/Manufacturer/value != ''"><xslout:text>, Model "</xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/ManufacturerModelName/value"/><xslout:text>"</xslout:text></xslout:if><xslout:text>)</xslout:text></xslout:if><xslout:value-of select="$newline"/>
+				<xslout:choose>
+					<xslout:when test="/DicomStructuredReport/DicomStructuredReportContent/container/@templatemappingresource = ''">
+						<xslout:text>Error: Missing Mapping Resource in root ContentTemplateSequence</xslout:text><xslout:value-of select="$newline"/>
+					</xslout:when>
+					<xslout:when test="/DicomStructuredReport/DicomStructuredReportContent/container/@templatemappingresource != 'DCMR'">
+						<xslout:text>Warning: Mapping Resource </xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportContent/container/@templatemappingresource"/><xslout:text> for Root Template is not DCMR</xslout:text><xslout:value-of select="$newline"/>
+					</xslout:when>
+				</xslout:choose>
+			</xslout:when>
+			<xslout:otherwise>
+				<xslout:text>Warning: Root Content Item has no Template Identifier </xslout:text><xslout:value-of select="$newline"/>
+			</xslout:otherwise>
+		</xslout:choose>
+		<xslout:choose>
+			<xsl:apply-templates select="defineiod"/>
+			<xslout:otherwise>
+				<xslout:text>IOD (SOP Class) unrecognized</xslout:text><xslout:value-of select="$newline"/>
+				<xslout:choose>
+					<xslout:when test="/DicomStructuredReport/DicomStructuredReportHeader/Modality/value != 'SR' and /DicomStructuredReport/DicomStructuredReportHeader/Modality/value != 'KO'">
+						<xslout:text>Error: Not a Structured Report Modality (</xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/Modality/value"/>) for unrecognized SOP Class (<xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/SOPClassUID/value"/>)<xslout:value-of select="$newline"/>
+					</xslout:when>
+					<xslout:otherwise>
+						<xslout:text>Structured Report Modality (</xslout:text><xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/Modality/value"/>) but unrecognized SOP Class (<xslout:value-of select="/DicomStructuredReport/DicomStructuredReportHeader/SOPClassUID/value"/>)<xslout:value-of select="$newline"/>
+					</xslout:otherwise>
+				</xslout:choose>
+			</xslout:otherwise>
+		</xslout:choose>
 	</xslout:template>
+	
 	
 	<xslout:template match="/DicomStructuredReport/DicomStructuredReportHeader">
 		<xslout:apply-templates/>
@@ -89,6 +117,16 @@
 
 <xsl:template match="invokeroottemplate">
 	<xsl:variable name="tidLabel">TID_<xsl:value-of select="@tid"/></xsl:variable>
+	<xsl:variable name="tidToMatch">
+		<xsl:choose>
+			<xsl:when test="@template !=''">		<!-- template value encoded in object may be different from the label we use in our definitions-->
+				<xsl:value-of select="@template"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="@tid"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
 	<xsl:choose>
 	<xsl:when test="@tidRequired='T'">
 		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Required Root Template: <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
@@ -97,7 +135,7 @@
 		</xslout:for-each>
 	</xsl:when>
 	<xsl:when test="@cvDocumentTitle and @csdDocumentTitle and @cvProcedureReported and @csdProcedureReported">
-		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title and Procedure Reported: <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title and Procedure Reported: Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
 		<xslout:if test="count(/DicomStructuredReport/DicomStructuredReportContent/container/@template) = 0
 		             and /DicomStructuredReport/DicomStructuredReportContent/container/concept/@cv = '{@cvDocumentTitle}'
 					 and /DicomStructuredReport/DicomStructuredReportContent/container/concept/@csd = '{@csdDocumentTitle}'
@@ -106,30 +144,30 @@
 					 and /DicomStructuredReport/DicomStructuredReportContent/container/code/value/@cv = '{@cvProcedureReported}'
 					 and /DicomStructuredReport/DicomStructuredReportContent/container/code/value/@csd = '{@csdProcedureReported}'
 					 ">
-			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title and Procedure Reported: <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title and Procedure Reported: Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
 			<xslout:for-each select="/DicomStructuredReport/DicomStructuredReportContent">
 				<xslout:call-template name="{$tidLabel}"/>
 			</xslout:for-each>
 		</xslout:if>
 	</xsl:when>
 	<xsl:when test="@cvDocumentTitle and @csdDocumentTitle">
-		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title (only): <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title (only): Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
 		<xslout:if test="count(/DicomStructuredReport/DicomStructuredReportContent/container/@template) = 0
 		             and /DicomStructuredReport/DicomStructuredReportContent/container/concept/@cv = '{@cvDocumentTitle}'
 					 and /DicomStructuredReport/DicomStructuredReportContent/container/concept/@csd = '{@csdDocumentTitle}'
 					 ">
-			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title (only): <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on absence of Template Identification Sequence and instead using Document Title (only): Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
 			<xslout:for-each select="/DicomStructuredReport/DicomStructuredReportContent">
 				<xslout:call-template name="{$tidLabel}"/>
 			</xslout:for-each>
 		</xslout:if>
 	</xsl:when>
 	<xsl:when test="@tid and @templatemappingresource">
-		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on presence of Template Identification Sequence (only): <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
-		<xslout:if test="/DicomStructuredReport/DicomStructuredReportContent/container/@template = '{@tid}'
+		<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Checking for presence of Root Template based on presence of Template Identification Sequence (only): match <xsl:value-of select="$tidToMatch"/>: Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+		<xslout:if test="/DicomStructuredReport/DicomStructuredReportContent/container/@template = '{$tidToMatch}'
 					 and /DicomStructuredReport/DicomStructuredReportContent/container/@templatemappingresource = '{@templatemappingresource}'
 					 ">
-			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on presence of Template Identification Sequence (only): <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
+			<xslout:if test="$optionDescribeChecking='T'"><xslout:text>Condition satisfied for presence of Root Template based on presence of Template Identification Sequence (only): match <xsl:value-of select="$tidToMatch"/>: Invoke <xsl:value-of select="$tidLabel"/></xslout:text><xslout:value-of select="$newline"/></xslout:if>
 			<xslout:for-each select="/DicomStructuredReport/DicomStructuredReportContent">
 				<xslout:call-template name="{$tidLabel}"/>
 			</xslout:for-each>
@@ -188,6 +226,8 @@
 	<xslout:param name="templateRequiredType"/>
 	<xslout:param name="templateConditionSatisfied"/>
 	<xslout:param name="templateMBPO"/>
+	<xslout:variable name="templateID"><xsl:value-of select="@tid"/></xslout:variable>	<!-- used by XSL generated by templatecontentitem -->
+	<xslout:variable name="templateOrderSignificant"><xsl:value-of select="@ordersignificant"/></xslout:variable>	<!-- used by XSL generated by templatecontentitem -->
 	<xslout:if test="$optionDescribeChecking='T'">
 		<xslout:text>Checking Template: <xsl:value-of select="$tidLabel"/> (<xsl:value-of select="@name"/>)</xslout:text><xslout:value-of select="$newline"/>
 		<xslout:text>Checking Template: templatevmmin = </xslout:text><xslout:value-of select="$templatevmmin"/><xslout:value-of select="$newline"/>
@@ -226,7 +266,7 @@
 	<xsl:variable name="valueType"><xsl:value-of select="translate(@valueType,$uppercase,$lowercase)"/></xsl:variable>       <!-- need lower case ValueType -->
 	<xsl:variable name="relationship"><xsl:choose><xsl:when test="starts-with(translate(@relationship,$lowercase,$uppercase),'R-')"><xsl:value-of select="substring-after(translate(@relationship,$lowercase,$uppercase),'R-')"/></xsl:when><xsl:otherwise><xsl:value-of select="translate(@relationship,$lowercase,$uppercase)"/></xsl:otherwise></xsl:choose></xsl:variable> <!-- need upper case relationship without by reference prefix-->
 	<xsl:variable name="byReference"><xsl:choose><xsl:when test="starts-with(translate(@relationship,$lowercase,$uppercase),'R-')">T</xsl:when><xsl:otherwise>F</xsl:otherwise></xsl:choose></xsl:variable>
-
+	
 	<xsl:choose>
 	<xsl:when test="@requiredType ='MC' or @requiredType ='UC'">
 		<xslout:choose>
@@ -241,6 +281,8 @@
 				<xslout:with-param name="cmConceptName" select="'{$cmConceptNameQuoteSubstituted}'"/>
 				<xslout:with-param name="csdConceptName" select="'{@csdConceptName}'"/>
 				<xslout:with-param name="cvConceptName" select="'{@cvConceptName}'"/>
+				<xslout:with-param name="csdAltConceptName" select="'{@csdAltConceptName}'"/>
+				<xslout:with-param name="cvAltConceptName" select="'{@cvAltConceptName}'"/>
 				<xslout:with-param name="vmmin" select="'{@vmmin}'"/>
 				<xslout:with-param name="vmmax" select="'{@vmmax}'"/>
 				<xslout:with-param name="requiredType" select="'{@requiredType}'"/>
@@ -265,6 +307,8 @@
 				<xslout:with-param name="templateConditionSatisfied" select="$templateConditionSatisfied"/>
 				<xslout:with-param name="templateMBPO" select="$templateMBPO"/>
 				<xslout:with-param name="nestingLevel" select="'{$nestingLevel}'"/>
+				<xslout:with-param name="templateID" select="$templateID"/>
+				<xslout:with-param name="templateOrderSignificant" select="$templateOrderSignificant"/>
 			</xslout:call-template>
 		</xslout:when>
 		<xslout:otherwise>
@@ -278,6 +322,8 @@
 				<xslout:with-param name="cmConceptName" select="'{$cmConceptNameQuoteSubstituted}'"/>
 				<xslout:with-param name="csdConceptName" select="'{@csdConceptName}'"/>
 				<xslout:with-param name="cvConceptName" select="'{@cvConceptName}'"/>
+				<xslout:with-param name="csdAltConceptName" select="'{@csdAltConceptName}'"/>
+				<xslout:with-param name="cvAltConceptName" select="'{@cvAltConceptName}'"/>
 				<xslout:with-param name="vmmin" select="'{@vmmin}'"/>
 				<xslout:with-param name="vmmax" select="'{@vmmax}'"/>
 				<xslout:with-param name="requiredType" select="'{@requiredType}'"/>
@@ -303,6 +349,8 @@
 				<xslout:with-param name="templateConditionSatisfied" select="$templateConditionSatisfied"/>
 				<xslout:with-param name="templateMBPO" select="$templateMBPO"/>
 				<xslout:with-param name="nestingLevel" select="'{$nestingLevel}'"/>
+				<xslout:with-param name="templateID" select="$templateID"/>
+				<xslout:with-param name="templateOrderSignificant" select="$templateOrderSignificant"/>
 			</xslout:call-template>
 		</xslout:otherwise>
 		</xslout:choose>
@@ -318,6 +366,8 @@
 				<xslout:with-param name="cmConceptName" select="'{$cmConceptNameQuoteSubstituted}'"/>
 				<xslout:with-param name="csdConceptName" select="'{@csdConceptName}'"/>
 				<xslout:with-param name="cvConceptName" select="'{@cvConceptName}'"/>
+				<xslout:with-param name="csdAltConceptName" select="'{@csdAltConceptName}'"/>
+				<xslout:with-param name="cvAltConceptName" select="'{@cvAltConceptName}'"/>
 				<xslout:with-param name="vmmin" select="'{@vmmin}'"/>
 				<xslout:with-param name="vmmax" select="'{@vmmax}'"/>
 				<xslout:with-param name="requiredType" select="'{@requiredType}'"/>
@@ -341,6 +391,8 @@
 				<xslout:with-param name="templateConditionSatisfied" select="$templateConditionSatisfied"/>
 				<xslout:with-param name="templateMBPO" select="$templateMBPO"/>
 				<xslout:with-param name="nestingLevel" select="'{$nestingLevel}'"/>
+				<xslout:with-param name="templateID" select="$templateID"/>
+				<xslout:with-param name="templateOrderSignificant" select="$templateOrderSignificant"/>
 			</xslout:call-template>
 	</xsl:otherwise>
 	</xsl:choose>
@@ -349,6 +401,8 @@
 		<xsl:with-param name="description" select="$description"/>
 		<xsl:with-param name="cvConceptName" select="@cvConceptName"/>
 		<xsl:with-param name="csdConceptName" select="@csdConceptName"/>
+		<xsl:with-param name="cvAltConceptName" select="@cvAltConceptName"/>
+		<xsl:with-param name="csdAltConceptName" select="@csdAltConceptName"/>
 		<xsl:with-param name="conceptNameCID" select="@conceptNameCID"/>
 		<xsl:with-param name="valueType" select="$valueType"/>
 	</xsl:call-template>
@@ -359,41 +413,49 @@
 	<xsl:param name="description"/>
 	<xsl:param name="cvConceptName"/>
 	<xsl:param name="csdConceptName"/>
+	<xsl:param name="cvAltConceptName"/>
+	<xsl:param name="csdAltConceptName"/>
 	<xsl:param name="conceptNameCID"/>
 	<xsl:param name="valueType"/>
 	<xsl:choose>
-	<xsl:when test="string-length($cvConceptName) &gt; 0">
-		<xslout:for-each select="child::node()[name() = '{$valueType}' and concept/@cv = '{$cvConceptName}' and concept/@csd = '{$csdConceptName}']">
-			<xsl:apply-templates/>
-		</xslout:for-each>
+	<xsl:when test="string-length($cvConceptName) &gt; 0 or string-length($cvAltConceptName) &gt; 0">
+		<xsl:if test="count(child::*) &gt; 0">	<!-- Do not emit empty for-each statement or Saxon will warn about it, so anticipate when apply-templates will do nothing (000876)-->
+			<xslout:for-each select="child::node()[name() = '{$valueType}' and ((concept/@cv = '{$cvConceptName}' and concept/@csd = '{$csdConceptName}') or (concept/@cv = '{$cvAltConceptName}' and concept/@csd = '{$csdAltConceptName}'))]">
+				<xsl:apply-templates/>
+			</xslout:for-each>
+		</xsl:if>
 	</xsl:when>
 	<xsl:when test="string-length($conceptNameCID) &gt; 0">
-		<xsl:variable name="currentNode" select="."/>
-		<xsl:variable name="contextGroupWanted" select="document('DicomContextGroupsSource.xml')/definecontextgroups/definecontextgroup[@cid=$conceptNameCID]"/>
-		<xsl:variable name="contextGroupCodes" select="$contextGroupWanted/contextgroupcode"/>
-		<xsl:choose>
-		<xsl:when test="count($contextGroupCodes) &gt; 0">
-			<xsl:variable name="selectExpression">
-				<xsl:text>child::node()[</xsl:text>
-				<xsl:call-template name="buildConceptNameCIDPredicateExpression">
-					<xsl:with-param name="valueType" select="$valueType"/>
-					<xsl:with-param name="contextGroupCodes" select="$contextGroupCodes"/>
-				</xsl:call-template>
-				<xsl:text>]</xsl:text>
-			</xsl:variable>
-			<xslout:for-each select="{$selectExpression}">
-				<xsl:apply-templates select="$currentNode/*"/>
-			</xslout:for-each>
-		</xsl:when>
-		<xsl:otherwise>
-			<xslout:text>Internal Error: </xslout:text><xsl:value-of select="$description"/><xslout:text>: Concept Name CID is empty or missing - </xslout:text><xsl:value-of select="$currentNode/@conceptNameCID"/><xslout:value-of select="$newline"/>
-		</xsl:otherwise>
-		</xsl:choose>
+		<xsl:if test="count(child::*) &gt; 0">	<!-- Do not emit empty for-each statement or Saxon will warn about it, so anticipate when apply-templates will do nothing (000876)-->
+			<xsl:variable name="currentNode" select="."/>
+			<xsl:variable name="contextGroupWanted" select="document('DicomContextGroupsSource.xml')/definecontextgroups/definecontextgroup[@cid=$conceptNameCID]"/>
+			<xsl:variable name="contextGroupCodes" select="$contextGroupWanted/contextgroupcode"/>
+			<xsl:choose>
+			<xsl:when test="count($contextGroupCodes) &gt; 0">
+				<xsl:variable name="selectExpression">
+					<xsl:text>child::node()[</xsl:text>
+					<xsl:call-template name="buildConceptNameCIDPredicateExpression">
+						<xsl:with-param name="valueType" select="$valueType"/>
+						<xsl:with-param name="contextGroupCodes" select="$contextGroupCodes"/>
+					</xsl:call-template>
+					<xsl:text>]</xsl:text>
+				</xsl:variable>
+				<xslout:for-each select="{$selectExpression}">
+					<xsl:apply-templates select="$currentNode/*"/>
+				</xslout:for-each>
+			</xsl:when>
+			<xsl:otherwise>
+				<xslout:text>Internal Error: </xslout:text><xsl:value-of select="$description"/><xslout:text>: Concept Name CID is empty or missing - </xslout:text><xsl:value-of select="$currentNode/@conceptNameCID"/><xslout:value-of select="$newline"/>
+			</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
 	</xsl:when>
 	<xsl:otherwise>
-		<xslout:for-each select="child::node()[name() = '{$valueType}']">
-			<xsl:apply-templates/>
-		</xslout:for-each>
+		<xsl:if test="count(child::*) &gt; 0">	<!-- Do not emit empty for-each statement or Saxon will warn about it, so anticipate when apply-templates will do nothing (000876)-->
+			<xslout:for-each select="child::node()[name() = '{$valueType}']">
+				<xsl:apply-templates/>
+			</xslout:for-each>
+		</xsl:if>
 	</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -417,14 +479,17 @@
 <xsl:template match="verify">
 	<xsl:variable name="escapedQuote">#</xsl:variable>
 	<xsl:variable name="actualQuote">'</xsl:variable>
-	<xsl:variable name="cmConceptNameQuoteSubstituted"><xsl:value-of select="translate(@cmConceptName,$actualQuote,$escapedQuote)"/></xsl:variable>       <!-- escape quotes -->
 	<xsl:variable name="description">
-		<xsl:call-template name="buildFullPathInDefinitionToCurrentContentItem">
-			<xsl:with-param name="cmConceptNameQuoteSubstituted" select="$cmConceptNameQuoteSubstituted"/>
-		</xsl:call-template>
+		<xsl:for-each select="preceding-sibling::templatecontentitem[1]">
+			<xsl:variable name="cmConceptNameQuoteSubstituted"><xsl:value-of select="translate(@cmConceptName,$actualQuote,$escapedQuote)"/></xsl:variable>       <!-- escape quotes -->
+			<xsl:call-template name="buildFullPathInDefinitionToCurrentContentItem">
+				<xsl:with-param name="cmConceptNameQuoteSubstituted" select="$cmConceptNameQuoteSubstituted"/>
+			</xsl:call-template>
+		</xsl:for-each>
 	</xsl:variable>
 	<xslout:if test="{@test}">
 		<xslout:text><xsl:value-of select="@status"/>: <xsl:value-of select="$description"/>: </xslout:text>
+		<xslout:value-of select="substring-after(@ID,'ci_')"/><xslout:text>: </xslout:text>
 		<xslout:call-template name="buildFullPathInInstanceToCurrentNode"/>
 		<xslout:text>: <xsl:value-of select="@message"/></xslout:text><xslout:value-of select="$newline"/>
 	</xslout:if>

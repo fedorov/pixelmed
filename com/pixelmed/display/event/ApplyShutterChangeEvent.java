@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -10,7 +10,7 @@ import com.pixelmed.event.EventContext;
  */
 public class ApplyShutterChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/ApplyShutterChangeEvent.java,v 1.1 2011/09/02 20:40:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/ApplyShutterChangeEvent.java,v 1.11 2025/01/29 10:58:08 dclunie Exp $";
 
 	private boolean shutter;
 

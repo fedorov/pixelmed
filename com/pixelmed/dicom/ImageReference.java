@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -9,7 +9,7 @@ package com.pixelmed.dicom;
  */
 public class ImageReference extends SOPInstanceReference {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageReference.java,v 1.1 2012/10/21 09:28:47 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageReference.java,v 1.11 2025/01/29 10:58:06 dclunie Exp $";
 
 	protected String referencedFrameNumber;
 

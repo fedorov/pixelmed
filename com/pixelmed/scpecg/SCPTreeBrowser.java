@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -21,7 +21,7 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  */
 public class SCPTreeBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPTreeBrowser.java,v 1.1 2004/01/24 17:52:42 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPTreeBrowser.java,v 1.12 2025/01/29 10:58:09 dclunie Exp $";
 
 	private JTree tree;
 	private SCPTree treeModel;
@@ -33,7 +33,7 @@ public class SCPTreeBrowser {
 	 *
 	 * @param	scpecg				tan SCP-ECG instance
 	 * @param	treeBrowserScrollPane		the scrolling pane in which the tree view of the attributes will be rendered
-	 * @exception	Exception
+	 * @throws	Exception
 	 */
 	public SCPTreeBrowser(SCPECG scpecg,JScrollPane treeBrowserScrollPane) throws Exception {
 		treeModel=new SCPTree(scpecg);

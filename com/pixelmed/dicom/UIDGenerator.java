@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,8 +17,7 @@ import com.pixelmed.utils.MACAddress;
  */
 
 public class UIDGenerator {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UIDGenerator.java,v 1.9 2010/03/27 20:06:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UIDGenerator.java,v 1.21 2025/01/29 10:58:07 dclunie Exp $";
 
 	private static final String UIDGEN_ANY = "0";
 	private static final String UIDGEN_INSTANCE_SOP = "1";
@@ -144,7 +143,7 @@ public class UIDGenerator {
 	 * <p>This will always be the same for this instance of the UIDGenerator, unless newStamp() has been called since the last time.</p>
 	 *
 	 * @return			the UID
-	 * @exception	DicomException	if result is too long or otherwise not a valid UID
+	 * @throws	DicomException	if result is too long or otherwise not a valid UID
 	 */
 	public String getNewUID() throws DicomException {
 		String uid = root+"."+longStamp+"."+UIDGEN_ANY;
@@ -158,7 +157,7 @@ public class UIDGenerator {
 	 * <p>This will never be the same twice, since newStamp() is called.</p>
 	 *
 	 * @return			the UID
-	 * @exception	DicomException	if result is too long or otherwise not a valid UID
+	 * @throws	DicomException	if result is too long or otherwise not a valid UID
 	 */
 	public String getAnotherNewUID() throws DicomException {
 		newStamp();
@@ -174,7 +173,7 @@ public class UIDGenerator {
 	 *
 	 * @param	studyID		least significant 4 digits of leading numeric part is used
 	 * @return			the UID
-	 * @exception	DicomException	if result is too long or otherwise not a valid UID
+	 * @throws	DicomException	if result is too long or otherwise not a valid UID
 	 */
 	public String getNewStudyInstanceUID(String studyID) throws DicomException {
 		String uid =
@@ -194,7 +193,7 @@ public class UIDGenerator {
 	 * @param	studyID		least significant 4 digits of leading numeric part is used
 	 * @param	seriesNumber	least significant 4 digits of leading numeric part is used
 	 * @return			the UID
-	 * @exception	DicomException	if result is too long or otherwise not a valid UID
+	 * @throws	DicomException	if result is too long or otherwise not a valid UID
 	 */
 	public String getNewSeriesInstanceUID(String studyID,String seriesNumber) throws DicomException {
 		String uid =
@@ -216,7 +215,7 @@ public class UIDGenerator {
 	 * @param	seriesNumber	least significant 4 digits of leading numeric part is used
 	 * @param	instanceNumber	least significant 4 digits of leading numeric part is used
 	 * @return			the UID
-	 * @exception	DicomException	if result is too long or otherwise not a valid UID
+	 * @throws	DicomException	if result is too long or otherwise not a valid UID
 	 */
 	public String getNewSOPInstanceUID(String studyID,String seriesNumber,String instanceNumber) throws DicomException {
 		String uid =
@@ -254,7 +253,7 @@ public class UIDGenerator {
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTime-startTime;
 			double timePerUID = (double)totalTime/count;
-			System.err.println("count="+count+", total time="+totalTime+" ms, time per UID="+timePerUID+" ms, uids/ms="+(1/timePerUID));
+			System.err.println("count="+count+", total time="+totalTime+" ms, time per UID="+timePerUID+" ms, uids/ms="+(1/timePerUID));	// no need to use SLF4J since command line utility/test
 //System.err.println("uids[0]=\""+uids[0]+"\"");
 
 			// Check are all unique
@@ -272,7 +271,7 @@ public class UIDGenerator {
 			System.err.println("Uniqueness check "+(success ? "passes" : "fails"));
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

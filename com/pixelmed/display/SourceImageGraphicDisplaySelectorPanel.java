@@ -1,6 +1,10 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.GraphicDisplayChangeEvent; 
+import com.pixelmed.event.ApplicationEventDispatcher; 
+import com.pixelmed.event.EventContext;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -8,16 +12,16 @@ import java.awt.image.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.GraphicDisplayChangeEvent; 
-import com.pixelmed.event.ApplicationEventDispatcher; 
-import com.pixelmed.event.EventContext;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * @author	dclunie
  */
 class SourceImageGraphicDisplaySelectorPanel extends JPanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageGraphicDisplaySelectorPanel.java,v 1.12 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageGraphicDisplaySelectorPanel.java,v 1.1 2008/09/03 01:16:54 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceImageGraphicDisplaySelectorPanel.class);
 
 	/***/
 	private EventContext eventContext;
@@ -54,7 +58,7 @@ class SourceImageGraphicDisplaySelectorPanel extends JPanel {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new GraphicDisplayChangeEvent(eventContext,showOverlay));
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	

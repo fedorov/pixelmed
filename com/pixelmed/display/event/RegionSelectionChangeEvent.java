@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -10,7 +10,7 @@ import com.pixelmed.event.EventContext;
  */
 public class RegionSelectionChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/RegionSelectionChangeEvent.java,v 1.4 2011/05/25 14:19:17 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/RegionSelectionChangeEvent.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
 
 	private double centerX;
 	private double centerY;

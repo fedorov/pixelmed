@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -14,7 +14,7 @@ import java.awt.image.BufferedImage;
 
 public class PdfDecoder {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/PdfDecoder.java,v 1.2 2007/08/01 11:41:25 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/PdfDecoder.java,v 1.12 2025/01/29 10:58:09 dclunie Exp $";
 	
 	protected Class  pdfDecoderClass;
 	protected Object pdfDecoder;

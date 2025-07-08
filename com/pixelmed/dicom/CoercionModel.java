@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,6 +14,9 @@ import com.pixelmed.dicom.AttributeList;
 import com.pixelmed.dicom.DicomInputStream;
 import com.pixelmed.dicom.TagFromName;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to encapsulate patient and study information to be used for coercion of
  * identifiers in DICOM instances.</p>
@@ -21,9 +24,9 @@ import com.pixelmed.dicom.TagFromName;
  * @author	dclunie
  */
 public class CoercionModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CoercionModel.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CoercionModel.java,v 1.2 2005/11/12 14:03:51 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CoercionModel.class);
 	
 	private class Patient {
 		String patientName;
@@ -81,7 +84,7 @@ public class CoercionModel {
 							patients.put(key,patient);
 						}
 					} catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("While reading \"{}\"",dicomFileName,e);
 					}
 				}
 			}

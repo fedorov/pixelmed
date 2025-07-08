@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -12,6 +12,9 @@ import java.io.FileInputStream;
 
 import java.lang.reflect.Constructor;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class allows the reconstruction of a database from the stored instance files,
  * such as when the database schema model has been changed.</p>
@@ -19,9 +22,9 @@ import java.lang.reflect.Constructor;
  * @author	dclunie
  */
 public class RebuildDatabaseFromInstanceFiles {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/RebuildDatabaseFromInstanceFiles.java,v 1.21 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/RebuildDatabaseFromInstanceFiles.java,v 1.10 2012/09/07 15:31:21 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(RebuildDatabaseFromInstanceFiles.class);
 	
 	private static long filesProcessed;
 	
@@ -38,7 +41,7 @@ public class RebuildDatabaseFromInstanceFiles {
 		 && !fileNameAsUpperCase.equals("THUMBNAILS")
 		 && !fileNameAsUpperCase.endsWith(".APP")
 		) {
-System.err.println("Recursing into directory "+file);
+			slf4jlogger.info("Recursing into directory {}",file);
 			try {
 				File listOfFiles[] = file.listFiles();
 				for (int i=0; i<listOfFiles.length; ++i) {	
@@ -46,8 +49,7 @@ System.err.println("Recursing into directory "+file);
 				}
 			}
 			catch (Exception e) {
-				//System.err.println(e);
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			}
 		}
 		else if (file.isFile()) {
@@ -145,7 +147,7 @@ System.err.println("Recursing into directory "+file);
 			 && !fileNameAsUpperCase.endsWith("README")
 			 && !fileNameAsUpperCase.endsWith("TOOLBARCONFIGURATION.OLD")
 			) {
-System.err.println("Doing file "+file);
+				slf4jlogger.info("Doing file {}",file);
 				try {
 					DicomInputStream dfi = new DicomInputStream(new BufferedInputStream(new FileInputStream(file)));
 					AttributeList list = new AttributeList();
@@ -158,16 +160,15 @@ System.err.println("Doing file "+file);
 					++filesProcessed;
 				}
 				catch (Exception e) {
-					//System.err.println(e);
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 				}
 			}
 			else {
-System.err.println("Skipping hidden or unwanted "+file);
+				slf4jlogger.info("Skipping hidden or unwanted {}",file);
 			}
 		}
 		else {
-System.err.println("Not a directory (that we want) or file "+file);
+			slf4jlogger.info("Not a directory (that we want) or file {}",file);
 		}
 	}
 
@@ -186,7 +187,7 @@ System.err.println("Not a directory (that we want) or file "+file);
 			if (databaseModelClassName.indexOf('.') == -1) {					// not already fully qualified
 				databaseModelClassName="com.pixelmed.database."+databaseModelClassName;
 			}
-//System.err.println("Class name = "+databaseModelClassName);
+//System.err.println("Class name = "+databaseModelClassName);	// no need to use SLF4J since command line utility/test
 
 			//DatabaseInformationModel databaseInformationModel = new PatientStudySeriesConcatenationInstanceModel(makePathToFileInUsersHomeDirectory(dataBaseFileName));
 			DatabaseInformationModel databaseInformationModel = null;
@@ -198,7 +199,7 @@ System.err.println("Not a directory (that we want) or file "+file);
 				databaseInformationModel = (DatabaseInformationModel)(constructorToUse.newInstance(args));
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 				System.exit(0);
 			}
 			
@@ -212,7 +213,7 @@ System.err.println("Not a directory (that we want) or file "+file);
 			}
 			long durationOfRebuild = System.currentTimeMillis() - startOfRebuild;
 			double rate = ((double)filesProcessed)/(((double)durationOfRebuild)/1000);
-			System.err.println("Processed "+filesProcessed+" files in "+durationOfRebuild+" ms, "+rate+" files/s");
+			slf4jlogger.info("Processed {} files in {} ms, {} files/s",filesProcessed,durationOfRebuild,rate);	// use SLF4J since may be invoked from script
 			
 			databaseInformationModel.close();	// this is really important ... will not persist everything unless we do this
 		}

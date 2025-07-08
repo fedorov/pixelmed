@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -109,7 +109,7 @@ public class TestCTDose extends TestCase {
 			{ Attribute a = new DateAttribute(TagFromName.StudyDate); a.addValue(studyDate); list.put(a); }
 			{ Attribute a = new TimeAttribute(TagFromName.StudyTime); a.addValue(studyTime); list.put(a); }
 //System.err.println("TestCTDose.setUp(): compositeInstanceContext.getAttributeList() =\n"+list);
-			compositeInstanceContext = new CompositeInstanceContext(list);
+			compositeInstanceContext = new CompositeInstanceContext(list,true/*forSR*/);
 		}
 		catch (DicomException e) {
 		}
@@ -187,12 +187,12 @@ public class TestCTDose extends TestCase {
 		
 	
 		String expectGetHTMLNoDetail =
-			  "<tr><td></td><td></td><td></td><td></td><td align=right></td><td align=right></td><td align=right></td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1642.96 (BODY32)</td><td align=right></td><td align=right></td><td></td><td></td><td>MOD</td></tr>\n"
+			  "<tr><td></td><td></td><td></td><td></td><td align=right></td><td align=right></td><td align=right></td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1642.96 (BODY32)</td><td align=right></td><td align=right></td><td></td><td></td><td></td><td>MOD</td></tr>\n"
 			;
 	
 		String expectGetHTMLDetail =
-			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>From</th></tr>\n"
-			+ "<tr><td></td><td></td><td></td><td></td><td align=right></td><td align=right></td><td align=right></td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1642.96 (BODY32)</td><td align=right></td><td align=right></td><td></td><td></td><td>MOD</td></tr>\n"
+			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>Station</th><th>From</th></tr>\n"
+			+ "<tr><td></td><td></td><td></td><td></td><td align=right></td><td align=right></td><td align=right></td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1642.96 (BODY32)</td><td align=right></td><td align=right></td><td></td><td></td><td></td><td>MOD</td></tr>\n"
 			+ "<tr><td colspan=2></td><td colspan=15><table><tr><th>Number</th><th>Type</th><th>Range mm</th><th>CTDIvol mGy</th><th>DLP mGy.cm</th><th>Phantom</th></tr>\n"
 			+ "<tr><td>Series=2</td><td>Helical</td><td>S14.250-I635.750</td><td>"+ctdiVolArray[0]+"</td><td>"+dlpArray[0]+"</td><td>BODY32</td></tr>\n"
 			+ "<tr><td>Series=2</td><td>Helical</td><td>I635.250-I665.250</td><td>"+ctdiVolArray[1]+"</td><td>"+dlpArray[1]+"</td><td>BODY32</td></tr>\n"
@@ -243,7 +243,7 @@ public class TestCTDose extends TestCase {
 		
 		assertEquals("Checking document title","X-Ray Radiation Dose Report",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/concept/@cm",srDocument));
 		assertEquals("Checking procedure reported","Computed Tomography X-Ray",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/value/@cm",srDocument));
-		assertEquals("Checking diagnostic intent","Diagnostic Intent",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/code[concept/@cv='G-C0E8']/value/@cm",srDocument));
+		assertEquals("Checking diagnostic intent","Diagnostic Intent",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/code[concept/@cv='363703001']/value/@cm",srDocument));
 
 		assertEquals("Checking Start of X-Ray Irradiation",startDateTime,xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/datetime[concept/@cv='113809']/value",srDocument));
 		assertEquals("Checking End of X-Ray Irradiation",endDateTime,xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/datetime[concept/@cv='113810']/value",srDocument));
@@ -294,7 +294,7 @@ public class TestCTDose extends TestCase {
 		
 		String irradiationEventUID = "1.2.3.4";
 		CTScanType ctScanType = CTScanType.HELICAL;
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
 		String exposureTimeInSeconds = "1";
@@ -346,12 +346,12 @@ public class TestCTDose extends TestCase {
 		String description   = "CAP";
 		
 		String expectGetHTMLNoDetail =
-			  "<tr><td>3764913624</td><td>Smith^Mary</td><td>F</td><td>19600101</td><td align=right>041Y</td><td align=right>68</td><td align=right>1.55</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1362.24 (BODY32)</td><td align=right></td><td align=right></td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>OCR</td></tr>\n"
+			  "<tr><td>3764913624</td><td>Smith^Mary</td><td>F</td><td>19600101</td><td align=right>041Y</td><td align=right>68</td><td align=right>1.55</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1362.24 (BODY32)</td><td align=right></td><td align=right></td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>OCR</td></tr>\n"
 			;
 	
 		String expectGetHTMLDetail =
-			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>From</th></tr>\n"
-			+ "<tr><td>3764913624</td><td>Smith^Mary</td><td>F</td><td>19600101</td><td align=right>041Y</td><td align=right>68</td><td align=right>1.55</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1362.24 (BODY32)</td><td align=right></td><td align=right></td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>OCR</td></tr>\n"
+			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>Station</th><th>From</th></tr>\n"
+			+ "<tr><td>3764913624</td><td>Smith^Mary</td><td>F</td><td>19600101</td><td align=right>041Y</td><td align=right>68</td><td align=right>1.55</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>CAP</td><td align=right>1362.24 (BODY32)</td><td align=right></td><td align=right></td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>OCR</td></tr>\n"
 			+ "<tr><td colspan=2></td><td colspan=15><table><tr><th>Number</th><th>Type</th><th>Range mm</th><th>CTDIvol mGy</th><th>DLP mGy.cm</th><th>Phantom</th><th>Type</th><th>Anatomy</th><th>Protocol</th><th>Scanning Length mm</th><th>Reconstructable Volume mm</th><th>Exposed Range mm</th><th>Collimation Single/Total mm</th><th>Pitch Factor</th><th>kVP</th><th>Tube Current Mean/Max mA</th><th>Exposure Time/Per Rotation s</th><th>Comment</th></tr>\n"
 			+ "<tr><td>Series=2</td><td>Helical</td><td>S14.250-I635.750</td><td>20.23</td><td>1362.24</td><td>BODY32</td><td>Helical</td><td>Chest, Abdomen and Pelvis</td><td>"+acquisitionProtocol+"</td><td>673.38</td><td>650.625 [I636.0625-S14.5625]</td><td></td><td>0.625/40</td><td>0.984:1</td><td>120</td><td>397/433</td><td>1/0.6</td><td>"+comment+"</td></tr>\n"
 			+ "</table></td></tr>\n"
@@ -391,7 +391,7 @@ public class TestCTDose extends TestCase {
 		
 		assertEquals("Checking document title","X-Ray Radiation Dose Report",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/concept/@cm",srDocument));
 		assertEquals("Checking procedure reported","Computed Tomography X-Ray",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/value/@cm",srDocument));
-		assertEquals("Checking diagnostic intent","Diagnostic Intent",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/code[concept/@cv='G-C0E8']/value/@cm",srDocument));
+		assertEquals("Checking diagnostic intent","Diagnostic Intent",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121058']/code[concept/@cv='363703001']/value/@cm",srDocument));
 
 		assertEquals("Checking observer type","Device",xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/code[concept/@cv='121005']/value/@cm",srDocument));
 		assertEquals("Checking Device Observer UID",deviceUID,xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/uidref[concept/@cv='121012']/value",srDocument));
@@ -466,16 +466,18 @@ public class TestCTDose extends TestCase {
 		assertEquals("Checking Device Serial Number",serialNumber,            xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/container[concept/@cv='113819']/code[concept/@cv='113876']/text[concept/@cv='113880']/value",srDocument));
 		assertEquals("Checking Device Observer UID",deviceUID,                xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/container[concept/@cv='113819']/code[concept/@cv='113876']/uidref[concept/@cv='121012']/value",srDocument));
 		
-		String expectValidationString = 
-		 "Found XRayRadiationDoseSR IOD\n"
+		String expectValidationString =
+		 "Root Content Item has Template Identifier DCMR:10011 (Manufacturer \"Acme\", Model \"Scanner\")\n"
+		+"Found XRayRadiationDoseSR IOD\n"
 		+"Found Root Template TID_10011 (CTRadiationDose)\n"
 		+"Root Template Validation Complete\n"
-		+"Error: 1.11.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
 		+"IOD validation complete\n"
 		;
+
 		com.pixelmed.validate.DicomSRValidator validator = new com.pixelmed.validate.DicomSRValidator();
 		//validator.setOptionDescribeChecking(true);
-System.err.println("validate =\n"+validator.validate(list));
+		System.err.println("validate =\n"+validator.validate(list));
 		assertEquals("Checking validation from StructuredReport Document",expectValidationString,validator.validate(list));
 		
 		assertEquals("Checking PatientName",patientName,Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PatientName));
@@ -600,12 +602,12 @@ System.err.println("validate =\n"+validator.validate(list));
 		String expectToStringNoDetail = "Dose\tPatient ID="+patientID+"\tName="+patientName+"\tSex="+patientSex+"\tDOB="+patientBirthDate+"\tAge="+patientAge+"\tWeight="+patientWeight+" kg\tHeight="+patientSize+" m\tAccession=\tStart="+startDateTime+"\tModality=CT\tDescription="+description+"\tDLP Total="+dlpTotal+" (BODY32) (HEAD16 "+dlpSubTotalHead+") (BODY32 "+dlpSubTotalBody+") mGy.cm\n";
 		
 		String expectGetHTMLNoDetail =
-			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>MOD</td></tr>\n"
+			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>MOD</td></tr>\n"
 			;
 	
 		String expectGetHTMLDetail =
-			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>From</th></tr>\n"
-			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>MOD</td></tr>\n"
+			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>Station</th><th>From</th></tr>\n"
+			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>MOD</td></tr>\n"
 			;
 
 		CTDose ctDose = new CTDose(dlpSubTotalHead,dlpSubTotalBody,totalNumberOfIrradiationEvents,ScopeOfDoseAccummulation.STUDY,scopeUID,startDateTime,endDateTime,description);
@@ -645,21 +647,22 @@ System.err.println("validate =\n"+validator.validate(list));
 		assertEquals("Checking CT Dose Length Product Body Sub-Total",dlpSubTotalBody,xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701' and concept/@csd='DCM']/container[concept/@cv='113811' and concept/@csd='DCM']/num[concept/@cv='113813' and concept/@csd='DCM']/num [concept/@cv='220005' and code/concept/@cv='113835' and code/concept/@csd='DCM' and code/value/@cv='113691' and code/value/@csd='DCM']/value",srDocument));
 		
 		String expectValidationString = 
-		 "Found XRayRadiationDoseSR IOD\n"
+		 "Root Content Item has Template Identifier DCMR:10011 (Manufacturer \"Acme\", Model \"Scanner\")\n"
+		+"Found XRayRadiationDoseSR IOD\n"
 		+"Found Root Template TID_10011 (CTRadiationDose)\n"
-		+"Warning: Template 10012 CTAccumulatedDoseData/[Row 1] CONTAINER (113811,DCM,\"CT Accumulated Dose Data\"): /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\"): value of 0 for Total Number of Irradiation Events is not illegal, but is unlikely to be correct\n"
+		+"Warning: Template 10012 CTAccumulatedDoseData/[Row 1] CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/[Row 2] NUM (113812,DCM,\"Total Number of Irradiation Events\"): 1.12: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\"): value of 0 for Total Number of Irradiation Events is not illegal, but is unlikely to be correct\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\"): within 1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\"): Missing required content item\n"
 		+"Root Template Validation Complete\n"
-		+"Error: 1.11.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
-		+"Error: 1.11.2.2: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
-		+"Error: 1.11.2.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
-		+"Error: 1.11.2.3: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
-		+"Error: 1.11.2.3.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.2: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
+		+"Warning: 1.12.2.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.3: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
+		+"Warning: 1.12.2.3.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
 		+"IOD validation complete\n"
 		;
 		com.pixelmed.validate.DicomSRValidator validator = new com.pixelmed.validate.DicomSRValidator();
 		//validator.setOptionDescribeChecking(true);
-System.err.println("validate =\n"+validator.validate(list));
+		System.err.println("validate =\n"+validator.validate(list));
 		assertEquals("Checking validation from StructuredReport Document",expectValidationString,validator.validate(list));
 
 		
@@ -695,12 +698,12 @@ System.err.println("validate =\n"+validator.validate(list));
 		String expectToStringNoDetail = "Dose\tPatient ID=3764913624\tName=Smith^Mary\tSex=F\tDOB=19600101\tAge=041Y\tWeight=68 kg\tHeight=1.55 m\tAccession=\tStart="+startDateTime+"\tModality=CT\tDescription="+description+"\tDLP Total="+dlpTotal+" (BODY32) (HEAD16 "+dlpSubTotalHead+") (BODY32 "+dlpSubTotalBody+") mGy.cm\n";
 		
 		String expectGetHTMLNoDetail =
-			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td></td><td></td><td>MOD</td></tr>\n"
+			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td></td><td></td><td></td><td>MOD</td></tr>\n"
 			;
 	
 		String expectGetHTMLDetail =
-			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>From</th></tr>\n"
-			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td></td><td></td><td>MOD</td></tr>\n"
+			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>Station</th><th>From</th></tr>\n"
+			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td></td><td></td><td></td><td>MOD</td></tr>\n"
 			;
 		
 		CTDose ctDose = new CTDose(ScopeOfDoseAccummulation.STUDY,scopeUID,startDateTime,endDateTime,description);
@@ -755,12 +758,12 @@ System.err.println("validate =\n"+validator.validate(list));
 		String expectToStringNoDetail = "Dose\tPatient ID="+patientID+"\tName="+patientName+"\tSex="+patientSex+"\tDOB="+patientBirthDate+"\tAge="+patientAge+"\tWeight="+patientWeight+" kg\tHeight="+patientSize+" m\tAccession=\tStart="+startDateTime+"\tModality=CT\tDescription="+description+"\tDLP Total="+dlpTotal+" (BODY32) (HEAD16 "+dlpSubTotalHead+") (BODY32 "+dlpSubTotalBody+") mGy.cm\n";
 		
 		String expectGetHTMLNoDetail =
-			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>MOD</td></tr>\n"
+			  "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>MOD</td></tr>\n"
 			;
 	
 		String expectGetHTMLDetail =
-			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>From</th></tr>\n"
-			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>MOD</td></tr>\n"
+			  "<tr><th>ID</th><th>Name</th><th>Sex</th><th>DOB</th><th>Age</th><th>Weight kg</th><th>Height m</th><th>Accession</th><th>Date</th><th>Modality</th><th>Description</th><th>DLP Total mGy.cm</th><th>DLP HEAD16 mGy.cm</th><th>DLP BODY32 mGy.cm</th><th>Manufacturer</th><th>Model</th><th>Station</th><th>From</th></tr>\n"
+			+ "<tr><td>"+patientID+"</td><td>"+patientName+"</td><td>"+patientSex+"</td><td>"+patientBirthDate+"</td><td align=right>"+patientAge+"</td><td align=right>"+patientWeight+"</td><td align=right>"+patientSize+"</td><td></td><td>2001/02/03 04:30:00</td><td>CT</td><td>"+description+"</td><td align=right>"+dlpTotal+" (BODY32)</td><td align=right>"+dlpSubTotalHead+"</td><td align=right>"+dlpSubTotalBody+"</td><td>"+manufacturer+"</td><td>"+modelName+"</td><td>"+deviceName+"</td><td>MOD</td></tr>\n"
 			+ "<tr><td colspan=2></td><td colspan=15><table><tr><th>Number</th><th>Type</th><th>Range mm</th><th>CTDIvol mGy</th><th>DLP mGy.cm</th><th>Phantom</th></tr>\n"
 			+ "<tr><td></td><td>"+scanTypeArray[0]+"</td><td></td><td>"+ctdiVolArray[0]+"</td><td>"+dlpArray[0]+"</td><td>"+phantomTypeArray[0]+"</td></tr>\n"
 			+ "<tr><td></td><td>"+scanTypeArray[1]+"</td><td></td><td>"+ctdiVolArray[1]+"</td><td>"+dlpArray[1]+"</td><td>"+phantomTypeArray[1]+"</td></tr>\n"
@@ -812,14 +815,9 @@ System.err.println("validate =\n"+validator.validate(list));
 		assertEquals("Checking CT Dose Length Product Body Sub-Total",dlpSubTotalBody,xpf.newXPath().evaluate("/DicomStructuredReport/DicomStructuredReportContent/container[concept/@cv='113701']/container[concept/@cv='113811']/num[concept/@cv='113813']/num[concept/@cv='220005' and code/concept/@cv='113835' and code/value/@cv='113691']/value",srDocument));
 		
 		String expectValidationString = 
-		 "Found XRayRadiationDoseSR IOD\n"
+		 "Root Content Item has Template Identifier DCMR:10011 (Manufacturer \"Acme\", Model \"Scanner\")\n"
+		+"Found XRayRadiationDoseSR IOD\n"
 		+"Found Root Template TID_10011 (CTRadiationDose)\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 8] NUM (113824,DCM,\"Exposure Time\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 10] NUM (113826,DCM,\"Nominal Single Collimation Width\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 11] NUM (113827,DCM,\"Nominal Total Collimation Width\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 12] NUM (113828,DCM,\"Pitch Factor\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing conditional content item\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 13] NUM (113823,DCM,\"Number of X-Ray Sources\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
-		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 14] CONTAINER (113831,DCM,\"CT X-Ray Source Parameters\"): within 1.12.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 8] NUM (113824,DCM,\"Exposure Time\"): within 1.13.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 10] NUM (113826,DCM,\"Nominal Single Collimation Width\"): within 1.13.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 11] NUM (113827,DCM,\"Nominal Total Collimation Width\"): within 1.13.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
@@ -838,17 +836,23 @@ System.err.println("validate =\n"+validator.validate(list));
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 12] NUM (113828,DCM,\"Pitch Factor\"): within 1.15.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing conditional content item\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 13] NUM (113823,DCM,\"Number of X-Ray Sources\"): within 1.15.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
 		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 14] CONTAINER (113831,DCM,\"CT X-Ray Source Parameters\"): within 1.15.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 8] NUM (113824,DCM,\"Exposure Time\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 10] NUM (113826,DCM,\"Nominal Single Collimation Width\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 11] NUM (113827,DCM,\"Nominal Total Collimation Width\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 12] NUM (113828,DCM,\"Pitch Factor\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing conditional content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 13] NUM (113823,DCM,\"Number of X-Ray Sources\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
+		+"Error: Template 10013 CTIrradiationEventData/[Row 1] CONTAINER (113819,DCM,\"CT Acquisition\")/[Row 7] CONTAINER (113822,DCM,\"CT Acquisition Parameters\")/[Row 14] CONTAINER (113831,DCM,\"CT X-Ray Source Parameters\"): within 1.16.4: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113819,DCM,\"CT Acquisition\")/CONTAINER (113822,DCM,\"CT Acquisition Parameters\"): Missing required content item\n"
 		+"Root Template Validation Complete\n"
-		+"Error: 1.11.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
-		+"Error: 1.11.2.2: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
-		+"Error: 1.11.2.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
-		+"Error: 1.11.2.3: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
-		+"Error: 1.11.2.3.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.2: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
+		+"Warning: 1.12.2.2.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
+		+"Warning: 1.12.2.3: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\"): Content Item not in template\n"
+		+"Warning: 1.12.2.3.1: /CONTAINER (113701,DCM,\"X-Ray Radiation Dose Report\")/CONTAINER (113811,DCM,\"CT Accumulated Dose Data\")/NUM (113813,DCM,\"CT Dose Length Product Total\")/NUM (220005,99PMP,\"CT Dose Length Product Sub-Total\")/CODE (113835,DCM,\"CTDIw Phantom Type\"): Content Item not in template\n"
 		+"IOD validation complete\n"
 		;
 		com.pixelmed.validate.DicomSRValidator validator = new com.pixelmed.validate.DicomSRValidator();
 		//validator.setOptionDescribeChecking(true);
-System.err.println("validate =\n"+validator.validate(list));
+		System.err.println("validate =\n"+validator.validate(list));
 		assertEquals("Checking validation from StructuredReport Document",expectValidationString,validator.validate(list));
 
 		

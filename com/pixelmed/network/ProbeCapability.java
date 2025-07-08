@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -19,6 +19,9 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class provides utilities to probe the capabilities of potential DICOM Application Entities,
  * used for example to maintain a cache of potential C-MOVE targets.</p>
@@ -37,12 +40,10 @@ import java.util.List;
  * @author	dclunie
  */
 public class ProbeCapability implements Runnable {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ProbeCapability.java,v 1.24 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ProbeCapability.java,v 1.12 2012/09/03 21:29:15 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ProbeCapability.class);
 	
-	/***/
-	private int debugLevel;
 	/***/
 	private boolean knowHostIsReachable;
 	/***/
@@ -166,7 +167,7 @@ public class ProbeCapability implements Runnable {
 	 *
 	 * @return	the (preferred) query model supported; one of {@link NetworkApplicationProperties#StudyRootQueryModel NetworkApplicationProperties.StudyRootQueryModel}
 	 * or {@link NetworkApplicationProperties#PatientRootQueryModel NetworkApplicationProperties.PatientRootQueryModel}
-	 * or {@link NetworkApplicationProperties#PatientStudyOnlyQueryModel NetworkApplicationProperties.PatientStudyOnlyQueryModel}.</p>
+	 * or {@link NetworkApplicationProperties#PatientStudyOnlyQueryModel NetworkApplicationProperties.PatientStudyOnlyQueryModel}.
 	 */
 	public String getQueryModel() { return queryModel; }
 
@@ -181,18 +182,37 @@ public class ProbeCapability implements Runnable {
 	/**
 	 * <p>Establish an association to the specified AE, and probe its capabilities with respect to those SOP Classes supported.</p>
 	 *
-	 * @param	arrayOfSOPClasses	the SOP Classes to test for
-	 * @param	hostname		their hostname or IP address
-	 * @param	port			their port
-	 * @param	calledAETitle		their AE Title
-	 * @param	callingAETitle		our AE Title
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @return				a list of Strings each being a SOP Class that is supported, or an empty list
-	 * @exception	DicomNetworkException
-	 * @exception	IOException
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #probeSupportedSOPClasses(String[],String,int,String,String)} instead.
+	 * @param	arrayOfSOPClasses		the SOP Classes to test for
+	 * @param	hostname				their hostname or IP address
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @param	debugLevel				ignored
+	 * @return							a list of Strings each being a SOP Class that is supported, or an empty list
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
 	 */
 	public static List probeSupportedSOPClasses(String[] arrayOfSOPClasses,String hostname,int port,String calledAETitle,String callingAETitle,
 			int debugLevel) throws DicomNetworkException, IOException {
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		return probeSupportedSOPClasses(arrayOfSOPClasses,hostname,port,calledAETitle,callingAETitle);
+	}
+	
+	/**
+	 * <p>Establish an association to the specified AE, and probe its capabilities with respect to those SOP Classes supported.</p>
+	 *
+	 * @param	arrayOfSOPClasses		the SOP Classes to test for
+	 * @param	hostname				their hostname or IP address
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @return							a list of Strings each being a SOP Class that is supported, or an empty list
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
+	 */
+	public static List probeSupportedSOPClasses(String[] arrayOfSOPClasses,String hostname,int port,String calledAETitle,String callingAETitle
+			) throws DicomNetworkException, IOException {
 		ArrayList supportedSOPClasses = new ArrayList();
 		LinkedList presentationContexts = new LinkedList();
 		LinkedList tslist = new LinkedList();
@@ -200,8 +220,8 @@ public class ProbeCapability implements Runnable {
 		for (int i=0,contextID=1; i<arrayOfSOPClasses.length; ++i,contextID+=2) {
 			presentationContexts.add(new PresentationContext((byte)contextID,arrayOfSOPClasses[i],tslist));
 		}
-		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,false,debugLevel);
-if (debugLevel > 2) System.err.println("Storage test association "+association);
+		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,false);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Storage test association\n{}",association.toString());
 		for (int i=0; i<arrayOfSOPClasses.length; ++i) {
 			try {
 				byte contextID = association.getSuitablePresentationContextID(arrayOfSOPClasses[i]);
@@ -226,26 +246,22 @@ if (debugLevel > 2) System.err.println("Storage test association "+association);
 	 * @param	port			their port
 	 * @param	calledAETitle		their AE Title
 	 * @param	callingAETitle		our AE Title
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	DicomNetworkException
-	 * @exception	IOException
 	 */
-	private void probeSupportedSOPClasses(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel)  {
+	private void probeSupportedSOPClasses(String hostname,int port,String calledAETitle,String callingAETitle)  {
 		try {
 			supportedStorageSOPClasses = probeSupportedSOPClasses(
 				SOPClass.arrayOfStorageSOPClasses,
-				hostname,port,calledAETitle,callingAETitle,debugLevel);
-if (debugLevel > 1) System.err.println("Supported Storage SOP Classes "+supportedStorageSOPClasses);
+				hostname,port,calledAETitle,callingAETitle);
+			slf4jlogger.trace("Supported Storage SOP Classes {}",supportedStorageSOPClasses);
 		}
 		catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-			// else quietly accept that it didn't work
+			slf4jlogger.trace("",e);	// quietly accept that it didn't work
 		}
 		try {
 			supportedQuerySOPClasses = probeSupportedSOPClasses(
 				SOPClass.arrayOfQuerySOPClasses,
-				hostname,port,calledAETitle,callingAETitle,debugLevel);
-if (debugLevel > 1) System.err.println("Supported Query SOP Classes "+supportedQuerySOPClasses);
+				hostname,port,calledAETitle,callingAETitle);
+			slf4jlogger.trace("Supported Query SOP Classes {}",supportedQuerySOPClasses);
 			if (supportedQuerySOPClasses != null) {
 				// sequence of check prefers study root over patient root
 				if (supportedQuerySOPClasses.contains(SOPClass.StudyRootQueryRetrieveInformationModelFind)) {
@@ -260,14 +276,13 @@ if (debugLevel > 1) System.err.println("Supported Query SOP Classes "+supportedQ
 			}
 		}
 		catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-			// else quietly accept that it didn't work
+			slf4jlogger.trace("",e);	// quietly accept that it didn't work
 		}
 		try {
 			supportedRetrieveWithMoveSOPClasses = probeSupportedSOPClasses(
 				SOPClass.arrayOfRetrieveWithMoveSOPClasses,
-				hostname,port,calledAETitle,callingAETitle,debugLevel);
-if (debugLevel > 1) System.err.println("Supported Retrieve with Move SOP Classes "+supportedRetrieveWithMoveSOPClasses);
+				hostname,port,calledAETitle,callingAETitle);
+			slf4jlogger.trace("Supported Retrieve with Move SOP Classes {}",supportedRetrieveWithMoveSOPClasses);
 			if (supportedRetrieveWithMoveSOPClasses != null
 			 && queryModel == null) {		// only check if not determined from query SOP Classes supported, else assume same model as find
 				// sequence of check prefers study root over patient root
@@ -282,15 +297,14 @@ if (debugLevel > 1) System.err.println("Supported Retrieve with Move SOP Classes
 				}
 			}
 		}
-			catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-			// else quietly accept that it didn't work
+		catch (Exception e) {
+			slf4jlogger.trace("",e);	// quietly accept that it didn't work
 		}
 		try {
 			supportedRetrieveWithGetSOPClasses = probeSupportedSOPClasses(
 				SOPClass.arrayOfRetrieveWithGetSOPClasses,
-				hostname,port,calledAETitle,callingAETitle,debugLevel);
-if (debugLevel > 1) System.err.println("Supported Retrieve with Get SOP Classes "+supportedRetrieveWithGetSOPClasses);
+				hostname,port,calledAETitle,callingAETitle);
+			slf4jlogger.trace("Supported Retrieve with Get SOP Classes {}{}",supportedRetrieveWithGetSOPClasses);
 			if (supportedRetrieveWithGetSOPClasses != null
 			 && queryModel == null) {		// only check if not determined from query SOP Classes supported, else assume same model as find or move
 				// sequence of check prefers study root over patient root
@@ -305,9 +319,8 @@ if (debugLevel > 1) System.err.println("Supported Retrieve with Get SOP Classes 
 				}
 			}
 		}
-			catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-			// else quietly accept that it didn't work
+		catch (Exception e) {
+			slf4jlogger.trace("",e);	// quietly accept that it didn't work
 		}
 	}
 	
@@ -316,17 +329,31 @@ if (debugLevel > 2) e.printStackTrace(System.err);
 	 *
 	 * <p>The parameters are established but the work is deferred until run() is called.</p>
 	 *
-	 * @param	hostname		their hostname or IP address
-	 * @param	callingAETitle	our AE Title
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	DicomNetworkException
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #ProbeCapability(String,String)} instead.
+	 * @param	hostname				their hostname or IP address
+	 * @param	callingAETitle			our AE Title
+	 * @param	debugLevel				ignored
+	 * @throws	DicomNetworkException
 	 */
 	public ProbeCapability(String hostname,String callingAETitle,int debugLevel) throws DicomNetworkException {
+		this(hostname,callingAETitle);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Establish an association to the specified host, find a suitable port and AE Title, and probe its capabilities.</p>
+	 *
+	 * <p>The parameters are established but the work is deferred until run() is called.</p>
+	 *
+	 * @param	hostname				their hostname or IP address
+	 * @param	callingAETitle			our AE Title
+	 * @throws	DicomNetworkException
+	 */
+	public ProbeCapability(String hostname,String callingAETitle) throws DicomNetworkException {
 		done=false;
 		knowHostIsReachable=true;
 		knowCalledAET=false;
 		knowPort=false;
-		this.debugLevel=debugLevel;
 		this.calledAETitle=null;
 		this.callingAETitle=callingAETitle;
 		this.hostname=hostname;
@@ -338,18 +365,33 @@ if (debugLevel > 2) e.printStackTrace(System.err);
 	 *
 	 * <p>The parameters are established but the work is deferred until run() is called.</p>
 	 *
-	 * @param	hostname		their hostname or IP address
-	 * @param	calledAETitle	their AE Title
-	 * @param	callingAETitle	our AE Title
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	DicomNetworkException
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #ProbeCapability(String,String,String)} instead.
+	 * @param	hostname				their hostname or IP address
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @param	debugLevel				ignored
+	 * @throws	DicomNetworkException
 	 */
 	public ProbeCapability(String hostname,String calledAETitle,String callingAETitle,int debugLevel) throws DicomNetworkException {
+		this(hostname,calledAETitle,callingAETitle);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Establish an association to the specified AE, find a suitable port, and probe its capabilities.</p>
+	 *
+	 * <p>The parameters are established but the work is deferred until run() is called.</p>
+	 *
+	 * @param	hostname				their hostname or IP address
+	 * @param	calledAETitle			their AE Title
+	 * @param	callingAETitle			our AE Title
+	 * @throws	DicomNetworkException
+	 */
+	public ProbeCapability(String hostname,String calledAETitle,String callingAETitle) throws DicomNetworkException {
 		done=false;
 		knowHostIsReachable=true;
 		knowCalledAET=true;
 		knowPort=false;
-		this.debugLevel=debugLevel;
 		this.calledAETitle=calledAETitle;
 		this.callingAETitle=callingAETitle;
 		this.hostname=hostname;
@@ -361,18 +403,33 @@ if (debugLevel > 2) e.printStackTrace(System.err);
 	 *
 	 * <p>The parameters are established but the work is deferred until run() is called.</p>
 	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #ProbeCapability(String,int,String,String)} instead.
 	 * @param	hostname		their hostname or IP address
 	 * @param	port			their port
 	 * @param	calledAETitle	their AE Title
 	 * @param	callingAETitle	our AE Title
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
+	 * @param	debugLevel		ignored
 	 */
 	public ProbeCapability(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel) {
+		this(hostname,port,calledAETitle,callingAETitle);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Establish an association to the specified AE and using the specified port, and probe its capabilities.</p>
+	 *
+	 * <p>The parameters are established but the work is deferred until run() is called.</p>
+	 *
+	 * @param	hostname		their hostname or IP address
+	 * @param	port			their port
+	 * @param	calledAETitle	their AE Title
+	 * @param	callingAETitle	our AE Title
+	 */
+	public ProbeCapability(String hostname,int port,String calledAETitle,String callingAETitle) {
 		done=false;
 		knowHostIsReachable=true;
 		knowCalledAET=true;
 		knowPort=true;
-		this.debugLevel=debugLevel;
 		this.calledAETitle=calledAETitle;
 		this.callingAETitle=callingAETitle;
 		this.hostname=hostname;
@@ -518,13 +575,13 @@ if (debugLevel > 2) e.printStackTrace(System.err);
 	 * <p>Actually do the work to probe for the requested information.</p>
 	 */
 	public void run() {
-System.err.println("ProbeCapability.run()");
+		slf4jlogger.info("ProbeCapability.run()");
 		try {
 			if (!knowPort) {
 				port=0;
 				for (int i=0; port == 0 && i<NetworkDefaultValues.commonPortNumbers.length; ++i) {
 					int p = NetworkDefaultValues.commonPortNumbers[i];
-if (debugLevel > 2) System.err.println("Trying port "+p);
+					slf4jlogger.trace("Trying port {}",p);
 					try {
 						if (canConnectToPort(hostname,p)) {
 							if (!knowCalledAET) {
@@ -533,45 +590,41 @@ if (debugLevel > 2) System.err.println("Trying port "+p);
 								String aet = aetGenerator.next();
 								while (aet != null && calledAETitle == null) {
 									try {
-System.err.println("Trying Called AET "+aet);
-										new VerificationSOPClassSCU(hostname,p,aet,callingAETitle,false/*secureTransprt*/,debugLevel);
+										slf4jlogger.info("Trying Called AET {}",aet);
+										new VerificationSOPClassSCU(hostname,p,aet,callingAETitle,false/*secureTransprt*/);
 										// worked otherwise would have thrown an exception
 										port=p;
 										calledAETitle = aet;
 									}
 									catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-System.err.println(e);
-										// else quietly accept that it didn't work
+										slf4jlogger.trace("",e);	// quietly accept that it didn't work
 									}
 									aet = aetGenerator.next();
 								}
 							}
 							else {
-								new VerificationSOPClassSCU(hostname,p,calledAETitle,callingAETitle,false/*secureTransprt*/,debugLevel);
+								new VerificationSOPClassSCU(hostname,p,calledAETitle,callingAETitle,false/*secureTransprt*/);
 								// worked otherwise would have thrown an exception
 								port=p;
 							}
 						}
 					}
 					catch (Exception e) {
-if (debugLevel > 2) e.printStackTrace(System.err);
-e.printStackTrace(System.err);
-						// else quietly accept that it didn't work
+						slf4jlogger.trace("",e);	// quietly accept that it didn't work
 					}
 				}
 				if (port != 0) {
-if (debugLevel > 1) System.err.println("ProbeCapability: successful verification on port "+port);
+					slf4jlogger.trace("ProbeCapability: successful verification on port {}",port);
 				}
 			}
 		
 			if (hostname != null && port != 0) {
-				probeSupportedSOPClasses(hostname,port,calledAETitle,callingAETitle,debugLevel);
+				probeSupportedSOPClasses(hostname,port,calledAETitle,callingAETitle);
 			}
 		}
 		catch (Exception e) {
 			// No exceptions anticipated, but just in case, we don't want to run forever
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		done=true;
 	}
@@ -698,15 +751,15 @@ if (debugLevel > 1) System.err.println("ProbeCapability: successful verification
 //System.err.println("Testing address "+address);
 //System.err.print("Testing address "+describeIPAddress(address));
 				if (isReachable(address)) {
-System.err.println("Can reach address "+address);
+					slf4jlogger.info("Can reach address {}",address);
 				}
 				else {
-System.err.println("Cannot reach address "+address);
+					slf4jlogger.info("Cannot reach address {}",address);
 				}
 			}
 			catch (java.net.UnknownHostException e) {
 				// should not happen, since only occurs if byte array is wrong length
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -725,7 +778,7 @@ System.err.println("Cannot reach address "+address);
 			}
 		}
 		catch (java.net.UnknownHostException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return allHostInfo;
 	}
@@ -735,7 +788,7 @@ System.err.println("Cannot reach address "+address);
 		if (allHostInfo != null) {
 			for (int i=0; i<allHostInfo.length; ++i) {
 				InetAddress address = allHostInfo[i];
-System.err.print("Got address "+describeIPAddress(address));
+				slf4jlogger.info("Got address {}",describeIPAddress(address));
 				if (address != null) {
 					if (address instanceof Inet4Address) {
 						Inet4Address ip4Address = (Inet4Address)address;
@@ -775,7 +828,7 @@ System.err.print("Got address "+describeIPAddress(address));
 	/**
 	 * <p>For testing, establish an association to the specified AE, find a suitable port if necessary, and probe its capabilities.</p>
 	 *
-	 * @param	arg	array of three, four or five values - their hostname, optionally their port, optionally their AE Title, our AE Title, and the debug level
+	 * @param	arg	array of three or four values - their hostname, optionally their port, optionally their AE Title, our AE Title
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -783,17 +836,17 @@ System.err.print("Got address "+describeIPAddress(address));
 			if (arg.length == 1) {
 				probeRangeAllHostsOnLocalSubnet(arg[0]);	// our AE Title
 			}
+			else if (arg.length == 2) {
+				capability = new ProbeCapability(arg[0],arg[1]);
+			}
 			else if (arg.length == 3) {
-				capability = new ProbeCapability(arg[0],arg[1],Integer.parseInt(arg[2]));
+				capability = new ProbeCapability(arg[0],arg[1],arg[2]);
 			}
 			else if (arg.length == 4) {
-				capability = new ProbeCapability(arg[0],arg[1],arg[2],Integer.parseInt(arg[3]));
-			}
-			else if (arg.length == 5) {
-				capability = new ProbeCapability(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],Integer.parseInt(arg[4]));
+				capability = new ProbeCapability(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3]);
 			}
 			else {
-				System.err.println("Usage: hostname [[port] calledAET] callingAET debugLevel");
+				System.err.println("Usage: hostname [[port] calledAET] callingAET");
 			}
 			if (capability != null) {
 				try {
@@ -801,7 +854,7 @@ System.err.print("Got address "+describeIPAddress(address));
 					//new Thread(capability).start();
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				}
 				//while (!capability.isDone()) {
 					//sleep(1000);
@@ -810,7 +863,7 @@ System.err.print("Got address "+describeIPAddress(address));
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

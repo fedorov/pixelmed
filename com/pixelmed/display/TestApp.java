@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.*; 
+import com.pixelmed.dicom.*;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -11,15 +14,11 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.dicom.*;
-
 /**
  * @author	dclunie
  */
 class TestApp extends ApplicationFrame {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestApp.java,v 1.22 2007/12/19 22:44:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestApp.java,v 1.33 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	arg
@@ -72,8 +71,7 @@ class TestApp extends ApplicationFrame {
 					imagesPerRow=Integer.valueOf(arg[1]).intValue();
 					imagesPerCol=Integer.valueOf(arg[2]).intValue();
 				} catch (Exception e) {
-					System.err.println(e);
-					e.printStackTrace(System.err);
+					e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 					System.exit(0);
 				}
 			}
@@ -86,8 +84,7 @@ class TestApp extends ApplicationFrame {
 				DicomInputStream i = new DicomInputStream(new FileInputStream(arg[0]));
 				sImg=new SourceImage(i);
 			} catch (Exception e) {
-				System.err.println(e);
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				System.exit(0);
 			}
 		}
@@ -102,14 +99,14 @@ class TestApp extends ApplicationFrame {
 			methodToUse.invoke(null/*since static*/,args);
 		}
 		catch (Exception e) {	// ClassNotFoundException,NoSuchMethodException,IllegalAccessException
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		java.awt.Dimension d = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		int frameWidth  = (int)d.getWidth();
 		int frameHeight = (int)d.getHeight();
-System.err.println("frameWidth="+frameWidth);
-System.err.println("frameHeight="+frameHeight);
+		System.err.println("frameWidth="+frameWidth);	// no need to use SLF4J since command line utility/test
+		System.err.println("frameHeight="+frameHeight);
 		af.setUndecorated(true);
 		af.setLocation(0,0);
 		af.setSize(frameWidth,frameHeight);
@@ -122,8 +119,8 @@ System.err.println("frameHeight="+frameHeight);
 
 		int singleWidth  = frameWidth /imagesPerRow;
 		int singleHeight = frameHeight/imagesPerCol;
-System.err.println("singleWidth="+singleWidth);
-System.err.println("singleHeight="+singleHeight);
+		System.err.println("singleWidth="+singleWidth);
+		System.err.println("singleHeight="+singleHeight);
 
 		for (int x=0; x<imagesPerCol; ++x) {
 			for (int y=0; y<imagesPerRow; ++y) {

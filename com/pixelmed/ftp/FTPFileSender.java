@@ -1,6 +1,11 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
+
+import com.pixelmed.display.SafeProgressBarUpdaterThread;
+import com.pixelmed.display.event.StatusChangeEvent;
+import com.pixelmed.event.ApplicationEventDispatcher;
+import com.pixelmed.utils.MessageLogger;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -24,13 +29,8 @@ import java.security.NoSuchAlgorithmException;
 
 import javax.swing.JProgressBar;
 
-import com.pixelmed.display.SafeProgressBarUpdaterThread;
-
-import com.pixelmed.display.event.StatusChangeEvent;
-
-import com.pixelmed.event.ApplicationEventDispatcher;
-
-import com.pixelmed.utils.MessageLogger;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to send files via FTP or secure FTP over TLS.</p>
@@ -38,10 +38,31 @@ import com.pixelmed.utils.MessageLogger;
  * @author	dclunie
  */
 public class FTPFileSender {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPFileSender.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPFileSender.java,v 1.8 2013/02/01 13:53:20 dclunie Exp $";
-	
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FTPFileSender.class);		// do not confuse with MessageLogger
+
 	protected static int socketConnectTimeoutInMilliSeconds = 30000;
+	
+	/**
+	 * <p>Construct an ftp connection to send a list of files to a remote server.</p>
+	 *
+	 * <p>Sends a list of files to a single remote directory. Note that if the supplied local file names
+	 * have the same base name (same name in different local directories) then they wil overwrite each
+	 * other in the single remote directory; hence the option to generate random remote names.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #FTPFileSender(FTPRemoteHost,String[],boolean,MessageLogger,JProgressBar)} instead.
+	 * @param	remoteHost						the characteristics of the remote host
+	 * @param	files							a String array of local filenames to send
+	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
+	 * @param	debugLevel						ignored
+	 * @param	logger							where to send routine logging messages (may be null)
+	 * @param	progressBar						where to send progress updates (may be null)
+	 */
+	public FTPFileSender(FTPRemoteHost remoteHost,String[] files,boolean generateRandomRemoteFileNames,int debugLevel,MessageLogger logger,JProgressBar progressBar) throws NoSuchAlgorithmException, IOException, Exception {
+		this(remoteHost,files,generateRandomRemoteFileNames,logger,progressBar);
+		slf4jlogger.warn("gDebug level supplied as constructor argument ignored");
+	}
 	
 	/**
 	 * <p>Construct an ftp connection to send a list of files to a remote server.</p>
@@ -53,14 +74,13 @@ public class FTPFileSender {
 	 * @param	remoteHost						the characteristics of the remote host
 	 * @param	files							a String array of local filenames to send
 	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
-	 * @param	debugLevel						if greater than zero, debugging messages will be sent to stderr
 	 * @param	logger							where to send routine logging messages (may be null)
 	 * @param	progressBar						where to send progress updates (may be null)
 	 */
-	public FTPFileSender(FTPRemoteHost remoteHost,String[] files,boolean generateRandomRemoteFileNames,int debugLevel,MessageLogger logger,JProgressBar	progressBar) throws NoSuchAlgorithmException, IOException, Exception {
-		this(remoteHost.getHost(),remoteHost.getUser(),remoteHost.getPassword(),remoteHost.getDirectory(),files,remoteHost.getSecurity().equals(FTPSecurityType.TLS),generateRandomRemoteFileNames,debugLevel,logger,progressBar);
+	public FTPFileSender(FTPRemoteHost remoteHost,String[] files,boolean generateRandomRemoteFileNames,MessageLogger logger,JProgressBar progressBar) throws NoSuchAlgorithmException, IOException, Exception {
+		this(remoteHost.getHost(),remoteHost.getUser(),remoteHost.getPassword(),remoteHost.getDirectory(),files,remoteHost.getSecurity().equals(FTPSecurityType.TLS),generateRandomRemoteFileNames,logger,progressBar);
 	}
-
+	
 	/**
 	 * <p>Construct an ftp connection to send a list of files to a remote server.</p>
 	 *
@@ -68,6 +88,7 @@ public class FTPFileSender {
 	 * have the same base name (same name in different local directories) then they wil overwrite each
 	 * other in the single remote directory; hence the option to generate random remote names.</p>
 	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #FTPFileSender(String,String,String,String,String[],boolean secure,boolean)} instead.
 	 * @param	server							the hostname or IP address of the server
 	 * @param	username						the username for login
 	 * @param	password						the password for login
@@ -75,10 +96,11 @@ public class FTPFileSender {
 	 * @param	files							a String array of local filenames to send
 	 * @param	secure							whether or not to use secure ftp over tls, or ordinary ftp
 	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
-	 * @param	debugLevel						if greater than zero, debugging messages will be sent to stderr
+	 * @param	debugLevel						ignored
 	 */
 	public FTPFileSender(String server,String username,String password,String remoteDirectory,String[] files,boolean secure,boolean generateRandomRemoteFileNames,int debugLevel) throws NoSuchAlgorithmException, IOException, FTPException {
-		this(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames,debugLevel,null,null);
+		this(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames);
+		slf4jlogger.warn("gDebug level supplied as constructor argument ignored");
 	}
 
 	/**
@@ -95,50 +117,90 @@ public class FTPFileSender {
 	 * @param	files							a String array of local filenames to send
 	 * @param	secure							whether or not to use secure ftp over tls, or ordinary ftp
 	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
-	 * @param	debugLevel						if greater than zero, debugging messages will be sent to stderr
+	 */
+	public FTPFileSender(String server,String username,String password,String remoteDirectory,String[] files,boolean secure,boolean generateRandomRemoteFileNames) throws NoSuchAlgorithmException, IOException, FTPException {
+		this(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames,null,null);
+	}
+	
+	/**
+	 * <p>Construct an ftp connection to send a list of files to a remote server.</p>
+	 *
+	 * <p>Sends a list of files to a single remote directory. Note that if the supplied local file names
+	 * have the same base name (same name in different local directories) then they wil overwrite each
+	 * other in the single remote directory; hence the option to generate random remote names.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #FTPFileSender(String,String,String,String,String[],boolean secure,boolean,MessageLogger,JProgressBar)} instead.
+	 * @param	server							the hostname or IP address of the server
+	 * @param	username						the username for login
+	 * @param	password						the password for login
+	 * @param	remoteDirectory					the remote directory to upload the files to (may be null if the root directory is to be used)
+	 * @param	files							a String array of local filenames to send
+	 * @param	secure							whether or not to use secure ftp over tls, or ordinary ftp
+	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
+	 * @param	debugLevel						ignored
 	 * @param	logger							where to send routine logging messages (may be null)
 	 * @param	progressBar						where to send progress updates (may be null)
 	 */
-	
-	public FTPFileSender(String server,String username,String password,String remoteDirectory,String[] files,boolean secure,boolean generateRandomRemoteFileNames,int debugLevel,MessageLogger logger,JProgressBar progressBar) throws NoSuchAlgorithmException, IOException,
-	FTPException {
+	public FTPFileSender(String server,String username,String password,String remoteDirectory,String[] files,boolean secure,boolean generateRandomRemoteFileNames,int debugLevel,MessageLogger logger,JProgressBar progressBar) throws NoSuchAlgorithmException, IOException, FTPException {
+		this(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames,logger,progressBar);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	/**
+	 * <p>Construct an ftp connection to send a list of files to a remote server.</p>
+	 *
+	 * <p>Sends a list of files to a single remote directory. Note that if the supplied local file names
+	 * have the same base name (same name in different local directories) then they wil overwrite each
+	 * other in the single remote directory; hence the option to generate random remote names.</p>
+	 *
+	 * @param	server							the hostname or IP address of the server
+	 * @param	username						the username for login
+	 * @param	password						the password for login
+	 * @param	remoteDirectory					the remote directory to upload the files to (may be null if the root directory is to be used)
+	 * @param	files							a String array of local filenames to send
+	 * @param	secure							whether or not to use secure ftp over tls, or ordinary ftp
+	 * @param	generateRandomRemoteFileNames	whether or not to generate random remote file names or to use the basename of the supplied local filename
+	 * @param	logger							where to send routine logging messages (may be null)
+	 * @param	progressBar						where to send progress updates (may be null)
+	 */
+	public FTPFileSender(String server,String username,String password,String remoteDirectory,String[] files,boolean secure,boolean generateRandomRemoteFileNames,MessageLogger logger,JProgressBar progressBar) throws NoSuchAlgorithmException, IOException, FTPException {
 		SafeProgressBarUpdaterThread progressBarUpdater = null;
 		if (progressBar != null) {
 			progressBarUpdater =  new SafeProgressBarUpdaterThread(progressBar);
 		}
 		FTPClient ftp = secure ? new FTPSClient("TLS",false/*isImplicit*/) : new FTPClient();
-if (debugLevel > 0) System.err.println("FTPClient original connect timeout = "+ftp.getConnectTimeout()+" ms");
+		slf4jlogger.debug("FTPClient original connect timeout = {} ms",ftp.getConnectTimeout());
 		ftp.setConnectTimeout(socketConnectTimeoutInMilliSeconds);
-if (debugLevel > 0) System.err.println("FTPClient replaced connect timeout = "+ftp.getConnectTimeout()+" ms");
-if (debugLevel > 0)  ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.err)));
+		slf4jlogger.debug("FTPClient replaced connect timeout = {} ms",ftp.getConnectTimeout());
+		if (slf4jlogger.isDebugEnabled()) ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.err)));	// This is not right ... need to find a way to create PrintWriter that sends to SLF4H :(
 		try {
 			int reply;
 			if (secure) {
 				try {
-if (debugLevel > 0) System.err.println("Trying to connect in explicit mode to "+server);
+					slf4jlogger.debug("Trying to connect in explicit mode to {}",server);
 					ftp.connect(server);
 				}
 				catch (Exception e) {
-if (debugLevel > 0) e.printStackTrace(System.err);
-if (debugLevel > 0) System.err.println("Failed to connect in explicit mode to "+server+" so trying again in implicit mode on port 990");
+					slf4jlogger.debug("Failed to connect in explicit mode to {}",server,e);
+					slf4jlogger.debug("Trying again in implicit mode on port 990");
 					// failed so try implicit mode on port 990
 					ftp = new FTPSClient("TLS",true/*isImplicit*/);
-if (debugLevel > 0) System.err.println("FTPClient original connect timeout = "+ftp.getConnectTimeout()+" ms");
+					slf4jlogger.debug("FTPClient original connect timeout = {} ms",ftp.getConnectTimeout());
 					ftp.setConnectTimeout(socketConnectTimeoutInMilliSeconds);
-if (debugLevel > 0) System.err.println("FTPClient replaced connect timeout = "+ftp.getConnectTimeout()+" ms");
+					slf4jlogger.debug("FTPClient replaced connect timeout = {} ms",ftp.getConnectTimeout());
 					ftp.setDefaultPort(990);
-if (debugLevel > 0)  ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.err)));
-if (debugLevel > 0) System.err.println("About to connect");
+					if (slf4jlogger.isDebugEnabled()) ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.err)));	// This is not right ... need to find a way to create PrintWriter that sends to SLF4H :(
+					slf4jlogger.debug("About to connect");
 					ftp.connect(server);
-					if (debugLevel > 0) System.err.println("Back from connect");
+					slf4jlogger.debug("Back from connect");
 				}
 			}
 			else {
 				// Let any failure fall through with no retry ...
 				ftp.connect(server);
 			}
-if (debugLevel > 0) System.err.println("Connected to "+server);
-if (debugLevel > 0) System.err.print(ftp.getReplyString());
+			slf4jlogger.debug("Connected to {}",server);
+			slf4jlogger.debug(ftp.getReplyString());
 			reply = ftp.getReplyCode();
 			if(!FTPReply.isPositiveCompletion(reply)) {
 				ftp.disconnect();
@@ -161,7 +223,7 @@ if (debugLevel > 0) System.err.print(ftp.getReplyString());
 					ftp.disconnect();
 					throw new FTPException("FTP server "+server+" cwd to "+remoteDirectory+" failed");
 				}
-if (debugLevel > 0) System.err.println("Working directory is now "+ftp.printWorkingDirectory());
+				slf4jlogger.debug("Working directory is now {}",ftp.printWorkingDirectory());
 			}
 
 			if (!ftp.setFileType(FTP.BINARY_FILE_TYPE)) {
@@ -178,13 +240,13 @@ if (debugLevel > 0) System.err.println("Working directory is now "+ftp.printWork
 				File localFile = new File(localFilename);
 				InputStream i = new FileInputStream(localFile);
 				String remoteFilename = generateRandomRemoteFileNames ? UUID.randomUUID().toString() : localFile.getName();
-if (debugLevel > 0) System.err.println("Attempting to store local "+localFilename+" to remote "+remoteFilename);
+				slf4jlogger.debug("Attempting to store local {} to remote {}",localFilename,remoteFilename);
 				if (!ftp.storeFile(remoteFilename,i)) {
 					ftp.disconnect();
 					throw new FTPException("FTP server "+server+" file store of local "+localFilename+" to remote "+remoteFilename+" failed");
 				}
 				i.close();
-if (debugLevel > 0) System.err.println("Successfully stored local "+localFilename+" to remote "+remoteFilename);
+				slf4jlogger.debug("Successfully stored local {} to remote {}",localFilename,remoteFilename);
 				if (logger != null) {
 					logger.sendLn("Successfully stored local "+localFilename+" to remote "+remoteFilename);
 				}
@@ -199,7 +261,7 @@ if (debugLevel > 0) System.err.println("Successfully stored local "+localFilenam
 		}
 		finally {
 			if(ftp.isConnected()) {
-if (debugLevel > 0) System.err.println("FTPFileSender(): finally so disconnect");
+				slf4jlogger.debug("FTPFileSender(): finally so disconnect");
 				ftp.disconnect();
 			}
 		}
@@ -216,15 +278,14 @@ if (debugLevel > 0) System.err.println("FTPFileSender(): finally so disconnect")
 			}
 			boolean secure = arg[4].toUpperCase(java.util.Locale.US).trim().equals("SECURE");
 			boolean generateRandomRemoteFileNames = arg[5].toUpperCase(java.util.Locale.US).trim().equals("RANDOM");
-			int debugLevel = new Integer(arg[6]).intValue();
 			
-			int numberOfFiles = arg.length - 7;
+			int numberOfFiles = arg.length - 6;
 			String[] files = new String[numberOfFiles];
-			System.arraycopy(arg,7,files,0,numberOfFiles);
-			new FTPFileSender(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames,debugLevel);
+			System.arraycopy(arg,6,files,0,numberOfFiles);
+			new FTPFileSender(server,username,password,remoteDirectory,files,secure,generateRandomRemoteFileNames);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(1);
 		}
 	}

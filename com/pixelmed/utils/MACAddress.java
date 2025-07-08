@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -7,6 +7,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.StringTokenizer;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class for fetching the MAC address of one of the local host network interfaces.</p>
@@ -18,7 +21,9 @@ import java.util.StringTokenizer;
 
 public class MACAddress {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/MACAddress.java,v 1.12 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/MACAddress.java,v 1.23 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MACAddress.class);
 
 	private long macAddressValue;
 	
@@ -70,7 +75,7 @@ public class MACAddress {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 		}
 		
@@ -101,7 +106,7 @@ public class MACAddress {
 		}
 		catch (Exception e) {
 			// ignore exception (e.g. if cannot find command on another platform, such as "java.io.IOException: cmd: not found")
-			//e.printStackTrace(System.err);
+			slf4jlogger.trace("Ignoring exception", e);
 		}
 		return value;
 	}
@@ -143,7 +148,7 @@ public class MACAddress {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 		}
 		return hostname;
 	}
@@ -185,7 +190,7 @@ public class MACAddress {
 			}
 		}
 		catch (Exception e) {
-			//e.printStackTrace(System.err);
+			slf4jlogger.trace("Ignoring exception", e);
 		}
 		return macAddressValue;
 	}
@@ -236,7 +241,7 @@ public class MACAddress {
 	 * @param	arg	ignored
 	 */
 	public static void main(String arg[]) {
-		System.out.println("MAC address = 0x"+Long.toHexString(new MACAddress().getMACAddress()));
+		System.out.println("MAC address = 0x"+Long.toHexString(new MACAddress().getMACAddress()));	// do not use SLF4J, since users may depend on this going to System.out as utility
 	}
 }
 

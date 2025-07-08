@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -25,7 +25,7 @@ import java.util.*;
 public class StructuredReport implements TreeModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReport.java,v 1.18 2012/12/09 16:53:02 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StructuredReport.java,v 1.31 2025/01/29 10:58:07 dclunie Exp $";
 
 	// Our nodes are all instances of ContentItem ...
 
@@ -102,7 +102,7 @@ public class StructuredReport implements TreeModel {
 	/**
 	 * @param	parent
 	 * @param	list
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private ContentItem processSubTree(ContentItem parent,AttributeList list) throws DicomException {
 //System.err.println("processSubTree:");
@@ -128,7 +128,7 @@ public class StructuredReport implements TreeModel {
 	 * a list of DICOM attributes.</p>
 	 *
 	 * @param	list		the list of attributes in which the structured report is encoded
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReport(AttributeList list) throws DicomException {
 
@@ -143,7 +143,7 @@ public class StructuredReport implements TreeModel {
 	 * <p>Construct an internal tree representation of a structured report from an existing root content item.</p>
 	 *
 	 * @param	root		the root content item
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReport(ContentItem root) throws DicomException {
 		this.root = root;
@@ -326,13 +326,32 @@ public class StructuredReport implements TreeModel {
 						// go up one more, and as long as it is not black listed, add the parent concept name and value too
 						parent = parent.getParentAsContentItem();
 						if (parent != null) {
+							{
+								// consider some siblings to see if any are useful to add to annotation
+								{
+									ContentItem finding = parent.getNamedChild("DCM","121071");	// Finding
+									if (finding != null) {
+										annotation=finding.getConceptValue()+" "+annotation;
+									}
+								}
+								{
+									ContentItem findingSite = parent.getNamedChild("SCT","363698007");	// Finding Site
+									if (findingSite == null) { findingSite = parent.getNamedChild("SRT","G-C0E3"); }
+									if (findingSite != null) {
+										annotation=findingSite.getConceptValue()+" "+annotation;	// rather than getConceptNameAndValue()
+									}
+								}
+							}
 							String conceptCsd = parent.getConceptNameCodingSchemeDesignator();
 							String conceptValue = parent.getConceptNameCodeValue();
 							if (conceptCsd != null && conceptValue != null) {
-								if (!conceptCsd.equals("99RPH") || !(
-									   conceptValue.equals("RP-101002")			// "Simple Measurement"
-									)) {
-										annotation=parent.getConceptNameAndValue()+" "+annotation;
+								if (!(conceptCsd.equals("99RPH") && conceptValue.equals("RP-101002"))			// "Simple Measurement"
+								 && !(conceptCsd.equals("DCM") && conceptValue.equals("125007"))				// "Measurement Group"
+								) {
+									annotation=parent.getConceptNameAndValue()+" "+annotation;
+								}
+								else {
+//System.err.println("StructuredReport.findAllContainedSOPInstances(): not adding parent "+parent+" as prefix to annotation");
 								}
 							}
 						}
@@ -372,7 +391,7 @@ public class StructuredReport implements TreeModel {
 			StructuredReport sr = new StructuredReport(list);
 			System.err.println(sr);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

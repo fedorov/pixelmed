@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -10,7 +10,7 @@ import com.pixelmed.event.EventContext;
  */
 public class GraphicDisplayChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/GraphicDisplayChangeEvent.java,v 1.2 2008/09/03 01:48:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/GraphicDisplayChangeEvent.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 
 	private boolean overlays;
 

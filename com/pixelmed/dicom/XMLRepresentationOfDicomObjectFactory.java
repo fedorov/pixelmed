@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -20,6 +20,9 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.util.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to encode a representation of a DICOM object in an XML form,
@@ -96,7 +99,7 @@ try {
     Document document = new XMLRepresentationOfDicomObjectFactory().getDocument(list);
     XMLRepresentationOfDicomObjectFactory.write(System.out,document);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -107,7 +110,7 @@ try {
     list.read("dicomfile",null,true,true);
     XMLRepresentationOfDicomObjectFactory.createDocumentAndWriteIt(list,System.out);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -115,9 +118,10 @@ try {
  * <pre>
 try {
     AttributeList list = new XMLRepresentationOfDicomObjectFactory().getAttributeList("xmlfile");
+    list.insertSuitableSpecificCharacterSetForAllStringValues();
     list.write(System.out,TransferSyntax.ExplicitVRLittleEndian,true,true);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -125,14 +129,18 @@ try {
  * <pre>
 try {
     AttributeList list = new XMLRepresentationOfDicomObjectFactory().getAttributeList("xmlfile");
+    list.insertSuitableSpecificCharacterSetForAllStringValues();
     String sourceApplicationEntityTitle = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SourceApplicationEntityTitle);
     list.removeMetaInformationHeaderAttributes();
     FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,sourceApplicationEntityTitle);
     list.write(System.out,TransferSyntax.ExplicitVRLittleEndian,true,true);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
+ *
+ * <p>When the XML is being converted to DICOM, the group, element and VR attributes are not needed if the element name is a keyword that can be found in
+ * the dictionary; if they are present, then their values are checked against the dictionary values.</p>
  *
  * @see com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory
  * @see com.pixelmed.utils.XPathQuery
@@ -142,10 +150,10 @@ try {
  * @author	dclunie
  */
 public class XMLRepresentationOfDicomObjectFactory {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfDicomObjectFactory.java,v 1.33 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfDicomObjectFactory.java,v 1.19 2012/02/01 23:02:09 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(XMLRepresentationOfDicomObjectFactory.class);
 
-	/***/
 	private DocumentBuilder db;
 	
 	/**
@@ -166,79 +174,118 @@ public class XMLRepresentationOfDicomObjectFactory {
 	/**
 	 * @param		list
 	 * @param		parent
-	 * @exception	NumberFormatException
-	 * @exception	DicomException
+	 * @throws	NumberFormatException
+	 * @throws	DicomException
 	 */
 	void addAttributesFromNodeToList(AttributeList list,Node parent) throws NumberFormatException, DicomException {
+		DicomDictionary dictionary = list.getDictionary();
 		if (parent != null) {
 			Node node = parent.getFirstChild();
 			while (node != null) {
 				String elementName = node.getNodeName();
+				byte[] vr = null;
+				String vrString = null;
+				AttributeTag tag = dictionary.getTagFromName(elementName);
+				if (tag != null) {
+					vr = dictionary.getValueRepresentationFromTag(tag);
+					vrString = ValueRepresentation.getAsString(vr);
+				}
 				NamedNodeMap attributes = node.getAttributes();
 				if (attributes != null) {
 					Node vrNode = attributes.getNamedItem("vr");
-					Node groupNode = attributes.getNamedItem("group");
-					Node elementNode = attributes.getNamedItem("element");
-					if (vrNode != null && groupNode != null && elementNode != null) {
-						String vrString = vrNode.getNodeValue();
-						String groupString = groupNode.getNodeValue();
-						String elementString = elementNode.getNodeValue();
-						if (vrString != null && groupString != null && elementString != null) {
-							byte[] vr = vrString.getBytes();
-							int group = Integer.parseInt(groupString,16);
-							int element = Integer.parseInt(elementString,16);
-							AttributeTag tag = new AttributeTag(group,element);
-							if ((group%2 == 0 && element == 0) || (group == 0x0008 && element == 0x0001) || (group == 0xfffc && element == 0xfffc)) {
-//System.err.println("ignoring group length or length to end or dataset trailing padding "+tag);
+					if (vrNode != null) {
+						String explicitVRString = vrNode.getNodeValue();
+						byte[] explicitVR = explicitVRString.getBytes();
+						if (vr == null) {
+							vr = explicitVR;
+						}
+						else if (!vrString.equals(explicitVRString)) {
+							if (ValueRepresentation.isUnspecifiedShortVR(vr)
+							&& (ValueRepresentation.isUnsignedShortVR(explicitVR) || ValueRepresentation.isSignedShortVR(explicitVR) )) {
+								vr = explicitVR;
+							}
+							else if (ValueRepresentation.isOtherUnspecifiedVR(vr)
+							 && ValueRepresentation.isOtherByteOrWordVR(explicitVR)) {
+								vr = explicitVR;
 							}
 							else {
-								if (vrString.equals("SQ")) {
-									SequenceAttribute a = new SequenceAttribute(tag);
-//System.err.println("Created "+a);
-									if (node.hasChildNodes()) {
-										Node childNode = node.getFirstChild();
-										while (childNode != null) {
-											String childNodeName = childNode.getNodeName();
-//System.err.println("childNodeName = "+childNodeName);
-											if (childNodeName != null && childNodeName.equals("Item")) {
-												// should check item number, but ignore for now :(
-//System.err.println("Adding item to sequence");
-												AttributeList itemList = new AttributeList();
-												addAttributesFromNodeToList(itemList,childNode);
-												a.addItem(itemList);
-											}
-											// else may be a #text element in between
-											childNode = childNode.getNextSibling();
-										}
+								throw new DicomException("Dictionary VR <"+vrString+"> does not match VR in attribute <"+explicitVRString+"> of element "+elementName);
+							}
+						}
+						// else same so ignore
+					}
+					Node groupNode = attributes.getNamedItem("group");
+					Node elementNode = attributes.getNamedItem("element");
+					if (groupNode != null || elementNode != null) {
+						if (groupNode == null || elementNode == null) {
+							throw new DicomException("Did not specify both group and element for element "+elementName);
+						}
+						String groupString = groupNode.getNodeValue();
+						String elementString = elementNode.getNodeValue();
+						int group = Integer.parseInt(groupString,16);
+						int element = Integer.parseInt(elementString,16);
+						AttributeTag explicitTag = new AttributeTag(group,element);
+						if (tag == null) {
+							tag = explicitTag;
+						}
+						else if (!tag.equals(explicitTag)) {
+							throw new DicomException("Dictionary tag <"+tag+"> does not match group and element in attributes <"+explicitTag+"> of element "+elementName);
+						}
+						// else same so ignore
+					}
+				}
+				if (vr != null && tag != null) {
+					int group = tag.getGroup();
+					int element = tag.getElement();
+					if ((group%2 == 0 && element == 0) || (group == 0x0008 && element == 0x0001) || (group == 0xfffc && element == 0xfffc)) {
+						//System.err.println("ignoring group length or length to end or dataset trailing padding "+tag);
+					}
+					else {
+						if (ValueRepresentation.isSequenceVR(vr)) {
+							SequenceAttribute a = new SequenceAttribute(tag);
+							//System.err.println("Created "+a);
+							if (node.hasChildNodes()) {
+								Node childNode = node.getFirstChild();
+								while (childNode != null) {
+									String childNodeName = childNode.getNodeName();
+									//System.err.println("childNodeName = "+childNodeName);
+									if (childNodeName != null && childNodeName.equals("Item")) {
+										// should check item number, but ignore for now :(
+										//System.err.println("Adding item to sequence");
+										AttributeList itemList = new AttributeList();
+										addAttributesFromNodeToList(itemList,childNode);
+										a.addItem(itemList);
 									}
-//System.err.println("Sequence Attribute is "+a);
-									list.put(tag,a);
-								}
-								else {
-									Attribute a = AttributeFactory.newAttribute(tag,vr);
-//System.err.println("Created "+a);
-									if (node.hasChildNodes()) {
-										Node childNode = node.getFirstChild();
-										while (childNode != null) {
-											String childNodeName = childNode.getNodeName();
-//System.err.println("childNodeName = "+childNodeName);
-											if (childNodeName != null && childNodeName.equals("value")) {
-												// should check value number, but ignore for now :(
-												String value = childNode.getTextContent();
-//System.err.println("Value value = "+value);
-												if (value != null) {
-													value = StringUtilities.removeLeadingOrTrailingWhitespaceOrISOControl(value);	// just in case
-													a.addValue(value);
-												}
-											}
-											// else may be a #text element in between
-											childNode = childNode.getNextSibling();
-										}
-									}
-//System.err.println("Attribute is "+a);
-									list.put(tag,a);
+									// else may be a #text element in between
+									childNode = childNode.getNextSibling();
 								}
 							}
+							//System.err.println("Sequence Attribute is "+a);
+							list.put(tag,a);
+						}
+						else {
+							Attribute a = AttributeFactory.newAttribute(tag,vr);
+							//System.err.println("Created "+a);
+							if (node.hasChildNodes()) {
+								Node childNode = node.getFirstChild();
+								while (childNode != null) {
+									String childNodeName = childNode.getNodeName();
+									//System.err.println("childNodeName = "+childNodeName);
+									if (childNodeName != null && childNodeName.equals("value")) {
+										// should check value number, but ignore for now :(
+										String value = childNode.getTextContent();
+										//System.err.println("Value value = "+value);
+										if (value != null) {
+											value = StringUtilities.removeLeadingOrTrailingWhitespaceOrISOControl(value);	// just in case
+											a.addValue(value);
+										}
+									}
+									// else may be a #text element in between
+									childNode = childNode.getNextSibling();
+								}
+							}
+							//System.err.println("Attribute is "+a);
+							list.put(tag,a);
 						}
 					}
 				}
@@ -307,7 +354,7 @@ public class XMLRepresentationOfDicomObjectFactory {
 					values=attribute.getStringValues();
 				}
 				catch (DicomException e) {
-					//e.printStackTrace(System.err);
+					slf4jlogger.debug("Ignoring exception",e);
 				}
 				if (values != null) {
 					for (int j=0; j<values.length; ++j) {
@@ -326,7 +373,7 @@ public class XMLRepresentationOfDicomObjectFactory {
 	/**
 	 * <p>Construct a factory object, which can be used to get XML documents from DICOM objects.</p>
 	 *
-	 * @exception	ParserConfigurationException
+	 * @throws	ParserConfigurationException
 	 */
 	public XMLRepresentationOfDicomObjectFactory() throws ParserConfigurationException {
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -354,7 +401,7 @@ public class XMLRepresentationOfDicomObjectFactory {
 	 *
 	 * @param		document		the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(Document document) throws DicomException {
 		AttributeList list = new AttributeList();
@@ -370,9 +417,9 @@ public class XMLRepresentationOfDicomObjectFactory {
 	 *
 	 * @param		stream			the input stream containing the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	IOException
-	 * @exception	SAXException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	SAXException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(InputStream stream) throws IOException, SAXException, DicomException {
 		Document document = db.parse(stream);
@@ -385,9 +432,9 @@ public class XMLRepresentationOfDicomObjectFactory {
 	 *
 	 * @param		name			the input file containing the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	IOException
-	 * @exception	SAXException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	SAXException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(String name) throws IOException, SAXException, DicomException {
 		InputStream fi = new FileInputStream(name);
@@ -441,7 +488,7 @@ public class XMLRepresentationOfDicomObjectFactory {
 	 *
 	 * @param	out		the output stream to write to
 	 * @param	document	the XML document
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public static void write(OutputStream out,Document document) throws IOException, TransformerConfigurationException, TransformerException {
 		
@@ -461,8 +508,8 @@ public class XMLRepresentationOfDicomObjectFactory {
 	 *
 	 * @param	list		the list of DICOM attributes
 	 * @param	out		the output stream to write to
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public static void createDocumentAndWriteIt(AttributeList list,OutputStream out) throws IOException, DicomException {
 		try {
@@ -524,13 +571,14 @@ public class XMLRepresentationOfDicomObjectFactory {
 					AttributeList list = new XMLRepresentationOfDicomObjectFactory().getAttributeList(filename);
 //System.err.println("AttributeList.main(): read XML and create DICOM AttributeList - done in "+(System.currentTimeMillis()-startReadTime)+" ms");
 					String sourceApplicationEntityTitle = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SourceApplicationEntityTitle);
+					list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
 					list.removeMetaInformationHeaderAttributes();
 					FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,sourceApplicationEntityTitle);
 					list.write(System.out,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

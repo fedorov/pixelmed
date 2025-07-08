@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,7 +21,11 @@ import java.text.NumberFormat;
  */
 public class IntegerStringAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/IntegerStringAttribute.java,v 1.12 2009/10/22 10:35:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/IntegerStringAttribute.java,v 1.27 2025/01/29 10:58:06 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 12;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -38,8 +42,8 @@ public class IntegerStringAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public IntegerStringAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -51,8 +55,8 @@ public class IntegerStringAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public IntegerStringAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl.longValue(),i);
@@ -65,11 +69,7 @@ public class IntegerStringAttribute extends StringAttribute {
 	 */
 	public byte[] getVR() { return ValueRepresentation.IS; }
 
-        /**
-	 * @param	format		the format to use for each numerical or decimal value
-         * @exception	DicomException
-         */
-        public String[] getStringValues(NumberFormat format) throws DicomException {
+	public String[] getStringValues(NumberFormat format) throws DicomException {
 		String sv[] = null;
 		if (format == null) {
 			sv=super.getStringValues((NumberFormat)null);
@@ -88,10 +88,6 @@ public class IntegerStringAttribute extends StringAttribute {
 
 	// do not need to override addValue() for shorter binary integer arguments; super-class methods will never exceed 12 bytes or range -2^31 <= n <= (2^31 -  1).
 
-	/**
-	 * @param	v
-	 * @exception	DicomException	if value is beyond range permitted for IntegerString
-	 */
 	public void addValue(long v) throws DicomException {
 		if (v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) {
 			throw new DicomException("Value "+v+" out of range for Integer String");
@@ -101,10 +97,6 @@ public class IntegerStringAttribute extends StringAttribute {
 		}
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException	if value is beyond range permitted for IntegerString
-	 */
 	public void addValue(float v) throws DicomException {
 		if (v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) {
 			throw new DicomException("Value "+v+" out of range for Integer String");
@@ -114,10 +106,6 @@ public class IntegerStringAttribute extends StringAttribute {
 		}
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException	if value is beyond range permitted for IntegerString
-	 */
 	public void addValue(double v) throws DicomException {
 		if (v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) {
 			throw new DicomException("Value "+v+" out of range for Integer String");
@@ -125,6 +113,53 @@ public class IntegerStringAttribute extends StringAttribute {
 		else {
 			addValue((int)v);
 		}
+	}
+	
+	//protected final boolean allowRepairOfIncorrectLength() { return true; }				// moot, since we do not check this in repairValues(), i.e., hard-coded
+	
+	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
+
+	public final boolean isCharacterInValueValid(int c) throws DicomException {
+		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == ' ' || c == '+' || c == '-');
+	}
+
+	public boolean areValuesWellFormed() throws DicomException {
+		boolean good = true;
+		{
+			long[] longValues = getLongValues();
+			for (int i=0; i<longValues.length; ++i) {
+				long v = longValues[i];
+//System.err.println("IntegerStringAttribute.isValid(): Checking value ="+v+" (from String value "+originalValues[i]+", long value "+Long.parseLong(originalValues[i])+")");
+				if (v < -2147483648l || v > 2147483647l) {
+					good = false;
+					break;
+				}
+			}
+		}
+		return good;
+	}
+	 
+	public boolean repairValues() throws DicomException {
+//System.err.println("IntegerStringAttribute.repairValues():");
+		if (!isValid()) {
+//System.err.println("IntegerStringAttribute.repairValues(): Invalid so attempting repair");
+			flushCachedCopies();
+			originalByteValues=null;
+			if (originalValues != null && originalValues.length > 0) {
+//System.err.println("IntegerStringAttribute.repairValues(): Attempting trim");
+				// removing padding is the best we can do without loosing the meaning of the value ... may still be invalid :(
+				// do not just use ArrayCopyUtilities.copyStringArrayRemovingLeadingAndTrailingPadding(originalValues), since it only handle space character
+				for (int i=0; i<originalValues.length; ++i) {
+					String v = originalValues[i];
+					if (v != null && v.length() > 0) {
+//System.err.println("IntegerStringAttribute.repairValues(): Attempting value \""+v+"\"");
+						originalValues[i] = v.trim();
+//System.err.println("IntegerStringAttribute.repairValues(): Result is \""+originalValues[i]+"\"");
+					}
+				}
+			}
+		}
+		return isValid();
 	}
 
 	private static double[] testValues = {
@@ -178,6 +213,11 @@ public class IntegerStringAttribute extends StringAttribute {
 		"-128"
 	};
 		
+	/**
+	 * <p>Test.</p>
+	 *
+	 * @param	arg	ignored
+	 */
 	public static void main(String arg[]) {
 		System.err.println("Test IntegerString.addValue(double):");
 		for (int i=0; i< testValues.length; ++i) {

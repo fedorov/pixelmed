@@ -1,14 +1,17 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
-
-import java.io.File;
-import java.io.IOException;
 
 import com.pixelmed.dicom.*;
 
 import com.pixelmed.utils.MessageLogger;
 import com.pixelmed.utils.PrintStreamMessageLogger;
+
+import java.io.File;
+import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class containing an application for inserting code sequences from the command line.</p>
@@ -16,8 +19,9 @@ import com.pixelmed.utils.PrintStreamMessageLogger;
  * @author	dclunie
  */
 public class InsertCodeSequence {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/InsertCodeSequence.java,v 1.14 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/InsertCodeSequence.java,v 1.1 2010/11/28 18:11:36 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(InsertCodeSequence.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 	
@@ -63,17 +67,10 @@ public class InsertCodeSequence {
 						}
 					}
 					
-					{
-						CodingSchemeIdentification csi = CodingSchemeIdentification.getCodingSchemesFromExistingAttributeList(list);
-						SequenceAttribute a = csi.getAsSequenceAttribute();
-						if (a != null) {
-							list.put(a);
-						}
-					}
-					
+					CodingSchemeIdentification.replaceCodingSchemeIdentificationSequenceWithCodingSchemesUsedInAttributeList(list);
+					list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
 					// do NOT set to derived and replace UID
 					// do not addContributingEquipmentSequence
-													
 					list.removeGroupLengthAttributes();
 					list.removeMetaInformationHeaderAttributes();
 					list.remove(TagFromName.DataSetTrailingPadding);
@@ -85,7 +82,8 @@ public class InsertCodeSequence {
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -100,8 +98,6 @@ public class InsertCodeSequence {
 		MediaImporter importer = new OurMediaImporter(logger);
 		importer.importDicomFiles(src);
 	}
-
-	
 
 	/**
 	 * <p>Insert a coded sequence into the specified files.</p>
@@ -121,7 +117,7 @@ public class InsertCodeSequence {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

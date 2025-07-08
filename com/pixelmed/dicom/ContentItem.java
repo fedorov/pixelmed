@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,9 +22,11 @@ import javax.swing.tree.*;
  */
 public abstract class ContentItem implements TreeNode {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItem.java,v 1.23 2013/01/23 23:04:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItem.java,v 1.37 2025/01/29 10:58:06 dclunie Exp $";
 
 	protected String relationshipType;
+	protected String observationDateTime;
+	protected String observationUID;
 
 	ContentItem parent;
 	List children;
@@ -109,6 +111,8 @@ public abstract class ContentItem implements TreeNode {
 
 	private void extractContentItemCommonAttributes() {
 		relationshipType=Attribute.getSingleStringValueOrNull(list,TagFromName.RelationshipType);		// NB. Use null rather than default "" to make symmetric with de novo constructor
+		observationDateTime=Attribute.getSingleStringValueOrNull(list,TagFromName.ObservationDateTime);
+		observationUID=Attribute.getSingleStringValueOrNull(list,TagFromName.ObservationUID);
 	}
 
 	/**
@@ -137,9 +141,11 @@ public abstract class ContentItem implements TreeNode {
 	 *
 	 * @param	p					the parent
 	 * @param	relationshipType	added only if not null or zero length
-	 * @throws	DicomException
+	 * @param	observationDateTime	Observation DateTime, added only if not null or zero length
+	 * @param	observationUID		Observation UID, added only if not null or zero length
+	 * @throws	DicomException		if error in DICOM encoding
 	 */
-	protected ContentItem(ContentItem p,String relationshipType) throws DicomException {
+	protected ContentItem(ContentItem p,String relationshipType,String observationDateTime,String observationUID) throws DicomException {
 		parent=p;
 		if (p != null) {
 			p.addChild(this);
@@ -149,8 +155,30 @@ public abstract class ContentItem implements TreeNode {
 		if (relationshipType != null && relationshipType.length() > 0) {
 			Attribute a = new CodeStringAttribute(TagFromName.RelationshipType); a.addValue(relationshipType); list.put(a);
 		}
+		this.observationDateTime = observationDateTime;
+		if (observationDateTime != null && observationDateTime.length() > 0) {
+			Attribute a = new DateTimeAttribute(TagFromName.ObservationDateTime); a.addValue(observationDateTime); list.put(a);
+		}
+		this.observationUID = observationUID;
+		if (observationUID != null && observationUID.length() > 0) {
+			Attribute a = new UniqueIdentifierAttribute(TagFromName.ObservationUID); a.addValue(observationUID); list.put(a);
+		}
 	}
 
+	
+	/**
+	 * <p>Construct a content item of a specified type and relationship, creating a new {@link com.pixelmed.dicom.AttributeList AttributeList}, and add it as a child of the specified parent.</p>
+	 *
+	 * <p>The constructor is protected. Instances of specific types of content items should normally be created by using
+	 * the {@link com.pixelmed.dicom.ContentItemFactory ContentItemFactory}.</p>
+	 *
+	 * @param	p					the parent
+	 * @param	relationshipType	added only if not null or zero length
+	 * @throws	DicomException		if error in DICOM encoding
+	 */
+	protected ContentItem(ContentItem p,String relationshipType) throws DicomException {
+		this(p,relationshipType,null,null);
+	}
 	/**
 	 * <p>Add a child to this content item.</p>
 	 *
@@ -166,7 +194,7 @@ public abstract class ContentItem implements TreeNode {
 	 * <p>Add a sibling to this content item (a child to the parent of this content item).</p>
 	 *
 	 * @param	sibling		the sibling content item to add
-	 * @exception	DicomException	thrown if there is no parent
+	 * @throws	DicomException	thrown if there is no parent
 	 */
 	public void addSibling(ContentItem sibling) throws DicomException {
 		if (parent == null) {
@@ -206,6 +234,20 @@ public abstract class ContentItem implements TreeNode {
 	 * @return	the relationship type (the string used in the DICOM standard in the Relationship Type attribute)
 	 */
 	public String getRelationshipType()                { return relationshipType; }
+
+	/**
+	 * <p>Get the ObservationUID of this content item.</p>
+	 *
+	 * @return	the value of the ObservationUID Attribute
+	 */
+	public String getObservationUID()                { return observationUID; }
+
+	/**
+	 * <p>Get the ObservationDateTime of this content item.</p>
+	 *
+	 * @return	the value of the ObservationDateTime Attribute
+	 */
+	public String getObservationDateTime()                { return observationDateTime; }
 
 	/**
 	 * <p>Get the Referenced SOP Class UID of this content item, if present and applicable.</p>
@@ -294,14 +336,61 @@ public abstract class ContentItem implements TreeNode {
 	 * @return	an array of integers representing the separated components of the Referenced Content Item Identifier, including the first (root) identifier of 1, or null if none or empty
 	 */
 	public int[] getReferencedContentItemIdentifierArray()      { return null; }
-	
+
+	// copied from StructuredReport.java
+	/**
+	 * <p>Dump the tree starting at the specified node as a {@link java.lang.String String}.</p>
+	 *
+	 * @param	node
+	 * @param	location	the dotted numeric string describing the location of the starting node
+	 * @return	a multi-line {@link java.lang.String String} representing the tree fragment
+	 */
+	public static String walkTreeBuldingString(ContentItem node,String location) {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(location);
+		buffer.append(": ");
+		buffer.append(node.toString());
+		buffer.append("\n");
+
+		int n = node.getChildCount();
+		for (int i=0; i<n; ++i) buffer.append(walkTreeBuldingString((ContentItem)(node.getChildAt(i)),location+"."+Integer.toString(i+1)));
+
+		return buffer.toString();
+	}
+
+	/**
+	 * <p>Dump the entire tree as a {@link java.lang.String String}.</p>
+	 *
+	 * @return	a multi-line {@link java.lang.String String} representing the tree
+	 */
+	public String toString() {
+		return walkTreeBuldingString(this,"1");
+	}
+
 	// Convenience methods
+	
+	/**
+	 * <p>Get the position in the tree relative to the top parent as a String to use as a Referenced Content Item Identifier.</p>
+	 *
+	 * <p>Returns a valid result only if the entire parent content tree back to the root has already been populated.</p>
+	 *
+	 * @return	the period (not backslash) delimited item references, or "1" if we have no parent
+	 */
+	public String getPositionInTreeToUseAsReferencedContentItemIdentifier() {
+		String contentItemIdentifier = "1";
+		if (parent != null) {
+			// which child are we ?
+			int ourPositionFromOne = parent.getIndex(this) + 1;		// since getIndex() is from 0 and DICOM references count from 1
+			contentItemIdentifier = parent.getPositionInTreeToUseAsReferencedContentItemIdentifier() + "." + ourPositionFromOne;
+		}
+		return contentItemIdentifier;
+	}
 	
 	/**
 	 * Retrieve the named child as defined by its ConceptName
 	 *
-	 * @param	codingSchemeDesignator
-	 * @param	codeValue
+	 * @param	codingSchemeDesignator	the coding scheme designator
+	 * @param	codeValue				the code value
 	 * @return							the (first, if multiple) named child, or null if absent
 	 */
 	public ContentItem getNamedChild(String codingSchemeDesignator,String codeValue) {
@@ -328,7 +417,7 @@ public abstract class ContentItem implements TreeNode {
 	 *
 	 * The code meaning of the concept is ignored, and only the code value and coding scheme designator are compared in the search.
 	 *
-	 * @param	item
+	 * @param	item					the coded sequence item of the concept name wanted
 	 * @return							the (first, if multiple) named child, or null if absent
 	 */
 	public ContentItem getNamedChild(CodedSequenceItem item) {
@@ -374,8 +463,8 @@ public abstract class ContentItem implements TreeNode {
 	/**
 	 * Retrieve the string value of the named child as defined by its ConceptName
 	 *
-	 * @param	codingSchemeDesignator
-	 * @param	codeValue
+	 * @param	codingSchemeDesignator	the coding scheme designator
+	 * @param	codeValue				the code value
 	 * @return							the value of the (first, if multiple) named child, or null if absent
 	 */
 	public String getSingleStringValueOrNullOfNamedChild(String codingSchemeDesignator,String codeValue) {
@@ -392,9 +481,9 @@ public abstract class ContentItem implements TreeNode {
 	/**
 	 * Retrieve the string value of the named child as defined by its ConceptName
 	 *
-	 * @param	parent
-	 * @param	codingSchemeDesignator
-	 * @param	codeValue
+	 * @param	parent					the parent
+	 * @param	codingSchemeDesignator	the coding scheme designator
+	 * @param	codeValue				the code value
 	 * @return							the value of the (first, if multiple) named child, or null if absent
 	 */
 	public static String getSingleStringValueOrNullOfNamedChild(ContentItem parent,String codingSchemeDesignator,String codeValue) {
@@ -413,8 +502,8 @@ public abstract class ContentItem implements TreeNode {
 	 *
 	 * Does NOT follow references.
 	 *
-	 * @param	csdWanted
-	 * @param	cvWanted
+	 * @param	csdWanted		the coding scheme designator wanted
+	 * @param	cvWanted		the code value wanted
 	 * @return					true if matches
 	 */
 	public abstract boolean contentItemNameMatchesCodeValueAndCodingSchemeDesignator(String cvWanted,String csdWanted);
@@ -426,9 +515,9 @@ public abstract class ContentItem implements TreeNode {
 	 *
 	 * Does NOT follow references.
 	 *
-	 * @param	ci
-	 * @param	csdWanted
-	 * @param	cvWanted
+	 * @param	ci				the content item to check
+	 * @param	csdWanted		the coding scheme designator of the coded concept name wanted
+	 * @param	cvWanted		the code value of the coded concept name wanted
 	 * @return					true if matches
 	 */
 	public static boolean contentItemNameMatchesCodeValueAndCodingSchemeDesignator(ContentItem ci,String cvWanted,String csdWanted) {

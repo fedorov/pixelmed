@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -10,7 +10,7 @@ import com.pixelmed.event.EventContext;
  */
 public class TaskChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/TaskChangeEvent.java,v 1.1 2006/11/10 16:13:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/TaskChangeEvent.java,v 1.11 2025/01/29 10:58:08 dclunie Exp $";
 	
 	protected static int NEXT = 1;
 	protected static int PREVIOUS = 2;

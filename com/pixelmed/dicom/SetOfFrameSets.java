@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -13,14 +13,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to describe a set of frame sets, each of which shares common characteristics suitable for display or analysis as an entity.</p>
  *
  * @author	dclunie
  */
 public class SetOfFrameSets extends HashSet<FrameSet> {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SetOfFrameSets.java,v 1.22 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SetOfFrameSets.java,v 1.10 2012/08/11 12:39:40 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SetOfFrameSets.class);
 
 	/**
 	 * <p>Insert a single frame object into the set of existing {@link com.pixelmed.dicom.FrameSet FrameSet}s,
@@ -32,7 +36,7 @@ public class SetOfFrameSets extends HashSet<FrameSet> {
 	 * (as in NM images esp. RECON TOMO) may be added.</p>
 	 *
 	 * @param		list			a list of DICOM attributes for an object
-	 * @exception	DicomException	if no SOP Instance UID
+	 * @throws	DicomException	if no SOP Instance UID
 	 */
 	public void insertIntoFrameSets(AttributeList list) throws DicomException {
 		boolean found = false;
@@ -85,7 +89,7 @@ public class SetOfFrameSets extends HashSet<FrameSet> {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While reading \"{}\"",f,e);	// do NOT call f.getCanonicalPath(), since may throw Exception !
 			}
 		}
 	}
@@ -133,8 +137,8 @@ public class SetOfFrameSets extends HashSet<FrameSet> {
 	 */
 	public static void main(String arg[]) {
 		SetOfFrameSets setOfFrameSets = new SetOfFrameSets(arg);
-System.err.println("SetOfFrameSets.main(): Result");
-		System.err.println(setOfFrameSets.toString());
+		System.err.println("SetOfFrameSets.main(): Result");	// no need to use SLF4J since command line utility/test
+		System.err.println(setOfFrameSets.toString());			// no need to use SLF4J since command line utility/test
 	}
 }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -15,8 +15,11 @@ import java.net.Socket;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.web.HttpServer HttpServer} class is an abstract class that implements
+ * <p>The {@link HttpServer HttpServer} class is an abstract class that implements
  * a minimal GET method for a web server, primarily as a basis to implement {@link com.pixelmed.web.WadoServer WadoServer}.</p>
  *
  * <p>An abstract inner class, such as {@link com.pixelmed.web.HttpServer.Worker HttpServer.Worker},
@@ -27,33 +30,30 @@ import java.util.Vector;
  * @author	dclunie
  */
 public abstract class HttpServer implements Runnable {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/HttpServer.java,v 1.8 2012/07/31 15:35:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/HttpServer.java,v 1.19 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(HttpServer.class);
 
 	private int port;
 	private int numberOfWorkers;
 	private Vector threadPool;
-	
-	protected int webServerDebugLevel;
 
 	protected static int defaultNumberOfWorkers = 20;
 	
-	public HttpServer(int webServerDebugLevel) {
+	public HttpServer() {
 		// constructor to support derived classes ... will call initializeThreadPool(port) later, after other constructor business done
-		this.webServerDebugLevel=webServerDebugLevel;
 	}
 	
-	public HttpServer(int port,int webServerDebugLevel) {
-		this.webServerDebugLevel=webServerDebugLevel;
+	public HttpServer(int port) {
 		initializeThreadPool(port,defaultNumberOfWorkers);
 	}
 	
-	public HttpServer(int port,int webServerDebugLevel,int numberOfWorkers) {
-		this.webServerDebugLevel=webServerDebugLevel;
+	public HttpServer(int port,int numberOfWorkers) {
 		initializeThreadPool(port,numberOfWorkers);
 	}
 	
 	public void initializeThreadPool(int port,int numberOfWorkers) {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.initializeThreadPool(): start on port "+port+" with "+numberOfWorkers+" workers");
+		slf4jlogger.trace("initializeThreadPool(): start on port {} with {} workers",port,numberOfWorkers);
 		this.port=port;
 		this.numberOfWorkers=numberOfWorkers;
 		threadPool=new Vector();
@@ -62,7 +62,7 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.initializeThreadPool
 			(new Thread(w, "worker #"+i)).start();
 			threadPool.addElement(w);
 		}
-if (webServerDebugLevel > 1) System.err.println("HttpServer.initializeThreadPool(): end");
+		slf4jlogger.trace("initializeThreadPool(): end");
 	}
 
 	
@@ -71,7 +71,7 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.initializeThreadPool
 	}
 	
 	public synchronized void run() {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.run(): start");
+		slf4jlogger.trace("run(): start");
 		try {
 			ServerSocket ss = new ServerSocket(port);
 			while (true) {
@@ -79,7 +79,7 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.run(): start");
 				Worker w = null;
 				synchronized (threadPool) {
 					if (threadPool.isEmpty()) {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.run(): additional worker");
+						slf4jlogger.trace("run(): additional worker");
 						Worker ws = createWorker();
 						ws.setSocket(s);
 						(new Thread(ws, "additional worker")).start();
@@ -93,7 +93,7 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.run(): additional wo
 			}
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);
 		}
 	}
 
@@ -106,7 +106,7 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.run(): additional wo
 		}
 		
 		public synchronized void run() {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): start");
+			slf4jlogger.trace("Worker.run(): start");
 			while(true) {
 				if (socket == null) {
 					/* nothing to do */
@@ -120,19 +120,19 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): start"
 				try {
 					handleConnection();
 				} catch (Exception e) {
-					e.printStackTrace();
+					slf4jlogger.error("",e);
 				}
 				// go back in wait queue if there's fewer than numHandler connections.
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): done");
+				slf4jlogger.trace("Worker.run(): done");
 				socket = null;
 				synchronized (threadPool) {
 					if (threadPool.size() >= numberOfWorkers) {
 						/* too many threads, exit this one */
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): not needed");
+						slf4jlogger.trace("Worker.run(): not needed");
 						return;
 					}
 					else {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): going back into pool");
+						slf4jlogger.trace("Worker.run(): going back into pool");
 						threadPool.addElement(this);
 					}
 				}
@@ -140,22 +140,22 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.run(): going 
 		}
 		
 		private void handleConnection() {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection():");
+		slf4jlogger.trace("Worker.handleConnection():");
 			try {
 			    //int transactionCount=1;
 			    String line;
 			    //do {
-//if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection(): transactionCount="+transactionCount);
+				//slf4jlogger.trace("Worker.handleConnection(): transactionCount={}",transactionCount);
 				BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(),"UTF-8"));
 				Vector requestAndHeaderLines = new Vector();
 				while ((line=reader.readLine()) != null && line.length() > 0) {	// loop until empty line
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection(): read line=\""+line+"\"");
+					slf4jlogger.trace("Worker.handleConnection(): read line=\"{}\"",line);
 					requestAndHeaderLines.add(line);
 				}
 				if (requestAndHeaderLines.size() > 0 ) {
 					String requestLine = (String)requestAndHeaderLines.get(0);
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection(): requestLine=\""+requestLine+"\"");
+					slf4jlogger.trace("Worker.handleConnection(): requestLine=\"{}\"",requestLine);
 					StringTokenizer st = new StringTokenizer(requestLine," ");
 					if (st.countTokens() != 3) {
 						writer.print("HTTP/1.1 400 Bad Request\r\n");
@@ -175,11 +175,11 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnect
 									generateResponseToGetRequest(requestURI,socket.getOutputStream());
 								//}
 								//catch (Exception e) {
-								//	e.printStackTrace(System.err);
+								//	slf4jlogger.error("",e);
 								//}
 							}
 							else {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection(): Not Implemented method=\""+method+"\"");
+								slf4jlogger.trace("Worker.handleConnection(): Not Implemented method=\"{}\"",method);
 								writer.print("HTTP/1.1 501 Not Implemented\r\n");
 								writer.flush();
 							}
@@ -190,15 +190,15 @@ if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnect
 			    //} while (line != null);
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			finally {
 				try {
-if (webServerDebugLevel > 1) System.err.println("HttpServer.Worker.handleConnection(): closing socket");
+					slf4jlogger.trace("Worker.handleConnection(): closing socket");
 					socket.close();
 				}
 				catch (IOException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}

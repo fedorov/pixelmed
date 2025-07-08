@@ -1,7 +1,20 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.displaywave;
 
+import com.pixelmed.dicom.Attribute;
+import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.AttributeTreeBrowser;
+import com.pixelmed.dicom.BinaryInputStream;
+import com.pixelmed.dicom.DicomInputStream;
+import com.pixelmed.dicom.SOPClass;
+import com.pixelmed.dicom.TagFromName;
+
+import com.pixelmed.display.ApplicationFrame;
+import com.pixelmed.display.SafeFileChooser;
+
+import com.pixelmed.scpecg.SCPECG;
+import com.pixelmed.scpecg.SCPTreeBrowser;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -28,21 +41,8 @@ import javax.swing.JSplitPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import com.pixelmed.dicom.Attribute;
-import com.pixelmed.dicom.AttributeList;
-import com.pixelmed.dicom.AttributeTreeBrowser;
-import com.pixelmed.dicom.BinaryInputStream;
-//import com.pixelmed.dicom.DicomException;
-import com.pixelmed.dicom.DicomInputStream;
-import com.pixelmed.dicom.SOPClass;
-import com.pixelmed.dicom.TagFromName;
-
-import com.pixelmed.display.ApplicationFrame;
-import com.pixelmed.display.SafeFileChooser;
-
-import com.pixelmed.scpecg.SCPECG;
-import com.pixelmed.scpecg.SCPTreeBrowser;
-
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an entire application for displaying and viewing DICOM and SCP ECG waveforms.</p>
@@ -50,7 +50,9 @@ import com.pixelmed.scpecg.SCPTreeBrowser;
  * @author	dclunie
  */
 public class ECGViewer extends ApplicationFrame {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/ECGViewer.java,v 1.7 2013/02/20 23:27:38 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/ECGViewer.java,v 1.18 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ECGViewer.class);
 
 	private final float milliMetresPerPixel = (float)(25.4/72);				// assume screen is 72 dpi aka 72/25.4 pixels/mm
 	//private final float horizontalPixelsPerMilliSecond = 25/(1000*milliMetresPerPixel);	// ECG's normally printed at 25mm/sec and 10 mm/mV
@@ -210,7 +212,7 @@ public class ECGViewer extends ApplicationFrame {
 					throw new Exception("unsupported SOP Class "+useSOPClassUID);
 				}
 			} catch (Exception e) {
-				//e.printStackTrace(System.err);
+				//e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 		return sourceECG;
@@ -237,7 +239,7 @@ public class ECGViewer extends ApplicationFrame {
 				new SCPTreeBrowser(scpecg,scrollPaneOfAttributeTree);
 				sourceECG = new SCPSourceECG(scpecg,true/*deriveAdditionalLeads*/);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 		return sourceECG;
@@ -265,13 +267,13 @@ public class ECGViewer extends ApplicationFrame {
 				lastDirectoryPath=fileChooserThread.getCurrentDirectoryPath();
 			}
 			catch (InterruptedException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 			catch (InvocationTargetException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 		}
-System.err.println("Loading: "+inputFileName);
+		slf4jlogger.info("Loading: {}",inputFileName);
 		// remove currently displayed image and attribute tree in case load fails
 		scrollPaneOfDisplayedECG.setViewportView(null);
 		scrollPaneOfDisplayedECG.repaint();
@@ -466,7 +468,7 @@ System.err.println("Loading: "+inputFileName);
 	 * @param	maximum
 	 * @param	major
 	 * @param	minor
-	 * @param	label
+	 * @param	labelText
 	 */
 	private final JSlider addCommonSlider(
 			JPanel parent,

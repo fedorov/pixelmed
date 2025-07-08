@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,7 +17,7 @@ package com.pixelmed.dicom;
 public class AttributeTag implements Comparable {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTag.java,v 1.17 2013/02/13 02:00:16 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTag.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
 
 	/***/
 	private int group;
@@ -39,6 +39,7 @@ public class AttributeTag implements Comparable {
 	 * <p>Construct a DICOM data element (attribute) tag from its string representation.</p>
 	 *
 	 * @param	s	a String of the form returned by {@link #toString() toString()}, i.e., "(0xgggg,0xeeee)" where gggg and eeee are the zero-padded hexadecimal representations of the group and element respectively
+	 * @throws	DicomException	if String is not a valid representation of a DICOM tag
 	 */
 	public AttributeTag(String s) throws DicomException {
 		if (s == null) {
@@ -135,7 +136,7 @@ public class AttributeTag implements Comparable {
 	public boolean isCurveGroup() {
 		int groupBase = group&0xff00;
 		int groupItem = group&0x00ff;
-		return (groupBase == 0x6000) && groupItem%2 == 0 && groupItem >= 0x0000 && groupItem <= 0x001e;
+		return (groupBase == 0x5000) && groupItem%2 == 0 && groupItem >= 0x0000 && groupItem <= 0x001e;
 	}
 
 	/**
@@ -162,6 +163,28 @@ public class AttributeTag implements Comparable {
 	 */
 	public AttributeTag getTagWithRepeatingGroupBase() {
 		return new AttributeTag(group&0xff00,element);
+	}
+
+	/**
+	 * <p>Get a human-readable rendering of the tag.</p>
+	 *
+	 * <p>This takes the form "(0xgggg,0xeeee) Name" where gggg and eeee are the zero-padded
+	 * hexadecimal representations of the group and element respectively.</p>
+	 *
+	 * @param       dictionary      the dictionary to use to look up the name
+	 * @return	the string rendering of the tag
+	 */
+	public String toString(DicomDictionary dictionary) {
+		StringBuffer str = new StringBuffer();
+		str.append(toString());
+		if (dictionary != null) {
+			String name = dictionary.getNameFromTag(this);
+			if (name != null) {
+				str.append(" ");
+				str.append(name);
+			}
+		}
+		return str.toString();
 	}
 
 	/**

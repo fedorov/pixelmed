@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -6,7 +6,7 @@ package com.pixelmed.network;
  * @author	dclunie
  */
 public class ResponseStatus {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ResponseStatus.java,v 1.1 2006/06/08 21:56:27 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ResponseStatus.java,v 1.11 2025/01/29 10:58:08 dclunie Exp $";
 
 	static public int Success = 0x0000;
 

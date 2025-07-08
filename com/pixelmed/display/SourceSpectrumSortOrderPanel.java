@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -19,7 +19,7 @@ import com.pixelmed.dicom.AttributeList;
  */
 class SourceSpectrumSortOrderPanel extends SourceInstanceSortOrderPanel {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceSpectrumSortOrderPanel.java,v 1.11 2006/10/22 12:27:22 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceSpectrumSortOrderPanel.java,v 1.21 2025/01/29 10:58:07 dclunie Exp $";
 
 	// implement SourceSpectrumSelectionChangeListener ...
 	
@@ -39,17 +39,19 @@ class SourceSpectrumSortOrderPanel extends SourceInstanceSortOrderPanel {
 		 * @param	e
 		 */
 		public void changed(com.pixelmed.event.Event e) {
-			SourceSpectrumSelectionChangeEvent sss = (SourceSpectrumSelectionChangeEvent)e;
-			byFrameOrderButton.setSelected(true);
-			nSrcInstances=sss.getNumberOfSourceSpectra();			// sets in parent, else Slider won't appear when we update it later	
-			currentSrcInstanceAttributeList=sss.getAttributeList();
-			replaceListOfDimensions(buildListOfDimensionsFromAttributeList(currentSrcInstanceAttributeList));
-			currentSrcInstanceSortOrder=sss.getSortOrder();
-			currentSrcInstanceIndex= sss.getIndex();
-			updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
+			if (active) {
+				SourceSpectrumSelectionChangeEvent sss = (SourceSpectrumSelectionChangeEvent)e;
+				byFrameOrderButton.setSelected(true);
+				nSrcInstances=sss.getNumberOfSourceSpectra();			// sets in parent, else Slider won't appear when we update it later
+				currentSrcInstanceAttributeList=sss.getAttributeList();
+				replaceListOfDimensions(buildListOfDimensionsFromAttributeList(currentSrcInstanceAttributeList));
+				currentSrcInstanceSortOrder=sss.getSortOrder();
+				currentSrcInstanceIndex= sss.getIndex();
+				updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
 //System.err.println(System.err.println("SourceSpectrumSortOrderPanel.OurSourceSpectrumSelectionChangeListener.changed(): on exit nSrcInstances = "+nSrcInstances);
 //System.err.println(System.err.println("SourceSpectrumSortOrderPanel.OurSourceSpectrumSelectionChangeListener.changed(): on exit currentSrcInstanceIndex = "+currentSrcInstanceIndex);
 //System.err.println(System.err.println("SourceSpectrumSortOrderPanel.OurSourceSpectrumSelectionChangeListener.changed(): on exit currentSrcInstanceSortOrder = "+currentSrcInstanceSortOrder);
+			}
 		}
 	}
 

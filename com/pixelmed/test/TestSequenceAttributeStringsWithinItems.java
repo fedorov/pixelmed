@@ -1,9 +1,10 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.DicomDictionary;
 import com.pixelmed.dicom.DicomException;
 import com.pixelmed.dicom.ShortStringAttribute;
 import com.pixelmed.dicom.SequenceAttribute;
@@ -39,24 +40,26 @@ public class TestSequenceAttributeStringsWithinItems extends TestCase {
 	protected void tearDown() {
 	}
 	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	public void TestSequenceAttributeStringsWithinItems_MultipleItems() throws DicomException {
 		Attribute sa = new SequenceAttribute(TagFromName.RequestAttributesSequence);
 		{
 			AttributeList itemList = new AttributeList();
 			((SequenceAttribute)sa).addItem(itemList);
-			{ Attribute a = new ShortStringAttribute(TagFromName.ScheduledProcedureStepID); a.addValue("SPSID1"); itemList.put(a); }
+			{ Attribute a = new ShortStringAttribute(dictionary.getTagFromName("ScheduledProcedureStepID")); a.addValue("SPSID1"); itemList.put(a); }
 		}
 		{
 			AttributeList itemList = new AttributeList();
 			((SequenceAttribute)sa).addItem(itemList);
-			{ Attribute a = new ShortStringAttribute(TagFromName.ScheduledProcedureStepID); a.addValue("SPSID2"); itemList.put(a); }
+			{ Attribute a = new ShortStringAttribute(dictionary.getTagFromName("ScheduledProcedureStepID")); a.addValue("SPSID2"); itemList.put(a); }
 		}
 		
 		AttributeList list = new AttributeList();
 		list.put(sa);
 		
 		{
-			Attribute aScheduledProcedureStepID = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(list,TagFromName.RequestAttributesSequence, TagFromName.ScheduledProcedureStepID);
+			Attribute aScheduledProcedureStepID = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(list,TagFromName.RequestAttributesSequence, dictionary.getTagFromName("ScheduledProcedureStepID"));
 			if (aScheduledProcedureStepID != null) {
 				String scheduledProcedureStepID = aScheduledProcedureStepID.getSingleStringValueOrEmptyString();
 				assertEquals("Checking string","SPSID1",scheduledProcedureStepID);
@@ -70,7 +73,7 @@ public class TestSequenceAttributeStringsWithinItems extends TestCase {
 				int n = sras.getNumberOfItems();
 				assertEquals("Checking number of strings",2,n);
 				for (int i=0; i<n; ++i) {
-					Attribute aScheduledProcedureStepID = SequenceAttribute.getNamedAttributeFromWithinSelectedItemWithinSequence(sras,i,TagFromName.ScheduledProcedureStepID);
+					Attribute aScheduledProcedureStepID = SequenceAttribute.getNamedAttributeFromWithinSelectedItemWithinSequence(sras,i,dictionary.getTagFromName("ScheduledProcedureStepID"));
 					if (aScheduledProcedureStepID != null) {
 						String scheduledProcedureStepID = aScheduledProcedureStepID.getSingleStringValueOrEmptyString();
 						assertEquals("Checking string","SPSID"+(i+1),scheduledProcedureStepID);
@@ -86,14 +89,14 @@ public class TestSequenceAttributeStringsWithinItems extends TestCase {
 				int n = sras.getNumberOfItems();
 				assertEquals("Checking number of strings",2,n);
 				for (int i=0;i<n;++i) {
-					String scheduledProcedureStepID = Attribute.getSingleStringValueOrEmptyString(sras.getItem(i).getAttributeList(),TagFromName.ScheduledProcedureStepID);
+					String scheduledProcedureStepID = Attribute.getSingleStringValueOrEmptyString(sras.getItem(i).getAttributeList(),dictionary.getTagFromName("ScheduledProcedureStepID"));
 					assertEquals("Checking string","SPSID"+(i+1),scheduledProcedureStepID);
 				}
 			}
 		}
 		
 		{
-			String[] scheduledProcedureStepIDs  = SequenceAttribute.getArrayOfSingleStringValueOrEmptyStringOfNamedAttributeWithinSequenceItems(list,TagFromName.RequestAttributesSequence,TagFromName.ScheduledProcedureStepID);
+			String[] scheduledProcedureStepIDs  = SequenceAttribute.getArrayOfSingleStringValueOrEmptyStringOfNamedAttributeWithinSequenceItems(list,TagFromName.RequestAttributesSequence,dictionary.getTagFromName("ScheduledProcedureStepID"));
 			assertEquals("Checking number of strings",2,scheduledProcedureStepIDs.length);
 			for (int i=0;i<scheduledProcedureStepIDs.length;++i) {
 				assertEquals("Checking string","SPSID"+(i+1),scheduledProcedureStepIDs[i]);

@@ -1,6 +1,13 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.dicom.Attribute;
+import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.DicomException;
+import com.pixelmed.dicom.DicomInputStream;
+import com.pixelmed.dicom.TagFromName;
+import com.pixelmed.dicom.SOPClass;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -33,14 +40,8 @@ import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 
-import com.pixelmed.dicom.Attribute;
-import com.pixelmed.dicom.AttributeList;
-import com.pixelmed.dicom.DicomException;
-import com.pixelmed.dicom.DicomInputStream;
-import com.pixelmed.dicom.TagFromName;
-import com.pixelmed.dicom.SOPClass;
-
-//import com.pixelmed.geometry.GeometryOfVolume;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements a panel of icons of DICOM images inside a parent JScrollPane.</p>
@@ -50,8 +51,9 @@ import com.pixelmed.dicom.SOPClass;
  * @author	dclunie
  */
 public class IconListBrowser {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/IconListBrowser.java,v 1.4 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/IconListBrowser.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(IconListBrowser.class);
 
 	public static final int DEFAULT_ICON_SIZE = 128;
 	
@@ -94,10 +96,10 @@ public class IconListBrowser {
 	/**
 	 * <p>Add a set of DICOM image files.</p>
 	 *
-	 * @param		dicomFileNames			a list of DICOM files
-	 * @exception	DicomException			thrown if the icons cannot be extracted
-	 * @exception	FileNotFoundException	thrown if a file cannot be found
-	 * @exception	IOException				thrown if a file cannot be read
+	 * @param	dicomFileNames			a list of DICOM files
+	 * @throws	DicomException			thrown if the icons cannot be extracted
+	 * @throws	FileNotFoundException	thrown if a file cannot be found
+	 * @throws	IOException				thrown if a file cannot be read
 	 */
 	public void addDicomFiles(String[] dicomFileNames) throws DicomException, FileNotFoundException, IOException {
 		for (int i=0; i<dicomFileNames.length; ++i) {
@@ -136,8 +138,8 @@ public class IconListBrowser {
 	/**
 	 * <p>Build and display an (initally empty) graphical user interface view of a set of DICOM images.</p>
 	 *
-	 * @param		iconSize			the width and height in pixels of the icons to be created
-	 * @exception	DicomException		thrown if the icons cannot be extracted
+	 * @param	iconSize			the width and height in pixels of the icons to be created
+	 * @throws	DicomException		thrown if the icons cannot be extracted
 	 */
 	public IconListBrowser(int iconSize) throws DicomException {
 		this.iconSize = iconSize;
@@ -152,9 +154,9 @@ public class IconListBrowser {
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
 					int clickedIndex = list.locationToIndex(e.getPoint());
-System.err.println("Double clicked on Item " + clickedIndex);
+					slf4jlogger.info("Double clicked on Item {}",clickedIndex);
 					int[] selectedIndices = list.getSelectedIndices();
-System.err.println("At which time selected Items were " + Arrays.toString(selectedIndices));
+					slf4jlogger.info("At which time selected Items were {}",Arrays.toString(selectedIndices));
 				}
 			}
 		};
@@ -166,9 +168,9 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	/**
 	 * <p>Build and display an (initally empty) graphical user interface view of a set of DICOM images.</p>
 	 *
-	 * @param		parentScrollPane	the scrolling pane in which the icons will be rendered
-	 * @param		iconSize			the width and height in pixels of the icons to be created
-	 * @exception	DicomException		thrown if the icons cannot be extracted
+	 * @param	parentScrollPane	the scrolling pane in which the icons will be rendered
+	 * @param	iconSize			the width and height in pixels of the icons to be created
+	 * @throws	DicomException		thrown if the icons cannot be extracted
 	 */
 	public IconListBrowser(JScrollPane parentScrollPane,int iconSize) throws DicomException {
 		this(iconSize);
@@ -181,7 +183,7 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	 * <p>Uses default icon size.</p>
 	 *
 	 * @param		parentScrollPane	the scrolling pane in which the icons will be rendered
-	 * @exception	DicomException		thrown if the icons cannot be extracted
+	 * @throws	DicomException		thrown if the icons cannot be extracted
 	 */
 	public IconListBrowser(JScrollPane parentScrollPane) throws DicomException {
 		this(parentScrollPane,DEFAULT_ICON_SIZE);
@@ -192,11 +194,11 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	 *
 	 * <p>Uses default icon size.</p>
 	 *
-	 * @param		parentScrollPane		the scrolling pane in which the icons will be rendered
-	 * @param		dicomFileNames			a list of DICOM files
-	 * @exception	DicomException			thrown if the icons cannot be extracted
-	 * @exception	FileNotFoundException	thrown if a file cannot be found
-	 * @exception	IOException				thrown if a file cannot be read
+	 * @param	parentScrollPane		the scrolling pane in which the icons will be rendered
+	 * @param	dicomFileNames			a list of DICOM files
+	 * @throws	DicomException			thrown if the icons cannot be extracted
+	 * @throws	FileNotFoundException	thrown if a file cannot be found
+	 * @throws	IOException				thrown if a file cannot be read
 	 */
 	public IconListBrowser(JScrollPane parentScrollPane,String[] dicomFileNames) throws DicomException, FileNotFoundException, IOException {
 		this(parentScrollPane);
@@ -206,11 +208,11 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	/**
 	 * <p>Build and display a graphical user interface view of a set of DICOM image files.</p>
 	 *
-	 * @param		content					a container to which will be added will be added a scrolling pane containing the icon browser
-	 * @param		dicomFileNames			a list of DICOM files
-	 * @exception	DicomException			thrown if the icons cannot be extracted
-	 * @exception	FileNotFoundException	thrown if a file cannot be found
-	 * @exception	IOException				thrown if a file cannot be read
+	 * @param	content					a container to which will be added will be added a scrolling pane containing the icon browser
+	 * @param	dicomFileNames			a list of DICOM files
+	 * @throws	DicomException			thrown if the icons cannot be extracted
+	 * @throws	FileNotFoundException	thrown if a file cannot be found
+	 * @throws	IOException				thrown if a file cannot be read
 	 */
 	public IconListBrowser(Container content,String[] dicomFileNames) throws DicomException, FileNotFoundException, IOException {
 		this(DEFAULT_ICON_SIZE);
@@ -223,11 +225,11 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	/**
 	 * <p>Build and display a graphical user interface view of a set of DICOM image files.</p>
 	 *
-	 * @param		frame					a frame to whose content pane will be added a scrolling pane containing the icon browser
-	 * @param		dicomFileNames			a list of DICOM files
-	 * @exception	DicomException			thrown if the icons cannot be extracted
-	 * @exception	FileNotFoundException	thrown if a file cannot be found
-	 * @exception	IOException				thrown if a file cannot be read
+	 * @param	frame					a frame to whose content pane will be added a scrolling pane containing the icon browser
+	 * @param	dicomFileNames			a list of DICOM files
+	 * @throws	DicomException			thrown if the icons cannot be extracted
+	 * @throws	FileNotFoundException	thrown if a file cannot be found
+	 * @throws	IOException				thrown if a file cannot be read
 	 */
 	public IconListBrowser(JFrame frame,String[] dicomFileNames) throws DicomException, FileNotFoundException, IOException {
 		this(frame.getContentPane(),dicomFileNames);
@@ -236,10 +238,10 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 	/**
 	 * <p>Add an annotated icon of a DICOM image.</p>
 	 *
-	 * @param		dicomFileName			the name of the file containing the DICOM image
-	 * @exception	DicomException			thrown if the icons cannot be extracted
-	 * @exception	FileNotFoundException	thrown if a file cannot be found
-	 * @exception	IOException				thrown if a file cannot be read
+	 * @param	dicomFileName			the name of the file containing the DICOM image
+	 * @throws	DicomException			thrown if the icons cannot be extracted
+	 * @throws	FileNotFoundException	thrown if a file cannot be found
+	 * @throws	IOException				thrown if a file cannot be read
 	 */
 	public void add(String dicomFileName) throws DicomException, FileNotFoundException, IOException {
 		File iconFile = File.createTempFile(ICON_FILE_PREFIX,ICON_FILE_SUFFIX);
@@ -251,8 +253,7 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 			0/*windowCenter*/,0/*windowWidth*/,
 			DEFAULT_ICON_SIZE,0/*imageHeight*/,
 			ICON_QUALITY,
-			ConsumerFormatImageMaker.ICON_ANNOTATIONS,
-			0/*debugLevel*/);
+			ConsumerFormatImageMaker.ICON_ANNOTATIONS);
 			
 		ImageIcon icon = new ImageIcon(iconFileName);
 		//JLabel label = new JLabel("bla bla ",icon,SwingConstants.CENTER);
@@ -274,7 +275,7 @@ System.err.println("At which time selected Items were " + Arrays.toString(select
 			af.setVisible(true);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

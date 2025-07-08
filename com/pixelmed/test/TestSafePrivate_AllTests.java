@@ -1,8 +1,6 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
-
-import com.pixelmed.dose.*;
 
 import junit.framework.*;
 
@@ -16,6 +14,7 @@ public class TestSafePrivate_AllTests extends TestCase {
 		suite.addTest(TestSafePrivateGEPACSRelated.suite());
 		suite.addTest(TestSafePrivateGEMRRelated.suite());
 		suite.addTest(TestSafePrivateNQResultsRelated.suite());
+		suite.addTest(TestSafePrivateSiemensUltrasoundRawDataRelated.suite());
 		return suite;
 	}
 	

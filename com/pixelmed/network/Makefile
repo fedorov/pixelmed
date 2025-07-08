@@ -52,6 +52,7 @@ NetworkConfigurationFromMulticastDNS.class \
 NetworkConfigurationSource.class \
 NetworkDefaultValues.class \
 NetworkMediaImporter.class \
+NetworkUtilities.class \
 PDataPDU.class \
 PresentationAddress.class \
 PresentationContext.class \
@@ -75,20 +76,65 @@ UnencapsulatedExplicitStorePresentationContextSelectionPolicy.class \
 UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy.class \
 VerificationSOPClassSCU.class
 
-all:	${OBJS}
+# NOT NetworkApplicationConfigurationDialog_ja.properties
+TRANSFORMEDPROPERTIES = \
+	ApplicationEntityConfigurationDialog_cs.properties \
+	ApplicationEntityConfigurationDialog_da.properties \
+	ApplicationEntityConfigurationDialog_de.properties \
+	ApplicationEntityConfigurationDialog_el.properties \
+	ApplicationEntityConfigurationDialog_es.properties \
+	ApplicationEntityConfigurationDialog_fi.properties \
+	ApplicationEntityConfigurationDialog_fr.properties \
+	ApplicationEntityConfigurationDialog_hu.properties \
+	ApplicationEntityConfigurationDialog_it.properties \
+	ApplicationEntityConfigurationDialog_ja.properties \
+	ApplicationEntityConfigurationDialog_ko.properties \
+	ApplicationEntityConfigurationDialog_nl.properties \
+	ApplicationEntityConfigurationDialog_no.properties \
+	ApplicationEntityConfigurationDialog_pl.properties \
+	ApplicationEntityConfigurationDialog_pt.properties \
+	ApplicationEntityConfigurationDialog_ro.properties \
+	ApplicationEntityConfigurationDialog_ru.properties \
+	ApplicationEntityConfigurationDialog_sv.properties \
+	ApplicationEntityConfigurationDialog_tr.properties \
+	ApplicationEntityConfigurationDialog_zh_CN.properties \
+	NetworkApplicationConfigurationDialog_cs.properties \
+	NetworkApplicationConfigurationDialog_da.properties \
+	NetworkApplicationConfigurationDialog_de.properties \
+	NetworkApplicationConfigurationDialog_el.properties \
+	NetworkApplicationConfigurationDialog_es.properties \
+	NetworkApplicationConfigurationDialog_fi.properties \
+	NetworkApplicationConfigurationDialog_fr.properties \
+	NetworkApplicationConfigurationDialog_hu.properties \
+	NetworkApplicationConfigurationDialog_it.properties \
+	NetworkApplicationConfigurationDialog_ja.properties \
+	NetworkApplicationConfigurationDialog_ko.properties \
+	NetworkApplicationConfigurationDialog_nl.properties \
+	NetworkApplicationConfigurationDialog_no.properties \
+	NetworkApplicationConfigurationDialog_pl.properties \
+	NetworkApplicationConfigurationDialog_pt.properties \
+	NetworkApplicationConfigurationDialog_ro.properties \
+	NetworkApplicationConfigurationDialog_ru.properties \
+	NetworkApplicationConfigurationDialog_sv.properties \
+	NetworkApplicationConfigurationDialog_tr.properties \
+	NetworkApplicationConfigurationDialog_zh_CN.properties
+
+all:	${OBJS} ${TRANSFORMEDPROPERTIES}
 
 include ${PATHTOROOT}/Makefile.common.mk
 
-.java.class:
-	javac ${JAVACOPTIONS} -classpath ${PATHTOROOT}:${PATHTOADDITIONAL}/excalibur-bzip2-1.0.jar:${PATHTOADDITIONAL}/jmdns.jar \
-		-sourcepath ${PATHTOROOT} $<
+clean:
+	rm -f *~ *.class core *.bak \
+		${TRANSFORMEDPROPERTIES}
 
 archive:
 	tar -cvf - Makefile *.java | gzip -best > ../../../network.`date '+%Y%m%d'`.tar.gz
 
 testprobe:	ProbeCapability.class
-	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost 4006 HELGRAY US 0
-	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost HELGRAY US 0
+	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost 4006 HELGRAY US
+	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost HELGRAY US
+	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost US
+	java -cp ${PATHTOROOT} com.pixelmed.network.ProbeCapability localhost
 
 testconfig:	NetworkConfigurationFromLDAP.class ApplicationEntity.class
 	java -cp ${PATHTOROOT} com.pixelmed.network.NetworkConfigurationFromLDAP
@@ -96,45 +142,198 @@ testconfig:	NetworkConfigurationFromLDAP.class ApplicationEntity.class
 testproperties:	NetworkApplicationProperties.class
 	java -cp ${PATHTOROOT} com.pixelmed.network.NetworkApplicationProperties ../server/testserver.properties "o=pixelmed,c=us"
 
-testconfigmdns:	NetworkConfigurationFromLDAP.class ApplicationEntity.class
+testconfigmdns:	NetworkConfigurationFromMulticastDNS.class ApplicationEntity.class
 	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.NetworkConfigurationFromMulticastDNS HELGRAY 4006 WSD
 
 testscuperf: StorageSOPClassSCUPerformanceTest.class
-	dcsmpte /tmp/testscuperf
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.StorageSOPClassSCUPerformanceTest localhost 4007 LOCAL4007 STORESCU 0 0 0 100 1 0 0 0 /tmp/testscuperf
+	dcsmpte -rows 512 -columns 512 -bits 12 /tmp/testscuperf
+	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.StorageSOPClassSCUPerformanceTest localhost 4007 LOCAL4007 STORESCU 0 0 0 100 10 0 0 /tmp/testscuperf
 	rm /tmp/testscuperf
+
+testscuperfactual: StorageSOPClassSCUPerformanceTest.class
+	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.StorageSOPClassSCUPerformanceTest localhost 4007 LOCAL4007 STORESCU 0 0 0 1 1 0 0 /largetmp/112648/Blinded
+
+testscuperfactualtopixelmed: StorageSOPClassSCUPerformanceTest.class
+	rm -f /tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr
+	rm -rf /largetmp/crap
+	mkdir -p /largetmp/crap
+	./runprocessinbackground.sh \
+		/tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr \
+		java -cp ${PATHTOROOT} \
+			com.pixelmed.network.StorageSOPClassSCPDispatcher 4007 LOCAL4007 /largetmp/crap
+	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.StorageSOPClassSCUPerformanceTest localhost 4007 LOCAL4007 STORESCU 0 0 0 1 1 0 0 /largetmp/112648/Blinded
+	@kill -9 `cat /tmp/testpixelmedsendtopixelmed.pid`
+	#rm /tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr
+
+testscuperfdiscardtopixelmed: StorageSOPClassSCUPerformanceTest.class
+	rm -f /tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr
+	./runprocessinbackground.sh \
+		/tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr \
+		java -cp ${PATHTOROOT} \
+			com.pixelmed.network.StorageSOPClassSCPDispatcher 4007 LOCAL4007 -
+	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.network.StorageSOPClassSCUPerformanceTest localhost 4007 LOCAL4007 STORESCU 0 0 0 1 1 0 0 /largetmp/112648/Blinded
+	@kill -9 `cat /tmp/testpixelmedsendtopixelmed.pid`
+	#rm /tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr
 
 testimporter:	NetworkMediaImporter.class
 	mkdir -p /tmp/testimport
 	dcsmpte /tmp/testimport/crap
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar:${PATHTOADDITIONAL}/excalibur-bzip2-1.0.jar \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
 		com.pixelmed.network.NetworkMediaImporter \
 		localhost 4006 HELGRAY IMPORTER /tmp/testimport
 	rm -rf /tmp/testimport
 
 testaedialog:	ApplicationEntityConfigurationDialog.class
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar:${PATHTOADDITIONAL}/excalibur-bzip2-1.0.jar \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
 		com.pixelmed.network.ApplicationEntityConfigurationDialog
 
 testconfigurator:	NetworkApplicationConfigurationDialog.class
 	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar:${PATHTOADDITIONAL}/excalibur-bzip2-1.0.jar \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
 		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
 	rm -f /tmp/testproperties
 
-testreceivedfilestrategysingle:	ReceivedFilePathStrategySingleFolder.class
-	java -cp ${PATHTOROOT} com.pixelmed.network.ReceivedFilePathStrategySingleFolder
+testconfiguratorczech:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_cs.properties NetworkApplicationConfigurationDialog_cs.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=cs -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
 
-testreceivedfilestrategycomponent:	ReceivedFilePathStrategyComponentFolders.class
-	java -cp ${PATHTOROOT} com.pixelmed.network.ReceivedFilePathStrategyComponentFolders
+testconfiguratordannish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_da.properties NetworkApplicationConfigurationDialog_da.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=da -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
 
-testreceivedfilestrategyhash:	ReceivedFilePathStrategyHashSubFolders.class
-	java -cp ${PATHTOROOT} com.pixelmed.network.ReceivedFilePathStrategyHashSubFolders
+testconfiguratorgerman:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_de.properties NetworkApplicationConfigurationDialog_de.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=de -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
 
-testreceivedfilestrategy:	\
-	testreceivedfilestrategysingle \
-	testreceivedfilestrategycomponent \
-	testreceivedfilestrategyhash
+testconfiguratorgreek:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_el.properties NetworkApplicationConfigurationDialog_el.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=el -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorspanish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_es.properties NetworkApplicationConfigurationDialog_es.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=es -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorfinnish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_fi.properties NetworkApplicationConfigurationDialog_fi.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=fi -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorfrench:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_fr.properties NetworkApplicationConfigurationDialog_fr.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=fr -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorhungarian:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_hu.properties NetworkApplicationConfigurationDialog_hu.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=hu -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratoritalian:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_it.properties NetworkApplicationConfigurationDialog_it.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=it -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorjapanese:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_ja.properties NetworkApplicationConfigurationDialog_ja.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=ja -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorkorean:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_ko.properties NetworkApplicationConfigurationDialog_ko.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=ko -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratordutch:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_nl.properties NetworkApplicationConfigurationDialog_nl.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=nl -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratornorwegian:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_no.properties NetworkApplicationConfigurationDialog_no.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=no -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorpolish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_pl.properties NetworkApplicationConfigurationDialog_pl.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=pl -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorportuguese:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_pt.properties NetworkApplicationConfigurationDialog_pt.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=pt -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorromanian:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_ro.properties NetworkApplicationConfigurationDialog_ro.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=ro -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorrussian:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_ru.properties NetworkApplicationConfigurationDialog_ru.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=ru -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorswedish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_sv.properties NetworkApplicationConfigurationDialog_sv.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=sv -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorturkish:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_tr.properties NetworkApplicationConfigurationDialog_tr.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=tr -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratorchinesesimplified:	NetworkApplicationConfigurationDialog.class ApplicationEntityConfigurationDialog_zh_CN.properties NetworkApplicationConfigurationDialog_zh_CN.properties
+	cp ${PATHTOROOT}/sample.com.pixelmed.display.DicomImageViewer.properties /tmp/testproperties
+	java -Duser.language=zh -Duser.country=CN -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${BZIP2ADDITIONALJAR} \
+		com.pixelmed.network.NetworkApplicationConfigurationDialog /tmp/testproperties
+	rm -f /tmp/testproperties
+
+testconfiguratoralllocalizations: \
+	testconfiguratorczech \
+	testconfiguratordannish \
+	testconfiguratorgerman \
+	testconfiguratorgreek \
+	testconfiguratorspanish \
+	testconfiguratorfinnish \
+	testconfiguratorfrench \
+	testconfiguratorhungarian \
+	testconfiguratoritalian \
+	testconfiguratorjapanese \
+	testconfiguratorkorean \
+	testconfiguratordutch \
+	testconfiguratornorwegian \
+	testconfiguratorpolish \
+	testconfiguratorportuguese \
+	testconfiguratorromanian \
+	testconfiguratorrussian \
+	testconfiguratorswedish \
+	testconfiguratorturkish \
+	testconfiguratorchinesesimplified
 
 testpixelmedsendtopixelmed:
 	@rm -rf /tmp/testpixelmedsendtopixelmed.receivedfiles
@@ -142,10 +341,10 @@ testpixelmedsendtopixelmed:
 	./runprocessinbackground.sh \
 		/tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr \
 		java -cp ${PATHTOROOT} \
-			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles INSECURE 0
+			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles NONSECURE
 	@#echo "PID of com.pixelmed.network.StorageSOPClassSCPDispatcher is "`cat /tmp/testpixelmedsendtopixelmed.pid`
 	dcsmpte -nodisclaimer -r PatientName testpixelmedsendtopixelmed.1 /tmp/testpixelmedsendtopixelmed.1.dcm
-	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US /tmp/testpixelmedsendtopixelmed.1.dcm 0 0
+	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US /tmp/testpixelmedsendtopixelmed.1.dcm 0
 	@echo "Comparing sent and received files - expect no difference except meta header"
 	@receivedfilename=`grep 'sendReceivedObjectIndication() fileName' /tmp/testpixelmedsendtopixelmed.stderr | tail -1 | sed -e 's/^.*fileName: //' -e 's/ from .*$$//'`; \
 		andiff /tmp/testpixelmedsendtopixelmed.1.dcm "$${receivedfilename}"; \
@@ -162,13 +361,13 @@ testpixelmedsendmultitopixelmed:
 	./runprocessinbackground.sh \
 		/tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr \
 		java -cp ${PATHTOROOT} \
-			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles INSECURE 0
+			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles NONSECURE
 	@#echo "PID of com.pixelmed.network.StorageSOPClassSCPDispatcher is "`cat /tmp/testpixelmedsendtopixelmed.pid`
 	dcsmpte -nodisclaimer -r PatientName testpixelmedsendtopixelmed.1 /tmp/testpixelmedsendtopixelmed.1.dcm
 	dcsmpte -nodisclaimer -r PatientName testpixelmedsendtopixelmed.2 /tmp/testpixelmedsendtopixelmed.2.dcm
 	@echo "/tmp/testpixelmedsendtopixelmed.1.dcm" >/tmp/testpixelmedsendtopixelmed.filelist
 	@echo "/tmp/testpixelmedsendtopixelmed.2.dcm" >>/tmp/testpixelmedsendtopixelmed.filelist
-	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US - 0 0 </tmp/testpixelmedsendtopixelmed.filelist
+	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US - 0 </tmp/testpixelmedsendtopixelmed.filelist
 	#ls -l /tmp/testpixelmedsendtopixelmed.receivedfiles
 	#cat /tmp/testpixelmedsendtopixelmed.stderr
 	@echo "Comparing sent and received 1st files - expect no difference except meta header"
@@ -194,13 +393,15 @@ testpixelmedsendmanytopixelmed:
 	./runprocessinbackground.sh \
 		/tmp/testpixelmedsendtopixelmed.pid /tmp/testpixelmedsendtopixelmed.stdout /tmp/testpixelmedsendtopixelmed.stderr \
 		java -cp ${PATHTOROOT} \
-			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles INSECURE 0
+			-Dorg.slf4j.simpleLogger.defaultLogLevel=debug \
+			com.pixelmed.network.StorageSOPClassSCPDispatcher 4006 STORESCP /tmp/testpixelmedsendtopixelmed.receivedfiles NONSECURE
 	@#echo "PID of com.pixelmed.network.StorageSOPClassSCPDispatcher is "`cat /tmp/testpixelmedsendtopixelmed.pid`
 	@rm -f /tmp/testpixelmedsendtopixelmed.filelist
-	count=0; while [ $${count} -lt 5000 ] ; do dcsmpte -nodisclaimer -r PatientName "testpixelmedsendtopixelmed.$${count}" "/tmp/testpixelmedsendtopixelmed.$${count}.dcm" ; echo "/tmp/testpixelmedsendtopixelmed.$${count}.dcm" >>/tmp/testpixelmedsendtopixelmed.filelist ; count=`expr $${count} + 1` ; done
+	count=0; while [ $${count} -lt 5 ] ; do dcsmpte -nodisclaimer -r PatientName "testpixelmedsendtopixelmed.$${count}" "/tmp/testpixelmedsendtopixelmed.$${count}.dcm" ; echo "/tmp/testpixelmedsendtopixelmed.$${count}.dcm" >>/tmp/testpixelmedsendtopixelmed.filelist ; count=`expr $${count} + 1` ; done
 	#ls -l "/tmp/testpixelmedsendtopixelmed.*.dcm"
-	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US - 0 0 </tmp/testpixelmedsendtopixelmed.filelist
+	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 STORESCP US - 0 </tmp/testpixelmedsendtopixelmed.filelist
 	@sent=`wc -l </tmp/testpixelmedsendtopixelmed.filelist | sed -e 's/[ ]*//'` ; received=`ls -1 /tmp/testpixelmedsendtopixelmed.receivedfiles | wc -l | sed -e 's/[ ]*//'` ; echo "Sent $${sent}, received $${received} files"
+	@kill -9 `cat /tmp/testpixelmedsendtopixelmed.pid`
 
 testpixelmedcgetscutopixelmedcgetscp:
 	@rm -rf /tmp/testpixelmedcgetscutopixelmedcgetscp.files
@@ -212,41 +413,45 @@ testpixelmedcgetscutopixelmedcgetscp:
 	@echo >> /tmp/testpixelmedcgetscutopixelmedcgetscp.properties "Dicom.ListeningPort=4006"
 	@echo >> /tmp/testpixelmedcgetscutopixelmedcgetscp.properties "Dicom.CalledAETitle=TESTGETSCP"
 	@echo >> /tmp/testpixelmedcgetscutopixelmedcgetscp.properties "Dicom.CallingAETitle=TESTGETSCP"
-	@echo >> /tmp/testpixelmedcgetscutopixelmedcgetscp.properties "Dicom.StorageSCPDebugLevel=1"
 	./runprocessinbackground.sh \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.pid /tmp/testpixelmedcgetscutopixelmedcgetscp.stdout /tmp/testpixelmedcgetscutopixelmedcgetscp.stderr \
 		java -cp ${PATHTOROOT}:${SERVERADDITIONALJARS} \
+			-Dorg.slf4j.simpleLogger.defaultLogLevel=debug \
 			com.pixelmed.server.DicomAndWebStorageServer /tmp/testpixelmedcgetscutopixelmedcgetscp.properties
 	sleep 15
 	@#echo "PID of com.pixelmed.server.DicomAndWebStorageServer is "`cat /tmp/testpixelmedcgetscutopixelmedcgetscp.pid`
 	dcsmpte -nodisclaimer -r PatientName testpixelmedcgetscutopixelmedcgetscp /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm
-	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 TESTGETSCP US /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 0 0
+	java -cp ${PATHTOROOT} com.pixelmed.network.StorageSOPClassSCU localhost 4006 TESTGETSCP US /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 0
 	@rm -rf /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files
 	@mkdir -p /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files
-	java -cp ${PATHTOROOT} com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
+	java -cp ${PATHTOROOT} \
+		-Dorg.slf4j.simpleLogger.defaultLogLevel=debug \
+		com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files \
 		STUDY \
 		`dckey -k StudyInstanceUID /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 2>&1` \
 		2> /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr
 	@echo "Comparing sent and received files with STUDY C-GET - expect no difference except meta header"
-	@receivedfilename=`grep 'sendReceivedObjectIndication() fileName' /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr | tail -1 | sed -e 's/^.*fileName: //' -e 's/ from .*$$//'`; \
-		andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		rm -f "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"
+	@andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@rm -f /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
 	@echo "Comparison done"
-	java -cp ${PATHTOROOT} com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
+	java -cp ${PATHTOROOT} \
+		-Dorg.slf4j.simpleLogger.defaultLogLevel=debug \
+		com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files \
 		SERIES \
 		`dckey -k StudyInstanceUID /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 2>&1` \
 		`dckey -k SeriesInstanceUID /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 2>&1` \
 		2> /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr
 	@echo "Comparing sent and received files with SERIES C-GET - expect no difference except meta header"
-	@receivedfilename=`grep 'sendReceivedObjectIndication() fileName' /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr | tail -1 | sed -e 's/^.*fileName: //' -e 's/ from .*$$//'`; \
-		andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		rm -f "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"
+	@andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@rm -f /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
 	@echo "Comparison done"
-	java -cp ${PATHTOROOT} com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
+	java -cp ${PATHTOROOT} \
+		-Dorg.slf4j.simpleLogger.defaultLogLevel=debug \
+		com.pixelmed.network.GetSOPClassSCU localhost 4006 TESTGETSCP US \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files \
 		IMAGE \
 		`dckey -k StudyInstanceUID /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 2>&1` \
@@ -254,10 +459,9 @@ testpixelmedcgetscutopixelmedcgetscp:
 		`dckey -k SOPInstanceUID /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm 2>&1` \
 		2> /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr
 	@echo "Comparing sent and received files with IMAGE C-GET - expect no difference except meta header"
-	@receivedfilename=`grep 'sendReceivedObjectIndication() fileName' /tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr | tail -1 | sed -e 's/^.*fileName: //' -e 's/ from .*$$//'`; \
-		andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"; \
-		rm -f "/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/$${receivedfilename}"
+	@andiff /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@dccmp  /tmp/testpixelmedcgetscutopixelmedcgetscp.dcm /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
+	@rm -f /tmp/testpixelmedcgetscutopixelmedcgetscp.get.files/*
 	@echo "Comparison done"
 	@kill -9 `cat /tmp/testpixelmedcgetscutopixelmedcgetscp.pid`
 	@rm -rf /tmp/testpixelmedcgetscutopixelmedcgetscp.pid /tmp/testpixelmedcgetscutopixelmedcgetscp.stdout /tmp/testpixelmedcgetscutopixelmedcgetscp.stderr \
@@ -267,4 +471,5 @@ testpixelmedcgetscutopixelmedcgetscp:
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.dcm \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.get.files \
 		/tmp/testpixelmedcgetscutopixelmedcgetscp.get.stderr
+
 

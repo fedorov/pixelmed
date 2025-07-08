@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,11 @@ import java.io.*;
  */
 public class CodeStringAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodeStringAttribute.java,v 1.8 2003/09/22 21:21:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodeStringAttribute.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -36,8 +40,8 @@ public class CodeStringAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public CodeStringAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -49,8 +53,8 @@ public class CodeStringAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public CodeStringAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -62,6 +66,21 @@ public class CodeStringAttribute extends StringAttribute {
 	 * @return	'C','S' in ASCII as a two byte array; see {@link com.pixelmed.dicom.ValueRepresentation ValueRepresentation}
 	 */
 	public byte[] getVR() { return ValueRepresentation.CS; }
+
+	protected final boolean allowRepairOfIncorrectLength() {
+//System.err.println("CodeStringAttribute.allowRepairOfIncorrectLength():");
+		return false;
+	}
+	
+	protected final boolean allowRepairOfInvalidCharacterReplacement() {
+//System.err.println("CodeStringAttribute.allowRepairOfInvalidCharacterReplacement():");
+		return false;
+	}
+
+	public final boolean isCharacterInValueValid(int c) throws DicomException {
+//System.err.println("CodeStringAttribute.isCharacterInValueValid(): c = "+c);
+		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isUpperCase(c) || Character.isDigit(c) || c == ' ' || c == '_');
+	}
 
 }
 

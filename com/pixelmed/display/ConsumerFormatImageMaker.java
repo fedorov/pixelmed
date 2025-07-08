@@ -1,6 +1,23 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.dicom.Attribute;
+import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.CompressedFrameDecoder;
+import com.pixelmed.dicom.DecimalStringAttribute;
+import com.pixelmed.dicom.DicomException;
+import com.pixelmed.dicom.DicomInputStream;
+import com.pixelmed.dicom.GeometryOfVolumeFromAttributeList;
+import com.pixelmed.dicom.ModalityTransform;
+import com.pixelmed.dicom.SequenceAttribute;
+import com.pixelmed.dicom.SOPClass;
+import com.pixelmed.dicom.TagFromName;
+import com.pixelmed.dicom.VOITransform;
+
+import com.pixelmed.geometry.GeometryOfVolume;
+
+import com.pixelmed.utils.ColorUtilities;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -30,126 +47,62 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageOutputStream;
 
-import com.pixelmed.dicom.Attribute;
-import com.pixelmed.dicom.AttributeList;
-import com.pixelmed.dicom.DecimalStringAttribute;
-import com.pixelmed.dicom.DicomException;
-import com.pixelmed.dicom.DicomInputStream;
-import com.pixelmed.dicom.GeometryOfVolumeFromAttributeList;
-import com.pixelmed.dicom.ModalityTransform;
-import com.pixelmed.dicom.SequenceAttribute;
-import com.pixelmed.dicom.SOPClass;
-import com.pixelmed.dicom.TagFromName;
-import com.pixelmed.dicom.VOITransform;
-
-import com.pixelmed.geometry.GeometryOfVolume;
-
-import com.pixelmed.utils.ColorUtilities;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class of static methods to make consumer format images from DICOM images.</p>
  *
+ * <p>The formats supported depend on what JIIO codecs are available in the JRE and or provided through JIIO;
+ * see <a href="http://download.java.net/media/jai-imageio/javadoc/1.1/">http://download.java.net/media/jai-imageio/javadoc/1.1/</a></p>
+ *
  * @author	dclunie
  */
 public class ConsumerFormatImageMaker {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ConsumerFormatImageMaker.java,v 1.29 2013/10/16 16:08:58 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ConsumerFormatImageMaker.java,v 1.52 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ConsumerFormatImageMaker.class);
 	
 	public static final String ALL_ANNOTATIONS = "all";
 	public static final String ICON_ANNOTATIONS = "icon";
 	public static final String COLOR_ANNOTATIONS = "color";
 	public static final String NO_ANNOTATIONS = "none";
-	
+
 	/**
-	 * <p>Create a single frame 8-bit per channel image (windowed if grayscale) from the first, or only, frame.</p>
+	 * <p>Create a single frame 8-bit per channel image (windowed if grayscale) from the specified frame.</p>
 	 *
 	 * <p>Uses the window center and width in the attribute list.</p>
 	 *
-	 * @param	list		the DICOM attributes
-	 * @param	debugLevel	
-	 * @return				an 8 bit BufferedImage
-	 * @exception			if attribute is not an image
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitFrame(SourceImage, int)} instead.
+	 * @param	sImg			the image
+	 * @param	f				the frame, numbered from 0 (not 1)
+	 * @param	debugLevel		ignored
+	 * @return					an 8 bit BufferedImage of the most favourable type for the platform
 	 */
-	public static final BufferedImage makeEightBitImage(AttributeList list,int debugLevel) throws DicomException {
-		return makeEightBitImages(list,debugLevel)[0];
+	public static final BufferedImage makeEightBitFrame(SourceImage sImg, int f,int debugLevel) {
+		slf4jlogger.warn("makeEightBitFrame(): Debug level supplied as argument ignored");
+		return makeEightBitFrame(sImg,f);
 	}
-	
+
 	/**
-	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 * <p>Create a single frame 8-bit per channel image (windowed if grayscale) from the specified frame.</p>
 	 *
 	 * <p>Uses the window center and width in the attribute list.</p>
 	 *
-	 * @param	list		the DICOM attributes
-	 * @param	debugLevel	
-	 * @return				an array of 8 bit BufferedImages
-	 * @exception			if attribute is not an image
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	sImg			the image
+	 * @param	f				the frame, numbered from 0 (not 1)
+	 * @return					an 8 bit BufferedImage of the most favourable type for the platform
 	 */
-	public static final BufferedImage[] makeEightBitImages(AttributeList list,int debugLevel) throws DicomException {
-		return makeEightBitImages(list,(GeometryOfVolume)null,(Vector<SuperimposedImage>)null,(Vector<Shape>[])null,0,-1/*all frames*/,debugLevel);
-	}
-	
-	
-	/**
-	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
-	 *
-	 * <p>Uses the window center and width in the attribute list.</p>
-	 *
-	 * @param	list							the DICOM attributes
-	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
-	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
-	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
-	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
-	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
-	 * @param	debugLevel	
-	 * @return									an array of 8 bit BufferedImages
-	 * @exception								if attribute is not an image
-	 */
-	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame,int debugLevel) throws DicomException {
-		return makeEightBitImages(list,imageGeometry,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame,debugLevel);
-	}
-	
-	/**
-	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
-	 *
-	 * <p>Uses the window center and width in the attribute list.</p>
-	 *
-	 * @param	list							the DICOM attributes
-	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
-	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
-	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
-	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
-	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
-	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
-	 * @param	debugLevel	
-	 * @return									an array of 8 bit BufferedImages
-	 * @exception								if attribute is not an image
-	 */
-	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame,int debugLevel) throws DicomException {
-		String sopClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
-		if (!SOPClass.isImageStorage(sopClassUID)) {
-			throw new DicomException("SOP Class is not an image");
-		}
-		
-		SourceImage sImg = new SourceImage(list);
-		int nFrames = sImg.getNumberOfFrames();
-		if (lastFrame < 0) {
-			firstFrame = 0;
-			lastFrame = nFrames-1;
-		}
-		BufferedImage[] renderedImages = new BufferedImage[lastFrame-firstFrame+1];
-		for (int f=firstFrame; f<=lastFrame; ++f) {
+	public static final BufferedImage makeEightBitFrame(SourceImage sImg, int f) {
+			slf4jlogger.trace("makeEightBitFrame(SourceImage,int):");
 			BufferedImage useSrcImage = sImg.getBufferedImage(f);
 			BufferedImage renderedImage = null;
 				
-			if (useSrcImage.getColorModel().getNumComponents() != 1) {
-				try {
-					renderedImage=BufferedImageUtilities.convertToMostFavorableImageType(useSrcImage);
-				}
-				catch (Exception e) {
-					e.printStackTrace(System.err);
-					renderedImage=useSrcImage;
-				}
-			}
-			else {
+			if (useSrcImage.getColorModel().getNumComponents() == 1) {
 				ModalityTransform modalityTransform = sImg.getModalityTransform();
 				VOITransform           voiTransform = sImg.getVOITransform();
 				boolean                      signed = sImg.isSigned();
@@ -180,18 +133,18 @@ public class ConsumerFormatImageMaker {
 					windowCenter = voiTransform.getCenter(f,0);
 				}
 				if (windowWidth <= 0) {			// use supplied window only if there was one, and if its width was not zero (center may legitimately be zero); indeed, it is forbidden to be -ve also
-if (debugLevel > 2) System.err.println("For statistically derived window: imgMin = "+imgMin);
-if (debugLevel > 2) System.err.println("For statistically derived window: imgMax = "+imgMax);
+					slf4jlogger.trace("makeEightBitFrame(): For statistically derived window: imgMin = {}",imgMin);
+					slf4jlogger.trace("makeEightBitFrame(): For statistically derived window: imgMax = {}",imgMax);
 					double ourMin = imgMin*useSlope+useIntercept;
 					double ourMax = imgMax*useSlope+useIntercept;
-if (debugLevel > 2) System.err.println("For statistically derived window: rescaled min = "+ourMin);
-if (debugLevel > 2) System.err.println("For statistically derived window: rescaled min = "+ourMax);
+					slf4jlogger.trace("makeEightBitFrame(): For statistically derived window: rescaled min = {}",ourMin);
+					slf4jlogger.trace("makeEightBitFrame(): For statistically derived window: rescaled min = {}",ourMax);
 					windowWidth=(ourMax-ourMin);
 					windowCenter=(ourMax+ourMin)/2.0;
-if (debugLevel > 1) System.err.println("Using statistically derived center "+windowCenter+" and width "+windowWidth);
+					slf4jlogger.trace("makeEightBitFrame(): Using statistically derived center {} and width {}",windowCenter,windowWidth);
 				}
 				
-if (debugLevel > 1) System.err.println("Using rescale slope "+useSlope+" and intercept "+useIntercept+" and window center "+windowCenter+" and width "+windowWidth);
+				slf4jlogger.trace("makeEightBitFrame(): Using rescale slope {} and intercept {} and window center {} and width {}",useSlope,useIntercept,windowCenter,windowWidth);
 
 				int useVOIFunction = 0;
 			
@@ -203,6 +156,201 @@ if (debugLevel > 1) System.err.println("Using rescale slope "+useSlope+" and int
 					: WindowCenterAndWidth.applyWindowCenterAndWidthWithPaletteColor(useSrcImage,windowCenter,windowWidth,sImg.isSigned(),inverted,useSlope,useIntercept,usePad,pad,
 						largestGray,bitsPerEntry,numberOfEntries,redTable,greenTable,blueTable);
 			}
+			else if (useSrcImage.getColorModel().getNumComponents() == 3) {
+				if (sImg.isYBR()) {		// (000989)
+					useSrcImage = BufferedImageUtilities.convertYBRToRGB(useSrcImage);
+				}
+				VOITransform voiTransform = sImg.getVOITransform();
+				double windowWidth=0;
+				double windowCenter=0;
+				if (voiTransform != null && voiTransform.getNumberOfTransforms(f) > 0) {
+					 windowWidth = voiTransform.getWidth(f,0);								// (first) transform
+					windowCenter = voiTransform.getCenter(f,0);
+				}
+				if (windowWidth <= 0) {			// use supplied window only if there was one, and if its width was not zero (center may legitimately be zero); indeed, it is forbidden to be -ve also
+					slf4jlogger.trace("makeEightBitFrame(): Color image without windowing");
+					renderedImage=BufferedImageUtilities.convertToMostFavorableImageType(useSrcImage);
+				}
+				else {
+					slf4jlogger.trace("makeEightBitFrame(): Color image with window center {} and width {}",windowCenter,windowWidth);
+					// No rescaling for color images
+					// use only linear voiTransform ... and no rescaling, no sign, no inversion (for now), no padding
+					renderedImage = WindowCenterAndWidth.applyWindowCenterAndWidthLinearToColorImage(useSrcImage,windowCenter,windowWidth);
+				}
+			}
+			else {
+				try {
+					renderedImage=BufferedImageUtilities.convertToMostFavorableImageType(useSrcImage);
+				}
+				catch (Exception e) {
+					slf4jlogger.error("",e);
+					renderedImage=useSrcImage;
+				}
+			}
+			return renderedImage;
+	}
+	
+	/**
+	 * <p>Create a single frame 8-bit per channel image (windowed if grayscale) from the first, or only, frame.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitImage(AttributeList)} instead.
+	 * @param	list			the DICOM attributes
+	 * @param	debugLevel		ignored
+	 * @return					an 8 bit BufferedImage
+	 * @throws	DicomException	if attribute is not an image
+	 */
+	public static final BufferedImage makeEightBitImage(AttributeList list,int debugLevel) throws DicomException {
+		slf4jlogger.warn("makeEightBitImage(): Debug level supplied as argument ignored");
+		return makeEightBitImage(list);
+	}
+	
+	/**
+	 * <p>Create a single frame 8-bit per channel image (windowed if grayscale) from the first, or only, frame.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	list			the DICOM attributes
+	 * @return					an 8 bit BufferedImage
+	 * @throws	DicomException	if attribute is not an image
+	 */
+	public static final BufferedImage makeEightBitImage(AttributeList list) throws DicomException {
+		return makeEightBitImages(list)[0];
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitImages(AttributeList)} instead.
+	 * @param	list		the DICOM attributes
+	 * @param	debugLevel	ignored
+	 * @return				an array of 8 bit BufferedImages
+	 * @throws	DicomException	if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list,int debugLevel) throws DicomException {
+		slf4jlogger.warn("makeEightBitImages(): Debug level supplied as argument ignored");
+		return makeEightBitImages(list);
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	list		the DICOM attributes
+	 * @return				an array of 8 bit BufferedImages
+	 * @throws	DicomException	if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list) throws DicomException {
+		return makeEightBitImages(list,(GeometryOfVolume)null,(Vector<SuperimposedImage>)null,(Vector<Shape>[])null,0,-1/*all frames*/);
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitImages(AttributeList,GeometryOfVolume,Vector,Vector[],int,int)} instead.
+	 * @param	list							the DICOM attributes
+	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	debugLevel						ignored
+	 * @return									an array of 8 bit BufferedImages
+	 * @throws	DicomException					if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame,int debugLevel) throws DicomException {
+		slf4jlogger.warn("makeEightBitImages(): Debug level supplied as argument ignored");
+		return makeEightBitImages(list,imageGeometry,superimposedImages,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame);
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	list							the DICOM attributes
+	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @return									an array of 8 bit BufferedImages
+	 * @throws	DicomException					if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame) throws DicomException {
+		return makeEightBitImages(list,imageGeometry,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame);
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitImages(AttributeList,GeometryOfVolume,Vector,double,Vector[],int,int)} instead.
+	 * @param	list							the DICOM attributes
+	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	debugLevel						ignored
+	 * @return									an array of 8 bit BufferedImages
+	 * @throws	DicomException					if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame,int debugLevel) throws DicomException {
+		slf4jlogger.warn("makeEightBitImages(): Debug level supplied as argument ignored");
+		return makeEightBitImages(list,imageGeometry,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame);
+	}
+	
+	/**
+	 * <p>Create an array of single frame 8-bit per channel image (windowed if grayscale) from the from the only or all frames.</p>
+	 *
+	 * <p>Uses the window center and width in the attribute list.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	list							the DICOM attributes
+	 * @param	imageGeometry					the geometry already extracted from the list, or null if need to extract it (only needed if have superimposedImages)
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @return									an array of 8 bit BufferedImages
+	 * @throws	DicomException					if attribute is not an image
+	 */
+	public static final BufferedImage[] makeEightBitImages(AttributeList list,GeometryOfVolume imageGeometry,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,int firstFrame,int lastFrame) throws DicomException {
+		String sopClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
+		if (!SOPClass.isImageStorage(sopClassUID)) {
+			throw new DicomException("SOP Class is not an image");
+		}
+		
+		SourceImage sImg = new SourceImage(list);
+		int nFrames = sImg.getNumberOfFrames();
+		if (lastFrame < 0) {
+			firstFrame = 0;
+			lastFrame = nFrames-1;
+		}
+		BufferedImage[] renderedImages = new BufferedImage[lastFrame-firstFrame+1];
+		for (int f=firstFrame; f<=lastFrame; ++f) {
+			BufferedImage renderedImage = makeEightBitFrame(sImg,f);
 
 			// superimposedImages application is derived from same approach in SingleImagePanel ... ideally should refactor into utility class :(
 			if (superimposedImages != null) {
@@ -211,8 +359,8 @@ if (debugLevel > 1) System.err.println("Using rescale slope "+useSlope+" and int
 						imageGeometry = new GeometryOfVolumeFromAttributeList(list);
 					}
 					catch (Exception e) {
-						// don't print exception, because it is legitimate for images to be missing this information
-						//e.printStackTrace(System.err);
+						// don't print exception routinely, because it is legitimate for images to be missing this information
+						slf4jlogger.debug("",e);
 					}
 				}
 				if (imageGeometry != null) {
@@ -221,7 +369,7 @@ if (debugLevel > 1) System.err.println("Using rescale slope "+useSlope+" and int
 						if (superimposedImageAppliedToUnderlyingImage != null) {
 							BufferedImage superimposedBufferedImage = superimposedImageAppliedToUnderlyingImage.getBufferedImage();
 							if (superimposedBufferedImage != null) {
-if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitImages(): have superimposed image for underlying frame "+f);
+								slf4jlogger.debug("makeEightBitImages(): have superimposed image for underlying frame {}",f);
 								double rowOrigin = superimposedImageAppliedToUnderlyingImage.getRowOrigin();
 								double columnOrigin = superimposedImageAppliedToUnderlyingImage.getColumnOrigin();
 						
@@ -244,7 +392,7 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 									applyColor = new java.awt.image.RescaleOp(scales,offsets,null/*RenderingHints*/);
 								}
 								else {
-System.err.println("ConsumerFormatImageMaker.makeEightBitImages(): not ARGB superimposed image so cannot change color and use transparency");
+								slf4jlogger.info("makeEightBitImages(): not ARGB superimposed image so cannot change color and use transparency");
 								}
 								renderedImage=BufferedImageUtilities.convertToMostFavorableImageType(renderedImage);	// need to do this else will not draw in color
 								Graphics2D g2d=(Graphics2D)(renderedImage.getGraphics());
@@ -257,14 +405,14 @@ System.err.println("ConsumerFormatImageMaker.makeEightBitImages(): not ARGB supe
 								);
 							}
 							else {
-if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitImages(): have no superimposed image for underlying frame "+f);
+								slf4jlogger.debug("makeEightBitImages(): have no superimposed image for underlying frame {}",f);
 							}
 						}
 					}
 				}
 			}
 			if (arrayOfPerFrameDrawingShapes != null && arrayOfPerFrameDrawingShapes.length > f && arrayOfPerFrameDrawingShapes[f] != null) {
-if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitImages(): draw per-frame shapes");
+				slf4jlogger.debug("makeEightBitImages(): draw per-frame shapes");
 				renderedImage=BufferedImageUtilities.convertToMostFavorableImageType(renderedImage);	// need to do this else will not draw in color
 				Graphics2D g2d=(Graphics2D)(renderedImage.getGraphics());
 				Color perFrameDrawingColor = Color.red;
@@ -288,26 +436,46 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 	/**
 	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
 	 *
+	 * <p>Uses the window center and width in the file.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #makeEightBitImages(AttributeList,GeometryOfVolume,Vector,double,Vector[],int,int)} instead.
+	 * @param	dicomFileName	the input file name
+	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	debugLevel		ignored
+	 * @return					a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat);
+	}
+	
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
 	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
 	 *
 	 * <p>Uses the window center and width in the file.</p>
 	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
 	 * @param	dicomFileName	the input file name
 	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
 	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
-	 * @param	debugLevel
 	 * @return					a String[] of the output filenames ordered by the frame order of the input image
 	 */
-	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,int debugLevel) throws DicomException, IOException {
-		 return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,0,0,0,0,-1,ALL_ANNOTATIONS,debugLevel);
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat) throws DicomException, IOException {
+		 return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,0,0,0,0,-1,ALL_ANNOTATIONS);
 	}
 	
-	private static void replaceWindowWidthAndCenterInAttributeList(AttributeList list,Attribute aWindowWidth,Attribute aWindowCenter) {
+	public static void replaceWindowWidthAndCenterInAttributeList(AttributeList list,Attribute aWindowWidth,Attribute aWindowCenter) {
 		list.put(aWindowCenter);
 		list.put(aWindowWidth);
 	}
 	
-	private static void replaceWindowWidthAndCenterInFunctionalGroupSequences(AttributeList list,int nFrames,Attribute aWindowWidth,Attribute aWindowCenter) {
+	public static void replaceWindowWidthAndCenterInFunctionalGroupSequences(AttributeList list,int nFrames,Attribute aWindowWidth,Attribute aWindowCenter) {
 		{
 			AttributeList sharedList = SequenceAttribute.getAttributeListFromWithinSequenceWithSingleItem(list,TagFromName.SharedFunctionalGroupsSequence);
 			if (sharedList != null) {
@@ -336,142 +504,82 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 	/**
 	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
 	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,String)} instead.
+	 * @param	dicomFileName	the input file name
+	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter	the window center to use
+	 * @param	windowWidth		the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth		the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight		the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageQuality	the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation		the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	debugLevel		ignored
+	 * @return					a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,
+			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,imageQuality,annotation);
+	}
+	
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
 	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
 	 *
 	 * @param	dicomFileName	the input file name
 	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
 	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
 	 * @param	windowCenter	the window center to use
 	 * @param	windowWidth		the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth		the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight		the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageWidth		the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight		the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
 	 * @param	imageQuality	the image quality from 1 to 100 (best), or -1 if absent
 	 * @param	annotation		the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
-	 * @param	debugLevel	
 	 * @return					a String[] of the output filenames ordered by the frame order of the input image
 	 */
 	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
-			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,
-			int debugLevel) throws DicomException, IOException {
-		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,(Vector<SuperimposedImage>)null,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,(Vector<Shape>[])null,debugLevel);
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation
+			) throws DicomException, IOException {
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,(Vector<SuperimposedImage>)null,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,(Vector<Shape>[])null);
 	}
 
 	
 	/**
 	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
 	 *
-	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
 	 *
-	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
-	 * of any explicitly specified image width and height, to avoid distortion.</p>
-	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,int,int,int,int,int,int,String)} instead.
 	 * @param	dicomFileName	the input file name
 	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
 	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
 	 * @param	windowCenter	the window center to use
 	 * @param	windowWidth		the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth		the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight		the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageWidth		the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight		the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
 	 * @param	regionX			the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
 	 * @param	regionY			the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
-	 * @param	regionWidth		the width (number of columns) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
-	 * @param	regionHeight	the height (number of rows) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionWidth		the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight	the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
 	 * @param	firstFrame		the first frame to include, numbered from 0 (not 1)
 	 * @param	lastFrame		the last frame to include, numbered from 0 (not 1), or -1 if all frames
 	 * @param	imageQuality	the image quality from 1 to 100 (best), or -1 if absent
 	 * @param	annotation		the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
-	 * @param	debugLevel	
+	 * @param	debugLevel		ignored
 	 * @return					a String[] of the output filenames ordered by the frame order of the input image
 	 */
 	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
 			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,
 			int debugLevel) throws DicomException, IOException {
-		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,(Vector<SuperimposedImage>)null,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,(Vector<Shape>[])null,debugLevel);
-	}
-							
-	/**
-	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
-	 *
-	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
-	 *
-	 * @param	dicomFileName					the input file name
-	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
-	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
-	 * @param	windowCenter					the window center to use
-	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth						the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight						the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
-	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
-	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
-	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
-	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
-	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
-	 * @param	debugLevel	
-	 * @return									a String[] of the output filenames ordered by the frame order of the input image
-	 */
-	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
-			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
-			int debugLevel) throws DicomException, IOException {
-		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes,debugLevel);
-	}
-							
-	/**
-	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
-	 *
-	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
-	 *
-	 * @param	dicomFileName					the input file name
-	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
-	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
-	 * @param	windowCenter					the window center to use
-	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth						the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight						the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
-	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
-	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
-	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
-	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
-	 * @param	debugLevel	
-	 * @return									a String[] of the output filenames ordered by the frame order of the input image
-	 */
-	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
-			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
-			int debugLevel) throws DicomException, IOException {
-		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes,debugLevel);
-	}
-							
-	/**
-	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
-	 *
-	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
-	 *
-	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
-	 * of any explicitly specified image width and height, to avoid distortion.</p>
-	 *
-	 * @param	dicomFileName					the input file name
-	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
-	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
-	 * @param	windowCenter					the window center to use
-	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth						the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight						the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
-	 * @param	regionX							the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
-	 * @param	regionY							the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
-	 * @param	regionWidth						the width (number of columns) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
-	 * @param	regionHeight					the height (number of rows) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
-	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
-	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
-	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
-	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
-	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
-	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
-	 * @param	debugLevel	
-	 * @return									a String[] of the output filenames ordered by the frame order of the input image
-	 */
-	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
-			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
-			int debugLevel) throws DicomException, IOException {
-		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes,debugLevel);
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation);
 	}
 	
 	/**
@@ -482,17 +590,225 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
 	 * of any explicitly specified image width and height, to avoid distortion.</p>
 	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	dicomFileName	the input file name
+	 * @param	outputFileName	the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat	the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter	the window center to use
+	 * @param	windowWidth		the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth		the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight		the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	regionX			the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionY			the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionWidth		the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight	the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	firstFrame		the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame		the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	imageQuality	the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation		the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @return					a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation
+			) throws DicomException, IOException {
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,(Vector<SuperimposedImage>)null,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,(Vector<Shape>[])null);
+	}
+							
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,String,Vector,double,Vector[])} instead.
 	 * @param	dicomFileName					the input file name
 	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
 	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
 	 * @param	windowCenter					the window center to use
 	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
-	 * @param	imageWidth						the width (number of columns) to make, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight						the height (number of rows) to make, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @param	debugLevel						ignored
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
+			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,imageQuality,annotation,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes);
+	}
+							
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes
+			) throws DicomException, IOException {
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes);
+	}
+	
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,String,Vector,Vector[])} instead.
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @param	debugLevel						ignored
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
+			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,imageQuality,annotation,superimposedImages,arrayOfPerFrameDrawingShapes);
+	}
+							
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes
+			) throws DicomException, IOException {
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,0,0,0,0,0,-1/*all frames*/,imageQuality,annotation,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes);
+	}
+							
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,int,int,int,int,int,int,String,Vector,Vector[])} instead.
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
 	 * @param	regionX							the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
 	 * @param	regionY							the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
-	 * @param	regionWidth						the width (number of columns) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
-	 * @param	regionHeight					the height (number of rows) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionWidth						the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight					the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @param	debugLevel						ignored
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
+			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,
+			windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,superimposedImages,arrayOfPerFrameDrawingShapes);
+	}
+	
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 *
+	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
+	 * of any explicitly specified image width and height, to avoid distortion.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	regionX							the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionY							the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionWidth						the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight					the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,Vector<Shape>[] arrayOfPerFrameDrawingShapes
+			) throws DicomException, IOException {
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,superimposedImages,SuperimposedImage.DEFAULT_CLOSEST_SLICE_TOLERANCE_DISTANCE,arrayOfPerFrameDrawingShapes);
+	}
+
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @deprecated								SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #convertFileToEightBitImage(String,String,String,double,double,int,int,int,int,int,int,int,int,int,String,Vector,double,Vector[])} instead.
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	regionX							the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionY							the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionWidth						the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight					the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
 	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
 	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
 	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
@@ -500,14 +816,53 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
 	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
 	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
-	 * @param	debugLevel	
+	 * @param	debugLevel						ignored
 	 * @return									a String[] of the output filenames ordered by the frame order of the input image
 	 */
 	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
 			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes,
 			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("convertFileToEightBitImage(): Debug level supplied as argument ignored");
+		return convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes);
+	}
+	
+	/**
+	 * <p>Read a DICOM image input file, and create single frame 8-bit per channel images (windowed if grayscale) from the only or all frames.</p>
+	 *
+	 * <p>If the input file has multiple frames, the output file name will be postfixed with the frame number before the format extension, e.g., "output.jpg" will become "output_001.jpg", etc.</p>
+	 *
+	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
+	 * of any explicitly specified image width and height, to avoid distortion.</p>
+	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
+	 * @param	dicomFileName					the input file name
+	 * @param	outputFileName					the output file name (or basis of names for multiple frames)
+	 * @param	outputFormat					the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	windowCenter					the window center to use
+	 * @param	windowWidth						the window width to use, or 0 if to use the width and center in the DICOM file
+	 * @param	imageWidth						the width (number of columns) to make, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight						the height (number of rows) to make, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	regionX							the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionY							the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionWidth						the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight					the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	firstFrame						the first frame to include, numbered from 0 (not 1)
+	 * @param	lastFrame						the last frame to include, numbered from 0 (not 1), or -1 if all frames
+	 * @param	imageQuality					the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	annotation						the type of annotation to apply (choice is "all"; anything else means no annotation), or null if absent
+	 * @param	superimposedImages				images to to be displayed superimposed on the appropriate frames, or null if none
+	 * @param	superimposedToleranceDistance	difference in distance along normal to orientation for underlying and superimposed frames to be close enough to superimpose, in mm
+	 * @param	arrayOfPerFrameDrawingShapes	per-frame shapes to be displayed on the respective frame, or null if none
+	 * @return									a String[] of the output filenames ordered by the frame order of the input image
+	 */
+	public static String[] convertFileToEightBitImage(String dicomFileName,String outputFileName,String outputFormat,
+			double windowCenter,double windowWidth,int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int firstFrame,int lastFrame,int imageQuality,String annotation,Vector<SuperimposedImage> superimposedImages,double superimposedToleranceDistance,Vector<Shape>[] arrayOfPerFrameDrawingShapes
+			) throws DicomException, IOException {
+		boolean deferredDecompression = CompressedFrameDecoder.canDecompress(dicomFileName);
 		AttributeList list = new AttributeList();
 		DicomInputStream in = new DicomInputStream(new BufferedInputStream(new FileInputStream(dicomFileName)));
+		list.setDecompressPixelData(!deferredDecompression);
 		list.read(in);
 		in.close();
 		
@@ -539,8 +894,8 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 			imageGeometry = new GeometryOfVolumeFromAttributeList(list);
 		}
 		catch (Exception e) {
-			// don't print exception, because it is legitimate for images to be missing this information
-			//e.printStackTrace(System.err);
+			// don't print exception routinely, because it is legitimate for images to be missing this information
+			slf4jlogger.debug("",e);
 		}
 
 		boolean useColorForAnnotations = false;
@@ -555,11 +910,11 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 			}
 		}
 		
-		BufferedImage[] renderedImages = makeEightBitImages(list,imageGeometry,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame,debugLevel);
+		BufferedImage[] renderedImages = makeEightBitImages(list,imageGeometry,superimposedImages,superimposedToleranceDistance,arrayOfPerFrameDrawingShapes,firstFrame,lastFrame);
 		if (nFrames == 1) {
 			outputFileNames[0] = outputFileName;
 			Iterator<TextAnnotationPositioned> frameDemographicAndTechniqueAnnotations = demographicAndTechniqueAnnotations == null ? null : demographicAndTechniqueAnnotations.iterator(firstFrame);
-			writeEightBitImageForFrame(renderedImages[0],frameDemographicAndTechniqueAnnotations,outputFileName,outputFormat,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,imageQuality,useColorForAnnotations,debugLevel);
+			writeEightBitImageForFrame(renderedImages[0],frameDemographicAndTechniqueAnnotations,outputFileName,outputFormat,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,imageQuality,useColorForAnnotations);
 		}
 		else {
 			String frameOutputFilePrefix = outputFileName;
@@ -576,18 +931,43 @@ if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.makeEightBitIma
 					}
 				}
 			}
-if (debugLevel > 1) System.err.println("frameOutputFilePrefix = "+frameOutputFilePrefix);
-if (debugLevel > 1) System.err.println("frameOutputFileSuffix = "+frameOutputFileSuffix);
+			slf4jlogger.trace("convertFileToEightBitImage(): frameOutputFilePrefix = {}",frameOutputFilePrefix);
+			slf4jlogger.trace("convertFileToEightBitImage(): frameOutputFileSuffix = {}",frameOutputFileSuffix);
 			java.text.NumberFormat zeroPaddedFrameNumberFormatter = new java.text.DecimalFormat("0000000000");	// theoretically 10 digits is IS max !
 			for (int f=0; f<nFrames; ++f) {
 				// frame in file name will start from 1 not 0 to follow DICOM frame numbering convention, and will be the actual frame number (not the first one if firstFrame > 0)
 				String frameOutputFileName = frameOutputFilePrefix + "_" + zeroPaddedFrameNumberFormatter.format(firstFrame+f+1) + "." + frameOutputFileSuffix;
 				outputFileNames[f] = frameOutputFileName;
 				Iterator<TextAnnotationPositioned> frameDemographicAndTechniqueAnnotations = demographicAndTechniqueAnnotations == null ? null : demographicAndTechniqueAnnotations.iterator(f+firstFrame);
-				writeEightBitImageForFrame(renderedImages[f],frameDemographicAndTechniqueAnnotations,frameOutputFileName,outputFormat,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,imageQuality,useColorForAnnotations,debugLevel);
+				writeEightBitImageForFrame(renderedImages[f],frameDemographicAndTechniqueAnnotations,frameOutputFileName,outputFormat,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,imageQuality,useColorForAnnotations);
 			}
 		}
 		return outputFileNames;
+	}
+	
+	/**
+	 * <p>Write a single frame 8-bit per channel BufferedImage.</p>
+	 *
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #writeEightBitImageForFrame(BufferedImage,Iterator,String,String,int,int,int,int,int,int,int,boolean)} instead.
+	 * @param	renderedImage			the 8 bit image (already windowed if grayscale)
+	 * @param	annotations				an Iterator of annotations to apply, or null if none
+	 * @param	outputFileName			the output file name
+	 * @param	outputFormat			the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
+	 * @param	imageWidth				the width (number of columns) to write, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight				the height (number of rows) to weite, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	regionX					the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionY					the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
+	 * @param	regionWidth				the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight			the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	imageQuality			the image quality from 1 to 100 (best), or -1 if absent
+	 * @param	useColorForAnnotations	use color for annotations (i.e., produce color output image even if input is grayscale)
+	 * @param	debugLevel				ignored
+	 */
+	public static void writeEightBitImageForFrame(BufferedImage renderedImage,Iterator<TextAnnotationPositioned> annotations,String outputFileName,String outputFormat,
+			int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int imageQuality,boolean useColorForAnnotations,
+			int debugLevel) throws DicomException, IOException {
+		slf4jlogger.warn("writeEightBitImageForFrame(): Debug level supplied as argument ignored");
+		writeEightBitImageForFrame(renderedImage,annotations,outputFileName,outputFormat,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,imageQuality,useColorForAnnotations);
 	}
 	
 	/**
@@ -600,55 +980,54 @@ if (debugLevel > 1) System.err.println("frameOutputFileSuffix = "+frameOutputFil
 	 * @param	annotations				an Iterator of annotations to apply, or null if none
 	 * @param	outputFileName			the output file name
 	 * @param	outputFormat			the output file format name that a JIIO SPI will recognize (e.g. "jpeg")
-	 * @param	imageWidth				the width (number of columns) to write, or <= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
-	 * @param	imageHeight				the height (number of rows) to weite, or <= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
+	 * @param	imageWidth				the width (number of columns) to write, or &lt;= 0 if default (the width in the DICOM file, or scaled by height with pixel aspect ratio preserved)
+	 * @param	imageHeight				the height (number of rows) to weite, or &lt;= 0 if default (the height in the DICOM file, or scaled by width with pixel aspect ratio preserved)
 	 * @param	regionX					the x (along row) integer offset (from 0 being the TLHC pixel) of the sub-region to write
 	 * @param	regionY					the y (down column) integer offset (from 0 being the TLHC pixel) of the sub-region to write
-	 * @param	regionWidth				the width (number of columns) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
-	 * @param	regionHeight			the height (number of rows) to write, or <= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionWidth				the width (number of columns) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
+	 * @param	regionHeight			the height (number of rows) to write, or &lt;= 0 if no sub-region selected (i.e., write the whole image)
 	 * @param	imageQuality			the image quality from 1 to 100 (best), or -1 if absent
 	 * @param	useColorForAnnotations	use color for annotations (i.e., produce color output image even if input is grayscale)
-	 * @param	debugLevel	
 	 */
 	public static void writeEightBitImageForFrame(BufferedImage renderedImage,Iterator<TextAnnotationPositioned> annotations,String outputFileName,String outputFormat,
-			int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int imageQuality,boolean useColorForAnnotations,
-			int debugLevel) throws DicomException, IOException {
+			int imageWidth,int imageHeight,int regionX,int regionY,int regionWidth,int regionHeight,int imageQuality,boolean useColorForAnnotations
+			) throws DicomException, IOException {
 
 		if (regionWidth > 0 && regionHeight > 0) {
 			renderedImage = renderedImage.getSubimage(regionX,regionY,regionWidth,regionHeight);
 		}
 		
 		try {
-if (debugLevel > 0) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Requested width = "+imageWidth+" height = "+imageHeight);
+			slf4jlogger.debug("writeEightBitImageForFrame(): Requested width = {} height = {}",imageWidth,imageHeight);
 			int srcWidth = renderedImage.getWidth();
 			int srcHeight = renderedImage.getHeight();
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Source width = "+srcWidth+" width = "+srcHeight);
+			slf4jlogger.trace("writeEightBitImageForFrame(): Source width = {} width = {}",srcWidth,srcHeight);
 			if (imageWidth <= 0 && imageHeight > 0 && imageHeight != srcHeight) {
 				// specified desired height only and different from source - preserve pixel aspect ratio
 				double scale = ((double)imageHeight)/srcHeight;
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Resizing - specified desired height only and different from source, scale = "+scale);
+				slf4jlogger.trace("writeEightBitImageForFrame(): Resizing - specified desired height only and different from source, scale = {}",scale);
 				renderedImage = BufferedImageUtilities.resampleWithAffineTransformOp(renderedImage,scale,scale);
 			}
 			else if (imageHeight <= 0 && imageWidth > 0 && imageWidth != srcWidth) {
 				// specified desired width only and different from source - preserve pixel aspect ratio
 				double scale = ((double)imageWidth)/srcWidth;
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Resizing - specified desired width only and different from source, scale = "+scale);
+				slf4jlogger.trace("writeEightBitImageForFrame(): Resizing - specified desired width only and different from source, scale = {}",scale);
 				renderedImage = BufferedImageUtilities.resampleWithAffineTransformOp(renderedImage,scale,scale);
 			}
 			else if (imageWidth > 0 && imageHeight > 0 && (imageWidth != srcWidth || imageHeight != srcHeight)) {
 				// specified both height and width and different from source ... implies possible pixel aspect ratio change
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Resizing - specified desired width and height and different from source ");
+				slf4jlogger.trace("writeEightBitImageForFrame(): Resizing - specified desired width and height and different from source ");
 				renderedImage = BufferedImageUtilities.resampleWithAffineTransformOp(renderedImage,imageWidth,imageHeight);
 			}
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Resized width = "+renderedImage.getWidth()+" height = "+renderedImage.getHeight());
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("writeEightBitImageForFrame(): Resized width = {} height = {}",renderedImage.getWidth(),renderedImage.getHeight());
 		}
 		catch (Exception e) {	// such as java.awt.image.ImagingOpException, java.awt.HeadlessException
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Could not resize",e);
 			// and leave it alone unresized
 		}
 		
 		if (useColorForAnnotations || renderedImage.getColorModel().getNumComponents() > 1) {
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Need color or is already color, so converting to most favorable image type");
+			slf4jlogger.trace("writeEightBitImageForFrame(): Need color or is already color, so converting to most favorable image type");
 			renderedImage = BufferedImageUtilities.convertToMostFavorableImageType(renderedImage);		// Otherwise will not draw color on grayscale images
 		}
 		if (annotations != null) {
@@ -673,15 +1052,15 @@ if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEi
 			}
 		}
 		if (renderedImage.getColorModel().getNumComponents() > 3) {
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Converting RGBA to RGB");
+			slf4jlogger.trace("writeEightBitImageForFrame(): Converting RGBA to RGB");
 			// Before writing, make it RGB again because codecs might otherwise write extra component for alpha channel
 			renderedImage = BufferedImageUtilities.convertToThreeChannelImageTypeIfFour(renderedImage);
 		}
 		//if (!ImageIO.write(renderedImage,outputFormat,new File(outputFileName))) {
-		//	throw new DicomException("Cannot find writer for format"+outputFormat);
+		//	throw new DicomException("Cannot find writer for format "+outputFormat);
 		//}
 		// See also "http://www.oracle.com/technetwork/java/iio-141084.html"
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Attempting to write format = "+outputFormat);
+		slf4jlogger.trace("writeEightBitImageForFrame(): Attempting to write format = {}",outputFormat);
 		Iterator writers = ImageIO.getImageWritersByFormatName(outputFormat);
 		if (writers != null && writers.hasNext()) {
 			ImageWriter writer = (ImageWriter)writers.next();
@@ -692,28 +1071,28 @@ if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEi
 				try {
 					writeParameters = writer.getDefaultWriteParam();
 					if (writeParameters.canWriteCompressed()) {
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Default compression mode = "+writeParameters.getCompressionMode());
+						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("writeEightBitImageForFrame(): Default compression mode = {}",writeParameters.getCompressionMode());
 						String[] compressionTypesAvailable = writeParameters.getCompressionTypes();
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Compression types available = "+Arrays.toString(compressionTypesAvailable));
+						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("writeEightBitImageForFrame(): Compression types available = {}",Arrays.toString(compressionTypesAvailable));
 						//if (compressionTypesAvailable != null && compressionTypesAvailable.length > 0) {
-//if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Setting compression type to = "+compressionTypesAvailable[0]);
+//							if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("convertFileToEightBitImage(): Setting compression type to = {}",compressionTypesAvailable[0]);
 						//	writeParameters.setCompressionType(compressionTypesAvailable[0]);
 						//}
 						if (imageQuality >= 0 && imageQuality <= 100) {		// -1 is flag that it was not specified
 							float quality = ((float)imageQuality)/100f;
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Setting quality = "+quality);
+							slf4jlogger.trace("writeEightBitImageForFrame(): Setting quality = {}",quality);
 							writeParameters.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 							writeParameters.setCompressionQuality(quality);
 						}
 					}
 					if (writeParameters.canWriteProgressive()) {
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Setting progressive mode");
+						slf4jlogger.trace("writeEightBitImageForFrame(): Setting progressive mode");
 						writeParameters.setProgressiveMode(ImageWriteParam.MODE_DEFAULT);
 					}
 					writer.getDefaultWriteParam();
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 					writeParameters=null;		// Ignore inability to alter parameters
 				}
 				IIOMetadata metadata = null;
@@ -721,11 +1100,11 @@ if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEi
 				imageOutputStream.flush();
 				imageOutputStream.close();
 				try {
-if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEightBitImage(): Calling dispose() on writer");
+					slf4jlogger.trace("writeEightBitImageForFrame(): Calling dispose() on writer");
 					writer.dispose();
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 			else {
@@ -745,10 +1124,11 @@ if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEi
 	 * <p>The aspect ratio of the sub-region width and height, if any, should be the same as that
 	 * of any explicitly specified image width and height, to avoid distortion.</p>
 	 *
+	 * <p>Performs any necessary color space transformation (e.g., from YBR to RGB) to make the result displayable.</p>
+	 *
 	 * @param	arg	two required parameters, the input file name, output file name (or basis of names for multiple frames), optionally the format (defaults to jpeg), then optionally the window center and width,
-	 *			then optionally the desired width and height (or 0 if to use the width and center in the DICOM file and more arguments), then optionally the image quality from 0 to 100,
+	 *			then optionally the desired width and height (or 0 if to use the width and center in the DICOM file and more arguments), then optionally the image quality from 0 to 100 (or -1 to use default),
 	 *			then optionally whether or not to include annotation (choice is "all" or "icon" +/- "color", e.g., "all_color"; anything else means no annotation; default is "all_color")
-	 *			then optionally the debug level
 	 *			then optionally the sub region x, y, width and height
 	 *			then optionally the first and last frame (-1 if all frames)
 	 */
@@ -762,20 +1142,18 @@ if (debugLevel > 1) System.err.println("ConsumerFormatImageMaker.convertFileToEi
 		int     imageHeight = arg.length >  6 ? Integer.parseInt(arg[6]) : 0;
 		int    imageQuality = arg.length >  7 ? Integer.parseInt(arg[7]) : -1;
 		String   annotation = arg.length >  8 ? arg[8] : (ALL_ANNOTATIONS + "_" + COLOR_ANNOTATIONS);
-		int     debugLevel  = arg.length >  9 ? Integer.parseInt(arg[9]) : -1;
-		int        regionX  = arg.length > 13 ? Integer.parseInt(arg[10]) : 0;
-		int        regionY  = arg.length > 13 ? Integer.parseInt(arg[11]) : 0;
-		int    regionWidth  = arg.length > 13 ? Integer.parseInt(arg[12]) : 0;
-		int   regionHeight  = arg.length > 13 ? Integer.parseInt(arg[13]) : 0;
-		int     firstFrame  = arg.length > 15 ? Integer.parseInt(arg[14]) : 0;
-		int      lastFrame  = arg.length > 15 ? Integer.parseInt(arg[15]) : -1;
+		int        regionX  = arg.length > 12 ? Integer.parseInt(arg[9])  : 0;
+		int        regionY  = arg.length > 12 ? Integer.parseInt(arg[10]) : 0;
+		int    regionWidth  = arg.length > 12 ? Integer.parseInt(arg[11]) : 0;
+		int   regionHeight  = arg.length > 12 ? Integer.parseInt(arg[12]) : 0;
+		int     firstFrame  = arg.length > 14 ? Integer.parseInt(arg[13]) : 0;
+		int      lastFrame  = arg.length > 14 ? Integer.parseInt(arg[14]) : -1;
 		
 		try {
-			convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation,debugLevel);
+			convertFileToEightBitImage(dicomFileName,outputFileName,outputFormat,windowCenter,windowWidth,imageWidth,imageHeight,regionX,regionY,regionWidth,regionHeight,firstFrame,lastFrame,imageQuality,annotation);
 		}
 		catch (Exception e) {
-			//System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

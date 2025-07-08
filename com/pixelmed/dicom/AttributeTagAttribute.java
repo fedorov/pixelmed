@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,7 +21,7 @@ import java.text.NumberFormat;
  */
 public class AttributeTagAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTagAttribute.java,v 1.15 2009/12/16 22:10:37 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTagAttribute.java,v 1.26 2025/01/29 10:58:06 dclunie Exp $";
 
 	int[] groups;
 	int[] elements;
@@ -42,11 +42,11 @@ public class AttributeTagAttribute extends Attribute {
 	/**
 	 * <p>Read an attribute from an input stream.</p>
 	 *
-	 * @param	t			the tag of the attribute
-	 * @param	vl			the value length of the attribute
-	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @param	t					the tag of the attribute
+	 * @param	vl					the value length of the attribute
+	 * @param	i					the input stream
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public AttributeTagAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -59,8 +59,8 @@ public class AttributeTagAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public AttributeTagAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -68,10 +68,10 @@ public class AttributeTagAttribute extends Attribute {
 	}
 	
 	/**
-	 * @param	vl
-	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @param	vl			the value length of the attribute
+	 * @param	i			the input stream
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		valueLength=vl;
@@ -91,11 +91,6 @@ public class AttributeTagAttribute extends Attribute {
 		}
 	}
 
-	/**
-	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
-	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		for (int j=0; j<valueMultiplicity; ++j) {
@@ -104,7 +99,6 @@ public class AttributeTagAttribute extends Attribute {
 		}
 	}
 	
-	/***/
 	public String toString(DicomDictionary dictionary) {
 		StringBuffer str = new StringBuffer();
 		str.append(super.toString(dictionary));
@@ -124,10 +118,6 @@ public class AttributeTagAttribute extends Attribute {
 		return str.toString();
 	}
 
-	/**
-	 * @param	format		the format to use for each numerical or decimal value
-	 * @exception	DicomException
-	 */
 	public String[] getStringValues(NumberFormat format) throws DicomException {
 		// ignore number format
 		String sv[] = null;
@@ -141,7 +131,8 @@ public class AttributeTagAttribute extends Attribute {
 	}
 	
 	/**
-	 * @exception	DicomException
+	 * @return						the values
+	 * @throws	DicomException	thrown if values are not available
 	 */
 	public AttributeTag[] getAttributeTagValues() throws DicomException {
 		AttributeTag atv[] = null;
@@ -155,9 +146,9 @@ public class AttributeTagAttribute extends Attribute {
 	}
 
 	/**
-	 * @param	g
-	 * @param	e
-	 * @exception	DicomException
+	 * @param	g	group number
+	 * @param	e	element number
+	 * @throws	DicomException	never thrown
 	 */
 	public void addValue(int g,int e) throws DicomException {
 		groups=ArrayCopyUtilities.expandArray(groups);
@@ -168,8 +159,8 @@ public class AttributeTagAttribute extends Attribute {
 	}
 
 	/**
-	 * @param	t
-	 * @exception	DicomException
+	 * @param	t	the tag
+	 * @throws	DicomException	never thrown
 	 */
 	public void addValue(AttributeTag t) throws DicomException {
 		addValue(t.getGroup(),t.getElement());
@@ -177,15 +168,12 @@ public class AttributeTagAttribute extends Attribute {
 
 	/**
 	 * @param	s	a String of the form returned by {@link com.pixelmed.dicom.AttributeTag#toString() toString()}, i.e., "(0xgggg,0xeeee)" where gggg and eeee are the zero-padded hexadecimal representations of the group and element respectively
-	 * @exception	DicomException
+	 * @throws	DicomException	if String is not a valid representation of a tag
 	 */
 	public void addValue(String s) throws DicomException {
 		addValue(new AttributeTag(s));
 	}
 
-	/**
-	 * @exception	DicomException
-	 */
 	public void removeValues() {
 		groups=null;
 		elements=null;

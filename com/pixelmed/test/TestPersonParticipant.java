@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -59,7 +59,7 @@ public class TestPersonParticipant extends TestCase {
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID = "+id,ppRoot.getNamedChild("DCM","113871").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID Issuer = "+idIssuer,ppRoot.getNamedChild("DCM","113872").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Organization Name = "+organization,ppRoot.getNamedChild("DCM","113873").toString());
-		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Technologist",ppRoot.getNamedChild("DCM","113874").toString());
+		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Radiologic Technologist",ppRoot.getNamedChild("DCM","113874").toString());
 	}
 	
 	public void TestPersonParticipant_WithEmptyName() throws Exception {
@@ -87,7 +87,7 @@ public class TestPersonParticipant extends TestCase {
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID = "+id,ppRoot.getNamedChild("DCM","113871").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID Issuer = "+idIssuer,ppRoot.getNamedChild("DCM","113872").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Organization Name = "+organization,ppRoot.getNamedChild("DCM","113873").toString());
-		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Technologist",ppRoot.getNamedChild("DCM","113874").toString());
+		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Radiologic Technologist",ppRoot.getNamedChild("DCM","113874").toString());
 	}
 	
 	public void TestPersonParticipant_WithNullName() throws Exception {
@@ -115,7 +115,7 @@ public class TestPersonParticipant extends TestCase {
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID = "+id,ppRoot.getNamedChild("DCM","113871").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID Issuer = "+idIssuer,ppRoot.getNamedChild("DCM","113872").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Organization Name = "+organization,ppRoot.getNamedChild("DCM","113873").toString());
-		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Technologist",ppRoot.getNamedChild("DCM","113874").toString());
+		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Radiologic Technologist",ppRoot.getNamedChild("DCM","113874").toString());
 	}
 }
 

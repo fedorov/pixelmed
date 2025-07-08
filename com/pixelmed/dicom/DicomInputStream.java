@@ -1,8 +1,11 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class that extends {@link com.pixelmed.dicom.BinaryInputStream BinaryInputStream} by adding
@@ -21,7 +24,9 @@ import java.io.*;
 public class DicomInputStream extends BinaryInputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomInputStream.java,v 1.10 2006/02/11 13:48:23 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomInputStream.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomInputStream.class);
 
 	/***/
 	private TransferSyntax TransferSyntaxToReadDataSet;
@@ -36,13 +41,13 @@ public class DicomInputStream extends BinaryInputStream {
 	private long byteOffsetOfStartOfData;
 
 	/**
-	 * @param	uid
-	 * @param	tryMeta
-	 * @exception	IOException
+	 * @param	uid				use this TransferSyntax (for the meta information header if tryMeta is true, else for the data set)
+	 * @param	tryMeta			if true look for a meta information header
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	private void initializeTransferSyntax(String uid,boolean tryMeta) throws IOException {
-//System.err.println("initializeTransferSyntax: uid="+uid+" tryMeta="+tryMeta);
-//System.err.println("initializeTransferSyntax: markSupported()="+markSupported());
+		slf4jlogger.debug("initializeTransferSyntax: uid={} tryMeta={}", uid,tryMeta);
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("initializeTransferSyntax: markSupported()= {}",markSupported());
 		TransferSyntaxToReadMetaHeader = null;
 		TransferSyntaxToReadDataSet = null;
 
@@ -62,7 +67,7 @@ public class DicomInputStream extends BinaryInputStream {
 		// else transfer syntax has to be determined by either guesswork or metaheader ...
 		
 		if (tryMeta) {
-//System.err.println("initializeTransferSyntax: looking for preamble");
+			slf4jlogger.debug("initializeTransferSyntax: looking for preamble");
 			// test for metaheader prefix after 128 byte preamble
 			if (markSupported()) mark(140);
 			boolean skipSucceeded = true;
@@ -73,9 +78,9 @@ public class DicomInputStream extends BinaryInputStream {
 				skipSucceeded=false;
 			}
 			if (skipSucceeded && read(b,0,4) == 4 && new String(b,0,4).equals("DICM")) {
-//System.err.println("initializeTransferSyntax: detected DICM");
+				slf4jlogger.debug("initializeTransferSyntax: detected DICM");
 				if (TransferSyntaxToReadMetaHeader == null) {		// guess only if not specified as an argument
-//System.err.println("initializeTransferSyntax: trying to guess TransferSyntaxToReadMetaHeader");
+					slf4jlogger.debug("initializeTransferSyntax: trying to guess TransferSyntaxToReadMetaHeader");
 					if (markSupported()) {
 						mark(8);
 						if (read(b,0,6) == 6) {				// the first 6 bytes of the first attribute tag in the metaheader
@@ -92,13 +97,13 @@ public class DicomInputStream extends BinaryInputStream {
 					else {
 						// can't guess since can't rewind ... insist on standard transfer syntax
 						TransferSyntaxToReadMetaHeader = new TransferSyntax(TransferSyntax.ExplicitVRLittleEndian);
-//System.err.println("initializeTransferSyntax: can't rewind so assuming TransferSyntaxToReadMetaHeader is ExplicitVRLittleEndian");
+						slf4jlogger.debug("initializeTransferSyntax: can't rewind so assuming TransferSyntaxToReadMetaHeader is ExplicitVRLittleEndian");
 					}
 				}
 				byteOffsetOfStartOfData=132;
 			}
 			else {
-//System.err.println("initializeTransferSyntax: no preamble");
+				slf4jlogger.debug("initializeTransferSyntax: no preamble");
 				// no preamble, so rewind and try using the specified transfer syntax (if any) for the dataset instead
 				if (markSupported()) {
 					reset();
@@ -115,13 +120,33 @@ public class DicomInputStream extends BinaryInputStream {
 		// so we either have a detected or specified transfer syntax for the metaheader, or the dataset, or nothing at all
 		
 		if (TransferSyntaxToReadDataSet == null && TransferSyntaxToReadMetaHeader == null) {	// was not specified as an argument and there is no metaheader
-//System.err.println("initializeTransferSyntax: having to try and guess transfer syntax");
+			slf4jlogger.debug("initializeTransferSyntax: having to try and guess transfer syntax");
+			guessTransferSyntaxToReadDataSet();
+		}
+
+		if (TransferSyntaxToReadMetaHeader != null) {
+			setReadingMetaHeader();
+		}
+		else {
+			setReadingDataSet();
+		}
+
+		if (TransferSyntaxInUse == null) throw new IOException("Not a DICOM file (or can't detect Transfer Syntax)");
+		
+		// leaves us positioned at start of group and element tags (for either metaheader or dataset)
+		slf4jlogger.debug("initializeTransferSyntax: TransferSyntaxToReadMetaHeader={}",TransferSyntaxToReadMetaHeader);
+		slf4jlogger.debug("initializeTransferSyntax: TransferSyntaxToReadDataSet={}",TransferSyntaxToReadDataSet);
+		slf4jlogger.debug("initializeTransferSyntax: TransferSyntaxInUse={}",TransferSyntaxInUse);
+	}
+	
+	public void guessTransferSyntaxToReadDataSet() throws IOException {
+		byte b[] = new byte[8];
 			boolean bigendian = false;
 			boolean explicitvr = false;
 			if (markSupported()) {
 				mark(10);
 				if (read(b,0,8) == 8) {
-//System.err.print("initializeTransferSyntax: read beginning of first attribute = "+com.pixelmed.utils.HexDump.dump(b));
+					if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("guessTransferSyntaxToReadDataSet: read beginning of first attribute = {}",com.pixelmed.utils.HexDump.dump(b));
 					// examine probable group number ... assume <= 0x00ff
 					if (b[0] < b[1]) bigendian=true;
 					else if (b[0] == 0 && b[1] == 0) {
@@ -132,11 +157,11 @@ public class DicomInputStream extends BinaryInputStream {
 						if (b[4] < b[7]) bigendian=true;
 					}
 					// else little endian
-//System.err.println("initializeTransferSyntax: bigendian="+bigendian);
+//System.err.println("guessTransferSyntaxToReadDataSet: bigendian="+bigendian);
 					if (Character.isUpperCase((char)(b[4])) && Character.isUpperCase((char)(b[5]))) explicitvr=true;
-//System.err.println("initializeTransferSyntax: b[4]="+(char)(b[4]));
-//System.err.println("initializeTransferSyntax: b[5]="+(char)(b[5]));
-//System.err.println("initializeTransferSyntax: explicitvr="+explicitvr);
+//System.err.println("guessTransferSyntaxToReadDataSet: b[4]="+(char)(b[4]));
+//System.err.println("guessTransferSyntaxToReadDataSet: b[5]="+(char)(b[5]));
+//System.err.println("guessTransferSyntaxToReadDataSet: explicitvr="+explicitvr);
 				}
 				// go back to start of dataset
 				reset();
@@ -153,21 +178,6 @@ public class DicomInputStream extends BinaryInputStream {
 					TransferSyntaxToReadDataSet = new TransferSyntax(TransferSyntax.ExplicitVRLittleEndian);
 				else
 					TransferSyntaxToReadDataSet = new TransferSyntax(TransferSyntax.ImplicitVRLittleEndian);
-		}
-
-		if (TransferSyntaxToReadMetaHeader != null) {
-			setReadingMetaHeader();
-		}
-		else {
-			setReadingDataSet();
-		}
-
-		if (TransferSyntaxInUse == null) throw new IOException("Not a DICOM file (or can't detect Transfer Syntax)");
-		
-		// leaves us positioned at start of group and element tags (for either metaheader or dataset)
-//System.err.println("initializeTransferSyntax: TransferSyntaxToReadMetaHeader="+TransferSyntaxToReadMetaHeader);
-//System.err.println("initializeTransferSyntax: TransferSyntaxToReadDataSet="+TransferSyntaxToReadDataSet);
-//System.err.println("initializeTransferSyntax: TransferSyntaxInUse="+TransferSyntaxInUse);
 	}
 
 	//public DicomInputStream(String name) throws IOException {
@@ -181,7 +191,7 @@ public class DicomInputStream extends BinaryInputStream {
 	 * <p>Look for a meta information header; if absent guess at a transfer syntax based on the contents.</p>
 	 *
 	 * @param	i		the input stream to read from
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	public DicomInputStream(InputStream i) throws IOException {
 		super(i,true);
@@ -194,7 +204,7 @@ public class DicomInputStream extends BinaryInputStream {
 	 * <p>Look for a meta information header; if absent guess at a transfer syntax based on the contents.</p>
 	 *
 	 * @param	file			the file to read from
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	public DicomInputStream(File file) throws IOException {
 		super(file,true);
@@ -207,7 +217,7 @@ public class DicomInputStream extends BinaryInputStream {
 	 * @param	i			the input stream to read from
 	 * @param	transferSyntaxUID	use this transfer syntax (may be null)
 	 * @param	tryMeta			if true, try to find a meta information header
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	public DicomInputStream(InputStream i,String transferSyntaxUID,boolean tryMeta) throws IOException {
 		super(i,true);
@@ -220,7 +230,7 @@ public class DicomInputStream extends BinaryInputStream {
 	 * @param	file			the file to read from
 	 * @param	transferSyntaxUID	use this transfer syntax (may be null)
 	 * @param	tryMeta			if true, try to find a meta information header
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	public DicomInputStream(File file,String transferSyntaxUID,boolean tryMeta) throws IOException {
 		super(file,true);

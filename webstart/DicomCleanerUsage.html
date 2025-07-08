@@ -1,24 +1,26 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>How to use DicomCleaner</title>
+<meta charset="utf-8"/>
+<title>How to use DicomCleaner&trade;</title>
 </head>
 <body>
 <table width="100%">
 <tr>
-<td><img SRC="images/PixelMedLogoAndTitle.gif" ALT="PixelMed Publishing" BORDER=0></td>
-<td><A HREF="http://www.opensource.org/"><IMG SRC="images/osi_standard_logo.png" width="90" height="103" border="0"/></A></td>
+<td><img src="images/PixelMedLogoAndTitle.gif" alt="PixelMed Publishing&trade;" border="0"/></td>
+<td><a HREF="http://www.opensource.org/"><img src="images/osi_standard_logo.png" alt="osi_standard_logo" width="90" height="103" border="0"></a></td>
 </tr>
 </table>
 <hr/>
 <table>
 <tr>
-<td><a href="DicomCleaner.html"><IMG SRC="images/DicomCleanerMainPanelAfterClean.png" width="800" BORDER=0/></a></td>
+<td><a href="DicomCleaner.html"><img src="images/DicomCleanerMainPanelAfterClean.png" alt="DicomCleanerMainPanelAfterClean" width="800" border="0"/></a></td>
 </tr>
 </table>
 <hr/>
-<a href="DicomCleaner.html"><IMG SRC="icons/DicomCleaner.png" ALT="Click here to start the DicomCleaner" BORDER=0/></a>
-<a name="Description"><h1>What is <a href="DicomCleaner.html">DicomCleaner</a>?</h1></a>
-<p><a href="DicomCleaner.html">DicomCleaner</a> is a free open source tool with a user interface for importing, "cleaning" and saving sets of DICOM instances (files). It can:</p>
+<a href="DicomCleaner.html"><img src="icons/DicomCleaner.png" alt="Click here to start the DicomCleaner&trade;" border="0"/></a>
+<a name="Description"><h1>What is DicomCleaner&trade;?</h1></a>
+<p><a href="DicomCleaner.html">DicomCleaner&trade;</a> is a free open source tool with a user interface for importing, "cleaning" and saving sets of DICOM instances (files). It can:</p>
 <ul>
 <li>Import files from a CD or the local hard drive or a shared network drive or any other media, with or without a DICOMDIR</li>
 <li>Query and retrieve from remote DICOM devices</li>
@@ -47,14 +49,16 @@ the header and replace the identifying attributes with new values. Use cases tha
 <li>Removal or retention of clinical trial attributes, which may need to be removed for secondary re-use of clinical trial images</li>
 <li>Replacement of DICOM unique identifiers, which is performed consistently for a set of instances to maintain referential integrity</li>
 <li>Removal or retention of private attributes, except those that are known to be safe to leave and are important (e.g., SUV scale factor)</li>
-<li>Addition of a description of the <a href="DicomCleaner.html">DicomCleaner</a> software as contributing equipment, to maintain a record in the cleaned instances of what tool was used</li>
+<li>Removal or retention of structured content, such as the content tree of DICOM Structured Report (SR) files</li>
+<li>Addition of a description of the <a href="DicomCleaner.html">DicomCleaner&trade;</a> software as contributing equipment, to maintain a record in the cleaned instances of what tool was used</li>
 <li>Export of DICOM files and DICOMDIR directly into a folder (intended for CD burning) or a zip file</li>
+<li>Whether or not to accept any Transfer Syntax over the network or during file importation, or only those that can be decoded and displayed (blacked out)</li>
 </ul>
 <p>The following panel shows the control panel with default values for the checkboxes suitable for a typical de-identification scenario:</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerControlPanel.png" width="800"/></td>
+<td><img src="images/DicomCleanerControlPanel.png" alt="DicomCleanerControlPanel" width="800"/></td>
 </tr>
 </table>
 </center>
@@ -71,7 +75,7 @@ the header and replace the identifying attributes with new values. Use cases tha
 <li>Select in the middle (Original) panel the patient to be cleaned (or expand the tree and select a study or series as required)</li>
 <li>Press Clean to perform the de-identification</li>
 <li>Observe the cleaned patient appear in the right (Cleaned) panel</li>
-<li>If necessary, select in the right (Cleaned) panel a patient to be blacked out (or expand the tree and select a study or series as required) and press Blackout (see <A HREF="#Blackout">Blackout</A>)</li>
+<li>If necessary, select in the right (Cleaned) panel a patient to be blacked out (or expand the tree and select a study or series as required) and press Blackout (see <A HREF="#Blackout">Blackout (Redaction)</A>)</li>
 <li>Make sure that the "Zip exported files" checkbox is checked</li>
 <li>Select in the right (Cleaned) panel a patient to be exported (or expand the tree and select a study or series as required)</li>
 <li>Press Export, select a destination for the zip file in the popup dialog, and press Open (Windows) to perform the export to a file named "export.zip"</li>
@@ -80,15 +84,33 @@ the header and replace the identifying attributes with new values. Use cases tha
 drive, folder or DICOMDIR and press Open (Windows) or OK (Mac); no network configuration is required.</p>
 <p>Any steps of this process can be repeated as necessary; retrieved, imported and cleaned patients, studies, series and images remain until the application is closed unless they are explicitly selected and purged.</p>
 <p>If desired, the process can be executed without performing any de-identification (leaving the DICOM headers and pixel data intact) by setting the following configuration of checkboxes,
-allowing images to be imported or retrieved, then exported or transferred elsewhere, with a "dummy" cleaning step:</p>
+allowing images to be imported or retrieved, then exported or transferred elsewhere, with a "dummy" cleaning step, and in this case, since no Blackout is required, any Transfer Syntax (type of compression) can be accepted:</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerControlPanelPassThru.png" width="800"/></td>
+<td><img src="images/DicomCleanerControlPanelPassThru.png" alt="DicomCleanerControlPanelPassThru" width="800"/></td>
 </tr>
 </table>
 </center>
-
+<p>If the "Remove all unreplaced identities" is not checked, then the following options have no effect:</p>
+<ul>
+<li>Move earliest date</li>
+<li>Remove descriptions</li>
+<li>Remove series description</li>
+<li>Remove acquisition protocol name</li>
+<li>Remove patient characteristics</li>
+<li>Remove device identifiers</li>
+<li>Remove institution identifiers</li>
+<li>Remove all/unsafe structured content</li>
+</ul>
+<p>The following actions are applied regardless of whether "Remove all unreplaced identities" is not checked or not:</p>
+<ul>
+<li>Replace Patient's Name, Patient's ID, Accession #</li>
+<li>Replace all UIDs</li>
+<li>Remove unsafe private attributes</li>
+<li>Remove clinical trial attributes</li>
+</ul>
+<p>I.e., you can't change the dates or selectively remove descriptions, characteristics and identifiers without doing the other stuff.</p>
 <a name="DatesAndTimes"><h2>Dates and Times</h2></a>
 <p>If the "Dates and Times - Move earliest date to" checkbox is left unchecked then all dates and times are left unchanged. This is the recommended setting when studies need to be related longitudinally, and are
 de-identified on separate occasions, and when dates are used to correlate images with other sources of information. However, the policy governing de-identification may require that dates be modified, and if the box
@@ -98,7 +120,7 @@ change to January 1st of the earliest year. Another option is to choose a random
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerControlPanelDates.png" width="800"/></td>
+<td><img src="images/DicomCleanerControlPanelDates.png" alt="DicomCleanerControlPanelDates" width="800"/></td>
 </tr>
 </table>
 </center>
@@ -107,19 +129,46 @@ imported and selected, and Earliest Year is pressed, and then the studies that d
 <p>Note that a particular effort is made to retain temporal relationships within a study, such as is necessary for perfusion timing and radioactive decay calculations (such as for PET SUV), by pairing
 time attributes that are unaccompanied by a date with an alternative appropriate date. This may fail, however, if the original related times spanned midnight.</p>
 
-<a name="Blackout"><h2>Blackout</h2></a>
+<a name="StructuredContent"><h2>Structured Content</h2></a>
+<p>If the "Remove all/unsafe structured content" checkboxes are left unchecked then all structured content,
+such as the body (content tree) of a Structured Report, is left unchanged.</p>
+<p>If the "Remove unsafe structured content" checkbox is checked, then the structured content is examined for known safe and unsafe content items.
+Unsafe content items are removed or replaced by dummy values as appropriate per requirements of standard templates.
+For known content items and value types that fit in the category of UIDs, dates, device and institution identifiers, and descriptors, then the corresponding
+checkboxes are interpreted the same way for structured content as for "header" attributes.
+For unrecognized content items and value types, PNAME and TEXT content items are removed.</p>
+<p>If the "Remove all structured content" checkbox is checked (regardless of the state of the "Remove unsafe structured content" checkbox,
+then all structured content is removed completely (e.g., rendering a Structured Report completely empty). This may adversely affect
+the use of various SR-related Attributes in non-SR settings.</p>
+
+<a name="Blackout"><h2>Blackout (Redaction)</h2></a>
 <p>Some types of images, particularly ultrasound, screen shots of analysis panels and 3D rendering, digitized film or paper documents, and some nuclear medicine images, contain
-identifying information not just in the DICOM "header", but also burned in to the pixel data, which needs to be "blacked out" by replacing the pixel values using an image editor.</p>
-<p>The "Blackout" button in the main <a href="DicomCleaner.html">DicomCleaner</a> control panel provides this capability. When a set of images has been cleaned and selected in the "Cleaned" panel,
+identifying information not just in the DICOM "header", but also burned in to the pixel data, which needs to be "blacked out" (redacted) by replacing the pixel values using an image editor.</p>
+<p>The "Blackout" button in the main <a href="DicomCleaner.html">DicomCleaner&trade;</a> control panel provides this capability. When a set of images has been cleaned and selected in the "Cleaned" panel,
 pressing "Blackout" brings up an image editor that allows rectangular regions of the image to be filled with black pixels.</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomImageBlackoutColorUltrasound.png" width="600"/></td>
+<td><img src="images/DicomImageBlackoutColorUltrasound.png" alt="DicomImageBlackoutColorUltrasound" width="600"/></td>
 </tr>
 </table>
 </center>
-<p>The user has control over which value is used to replace the blacked out pixels. If Use Padding and Use Zero are unchecked,
+<p>The application of the "blackout" process will cause the images to be decompressed, if they are compressed.</p>
+<p>Images encoded in the JPEG baseline (8-bit) Transfer Syntax are treated specially, and are not decompressed,
+in order to prevent loss of information caused by decompressing and then recompressing a lossy JPEG compressed image.
+Rather, only those 8x8 blocks that are to be blacked out are affected, and all other 8x8 blocks are untouched.
+A side effect is to increased the blacked out regions in size to align with block boundaries.
+Also, rather than black being used as the replacement value, the average color of the block is used (current DC coefficient value).</p>
+<center>
+<table>
+<tr>
+<td><img src="images/DicomImageBlackoutJPEG.png" alt="DicomImageBlackoutJPEG" width="600"/></td>
+</tr>
+</table>
+</center>
+<p>If the "Accept any Transfer Syntax" checkbox was set during import or network reception, any image that is
+not encoded in one of the Transfer Syntaxes supported for decoding will cause the "Blackout" process to fail (see also <a href="#TransferSyntax">Transfer Syntax and Compression Support</a>).</p>
+<p>The user has control over which value is used to replace the blacked out pixels (except for lossy JPEG images that are not decompressed). If Use Padding and Use Zero are unchecked,
 then the lowest possible pixel value given the signedness and bit depth of the pixel data will be used. If Use Padding is checked
 (which it is by default), then Pixel Padding Value, if present in the header, will be used instead of the lowest possible value. If
 Use Zero is checked, than a value of zero will always be used, regardless of the lowest possible value or Pixel Padding Value; this
@@ -129,22 +178,25 @@ is sometimes necessary if no windowing information is present in the header, and
 to be removed.</p>
 <p>The "Overlays" checkbox in the "Blackout" panel activates display of this information, which can then be blacked out, in which case the remaining overlay information will
 be "burned in" to the saved pixel data and the overlays themselves removed. Indeed, even if there is no need to blackout the overlay information, the side effect of burning in the overlay
-may be useful, particularly if downstream viewers do not support overlay display, as many do not.</p>
+may be useful, particularly if downstream viewers do not support overlay display, as many do not.
+A side effect of the use of the "Overlays" checkbox is to suppress the lossy JPEG selective block redaction, and trigger decompression of the JPEG image before burning in overlay information
+(if any); the image is not recompressed.</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomImageBlackoutOverlayDose.png"/></td>
+<td><img src="images/DicomImageBlackoutOverlayDose.png" alt="DicomImageBlackoutOverlayDose"/></td>
 </tr>
 </table>
 </center>
 
 <a name="Usage"><h2>How to start it</h2></a>
-<p><a href="DicomCleaner.html">DicomCleaner</a> is a Java Web Start (JWS) application that you can run from within a web browser. It runs on any platform that supports Java 1.5 or greater,
-and does not require any "installation" per se. Just click on the <a href="DicomCleaner.html">DicomCleaner</a> link, and confirm all security requests to run the application.
+<p><a href="DicomCleaner.html">DicomCleaner&trade;</a> is a Java Web Start (JWS) application that you can run from within a web browser. It runs on any platform that supports Java 1.7 or greater,
+and does not require any "installation" per se. Just click on the <a href="DicomCleaner.html">DicomCleaner&trade;</a> link, and confirm all security requests to run the application.
 Java must not be disabled in your browser (check browser security settings). 
 If Java is not already installed, you may be prompted to install it or allow automatic installation to proceed. After Java installation, you may need to reload the link to get
 the application to start.
-In MacOS Safari, the 'Open "safe" files after downloading' checkbox in Preferences&gt;General must be enabled (otherwise you will have to double-click the JNLP file in the Downloads window).</p>
+In Internet Explorer, you may have to disable the Protected Mode (for some versions, e.g., IE 8, but not IE 11) and use the default Medium-High rather than High Security level; to eliminate a download file prompt, you can enable Automatic prompting for file downloads in the Custom Level Security settings.
+MacOS Safari will no longer run JWS automatically; you will have to double-click the JNLP file in the Downloads window (or use any other Mac browser instead).</p>
 <p>Whenever you use the web start application, it will automatically check for the
 latest version on the web site and use that, so you never need to be concerned about upgrading or maintenance.</p>
 <p>If you like, you can right-click on the <a href="DicomCleaner.html">link</a> to save it as a Desktop Shortcut to make it as easy to start up as any other application, but this is not required, since you can always start it from a browser.
@@ -152,8 +204,8 @@ If you make such a shortcut, you can give it an icon by downloading <a href="htt
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerCopyShortcut.png"/></td>
-<td><IMG SRC="images/DicomCleanerPasteShortcut.png"/></td>
+<td><img src="images/DicomCleanerCopyShortcut.png" alt="DicomCleanerCopyShortcut"/></td>
+<td><img src="images/DicomCleanerPasteShortcut.png" alt="DicomCleanerPasteShortcut"/></td>
 </tr>
 </table>
 </center>
@@ -161,12 +213,12 @@ If you make such a shortcut, you can give it an icon by downloading <a href="htt
 
 <a name="Configuration"><h2>How to configure it</h2></a>
 <p>If you want to use a DICOM network (rather than importing from or exporting to folders and files), you can use the "Configure" button to enter information
-about remote DICOM network devices and the port and AET of the DicomCleaner itself.</p>
+about remote DICOM network devices and the port and AET of the DicomCleaner&trade; itself.</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerLocalConfiguration.png"/></td>
-<td><IMG SRC="images/DicomCleanerRemoteConfiguration.png"/></td>
+<td><img src="images/DicomCleanerLocalConfiguration.png" alt="DicomCleanerLocalConfiguration"/></td>
+<td><img src="images/DicomCleanerRemoteConfiguration.png" alt="DicomCleanerRemoteConfiguration"/></td>
 </tr>
 </table>
 </center>
@@ -179,21 +231,26 @@ The application also supports DNS self-discovery of other DICOM applications, th
 <p>If for some reason you do not want to start the application using Java Web Start, but instead want to download it and install it, several versions are available:</p>
 <ul>
 <li><a href="http://www.dclunie.com/pixelmed/software/winexe/DicomCleanerWithOwnJRE.zip">Windows executable that does not require Java to be installed</a> [approx. 45 MB] (includes its own JRE, internationalized fonts, and JIIO libraries)</li>
-<li><a href="http://www.dclunie.com/pixelmed/software/winexe/DicomCleanerAssumingJREInstalled.zip">Windows executable that requires Java 1.5 or later to already be installed</a> [approx. 3.9 MB] (includes its own  JIIO libraries, since these are often not installed)</li>
-<li><a href="http://www.dclunie.com/pixelmed/software/macexe/DicomCleanerMac.zip">MacOS executable that requires Java 1.5 or later to already be installed</a> [approx. 2.1 MB] (includes pure Java JIIO libraries for limited decompression support)</li>
+<li><a href="http://www.dclunie.com/pixelmed/software/winexe/DicomCleanerAssumingJREInstalled.zip">Windows executable that requires Java 1.7 or later to already be installed</a> [approx. 3.9 MB] (includes its own  JIIO libraries, since these are often not installed)</li>
+<li><a href="http://www.dclunie.com/pixelmed/software/macexe/DicomCleanerMac.zip">MacOS executable that requires Java 1.7 or later to already be installed</a> [approx. 2.1 MB] (includes pure Java JIIO libraries for limited decompression support)</li>
 </ul>
 <p>The downloaded installable version does NOT automatically update when new versions are released, however.</p>
 <p>If you need to report a problem, and want to know what version you are using, look at the status bar immediately after starting the application:</p>
 <center>
 <table>
 <tr>
-<td><IMG SRC="images/DicomCleanerShowVersion.png" width="300"/></td>
+<td><img src="images/DicomCleanerShowVersion.png" alt="DicomCleanerShowVersion" width="300"/></td>
 </tr>
 </table>
 </center>
-<p>The open source code is contained within the <a href="http://www.dclunie.com/pixelmed/software/">PixelMed toolkit</a>.</p>
+<p>The open source code is contained within the <a href="http://www.dclunie.com/pixelmed/software/index.html">PixelMed&trade; toolkit</a>.</p>
+<a name="TransferSyntax"><h2>Transfer Syntax and Compression Support</h2></a>
+<p>All of the standard uncompressed Transfer Syntaxes, as well as baseline 8 bit JPEG and JPEG 2000 are supported for by default on all platforms (with the Oracle JRE).
+If the Java JAI Image I/O native codecs are also installed (only available for Windows and Linux and not the Mac), then lossless JPEG and JPEG-LS are also supported.</p>
+<p>The user can select to "Accept any Transfer Syntax", and if instances are received in a recognized standard (but unsupported) Transfer Syntax, the "Clean" step can
+be used, since only non-PixelData attributes need to be changed, but the "Blackout" process cannot be applied.</p>
 <hr/>
-<a href="DicomCleaner.html"><IMG SRC="icons/DicomCleaner.png" ALT="Click here to start the DicomCleaner" BORDER=0/></a>
-<p></a>Click here to start the <a href="DicomCleaner.html">DicomCleaner</a>.</p>
+<a href="DicomCleaner.html"><img src="icons/DicomCleaner.png" alt="Click here to start the DicomCleaner&trade;" border="0"/></a>
+<p>Click here to start the <a href="DicomCleaner.html">DicomCleaner&trade;</a>.</p>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -16,6 +16,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class of static methods to copy a DICOM image and retain only enough to describe pixels.</p>
@@ -25,8 +27,9 @@ import java.io.IOException;
  * @author	dclunie
  */
 public class KeepOnlyImagePixelModule {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/KeepOnlyImagePixelModule.java,v 1.2 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/KeepOnlyImagePixelModule.java,v 1.13 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(KeepOnlyImagePixelModule.class);
 
 	protected static AttributeTag[] relevantImagePixelModuleAttributeTags = {
 		TagFromName.SamplesPerPixel,
@@ -116,7 +119,7 @@ public class KeepOnlyImagePixelModule {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

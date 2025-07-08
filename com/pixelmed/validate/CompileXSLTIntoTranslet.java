@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.validate;
 
@@ -13,8 +13,7 @@ import javax.xml.transform.stream.StreamSource;
  * @author	dclunie
  */
 public class CompileXSLTIntoTranslet {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/CompileXSLTIntoTranslet.java,v 1.1 2005/08/21 16:18:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/CompileXSLTIntoTranslet.java,v 1.12 2025/01/29 10:58:09 dclunie Exp $";
 
 	/**
 	 * <p>Read the XSLT-C file specified on the command line and make a translate with the same name but a .class extension.</p>
@@ -28,7 +27,7 @@ public class CompileXSLTIntoTranslet {
 			factory.setAttribute("generate-translet", Boolean.TRUE);
 			Templates templates = factory.newTemplates(xslt);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

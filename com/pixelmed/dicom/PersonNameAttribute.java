@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -9,6 +9,9 @@ import com.pixelmed.utils.StringUtilities;
 import java.io.*;
 import java.util.StringTokenizer;
 import java.util.Vector;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A concrete class specializing {@link com.pixelmed.dicom.Attribute Attribute} for
@@ -24,8 +27,13 @@ import java.util.Vector;
  * @author	dclunie
  */
 public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharacterSet {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PersonNameAttribute.java,v 1.33 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PersonNameAttribute.java,v 1.18 2012/02/01 23:02:09 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(PersonNameAttribute.class);
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 64 + 1 + 64 + 1 + 64;	// limit is 64 per component group ... should really check for presence of equal sign, etc. :(
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -53,8 +61,8 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public PersonNameAttribute(AttributeTag t,long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl,i,specificCharacterSet);
@@ -67,8 +75,8 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public PersonNameAttribute(AttributeTag t,Long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl.longValue(),i,specificCharacterSet);
@@ -250,17 +258,27 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 		}
 		return encodedValue;
 	}
-			
+	
+	/**
+	 * <p>Get the name component groups from a DICOM delimited form of Person Name.</p>
+	 *
+	 * @param	value	a single person name value
+	 * @return		a Vector of String containing the name component groups
+	 */
+	public static Vector<String> getNameComponentGroups(String value) {
+		return StringUtilities.getDelimitedValues(value,"=");
+	}
+	
 	/**
 	 * <p>Get the name components from a DICOM delimited form of Person Name.</p>
 	 *
 	 * @param	value	a single person name value
 	 * @return		a Vector of String containing the name components
 	 */
-	public static Vector getNameComponents(String value) {
+	public static Vector<String> getNameComponents(String value) {
 		return StringUtilities.getDelimitedValues(value,"^");
 	}
-	
+
 	/**
 	 * <p>Get the family and given name components of a DICOM delimited form of Person Name and swap them.</p>
 	 *
@@ -306,13 +324,14 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 //System.err.println("PersonNameAttribute.getPhoneticName(): name = "+name+" phoneticName = "+phoneticName);
 			}
 			catch (PhoneticStringEncoderException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 				phoneticName=name;	// better to return original than null
 			}
 		}
 		return phoneticName;
 	}
 
+	// this method is for testing from the main class only so no need to use SLF4J since command line utility/test
 	private static void processFileOrDirectory(File file) {
 //System.err.println("PersonNameAttribute.processFileOrDirectory(): "+file);
 		if (file.isDirectory()) {
@@ -331,7 +350,7 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 				}
 			}
 			catch (Exception e) {
-				//e.printStackTrace(System.err);
+				//e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 		else if (file.isFile()) {
@@ -347,11 +366,11 @@ public class PersonNameAttribute extends StringAttributeAffectedBySpecificCharac
 					if (name != null) {
 						String canonicalName = PersonNameAttribute.getCanonicalForm(name);
 						String phoneticName = getPhoneticName(canonicalName);
-						System.out.println(name+"\t"+canonicalName+"\t"+phoneticName);
+						System.out.println(name+"\t"+canonicalName+"\t"+phoneticName);	// no need to use SLF4J since command line utility/test
 					}
 				}
 				catch (Exception e) {
-					//e.printStackTrace(System.err);
+					//e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				}
 			}
 			else {

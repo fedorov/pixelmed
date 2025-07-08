@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -21,7 +21,7 @@ import com.pixelmed.dicom.AttributeList;
  */
 class SourceImageSortOrderPanel extends SourceInstanceSortOrderPanel {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageSortOrderPanel.java,v 1.16 2006/10/22 12:27:22 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageSortOrderPanel.java,v 1.26 2025/01/29 10:58:07 dclunie Exp $";
 
 	// implement SourceImageSelectionChangeListener ...
 	
@@ -41,17 +41,19 @@ class SourceImageSortOrderPanel extends SourceInstanceSortOrderPanel {
 		 * @param	e
 		 */
 		public void changed(com.pixelmed.event.Event e) {
-			SourceImageSelectionChangeEvent sis = (SourceImageSelectionChangeEvent)e;
-			byFrameOrderButton.setSelected(true);
-			nSrcInstances=sis.getNumberOfBufferedImages();			// sets in parent, else Slider won't appear when we update it later
-			currentSrcInstanceAttributeList=sis.getAttributeList();
-			replaceListOfDimensions(buildListOfDimensionsFromAttributeList(currentSrcInstanceAttributeList));
-			currentSrcInstanceSortOrder=sis.getSortOrder();
-			currentSrcInstanceIndex=sis.getIndex();
-			updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
+			if (active) {
+				SourceImageSelectionChangeEvent sis = (SourceImageSelectionChangeEvent)e;
+				byFrameOrderButton.setSelected(true);
+				nSrcInstances=sis.getNumberOfBufferedImages();			// sets in parent, else Slider won't appear when we update it later
+				currentSrcInstanceAttributeList=sis.getAttributeList();
+				replaceListOfDimensions(buildListOfDimensionsFromAttributeList(currentSrcInstanceAttributeList));
+				currentSrcInstanceSortOrder=sis.getSortOrder();
+				currentSrcInstanceIndex=sis.getIndex();
+				updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
 //System.err.println("SourceImageSortOrderPanel.OurSourceImageSelectionChangeListener.changed(): on exit nSrcInstances = "+nSrcInstances);
 //System.err.println("SourceImageSortOrderPanel.OurSourceImageSelectionChangeListener.changed(): on exit currentSrcInstanceIndex = "+currentSrcInstanceIndex);
 //System.err.println("SourceImageSortOrderPanel.OurSourceImageSelectionChangeListener.changed(): on exit currentSrcInstanceSortOrder = "+currentSrcInstanceSortOrder);
+			}
 		}
 	}
 

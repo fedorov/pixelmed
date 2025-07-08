@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -12,6 +12,7 @@ public class TestCharacterSet_AllTests extends TestCase {
 		TestSuite suite = new TestSuite("All JUnit Tests");
 		suite.addTest(TestCharacterSetStringAttribute.suite());
 		suite.addTest(TestCharacterSetTextAttribute.suite());
+		suite.addTest(TestSuitableCharacterSet.suite());
 		return suite;
 	}
 	

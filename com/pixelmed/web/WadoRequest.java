@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -11,13 +11,13 @@ import java.util.StringTokenizer;
 import com.pixelmed.utils.StringUtilities;
 
 /**
- * <p>The {@link com.pixelmed.web.WadoRequest WadoRequest} class parses a DICOM PS 3.18 (ISO 17432),
+ * <p>The {@link WadoRequest WadoRequest} class parses a DICOM PS 3.18 (ISO 17432),
  * WADO URL into its constituent query parameters.</p>
  *
  * @author	dclunie
  */
 public class WadoRequest extends WebRequest {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoRequest.java,v 1.7 2012/02/01 23:02:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoRequest.java,v 1.19 2025/01/29 10:58:10 dclunie Exp $";
 
 	private String studyUID;		// value must be single UID
 	private String seriesUID;		// value must be single UID
@@ -263,7 +263,7 @@ public class WadoRequest extends WebRequest {
 	 * @param	parameters	the map of parameter name-value pairs
 	 * @param	key		the name of the parameter to retrieve
 	 * @return			the integer value, or -1 if not present in the map
-	 * @exception			if not an integer string
+	 * @throws			if not an integer string
 	 */
 	public static int getSingleIntegerValueFromParameters(Map parameters,String key) throws Exception {
 		String s = (String)(parameters.get(key));
@@ -284,7 +284,7 @@ public class WadoRequest extends WebRequest {
 	 * @param	parameters	the map of parameter name-value pairs
 	 * @param	key		the name of the parameter to retrieve
 	 * @return			the double value, or 0 if not present in the map
-	 * @exception			if not a decimal string
+	 * @throws			if not a decimal string
 	 */
 	public static double getSingleDoubleValueFromParameters(Map parameters,String key) throws Exception {
 		String s = (String)(parameters.get(key));
@@ -303,7 +303,7 @@ public class WadoRequest extends WebRequest {
 	 * <p>Create a representation of a WADO request from an existing WebRequest of requestType=WADO.</p>
 	 *
 	 * @param	request		an existing WebRequest with parameters
-	 * @exception			if not a valid request
+	 * @throws			if not a valid request
 	 */
 	public WadoRequest(WebRequest request) throws Exception {
 		scheme = request.getScheme();
@@ -320,7 +320,7 @@ public class WadoRequest extends WebRequest {
 	 * <p>Create a representation of a WADO request by parsing a WADO URI.</p>
 	 *
 	 * @param	uriString	the entire WADO URI string
-	 * @exception			if not a valid request
+	 * @throws			if not a valid request
 	 */
 	public WadoRequest(String uriString) throws Exception {
 		super(uriString);	// sets requestType
@@ -488,7 +488,7 @@ public class WadoRequest extends WebRequest {
 		}
 		catch (Exception e) {
 			System.err.println("B3: threw exception");
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		
 	}

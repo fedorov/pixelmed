@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,7 +12,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class CFindResponseCommandMessage implements CommandMessage {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CFindResponseCommandMessage.java,v 1.4 2011/06/21 17:10:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CFindResponseCommandMessage.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte bytes[];
 
@@ -27,8 +27,8 @@ public class CFindResponseCommandMessage implements CommandMessage {
 	
 	/**
 	 * @param	list
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CFindResponseCommandMessage(AttributeList list) throws DicomException, IOException {
 		           groupLength = Attribute.getSingleIntegerValueOrDefault(list,groupLengthTag,0xffff);
@@ -43,8 +43,8 @@ public class CFindResponseCommandMessage implements CommandMessage {
 	 * @param	messageIDBeingRespondedTo
 	 * @param	status
 	 * @param	dataSetPresent
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CFindResponseCommandMessage(String affectedSOPClassUID,
 			int messageIDBeingRespondedTo,int status,boolean dataSetPresent) throws DicomException, IOException {
@@ -58,8 +58,8 @@ public class CFindResponseCommandMessage implements CommandMessage {
 	 * @param	dataSetPresent
 	 * @param	offendingElement
 	 * @param	errorComment
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CFindResponseCommandMessage(String affectedSOPClassUID,
 			int messageIDBeingRespondedTo,int status,boolean dataSetPresent,

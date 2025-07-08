@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -15,14 +15,18 @@ import com.pixelmed.utils.PrintStreamMessageLogger;
 
 import java.io.File;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>This class copies a set of DICOM files, uncompressing them if compressed.</p>
+ * <p>This class copies a set of DICOM files, decompressing them if compressed.</p>
  *
  * @author	dclunie
  */
 public class DecompressDicomFiles extends MediaImporter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DecompressDicomFiles.java,v 1.15 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DecompressDicomFiles.java,v 1.1 2013/03/16 16:51:53 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DecompressDicomFiles.class);
 
 	protected String outputPath;
 	
@@ -54,7 +58,8 @@ public class DecompressDicomFiles extends MediaImporter {
 	 * @param	mediaFileName	the fully qualified path name to a DICOM file
 	 */
 	protected void doSomethingWithDicomFileOnMedia(String mediaFileName) {
-		logLn("MediaImporter.doSomethingWithDicomFile(): "+mediaFileName);
+		//logLn("MediaImporter.doSomethingWithDicomFile(): "+mediaFileName);
+		slf4jlogger.info("MediaImporter.doSomethingWithDicomFile(): {}",mediaFileName);
 		try {
 			AttributeList list = new AttributeList();
 			list.read(mediaFileName);
@@ -68,13 +73,12 @@ public class DecompressDicomFiles extends MediaImporter {
 			list.write(new File(outputPath,outputFileName),TransferSyntax.ExplicitVRLittleEndian,true,true);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-			System.exit(0);
+			slf4jlogger.error("While processing "+mediaFileName+" ",e);
 		}
 	}
 	
 	/**
-	 * <p>Check that DICOM files are present and importable.</p>
+	 * <p>Copy a set of DICOM files, decompressing them if compressed.</p>
 	 *
 	 * @param	arg	array of two strings - the input path and the output path
 	 */
@@ -86,11 +90,12 @@ public class DecompressDicomFiles extends MediaImporter {
 				importer.importDicomFiles(arg[0]);
 			}
 			else {
-				throw new Exception("Argument list must be zero or one value");
+				slf4jlogger.error("Usage: com.pixelmed.apps.DecompressDicomFiles inputpath outputpath");
+				throw new Exception("Argument list must be two values");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

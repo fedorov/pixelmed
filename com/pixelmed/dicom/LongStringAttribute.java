@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,11 @@ import java.io.*;
  */
 public class LongStringAttribute extends StringAttributeAffectedBySpecificCharacterSet {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/LongStringAttribute.java,v 1.10 2003/09/22 21:21:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/LongStringAttribute.java,v 1.22 2025/01/29 10:58:06 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 64;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -47,8 +51,8 @@ public class LongStringAttribute extends StringAttributeAffectedBySpecificCharac
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public LongStringAttribute(AttributeTag t,long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl,i,specificCharacterSet);
@@ -61,8 +65,8 @@ public class LongStringAttribute extends StringAttributeAffectedBySpecificCharac
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public LongStringAttribute(AttributeTag t,Long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t,vl.longValue(),i,specificCharacterSet);

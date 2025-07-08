@@ -1,12 +1,16 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
 import com.pixelmed.dicom.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class CTAcquisitionParameters {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTAcquisitionParameters.java,v 1.22 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTAcquisitionParameters.java,v 1.33 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CTAcquisitionParameters.class);
 	
 	protected String irradiationEventUID;
 	protected CTScanType scanType;
@@ -329,7 +333,7 @@ public class CTAcquisitionParameters {
 				}
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return dScanningLengthInMM;
@@ -349,7 +353,7 @@ public class CTAcquisitionParameters {
 				dExistingScanningLength = Double.parseDouble(scanningLengthInMM);
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		double dDerivedScanningLengthInMM = computeScanningLengthFromDLPAndCTDIVol(dlp,ctdiVol);
@@ -358,7 +362,7 @@ public class CTAcquisitionParameters {
 				replaceScanningLengthInMM(dDerivedScanningLengthInMM);
 			}
 			else {
-System.err.println("CTAcquisitionParameters.deriveScanningLengthFromDLPAndCTDIVolIfGreater(): not overriding "+dExistingScanningLength+" with smaller "+dDerivedScanningLengthInMM);	
+				slf4jlogger.info("deriveScanningLengthFromDLPAndCTDIVolIfGreater(): not overriding {} with smaller {}",dExistingScanningLength,dDerivedScanningLengthInMM);
 			}
 		}
 	}

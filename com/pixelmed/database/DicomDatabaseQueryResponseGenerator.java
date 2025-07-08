@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -23,6 +23,8 @@ import com.pixelmed.network.ResponseStatus;
 
 import com.pixelmed.query.QueryResponseGenerator;
 
+import com.pixelmed.utils.StringUtilities;
+
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
@@ -35,10 +37,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseQueryResponseGenerator.java,v 1.20 2012/09/04 21:30:14 dclunie Exp $";
+class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseQueryResponseGenerator.java,v 1.34 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomDatabaseQueryResponseGenerator.class);
 	
 	boolean usePhoneticCanonicalPersonNameMatch = true;	// this takes priority, unless wildcards are present
 	boolean useCanonicalPersonNameMatch = true;
@@ -79,14 +84,12 @@ class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
 				offendingElement.addValue(offendingElementValue);
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		this.errorComment = errorComment;
 	}
 
-	/***/
-	private int debugLevel;
 	/***/
 	private DatabaseInformationModel databaseInformationModel;
 	/***/
@@ -119,9 +122,8 @@ class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
 	private String        studyInstanceUIDColumnName;
 	private String       seriesInstanceUIDColumnName;
 
-	DicomDatabaseQueryResponseGenerator(DatabaseInformationModel databaseInformationModel,int debugLevel) {
+	DicomDatabaseQueryResponseGenerator(DatabaseInformationModel databaseInformationModel) {
 //System.err.println("DicomDatabaseQueryResponseGenerator():");
-		this.debugLevel=debugLevel;
 		this.databaseInformationModel=databaseInformationModel;
 		requestIdentifier = null;
 		databaseStatement = null;
@@ -239,7 +241,7 @@ class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
 	 * @return				true if the test information entity is at the same level as the query level information entity for the specified model
 	 */
 	private boolean isWithinQueryLevelForModel(String querySOPClassUID,InformationEntity ieTest,InformationEntity ieLevel) {
-//System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): isWithinQueryLevelForModel ieTest = "+ieTest+" ieLevel = "+ieLevel);
+//slf4jlogger.info("performQuery(): isWithinQueryLevelForModel ieTest = {} ieLevel = {}",ieTest,ieLevel);
 		boolean result = false;
 		if (SOPClass.isStudyRootCompositeInstanceQuery(querySOPClassUID)) {
 			if (ieLevel == InformationEntity.STUDY) {
@@ -266,7 +268,7 @@ class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
 				result = ieTest.compareTo(InformationEntity.SERIES) > 0 && ieTest.compareTo(InformationEntity.INSTANCE) <= 0;
 			}
 		}
-//System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): isWithinQueryLevelForModel result = "+result);
+//slf4jlogger.info("DicomDatabaseQueryResponseGenerator.performQuery(): isWithinQueryLevelForModel result = {}",result);
 		return result;
 	}
 	
@@ -359,7 +361,7 @@ class DicomDatabaseQueryResponseGenerator implements QueryResponseGenerator {
 	}
 
 	public void performQuery(String querySOPClassUID,AttributeList requestIdentifier,boolean relational) {
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): request:\n"+requestIdentifier.toString());
+		slf4jlogger.debug("performQuery(): request:\n{}",requestIdentifier.toString());
 		this.requestIdentifier=requestIdentifier;
 		databaseStatement = null;
 		resultSet = null;
@@ -368,9 +370,9 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 		additionalKeysToReturnAsZeroLength = null;	// filled in on first next() and used on subsequent next()'s
 		unsupportedOptionalKeysPresent = false;		// filled in on first next() and used on subsequent next()'
 		
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): queryRetrieveLevel = "+queryRetrieveLevel);
+		slf4jlogger.trace("performQuery(): queryRetrieveLevel = {}",queryRetrieveLevel);
 		InformationEntity ieWanted = getInformationEntityForQueryRetieveLevel(queryRetrieveLevel);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): ieWanted = "+ieWanted);
+		slf4jlogger.trace("performQuery(): ieWanted = {}",ieWanted);
 		InformationEntity ieDatabase = databaseInformationModel.getRootInformationEntity();
 		InformationEntity ieQuery = getRootInformationEntity(querySOPClassUID);
 		InformationEntity ieDatabaseParent = null;
@@ -390,11 +392,11 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 			// assert ieQuery != null && ieDatabase != null && ieWanted != null
 			
 			while (ieQuery != null && ieQuery.compareTo(ieWanted) <= 0) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): ieQuery = "+ieQuery);
+				slf4jlogger.trace("performQuery(): ieQuery = {}",ieQuery);
 				AttributeTag uniqueKey = getUniqueKeyForQueryInformationModel(querySOPClassUID,ieQuery);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): uniqueKey at this level = "+uniqueKey);
+				slf4jlogger.trace("performQuery(): uniqueKey at this level = {}",uniqueKey);
 				while (ieDatabase != null && ieDatabase.compareTo(ieQuery) <= 0) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): ieDatabase = "+ieDatabase);
+					slf4jlogger.trace("performQuery(): ieDatabase = {}",ieDatabase);
 					// extend select statement with match on:
 					// - relational: any attribute in identifier for ieDatabase
 					// - hierarchical: unique key attribute in identifier for ieDatabase ???
@@ -430,13 +432,13 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 							setErrorStatus(ResponseStatus.UnableToProcess,tag,"Unable to convert into value for SQL query");
 							return;
 						}
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): checking attribute "+columnName+" with value "+value);
+						slf4jlogger.trace("performQuery(): checking attribute {} with value {}",columnName,value);
 
 						if (columnName != null			// columnName could be null if attribute in identifier is unrecognized (e.g. private) 
 						    /*&& ieAttribute == ieDatabase */	// don't check, otherwise won't pick up InstanceNumber whose IE is concatentation :(
 						    && databaseInformationModel.isAttributeUsedInTable(tableName,columnName)) {
 							if (isWithinQueryLevelForModel(querySOPClassUID,ieAttribute,ieWanted) || relational) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): using as matching key "+ieDatabase+" entity for identifier attribute "+columnName+" with value "+value);
+								slf4jlogger.trace("performQuery(): using as matching key {} entity for identifier attribute {} with value {}",ieDatabase,columnName,value);
 								if (value != null && value.length() > 0 && !value.equals("NULL")) {
 									boolean used = false;
 									byte[] vr = a.getVR();
@@ -515,10 +517,10 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 								}
 							}
 							else {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): not within query level and not relational for identifier attribute "+columnName+" with value "+value);
+								slf4jlogger.trace("performQuery(): not within query level and not relational for identifier attribute {} with value {}",columnName,value);
 								// above the level we want ... use unique key
 								if (tag.equals(uniqueKey)) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): using as unique key "+ieDatabase+" entity for identifier attribute "+columnName+" with value "+value);
+									slf4jlogger.trace("performQuery(): using as unique key {} entity for identifier attribute {} with value {}",ieDatabase,columnName,value);
 									if (value != null && value.length() > 0 && !value.equals("NULL")) {
 										addToMatchClause(matchBuffer,tableName,columnName,value);
 									}
@@ -529,11 +531,11 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 								}
 							}
 							if (!tag.equals(TagFromName.SpecificCharacterSet)) {	// handled specially elsewhere ... not needed in result set and only at instance level anyway
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): using as return key "+ieDatabase+" entity for identifier attribute "+columnName+" with value "+value);
+								slf4jlogger.trace("performQuery(): using as return key {} entity for identifier attribute {} with value {}",ieDatabase,columnName,value);
 								addToSelectClause(selectBuffer,tableName,columnName);
 							}
 							//else {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): excluding as return key "+ieDatabase+" entity for identifier attribute "+columnName);
+							slf4jlogger.trace("performQuery(): excluding as return key {} entity for identifier attribute {}",ieDatabase,columnName);
 							//}
 							addToFromClause(fromBuffer,tableName);
 						}
@@ -544,10 +546,10 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 				}
 				ieQuery = getChildTypeForParent(querySOPClassUID,ieQuery);
 			}
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): join clause "+joinBuffer);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): match clause "+matchBuffer);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): selection clause "+selectBuffer);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): from clause "+fromBuffer);
+			slf4jlogger.trace("performQuery(): join clause {}",joinBuffer);
+			slf4jlogger.trace("performQuery(): match clause {}",matchBuffer);
+			slf4jlogger.trace("performQuery(): selection clause {}",selectBuffer);
+			slf4jlogger.trace("performQuery(): from clause {}",fromBuffer);
 			StringBuffer b = new StringBuffer();
 			b.append("SELECT ");
 			b.append(selectBuffer);
@@ -568,14 +570,16 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 				b.append(matchBuffer);
 			}
 			b.append(";");
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.performQuery(): query "+b);
+			slf4jlogger.debug("performQuery(): query {}",b);
 			try {
 				databaseStatement = databaseInformationModel.createStatement();
 				resultSet = databaseStatement.executeQuery(b.toString());
 				resultSetMetaData = resultSet.getMetaData();
 			}
 			catch (SQLException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.debug("performQuery(): request:\n{}",requestIdentifier.toString());
+				slf4jlogger.error("performQuery(): query {}",b);
+				slf4jlogger.error("performQuery(): ",e);
 				setErrorStatus(ResponseStatus.UnableToProcess,null,e.getMessage());
 			}
 		}
@@ -604,7 +608,7 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.perf
 			// else do NOT add SpecificCharacterSet if no character set extensions are in use, i.e., ASCII, as per PS 3.4
 		}
 		for (int column=1; column<=numberOfColumns; ++column) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeListFromResultSetRow(): ["+ r.getRow()+"] key = "+md.getColumnName(column)+" value = "+r.getString(column));
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("makeDicomAttributeListFromResultSetRow(): [{}] key = {} value = {}",r.getRow(),md.getColumnName(column),r.getString(column));
 			Attribute attribute = makeDicomAttributeFromResultSetColumn(r,md,column,specificCharacterSet);
 			if (attribute != null) {
 				list.put(attribute);
@@ -612,7 +616,7 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 			// else there is no DICOM attribute in the information model's dictionary corresponding to the column in the table
 			// e.g. ModalitiesInStudy
 		}
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeListFromResultSetRow(): "+list.toString());
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("makeDicomAttributeListFromResultSetRow():\n{}",list.toString());
 		return list;
 	}
 	
@@ -622,16 +626,16 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 		Attribute attribute = null;
 		if (tag != null) {
 			byte[] vr = dictionary.getValueRepresentationFromTag(tag);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeFromResultSet(): "+tag+" "+databaseInformationModel.getDicomNameFromDatabaseColumnName(columnName)+" sqlType = "+md.getColumnType(column)+" ("+md.getColumnTypeName(column)+")");
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeFromResultSet(): specificCharacterSet = "+specificCharacterSet);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("makeDicomAttributeFromResultSet(): {} {} sqlType = {} ({})",tag,databaseInformationModel.getDicomNameFromDatabaseColumnName(columnName),md.getColumnType(column),md.getColumnTypeName(column));
+			slf4jlogger.trace("makeDicomAttributeFromResultSet(): specificCharacterSet = {}",specificCharacterSet);
 			attribute = AttributeFactory.newAttribute(tag,vr,specificCharacterSet,true,2);
 			String value = r.getString(column);
 			if (value != null && value.length() > 0) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeFromResultSet(): value="+value);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeFromResultSet(): value="+com.pixelmed.utils.HexDump.dump(value.getBytes()));
+				slf4jlogger.trace("makeDicomAttributeFromResultSet(): value={}",value);
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("makeDicomAttributeFromResultSet(): value={}",com.pixelmed.utils.HexDump.dump(value.getBytes()));
 				attribute.addValue(value);		
 			}
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.makeDicomAttributeFromResultSet(): "+attribute);
+			slf4jlogger.trace("makeDicomAttributeFromResultSet(): {}",attribute);
 		}
 		return attribute;
 	}
@@ -749,7 +753,9 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 		try {
 			while (responseIdentifier == null && resultSet != null && resultSet.next()) {		// loop in case we have discarded this match for some reason
 			//if (resultSet != null && resultSet.next()) {
+				slf4jlogger.debug("next():");
 				responseIdentifier = makeDicomAttributeListFromResultSetRow(resultSet,resultSetMetaData);	// already includes SpecificCharacterSet as required
+				if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("next(): responseIdentifier from ResultSetRow is {}",responseIdentifier.toString());
 				Attribute aQueryRetrieveLevel = AttributeFactory.newAttribute(TagFromName.QueryRetrieveLevel,ValueRepresentation.CS,true,2);
 				aQueryRetrieveLevel.addValue(queryRetrieveLevel);
 				responseIdentifier.put(aQueryRetrieveLevel);
@@ -773,6 +779,7 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 					}
 				}
 				if (includeUnsupportedOptionalKeysInResponseWithZeroLength) {		// would not normally do this; unsupported optional keys shall not be in response
+					slf4jlogger.debug("next(): performing includeUnsupportedOptionalKeysInResponseWithZeroLength");
 					// assert additionalKeysToReturnAsZeroLength != null;
 					Iterator i = additionalKeysToReturnAsZeroLength.values().iterator();
 					while (i.hasNext()) {
@@ -785,8 +792,9 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 					}
 				}
 				if (includeModalitiesInStudyIfRequested) {									// invokes both matching and return key semantics
+					slf4jlogger.debug("next(): performing includeModalitiesInStudyIfRequested");
 					if (requestIdentifier.get(TagFromName.ModalitiesInStudy) != null		// i.e., only if requested
-					 && responseIdentifier.get(TagFromName.ModalitiesInStudy) == null		// i.e., isn't in database table already (which it normally isn't)
+					 && Attribute.getSingleStringValueOrEmptyString(responseIdentifier,TagFromName.ModalitiesInStudy).length() == 0	// i.e., isn't in database table with a value already (which it normally isn't) (001189) when not fixed by (001190)
 					 && queryRetrieveLevel.equals("STUDY")) {
 						try {
 							Attribute aStudyInstanceUID = responseIdentifier.get(TagFromName.StudyInstanceUID);
@@ -797,27 +805,27 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.make
 							catch (DicomException e) {
 							}
 							String query = makeForAllSeriesInStudyStatement(TagFromName.Modality,vStudyInstanceUID);
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): ModalitiesInStudy query "+query);
+							slf4jlogger.debug("next(): ModalitiesInStudy query {}",query);
 							Statement s = databaseInformationModel.createStatement();
 							ResultSet r = databaseStatement.executeQuery(query);
 							Set responseValues = new TreeSet();
 							if (r != null) {
 								while (r.next()) {
 									String value = r.getString(modalityColumnName);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): for ModalitiesInStudy response, got Modality = "+value);
+									slf4jlogger.trace("next(): for ModalitiesInStudy response, got Modality = {}",value);
 									if (value != null && value.length() > 0/* && !value.equals("NULL")*/) {
 										responseValues.add(value);
 									}
 								}
 							}
 							s.close();
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): for ModalitiesInStudy, before matching responseValues = "+responseValues);
+							slf4jlogger.trace("next(): for ModalitiesInStudy, before matching responseValues = {}",responseValues);
 							// perform matching, but only if necessary (that is, if a value rather than zero length was supplied in the request)
 							String[] requestValues = Attribute.getStringValues(requestIdentifier,TagFromName.ModalitiesInStudy);
 							if (requestValues != null && requestValues.length > 0) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): matching request for ModalitiesInStudy = "+requestValues);
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("next(): matching request for ModalitiesInStudy = {}",StringUtilities.toString(requestValues));
 								Set matchedResponseValues = findStringValuesInSet(requestValues,responseValues);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): matching result for ModalitiesInStudy = "+matchedResponseValues);
+								slf4jlogger.trace("next(): matching result for ModalitiesInStudy = {}",matchedResponseValues);
 								if (matchedResponseValues == null || matchedResponseValues.size() == 0) {
 									responseIdentifier = null;					// no match, discard this response
 									continue;									// and loop again
@@ -836,14 +844,15 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							}
 						}
 						catch (SQLException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
 				if (includeSOPClassesInStudyIfRequested) {									// invokes both matching and return key semantics
+					slf4jlogger.debug("next(): performing includeSOPClassesInStudyIfRequested");
 					assert responseIdentifier != null;
 					if (requestIdentifier.get(TagFromName.SOPClassesInStudy) != null		// i.e., only if requested
-					 && responseIdentifier.get(TagFromName.SOPClassesInStudy) == null		// i.e., isn't in database table already (which it normally isn't)
+					 && Attribute.getSingleStringValueOrEmptyString(responseIdentifier,TagFromName.SOPClassesInStudy).length() == 0	// i.e., isn't in database table with a value already (which it normally isn't) (001189) when not fixed by (001190)
 					 && queryRetrieveLevel.equals("STUDY")) {
 						try {
 							Attribute aStudyInstanceUID = responseIdentifier.get(TagFromName.StudyInstanceUID);
@@ -854,27 +863,27 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							catch (DicomException e) {
 							}
 							String query = makeForAllInstancesInStudyStatement(TagFromName.SOPClassUID,vStudyInstanceUID);
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): SOPClassesInStudy query "+query);
+							slf4jlogger.debug("next(): SOPClassesInStudy query {}",query);
 							Statement s = databaseInformationModel.createStatement();
 							ResultSet r = databaseStatement.executeQuery(query);
 							Set responseValues = new TreeSet();
 							if (r != null) {
 								while (r.next()) {
 									String value = r.getString(sopClassUIDColumnName);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): got SOP Class "+value);
+									slf4jlogger.trace("next(): got SOP Class {}",value);
 									if (value != null && value.length() > 0/* && !value.equals("NULL")*/) {
 										responseValues.add(value);
 									}
 								}
 							}
 							s.close();
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): for SOPClassesInStudy, before matching responseValues = "+responseValues);
+							slf4jlogger.trace("next(): for SOPClassesInStudy, before matching responseValues = {}",responseValues);
 							// perform matching, but only if necessary (that is, if a value rather than zero length was supplied in the request)
 							String[] requestValues = Attribute.getStringValues(requestIdentifier,TagFromName.SOPClassesInStudy);
 							if (requestValues != null && requestValues.length > 0) {
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): matching request for SOPClassesInStudy = "+requestValues);
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("next(): matching request for SOPClassesInStudy = {}",StringUtilities.toString(requestValues));	// defer call to StringUtilities.toString()
 								Set matchedResponseValues = findStringValuesInSet(requestValues,responseValues);
-if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next(): matching result for SOPClassesInStudy = "+matchedResponseValues);
+								slf4jlogger.trace("next(): matching result for SOPClassesInStudy = {}",matchedResponseValues);
 								if (matchedResponseValues == null || matchedResponseValues.size() == 0) {
 									responseIdentifier = null;					// no match, discard this response
 									continue;									// and loop again
@@ -893,14 +902,16 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							}
 						}
 						catch (SQLException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
 				if (includeNumberOfStudyRelatedInstancesIfRequested) {								// return key; no matching
+					slf4jlogger.debug("next(): performing includeNumberOfStudyRelatedInstancesIfRequested");
 					if (requestIdentifier.get(TagFromName.NumberOfStudyRelatedInstances) != null	// i.e., only if requested
-					 && responseIdentifier.get(TagFromName.NumberOfStudyRelatedInstances) == null	// i.e., isn't in database table already (which it normally isn't)
+					 && Attribute.getSingleStringValueOrEmptyString(responseIdentifier,TagFromName.NumberOfStudyRelatedInstances).length() == 0	// i.e., isn't in database table with a value already (which it normally isn't) (001189) when not fixed by (001190)
 					 && queryRetrieveLevel.equals("STUDY")) {
+						slf4jlogger.debug("next(): NumberOfStudyRelatedInstances was requested, is not in the response already, and query level is STUDY");
 						try {
 							Attribute aStudyInstanceUID = responseIdentifier.get(TagFromName.StudyInstanceUID);
 							String vStudyInstanceUID = null;
@@ -910,7 +921,7 @@ if (debugLevel > 4) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							catch (DicomException e) {
 							}
 							String query = makeForAllInstancesInStudyStatement(TagFromName.SOPInstanceUID,vStudyInstanceUID);
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): NumberOfStudyRelatedInstances query "+query);
+							slf4jlogger.debug("next(): NumberOfStudyRelatedInstances query {}",query);
 							Statement s = databaseInformationModel.createStatement();
 							ResultSet r = databaseStatement.executeQuery(query);
 							if (r != null) {
@@ -927,14 +938,16 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							s.close();
 						}
 						catch (SQLException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
 				if (includeNumberOfStudyRelatedSeriesIfRequested) {								// return key; no matching
+					slf4jlogger.debug("next(): performing includeNumberOfStudyRelatedSeriesIfRequested");
 					if (requestIdentifier.get(TagFromName.NumberOfStudyRelatedSeries) != null	// i.e., only if requested
-					 && responseIdentifier.get(TagFromName.NumberOfStudyRelatedSeries) == null	// i.e., isn't in database table already (which it normally isn't)
+					 && Attribute.getSingleStringValueOrEmptyString(responseIdentifier,TagFromName.NumberOfStudyRelatedSeries).length() == 0	// i.e., isn't in database table with a value already (which it normally isn't) (001189) when not fixed by (001190)
 					 && queryRetrieveLevel.equals("STUDY")) {
+						slf4jlogger.debug("next(): NumberOfStudyRelatedSeries was requested, is not in the response already, and query level is STUDY");
 						try {
 							Attribute aStudyInstanceUID = responseIdentifier.get(TagFromName.StudyInstanceUID);
 							String vStudyInstanceUID = null;
@@ -944,7 +957,7 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							catch (DicomException e) {
 							}
 							String query = makeForAllSeriesInStudyStatement(TagFromName.SeriesInstanceUID,vStudyInstanceUID);
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): NumberOfStudyRelatedSeries query "+query);
+							slf4jlogger.debug("next(): NumberOfStudyRelatedSeries query {}",query);
 							Statement s = databaseInformationModel.createStatement();
 							ResultSet r = databaseStatement.executeQuery(query);
 							if (r != null) {
@@ -961,14 +974,16 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							s.close();
 						}
 						catch (SQLException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
 				if (includeNumberOfSeriesRelatedInstancesIfRequested) {								// return key; no matching
+					slf4jlogger.debug("next(): performing includeNumberOfSeriesRelatedInstancesIfRequested");
 					if (requestIdentifier.get(TagFromName.NumberOfSeriesRelatedInstances) != null	// i.e., only if requested
-					 && responseIdentifier.get(TagFromName.NumberOfSeriesRelatedInstances) == null	// i.e., isn't in database table already (which it normally isn't)
+					 && Attribute.getSingleStringValueOrEmptyString(responseIdentifier,TagFromName.NumberOfSeriesRelatedInstances).length() == 0	// i.e., isn't in database table with a value already (which it normally isn't) (001189) when not fixed by (001190)
 					 && queryRetrieveLevel.equals("SERIES")) {
+						slf4jlogger.debug("next(): NumberOfSeriesRelatedInstances was requested, is not in the response already, and query level is SERIES");
 						try {
 							Attribute aSeriesInstanceUID = responseIdentifier.get(TagFromName.SeriesInstanceUID);
 							String vSeriesInstanceUID = null;
@@ -978,7 +993,7 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							catch (DicomException e) {
 							}
 							String query = makeForAllInstancesInSeriesStatement(TagFromName.SOPInstanceUID,vSeriesInstanceUID);
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): NumberOfSeriesRelatedInstances query "+query);
+							slf4jlogger.debug("next(): NumberOfSeriesRelatedInstances query {}",query);
 							Statement s = databaseInformationModel.createStatement();
 							ResultSet r = databaseStatement.executeQuery(query);
 							if (r != null) {
@@ -995,18 +1010,18 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 							s.close();
 						}
 						catch (SQLException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
-if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next(): response:\n"+responseIdentifier.toString());
+				slf4jlogger.debug("next(): response:\n{}",responseIdentifier.toString());
 			}
 		}
 		catch (SQLException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return responseIdentifier;
 	}
@@ -1025,7 +1040,7 @@ if (debugLevel > 0) System.err.println("DicomDatabaseQueryResponseGenerator.next
 				databaseStatement.close();
 			}
 			catch (SQLException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			databaseStatement=null;
 		}

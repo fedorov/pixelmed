@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,7 +18,7 @@ import java.util.Date;	// for test timing of routines
 public class BinaryInputStream extends FilterInputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/BinaryInputStream.java,v 1.17 2011/06/06 10:12:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/BinaryInputStream.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
 
 	/***/
 	boolean bigEndian;
@@ -26,6 +26,8 @@ public class BinaryInputStream extends FilterInputStream {
 	byte buffer[];
 	/**/
 	File file;
+	
+	private static final int BYTE_BUFFER_SIZE = 32768;
 
 	/**
 	 * @param	big
@@ -42,6 +44,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 *
 	 * @param	file			the file to read from
 	 * @param	big	true if big endian, false if little endian
+	 * @throws	FileNotFoundException	if file is not found
 	 */
 	public BinaryInputStream(File file,boolean big) throws FileNotFoundException {
 		super(new BufferedInputStream(new FileInputStream(file)));
@@ -178,7 +181,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * @param	b		buffer to read into
 	 * @param	offset		offset (from 0) in buffer to read into
 	 * @param	length		number of bytes to read (no more and no less)
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public void readInsistently(byte[] b,int offset,int length) throws IOException {
 		int remaining = length;
@@ -196,7 +199,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Skip as many bytes as requested, unless an exception occurs.</p>
 	 *
 	 * @param	length		number of bytes to read (no more and no less)
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public void skipInsistently(long length) throws IOException {
 		long remaining = length;
@@ -213,7 +216,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one unsigned integer 8 bit value.</p>
 	 *
 	 * @return			an int containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final int readUnsigned8() throws IOException {
 		readInsistently(buffer,0,1);
@@ -224,7 +227,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one unsigned integer 16 bit value.</p>
 	 *
 	 * @return			an int containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final int readUnsigned16() throws IOException {
 		readInsistently(buffer,0,2);
@@ -236,7 +239,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one signed integer 16 bit value.</p>
 	 *
 	 * @return			an int containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final int readSigned16() throws IOException {
 		readInsistently(buffer,0,2);
@@ -248,7 +251,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one unsigned integer 32 bit value.</p>
 	 *
 	 * @return			a long containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final long readUnsigned32() throws IOException {
 		readInsistently(buffer,0,4);
@@ -259,7 +262,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one signed integer 32 bit value.</p>
 	 *
 	 * @return			an int containing an signed value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final int readSigned32() throws IOException {
 		readInsistently(buffer,0,4);
@@ -267,10 +270,32 @@ public class BinaryInputStream extends FilterInputStream {
 	}
 
 	/**
+	 * <p>Read one unsigned integer 64 bit value.</p>
+	 *
+	 * @return				a long containing an unsigned value
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final long readUnsigned64() throws IOException {
+		readInsistently(buffer,0,8);
+		return extractUnsigned64();
+	}
+
+	/**
+	 * <p>Read one signed integer 64 bit value.</p>
+	 *
+	 * @return				a long containing an signed value
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final long readSigned64() throws IOException {
+		readInsistently(buffer,0,8);
+		return extractUnsigned64();
+	}
+
+	/**
 	 * <p>Read one floating point 32 bit value.</p>
 	 *
 	 * @return			a float value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final float readFloat() throws IOException {
 		readInsistently(buffer,0,4);
@@ -282,7 +307,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * <p>Read one floating point 64 bit value.</p>
 	 *
 	 * @return			a double value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final double readDouble() throws IOException {
 		readInsistently(buffer,0,8);
@@ -295,7 +320,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 *
 	 * @param	w		an array of sufficient size in which to return the values read
 	 * @param	len		the number of 16 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readUnsigned16(short[] w,int len) throws IOException {
 		readUnsigned16(w,0,len);
@@ -307,47 +332,164 @@ public class BinaryInputStream extends FilterInputStream {
 	 * @param	w		an array of sufficient size in which to return the values read
 	 * @param	offset		the offset in the array at which to begin storing values
 	 * @param	len		the number of 16 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readUnsigned16(short[] w,int offset,int len) throws IOException {
-		int blen = len*2;
-		byte  b[] = new byte[blen];
-		readInsistently(b,0,blen);
-		int bcount=0;
-		int wcount=0;
-		//long starttime=new Date().getTime();
-		//System.err.println("readUnsigned16: ready to convert at: 0");
-		if (bigEndian) {
-			while (wcount<len) {
-				int highByte=((int)b[bcount++])&0xff;
-				int  lowByte=((int)b[bcount++])&0xff;
-				short value=(short)((highByte<<8) + lowByte);
-				w[offset+wcount++]=(short)value;
+//long starttime=new Date().getTime();
+		//for (int i=offset; i<len; ++i) w[i]=(short)readUnsigned16();	// naive approach is four times slower :(
+		
+		// allocating and reading all bytes into byte[] runs into int length limit twice as early (as well as transiently requiring ludicrous amount of memory) (000774)
+		// compromise by reading in blocks ... this actually turns out to be another four times faster than reading entire byte array
+		
+		byte[] byteBuffer = new byte[BYTE_BUFFER_SIZE];
+		int shortsRemaining = len;
+		long bytesRemaining = ((long)len) * 2;
+		while (shortsRemaining > 0) {
+			int bytesToRead = byteBuffer.length;
+			if (bytesRemaining < bytesToRead) {
+				bytesToRead = (int)bytesRemaining;
 			}
-		}
-		else {
-			//while (wcount<len) {
-			for (;wcount<len;++wcount) {
-				//int  lowByte=((int)b[bcount++])&0xff;
-				//int highByte=((int)b[bcount++])&0xff;
-				//short value=(short)((highByte<<8) + lowByte);
-				//w[wcount++]=(short)value;
-				//w[wcount++]=(short)((b[bcount+1]<<8) + (b[bcount]&0xff));
-				//w[wcount++]=(short)((b[bcount++]&0xff) + (b[bcount++]<<8));	// assumes left to right evaluation
-				w[offset+wcount]=(short)((b[bcount++]&0xff) + (b[bcount++]<<8));	// assumes left to right evaluation
-				//bcount++; bcount++;
-				//bcount+=2;
+			readInsistently(byteBuffer,0,bytesToRead);
+
+			{
+				int bcount=0;
+				if (bigEndian) {
+					while (bcount<bytesToRead) {
+						w[offset++]=(short)((byteBuffer[bcount++]<<8) + (byteBuffer[bcount++]&0xff));	// assumes left to right evaluation
+					}
+				}
+				else {
+					while (bcount<bytesToRead) {
+						w[offset++]=(short)((byteBuffer[bcount++]&0xff) + (byteBuffer[bcount++]<<8));	// assumes left to right evaluation
+					}
+				}
 			}
+
+			bytesRemaining-=bytesToRead;
+			shortsRemaining-=(bytesToRead/2);
 		}
-		//System.err.println("readUnsigned16: exit at: "+(new Date().getTime()-starttime));
+		
+//System.err.println("readUnsigned16: exit at: "+(new Date().getTime()-starttime)+" ms");
+	}
+
+	/**
+	 * <p>Read an array of unsigned integer 32 bit values.</p>
+	 *
+	 * @param	w		an array of sufficient size in which to return the values read
+	 * @param	len		the number of 32 bit values to read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void readUnsigned32(int[] w,int len) throws IOException {
+		readUnsigned32(w,0,len);
 	}
 	
+	/**
+	 * <p>Read an array of unsigned integer 32 bit values.</p>
+	 *
+	 * @param	w		an array of sufficient size in which to return the values read
+	 * @param	offset	the offset in the array at which to begin storing values
+	 * @param	len		the number of 32 bit values to read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void readUnsigned32(int[] w,int offset,int len) throws IOException {
+//long starttime=new Date().getTime();
+		//for (int i=offset; i<len; ++i) w[i]=(short)readUnsigned32();	// naive approach is slower :(
+		
+		// allocating and reading all bytes into byte[] runs into int length limit four times as early (as well as transiently requiring ludicrous amount of memory)
+		// compromise by reading in blocks ... this actually turns out to be yet faster than reading entire byte array
+		
+		byte[] byteBuffer = new byte[BYTE_BUFFER_SIZE];
+		int intsRemaining = len;
+		long bytesRemaining = ((long)len) * 4;
+		while (intsRemaining > 0) {
+			int bytesToRead = byteBuffer.length;
+			if (bytesRemaining < bytesToRead) {
+				bytesToRead = (int)bytesRemaining;
+			}
+			readInsistently(byteBuffer,0,bytesToRead);
+
+			{
+				int bcount=0;
+				if (bigEndian) {
+					while (bcount<bytesToRead) {
+						w[offset++]=((byteBuffer[bcount++]<<24)&0xff000000) + ((byteBuffer[bcount++]<<16)&0x00ff0000) + ((byteBuffer[bcount++]<<8)&0x0000ff00) + (byteBuffer[bcount++]&0xff);	// assumes left to right evaluation
+					}
+				}
+				else {
+					while (bcount<bytesToRead) {
+						w[offset++]=(byteBuffer[bcount++]&0xff) + ((byteBuffer[bcount++]<<8)&0x0000ff00) + ((byteBuffer[bcount++]<<16)&0x00ff0000) + ((byteBuffer[bcount++]<<24)&0xff000000);	// assumes left to right evaluation
+					}
+				}
+			}
+
+			bytesRemaining-=bytesToRead;
+			intsRemaining-=(bytesToRead/4);
+		}
+//System.err.println("readUnsigned32: exit at: "+(new Date().getTime()-starttime)+" ms");
+	}
+
+	/**
+	 * <p>Read an array of unsigned integer 64 bit values.</p>
+	 *
+	 * @param	w		an array of sufficient size in which to return the values read
+	 * @param	len		the number of 64 bit values to read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void readUnsigned64(long[] w,int len) throws IOException {
+		readUnsigned64(w,0,len);
+	}
+	
+	/**
+	 * <p>Read an array of unsigned integer 64 bit values.</p>
+	 *
+	 * @param	w		an array of sufficient size in which to return the values read
+	 * @param	offset	the offset in the array at which to begin storing values
+	 * @param	len		the number of 64 bit values to read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void readUnsigned64(long[] w,int offset,int len) throws IOException {
+//long starttime=new Date().getTime();
+		//for (int i=offset; i<len; ++i) w[i]=(short)readUnsigned64();	// naive approach is slower :(
+		
+		// allocating and reading all bytes into byte[] runs into long length limit eight times as early (as well as transiently requiring ludicrous amount of memory)
+		// compromise by reading in blocks ... this actually turns out to be yet faster than reading entire byte array
+		
+		byte[] byteBuffer = new byte[BYTE_BUFFER_SIZE];
+		int longsRemaining = len;
+		long bytesRemaining = ((long)len) * 8;
+		while (longsRemaining > 0) {
+			int bytesToRead = byteBuffer.length;
+			if (bytesRemaining < bytesToRead) {
+				bytesToRead = (int)bytesRemaining;
+			}
+			readInsistently(byteBuffer,0,bytesToRead);
+
+			{
+				int bcount=0;
+				if (bigEndian) {
+					while (bcount<bytesToRead) {
+						w[offset++]=(((long)byteBuffer[bcount++]<<56)&0xff00000000000000l) + (((long)byteBuffer[bcount++]<<48)&0xff000000000000l) + (((long)byteBuffer[bcount++]<<40)&0xff0000000000l) + (((long)byteBuffer[bcount++]<<32)&0xff00000000l) + (((long)byteBuffer[bcount++]<<24)&0xff000000l) + (((long)byteBuffer[bcount++]<<16)&0x00ff0000l) + (((long)byteBuffer[bcount++]<<8)&0x0000ff00l) + ((long)byteBuffer[bcount++]&0xffl);	// assumes left to right evaluation
+					}
+				}
+				else {
+					while (bcount<bytesToRead) {
+						w[offset++]=((long)byteBuffer[bcount++]&0xffl) + (((long)byteBuffer[bcount++]<<8)&0x0000ff00l) + (((long)byteBuffer[bcount++]<<16)&0x00ff0000l) + (((long)byteBuffer[bcount++]<<24)&0xff000000l) + (((long)byteBuffer[bcount++]<<32)&0xff00000000l) + (((long)byteBuffer[bcount++]<<40)&0xff0000000000l) + (((long)byteBuffer[bcount++]<<48)&0xff000000000000l) + (((long)byteBuffer[bcount++]<<56)&0xff00000000000000l);	// assumes left to right evaluation
+					}
+				}
+			}
+
+			bytesRemaining-=bytesToRead;
+			longsRemaining-=(bytesToRead/8);
+		}
+//System.err.println("readUnsigned64: exit at: "+(new Date().getTime()-starttime)+" ms");
+	}
+
 	/**
 	 * <p>Read an array of floating point 32 bit values.</p>
 	 *
 	 * @param	f		an array of sufficient size in which to return the values read
 	 * @param	len		the number of 32 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readFloat(float[] f,int len) throws IOException {
 		for (int i=0; i<len; ++i) f[i]=readFloat();
@@ -359,7 +501,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * @param	freal		an array of sufficient size in which to return the real values read, may be null if don't want real values
 	 * @param	fimaginary	an array of sufficient size in which to return the real values read, may be null if don't want imaginary values
 	 * @param	len		the number of 32 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readComplexFloat(float[] freal,float[] fimaginary,int len) throws IOException {
 		for (int i=0; i<len; ++i) {
@@ -375,7 +517,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 *
 	 * @param	f		an array of sufficient size in which to return the values read
 	 * @param	len		the number of 64 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readDouble(double[] f,int len) throws IOException {
 		for (int i=0; i<len; ++i) f[i]=readDouble();
@@ -387,7 +529,7 @@ public class BinaryInputStream extends FilterInputStream {
 	 * @param	freal		an array of sufficient size in which to return the real values read, may be null if don't want real values
 	 * @param	fimaginary	an array of sufficient size in which to return the real values read, may be null if don't want imaginary values
 	 * @param	len		the number of 64 bit values to read
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void readComplexDouble(double[] freal,double[] fimaginary,int len) throws IOException {
 		for (int i=0; i<len; ++i) {
@@ -408,7 +550,7 @@ public class BinaryInputStream extends FilterInputStream {
 	/**
 	 * <p>For testing.</p>
 	 *
-	 * @param	arg
+	 * @param	arg file to read from
 	 */
 	public static void main(String arg[]) {
 

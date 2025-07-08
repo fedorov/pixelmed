@@ -1,6 +1,11 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.VOIFunctionChangeEvent; 
+//import com.pixelmed.dicom.*;
+import com.pixelmed.event.ApplicationEventDispatcher; 
+import com.pixelmed.event.EventContext;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -8,17 +13,16 @@ import java.awt.image.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.VOIFunctionChangeEvent; 
-//import com.pixelmed.dicom.*;
-import com.pixelmed.event.ApplicationEventDispatcher; 
-import com.pixelmed.event.EventContext;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * @author	dclunie
  */
 class SourceImageVOILUTSelectorPanel extends JPanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageVOILUTSelectorPanel.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageVOILUTSelectorPanel.java,v 1.5 2005/09/28 10:50:47 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceImageVOILUTSelectorPanel.class);
 
 	/***/
 	private EventContext eventContext;
@@ -51,7 +55,7 @@ class SourceImageVOILUTSelectorPanel extends JPanel {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new VOIFunctionChangeEvent(eventContext,choice));
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	

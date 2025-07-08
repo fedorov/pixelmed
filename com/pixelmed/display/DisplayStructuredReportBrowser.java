@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -11,7 +11,7 @@ import com.pixelmed.dicom.*;
  */
 public class DisplayStructuredReportBrowser extends StructuredReportBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayStructuredReportBrowser.java,v 1.5 2010/05/31 17:32:02 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayStructuredReportBrowser.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 
 	private int frameWidthWanted;
 	private int frameHeightWanted;
@@ -23,7 +23,7 @@ public class DisplayStructuredReportBrowser extends StructuredReportBrowser {
 	 * @param	mapOfSOPInstanceUIDToReferencedFileName
 	 * @param	frameWidthWanted
 	 * @param	frameHeightWanted
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DisplayStructuredReportBrowser(AttributeList list,Map mapOfSOPInstanceUIDToReferencedFileName,
 			int frameWidthWanted,int frameHeightWanted) throws DicomException {
@@ -39,7 +39,7 @@ public class DisplayStructuredReportBrowser extends StructuredReportBrowser {
 	 * @param	frameWidthWanted
 	 * @param	frameHeightWanted
 	 * @param	title
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DisplayStructuredReportBrowser(AttributeList list,Map mapOfSOPInstanceUIDToReferencedFileName,
 			int frameWidthWanted,int frameHeightWanted,String title) throws DicomException {

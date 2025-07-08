@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -9,7 +9,7 @@ import com.pixelmed.utils.ByteArray;
  */
 class AssociateRejectPDU {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRejectPDU.java,v 1.9 2003/10/09 21:38:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRejectPDU.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte[] b;
 
@@ -23,7 +23,7 @@ class AssociateRejectPDU {
 	 * @param	result
 	 * @param	source
 	 * @param	reason
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRejectPDU(int result,int source,int reason) throws DicomNetworkException {
 	
@@ -49,7 +49,7 @@ class AssociateRejectPDU {
 	
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRejectPDU(byte[] pdu) throws DicomNetworkException {
 		b=pdu;

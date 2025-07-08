@@ -14,16 +14,13 @@ all:	${OBJS}
 
 include ${PATHTOROOT}/Makefile.common.mk
 
-.java.class:
-	javac ${JAVACOPTIONS} -classpath ${PATHTOROOT}:${FTPADDITIONALJARS} -sourcepath ${PATHTOROOT} $<
-
 archive:
 	tar -cvf - Makefile *.java | gzip -best > ${PATHTOROOT}/ftp.`date '+%Y%m%d'`.tar.gz
 
 testftpfilesendesecure:	FTPFileSender.class
 	echo "Hello, world." >/tmp/testftpfilesendesecure.tmp
 	java -cp ${PATHTOROOT}:${FTPADDITIONALJARS} com.pixelmed.ftp.FTPFileSender \
-		ftpstest.forus.com ftp_testing ftp_testing - SECURE RANDOM 1 \
+		ftpstest.forus.com ftp_testing ftp_testing - SECURE RANDOM \
 		/tmp/testftpfilesendesecure.tmp
 	rm /tmp/testftpfilesendesecure.tmp
 

@@ -1,16 +1,21 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 import com.pixelmed.utils.*;
 import com.pixelmed.dicom.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.LinkedList;
+
 import java.io.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements the SCU role of SOP Classes of the Storage Service Class.</p>
@@ -27,19 +32,16 @@ try {
     new StorageSOPClassSCUPerformanceTest("theirhost","104","STORESCP","STORESCU","/tmp/testfile.dcm",0,0);
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
  * @author	dclunie
  */
 public class StorageSOPClassSCUPerformanceTest extends StorageSOPClassSCU {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCUPerformanceTest.java,v 1.28 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCUPerformanceTest.java,v 1.13 2012/09/03 23:47:49 dclunie Exp $";
-
-	/***/
-	private int debugLevel;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(StorageSOPClassSCUPerformanceTest.class);
 	
 	/**
 	 * <p>Repeatedly establish an association to the specified AE, send the instance contained in the file the number of times specified, and release the association.</p>
@@ -55,34 +57,40 @@ public class StorageSOPClassSCUPerformanceTest extends StorageSOPClassSCU {
 	 * @param	assocnCount		the number of times to repeat establishing the association and sending the file
 	 * @param	syntaxCount		the number of transfer syntaxes to propose for each additional presentation context at each association establishment
 	 * @param	contextCount		the number of additional presentation contexts to propose at each association establishment
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
 	 * @param	fileNames		the names of the file containing the data set to send
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	public StorageSOPClassSCUPerformanceTest(String hostname,int port,String calledAETitle,String callingAETitle,
 			int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize,
 			int repeatCount,int assocnCount,int syntaxCount,int contextCount,
-			int debugLevel,String[] fileNames) throws DicomNetworkException, DicomException, IOException {
-		this.debugLevel=debugLevel;
+			String[] fileNames) throws DicomNetworkException, DicomException, IOException {
 
-		//boolean bufferInMemoryFirst = true;
+		boolean bufferInMemoryFirst = true;
 
-		//byte[] entireFile = null;
-		//long lengthOfFile = new File(fileName).length();
-		//if (bufferInMemoryFirst) {
-		//	// Buffer entire file contents in memory to reduce disk load effect on time ...
-		//	//assert(lengthOfFile < largest Java int);
-		//	int length = (int)lengthOfFile;
-		//	entireFile = new byte[length];
-		//	InputStream in = new BufferedInputStream(new FileInputStream(fileName));
-		//	while (length > 0) {
-		//		int count = in.read(entireFile,0,length);
+		byte[] entireFile = null;
+		if (bufferInMemoryFirst && fileNames.length == 1) {
+			long lengthOfFile = new File(fileNames[0]).length();
+			// Buffer entire file contents in memory to reduce disk load effect on time ...
+			int length = (int)lengthOfFile;
+			if (length == lengthOfFile) {
+				entireFile = new byte[length];
+				try {
+					slf4jlogger.debug("Reading entire file into memory first");
+					InputStream in = new BufferedInputStream(new FileInputStream(fileNames[0]));
+					while (length > 0) {
+						int count = in.read(entireFile,0,length);
 //System.err.println("StorageSOPClassSCUPerformanceTest: read "+count);
-		//		length-=count;
-		//	}
-		//}
+						length-=count;
+					}
+				}
+				catch (Throwable e) {
+					slf4jlogger.info("Could not read entire file into memory first ",e);
+					entireFile = null;
+				}
+			}
+		}
 
 		int                  numberOfFiles = fileNames.length;
 		String[]    affectedSOPClassOfFile = new String[numberOfFiles];
@@ -95,24 +103,24 @@ public class StorageSOPClassSCUPerformanceTest extends StorageSOPClassSCU {
 
 		for (int i=0; i<numberOfFiles; ++i) {
 			String fileName = fileNames[i];
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": StorageSOPClassSCUPerformanceTest: storing "+fileName);
+			slf4jlogger.trace("storing {}",fileName);
 			long lengthOfFile = new File(fileName).length();
 			lengthsOfFiles[i] = lengthOfFile;
 			totalLengthsOfAllFiles += lengthOfFile;
 			DicomInputStream din = null;
-			//if (bufferInMemoryFirst) {
-			//	din = new DicomInputStream(new BufferedInputStream(new ByteArrayInputStream(entireFile)));
-			//}
-			//else {
+			if (entireFile != null) {
+				din = new DicomInputStream(new BufferedInputStream(new ByteArrayInputStream(entireFile)));
+			}
+			else {
 				din = new DicomInputStream(new BufferedInputStream(new FileInputStream(fileName)));
-			//}
+			}
 			String affectedSOPClass = null;
 			String affectedSOPInstance = null;
 			String inputTransferSyntax = null;
 			if (din.haveMetaHeader()) {
 				AttributeList metaList = new AttributeList();
 				metaList.readOnlyMetaInformationHeader(din);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Meta header information = "+metaList);
+				slf4jlogger.trace("Meta header information = {}",metaList);
 				affectedSOPClass=Attribute.getSingleStringValueOrNull(metaList,TagFromName.MediaStorageSOPClassUID);
 				affectedSOPInstance=Attribute.getSingleStringValueOrNull(metaList,TagFromName.MediaStorageSOPInstanceUID);
 				inputTransferSyntax=Attribute.getSingleStringValueOrNull(metaList,TagFromName.TransferSyntaxUID);
@@ -121,7 +129,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Meta h
 				inputTransferSyntax=din.getTransferSyntaxToReadDataSet().getUID();
 			}
 			din.close();
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using inputTransferSyntax "+inputTransferSyntax);
+			slf4jlogger.trace("Using inputTransferSyntax {}",inputTransferSyntax);
 
 			if (affectedSOPClass == null) {
 				throw new DicomNetworkException("Can't C-STORE SOP Instance - can't determine Affected SOP Class UID of "+fileName);
@@ -142,7 +150,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 				mapOfSOPClassesToSetOfInputTransferSyntaxes.put(affectedSOPClass,setOfInputTransferSyntaxesForThisSOPClass);
 			}
 			if (!setOfInputTransferSyntaxesForThisSOPClass.contains(inputTransferSyntax)) {
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": adding pair of SOP Class "+affectedSOPClass+" and Transfer Syntax "+inputTransferSyntax);
+				slf4jlogger.trace("adding pair of SOP Class {} and Transfer Syntax {}",affectedSOPClass,inputTransferSyntax);
 				setOfInputTransferSyntaxesForThisSOPClass.add(inputTransferSyntax);
 			}
 		}
@@ -186,11 +194,11 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": adding
 		}
 		boolean success = true;
 		int assocn=assocnCount;
-long startTime=System.currentTimeMillis();
+		long startTime=System.currentTimeMillis();
  		while (success && assocn-- > 0) {
 			Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,
-				ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,presentationContexts,null,false,null,null,debugLevel);
-if (debugLevel > 1) System.err.println(association);
+				ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,presentationContexts,null,false,null,null);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(association.toString());
 			try {
 				for (int i=0; i<numberOfFiles; ++i) {
 					String fileName = fileNames[i];
@@ -200,18 +208,18 @@ if (debugLevel > 1) System.err.println(association);
 
 					// Decide which presentation context we are going to use ...
 					byte presentationContextID = association.getSuitablePresentationContextID(affectedSOPClass);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using context ID "+presentationContextID);
+					slf4jlogger.trace("Using context ID {}",presentationContextID);
 					String outputTransferSyntax = association.getTransferSyntaxForPresentationContextID(presentationContextID);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using outputTransferSyntax "+outputTransferSyntax);
+					slf4jlogger.trace("Using outputTransferSyntax {}",outputTransferSyntax);
 					int repeat=repeatCount;
 					while (success && repeat-- > 0) {
 						DicomInputStream din = null;
-						//if (bufferInMemoryFirst) {
-						//	din = new DicomInputStream(new BufferedInputStream(new ByteArrayInputStream(entireFile)));
-						//}
-						//else {
+						if (entireFile != null) {
+							din = new DicomInputStream(new BufferedInputStream(new ByteArrayInputStream(entireFile)));
+						}
+						else {
 							din = new DicomInputStream(new BufferedInputStream(new FileInputStream(fileName)));
-						//}
+						}
 						if (din.haveMetaHeader()) {
 							new AttributeList().readOnlyMetaInformationHeader(din);	// skip the meta-header
 						}
@@ -229,15 +237,19 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 				// the other end released and didn't wait for us to do it
 			}
 		}
+		slf4jlogger.info("Number of files per set {} files",numberOfFiles);
+		slf4jlogger.info("Repeated transfer on same association {} times",repeatCount);
+		slf4jlogger.info("Repeated on {} associations",assocnCount);
 		double totalTime = (System.currentTimeMillis()-startTime)/1000.0;
-		System.err.println("Total time "+totalTime+" seconds");
+		slf4jlogger.info("Total time {} seconds",totalTime);
 		double timePerSetOfInstances = totalTime/(repeatCount*assocnCount);
-		System.err.println("Time per set of instances "+timePerSetOfInstances+" seconds");
+		slf4jlogger.info("Time per set of instances {} seconds",timePerSetOfInstances);
 		double lengthOfFilesInMB = ((double)totalLengthsOfAllFiles)/(1024*1024);
-		System.err.println("Length of files "+lengthOfFilesInMB+" MB");
+		slf4jlogger.info("Total size of data sent {} MB",lengthOfFilesInMB);
 		double transferRate = lengthOfFilesInMB/timePerSetOfInstances;
-		System.err.println("Transfer rate "+transferRate+" MB/s");
-		System.err.println("Send "+(success ? "succeeded" : "failed"));
+		slf4jlogger.info("Transfer rate {} MB/s",transferRate);
+		slf4jlogger.info("File transfer rate {} files/s",(numberOfFiles*repeatCount*assocnCount)/totalTime);
+		slf4jlogger.info("Send {}",(success ? "succeeded" : "failed"));
 	}
 
 	/**
@@ -246,7 +258,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 	 * <p>The total number of times the file is transmitted consists of the number of repetitions
 	 * per association times the number of association repetitions.</p>
 	 *
-	 * @param	arg	array of 13 values - their hostname, their port, their AE Title, our AE Title,
+	 * @param	arg	array of 12 values - their hostname, their port, their AE Title, our AE Title,
 	 * 			the maximum PDU length that we will offer to receive,
 	 * 			the TCP socket receive buffer size to set (if possible), 0 means leave at the default,
 	 * 			the TCP socket send buffer size to set (if possible), 0 means leave at the default,
@@ -254,8 +266,7 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 	 *			the number of times to repeat establishment of the association and sending the file,
 	 * 			the number of transfer syntaxes to propose for each additional presentation context at each association establishment,
 	 * 			the number of additional presentation contexts to propose at each association establishment,
-	 *			the debugging level,
-	 *			and the filenames containing the instances to send
+	 *			and the directory to be recursively searched or a list of file names to send.
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -270,9 +281,8 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 			int              assocnCount=0;
 			int              syntaxCount=0;
 			int             contextCount=0;
-			int               debugLevel=0;
 	
-			if (arg.length >= 13) {
+			if (arg.length >= 12) {
 				               theirHost=arg[0];
 				               theirPort=Integer.parseInt(arg[1]);
 				            theirAETitle=arg[2];
@@ -284,21 +294,33 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using 
 			                     assocnCount=Integer.parseInt(arg[8]);
 			                     syntaxCount=Integer.parseInt(arg[9]);
 			                    contextCount=Integer.parseInt(arg[10]);
-				              debugLevel=Integer.parseInt(arg[11]);
 				
-				int numberOfFiles = arg.length - 12;
-				String[] fileNames = new String[numberOfFiles];
-				System.arraycopy(arg,12,fileNames,0,numberOfFiles);
+				int numberOfFiles = arg.length - 11;
+				String[] fileNames = null;
+				File firstFile = new File(arg[11]);
+				if (numberOfFiles == 1 && firstFile.isDirectory()) {
+					ArrayList<File> files = FileUtilities.listFilesRecursively(firstFile);
+					numberOfFiles = files.size();
+					fileNames = new String[numberOfFiles];
+					int i=0;
+					for (File file: files) {
+						fileNames[i++] = file.getCanonicalPath();
+					}
+				}
+				else {
+					fileNames = new String[numberOfFiles];
+					System.arraycopy(arg,11,fileNames,0,numberOfFiles);
+				}
 				new StorageSOPClassSCUPerformanceTest(theirHost,theirPort,theirAETitle,ourAETitle,
 					ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,
-					repeatCount,assocnCount,syntaxCount,contextCount,debugLevel,fileNames);
+					repeatCount,assocnCount,syntaxCount,contextCount,fileNames);
 			}
 			else {
-				throw new Exception("Argument list must be at least 13 values");
+				throw new Exception("Argument list must be at least 12 values");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

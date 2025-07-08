@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -9,7 +9,7 @@ import com.pixelmed.dicom.DicomException;
 
 public class RoleInProcedure {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/RoleInProcedure.java,v 1.3 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/RoleInProcedure.java,v 1.13 2025/01/29 10:58:08 dclunie Exp $";
 
 	private String description;
 	

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -10,13 +10,16 @@ import java.util.List;
 import java.util.ListIterator;
 import java.io.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 class AssociateRequestAcceptPDU {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRequestAcceptPDU.java,v 1.35 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociateRequestAcceptPDU.java,v 1.23 2013/07/13 14:57:11 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(AssociateRequestAcceptPDU.class);
 
 	/***/
 	private byte[] b;
@@ -42,8 +45,8 @@ class AssociateRequestAcceptPDU {
 	 * @param	aet
 	 * @param	bo
 	 * @param	name
-	 * @exception	DicomNetworkException
-	 * @exception	UnsupportedEncodingException
+	 * @throws	DicomNetworkException
+	 * @throws	UnsupportedEncodingException
 	 */
 	private static void writeAETToPDU(String aet,ByteArrayOutputStream bo,String name) throws DicomNetworkException, UnsupportedEncodingException {
 		byte[] baet = aet.getBytes("ASCII");
@@ -56,8 +59,8 @@ class AssociateRequestAcceptPDU {
 	/**
 	 * @param	subItemType
 	 * @param	name
-	 * @exception	DicomNetworkException
-	 * @exception	UnsupportedEncodingException
+	 * @throws	DicomNetworkException
+	 * @throws	UnsupportedEncodingException
 	 */
 	private static final byte[] makeByteArrayOfSyntaxSubItem(int subItemType,String name) throws DicomNetworkException, UnsupportedEncodingException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream(1024);
@@ -73,8 +76,8 @@ class AssociateRequestAcceptPDU {
 	/**
 	 * @param	itemType
 	 * @param	pc
-	 * @exception	DicomNetworkException
-	 * @exception	UnsupportedEncodingException
+	 * @throws	DicomNetworkException
+	 * @throws	UnsupportedEncodingException
 	 */
 	private static final byte[] makeByteArrayOfPresentationContextItem(int itemType,PresentationContext pc) throws DicomNetworkException, UnsupportedEncodingException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream(1024);
@@ -111,8 +114,8 @@ class AssociateRequestAcceptPDU {
 
 	/**
 	 * @param	selection
-	 * @exception	DicomNetworkException
-	 * @exception	UnsupportedEncodingException
+	 * @throws	DicomNetworkException
+	 * @throws	UnsupportedEncodingException
 	 */
 	private static final byte[] makeByteArrayOfSCUSCPRoleSelection(SCUSCPRoleSelection selection) throws DicomNetworkException, UnsupportedEncodingException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream(1024);
@@ -132,8 +135,8 @@ class AssociateRequestAcceptPDU {
 	/**
 	 * @param	selections		a LinkedList of SCUSCPRoleSelection's to add
 	 * @param	subItemList		a LinkedList to which to add the created SCUSCPRoleSelectionUserInformationSubItem's
-	 * @exception	DicomNetworkException
-	 * @exception	UnsupportedEncodingException
+	 * @throws	DicomNetworkException
+	 * @throws	UnsupportedEncodingException
 	 */
 	private final byte[] makeByteArrayOfSCUSCPRoleSelections(LinkedList selections,LinkedList subItemList) throws DicomNetworkException, UnsupportedEncodingException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream(1024);
@@ -159,7 +162,7 @@ class AssociateRequestAcceptPDU {
 	 * @param	implementationVersionName
 	 * @param	ourMaximumLengthReceived	the maximum PDU length that we will offer to receive
 	 * @param	presentationContexts
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -181,7 +184,7 @@ class AssociateRequestAcceptPDU {
 	 * @param	userIdentityType			0 == do not send user identity negotiation subitem
 	 * @param	userIdentityPrimaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentitySecondaryField	may be null as appropriate to userIdentityType
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -196,8 +199,8 @@ class AssociateRequestAcceptPDU {
 			try {
 				if (userIdentityPrimaryField != null) {
 					userIdentityPrimaryFieldBytes = userIdentityPrimaryField.getBytes("UTF8");
-System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryField = "+userIdentityPrimaryField);
-System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes = "+HexDump.dump(userIdentityPrimaryFieldBytes));
+					slf4jlogger.info("userIdentityPrimaryField = {}",userIdentityPrimaryField);
+					if (slf4jlogger.isInfoEnabled()) slf4jlogger.info("userIdentityPrimaryFieldBytes = "+HexDump.dump(userIdentityPrimaryFieldBytes));
 				}
 				if (userIdentitySecondaryField != null) {
 					userIdentitySecondaryFieldBytes = userIdentitySecondaryField.getBytes("UTF8");
@@ -223,7 +226,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 	 * @param	userIdentityType			0 == do not send user identity negotiation subitem
 	 * @param	userIdentityPrimaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentitySecondaryField	may be null as appropriate to userIdentityType
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -244,7 +247,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 	 * @param	ourMaximumLengthReceived	the maximum PDU length that we will offer to receive
 	 * @param	presentationContexts
 	 * @param	scuSCPRoleSelections
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -265,7 +268,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 	 * @param	presentationContexts
 	 * @param	scuSCPRoleSelections
 	 * @param	userIdentityServerResponse	null if no response
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -290,7 +293,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 	 * @param	userIdentityPrimaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentitySecondaryField	may be null as appropriate to userIdentityType
 	 * @param	userIdentityServerResponse	null if no response
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	void doCommonConstructorStuff(int pduType,String calledAETitle,String callingAETitle,
 			String implementationClassUID,String implementationVersionName,
@@ -870,7 +873,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociateRequestAcceptPDU(byte[] pdu) throws DicomNetworkException {
 	try {
@@ -1007,7 +1010,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 		throw new DicomNetworkException("Unsupported encoding generated exception "+e);
 	}
 	//catch (Exception e) {
-	//	e.printStackTrace(System.err);
+	//	slf4jlogger.error("", e);;
 	//	throw new DicomNetworkException(e.toString());
 	//}
 	}
@@ -1017,7 +1020,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 
 	/**
 	 * @param	req
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public LinkedList getAcceptedPresentationContextsWithAbstractSyntaxIncludedFromRequest(LinkedList req) throws DicomNetworkException {
 		LinkedList presentationContexts = new LinkedList();
@@ -1047,7 +1050,7 @@ System.err.println("AssociateRequestAcceptPDU(): userIdentityPrimaryFieldBytes =
 						presentationContexts.add(new PresentationContext(accid,abstractSyntaxUID,acceptedTransferSyntaxUID));
 					}
 					else {
-System.err.println("AssociateRequestAcceptPDU.getAcceptedPresentationContextsWithAbstractSyntaxIncludedFromRequest(): encountered Presentation Context ID "+Integer.toHexString(accid)+" for Abstract Syntax "+abstractSyntaxUID+" with Transfer Syntax "+acceptedTransferSyntaxUID+" that was not amongst those requested - treating it as rejected");
+						slf4jlogger.warn("getAcceptedPresentationContextsWithAbstractSyntaxIncludedFromRequest(): encountered Presentation Context ID {} for Abstract Syntax {} with Transfer Syntax {} that was not amongst those requested - treating it as rejected",Integer.toHexString(accid),abstractSyntaxUID,acceptedTransferSyntaxUID);
 					}
 				}
 			}
@@ -1056,7 +1059,7 @@ System.err.println("AssociateRequestAcceptPDU.getAcceptedPresentationContextsWit
 	}
 	
 	/**
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public LinkedList getRequestedPresentationContexts() throws DicomNetworkException {
 		LinkedList presentationContexts = new LinkedList();
@@ -1071,7 +1074,7 @@ System.err.println("AssociateRequestAcceptPDU.getAcceptedPresentationContextsWit
 	}
 	
 	/**
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public LinkedList getSCUSCPRoleSelections() throws DicomNetworkException {
 		LinkedList selections = new LinkedList();

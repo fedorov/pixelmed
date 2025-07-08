@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -8,6 +8,9 @@ import com.pixelmed.dicom.DicomException;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.io.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This abstract class provides a mechanism to process each PDU as it is received
@@ -22,10 +25,10 @@ import java.io.*;
  * @author	dclunie
  */
 abstract public class ReceivedDataHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedDataHandler.java,v 1.15 2005/09/08 12:24:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedDataHandler.java,v 1.27 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	protected int debugLevel;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ReceivedDataHandler.class);
+
 	/***/
 	protected boolean done;
 	/***/
@@ -34,10 +37,18 @@ abstract public class ReceivedDataHandler {
 	/**
 	 * Construct a handler to process each PDU as it is received.
 	 *
-	 * @param	debugLevel	0 for no debugging, > 0 for increasingly verbose debugging
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #ReceivedDataHandler()} instead.
+	 * @param	debugLevel	ignored
 	 */
 	ReceivedDataHandler(int debugLevel) {
-		this.debugLevel=debugLevel;
+		this();
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	/**
+	 * Construct a handler to process each PDU as it is received.
+	 */
+	ReceivedDataHandler() {
 		done=false;
 		release=false;
 	}
@@ -55,6 +66,22 @@ abstract public class ReceivedDataHandler {
 			System.err.println(pdv);
 		}
 	}
+	
+	/**
+	 * Log a list of the Presentation Data Values supplied at the debug level
+	 *
+	 * @param	pdvList		a java.util.LinkedList of {@link PresentationDataValue PresentationDataValue}
+	 */
+	protected String dumpPDVListToString(LinkedList pdvList) {
+		StringBuffer buf = new StringBuffer();
+		ListIterator i = pdvList.listIterator();
+		while (i.hasNext()) {
+			PresentationDataValue pdv = (PresentationDataValue)i.next();
+			buf.append("Received PDV:\n");
+			buf.append(pdv);
+		}
+		return buf.toString();
+	}
 
 	/**
 	 * The code handling the reception of data on an {@link Association Association} calls
@@ -62,9 +89,9 @@ abstract public class ReceivedDataHandler {
 	 *
 	 * @param	pdata		the PDU that was received
 	 * @param	association	the association on which the PDU was received
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	abstract public void sendPDataIndication(PDataPDU pdata,Association association) throws DicomNetworkException, DicomException, IOException;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
@@ -55,7 +55,7 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  */
 public class QueryTreeBrowser {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeBrowser.java,v 1.14 2010/11/27 20:53:40 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeBrowser.java,v 1.25 2025/01/29 10:58:09 dclunie Exp $";
 
 	private JTree tree;
 	private QueryTreeModel treeModel;
@@ -68,7 +68,7 @@ public class QueryTreeBrowser {
 	 * @param	m				the query tree model (i.e. the results returned from an actual query)
 	 * @param	treeBrowserScrollPane		the scrolling pane in which the tree view of the query results will be rendered
 	 * @param	attributeBrowserScrollPane	the scrolling pane in which the tabular view of the currently selected level will be rendered
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public QueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,JScrollPane treeBrowserScrollPane,JScrollPane attributeBrowserScrollPane) throws DicomException {
 		queryInformationModel=q;
@@ -85,7 +85,7 @@ public class QueryTreeBrowser {
 	 * @param	q				the query information model
 	 * @param	m				the query tree model (i.e. the results returned from an actual query)
 	 * @param	content			content pane will to add scrolling panes containing tree and tabular selection views
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public QueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,Container content) throws DicomException {
 		queryInformationModel=q;
@@ -118,7 +118,7 @@ public class QueryTreeBrowser {
 	 * @param	q				the query information model
 	 * @param	m				the query tree model (i.e. the results returned from an actual query)
 	 * @param	frame				a frame to whose content pane will be added scrolling panes containing tree and tabular selection views
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public QueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,JFrame frame) throws DicomException {
 		this(q,m,frame.getContentPane());

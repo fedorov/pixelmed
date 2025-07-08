@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -15,7 +15,9 @@ import java.text.NumberFormat;
 abstract public class StringAttribute extends Attribute {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttribute.java,v 1.25 2013/09/09 15:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttribute.java,v 1.40 2025/01/29 10:58:07 dclunie Exp $";
+
+	public abstract int getMaximumLengthOfSingleValue();
 
 	/***/
 	protected SpecificCharacterSet specificCharacterSet;	// always null except for derived classes
@@ -54,7 +56,7 @@ abstract public class StringAttribute extends Attribute {
 	byte[] cachedPaddedByteValues;
 
 	/***/
-	private void flushCachedCopies() {
+	protected void flushCachedCopies() {
 		cachedUnpaddedStringCopy=null;
 		cachedShortCopy=null;
 		cachedIntegerCopy=null;
@@ -83,7 +85,7 @@ abstract public class StringAttribute extends Attribute {
 	 *
 	 * @param	string				the string to be encoded
 	 * @return					the byte array encoded according to the specified or default specific character set
-	 * @exception	UnsupportedEncodingException	if the encoding is not supported
+	 * @throws	UnsupportedEncodingException	if the encoding is not supported
 	 */
 	protected byte[] translateStringToByteArray(String string) throws UnsupportedEncodingException {	// NOT static
 //System.err.println("StringAttribute.translateStringToByteArray() - string is <"+string+">");
@@ -121,8 +123,8 @@ abstract public class StringAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	protected StringAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -136,8 +138,8 @@ abstract public class StringAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	protected StringAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -151,8 +153,8 @@ abstract public class StringAttribute extends Attribute {
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	protected StringAttribute(AttributeTag t,long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t);
@@ -166,8 +168,8 @@ abstract public class StringAttribute extends Attribute {
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	protected StringAttribute(AttributeTag t,Long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		super(t);
@@ -192,8 +194,8 @@ abstract public class StringAttribute extends Attribute {
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
 	 * @param	specificCharacterSet	the character set to be used for the text
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i,SpecificCharacterSet specificCharacterSet) throws IOException, DicomException {
 		doCommonConstructorStuff(specificCharacterSet);
@@ -248,7 +250,7 @@ abstract public class StringAttribute extends Attribute {
 	protected byte getPadByte() { return 0x20; }	// space for most everything, UI will override to 0x00
 
 	/**
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	private byte[] getPaddedByteValues() throws DicomException {
 		if (cachedPaddedByteValues == null) {
@@ -258,7 +260,7 @@ abstract public class StringAttribute extends Attribute {
 	}
 	
 	/**
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	private byte[] extractPaddedByteValues() throws DicomException {
 		StringBuffer sb = new StringBuffer();
@@ -295,8 +297,8 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	o					the output stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM encoding error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM encoding error occurs
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
@@ -332,7 +334,7 @@ abstract public class StringAttribute extends Attribute {
 	 * <p>Returns the originally read byte values, if read from a stream, otherwise converts the string to bytes and pads them.</p>
 	 *
 	 * @return			the values as an array of bytes
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	public byte[]   getByteValues() throws DicomException {
 		return originalByteValues == null ? getPaddedByteValues() : originalByteValues;
@@ -345,7 +347,7 @@ abstract public class StringAttribute extends Attribute {
 	 *
 	 * @param	format		the format to use for each numerical or decimal value
 	 * @return			the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public String[] getStringValues(NumberFormat format) throws DicomException {
 		// ignore number format for generic string attributes
@@ -357,7 +359,7 @@ abstract public class StringAttribute extends Attribute {
 	 * <p>Get the values of this attribute as strings, the way they were originally inserted or read.</p>
 	 *
 	 * @return						the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public String[] getOriginalStringValues() throws DicomException {
 		return originalValues;
@@ -365,7 +367,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @return						the values as an array of short
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public short[] getShortValues() throws DicomException {
 		if (cachedShortCopy == null) cachedShortCopy=ArrayCopyUtilities.copyStringToShortArray(getStringValues());	// must be unpadded
@@ -374,7 +376,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @return						the values as an array of int
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public int[] getIntegerValues() throws DicomException {
 		if (cachedIntegerCopy == null) cachedIntegerCopy=ArrayCopyUtilities.copyStringToIntArray(getStringValues());	// must be unpadded
@@ -383,7 +385,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @return						the values as an array of long
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public long[] getLongValues() throws DicomException {
 		if (cachedLongCopy == null) cachedLongCopy=ArrayCopyUtilities.copyStringToLongArray(getStringValues());		// must be unpadded
@@ -392,7 +394,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @return						the values as an array of float
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public float[] getFloatValues() throws DicomException {
 		if (cachedFloatCopy == null) cachedFloatCopy=ArrayCopyUtilities.copyStringToFloatArray(getStringValues());	// must be unpadded
@@ -401,7 +403,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @return						the values as an array of double
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public double[] getDoubleValues() throws DicomException {
 		if (cachedDoubleCopy == null) cachedDoubleCopy=ArrayCopyUtilities.copyStringToDoubleArray(getStringValues());	// must be unpadded
@@ -410,7 +412,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	if unsupported encoding
+	 * @throws	DicomException	if unsupported encoding
 	 */
 	public void addValue(String v) throws DicomException {
 		flushCachedCopies();
@@ -428,7 +430,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(byte v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., IS, 12 bytes only)
@@ -437,7 +439,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(short v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., IS, 12 bytes only)
@@ -446,7 +448,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(int v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., IS, 12 bytes only)
@@ -455,7 +457,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(long v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., IS, 12 bytes only)
@@ -464,7 +466,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(float v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., DS, 16 bytes only)
@@ -473,7 +475,7 @@ abstract public class StringAttribute extends Attribute {
 
 	/**
 	 * @param	v					value to add
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void addValue(double v) throws DicomException {
 		// will be overridden by more constrained methods that take into account length and format limitations (e.g., DS, 16 bytes only)
@@ -481,13 +483,117 @@ abstract public class StringAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public void removeValues() throws DicomException {
 		valueLength=0;
 		valueMultiplicity=0;
 		originalValues=null;
 		flushCachedCopies();
+	}
+
+	public boolean areLengthsOfValuesValid() throws DicomException {
+//System.err.println("StringAttribute.areLengthsOfValuesValid():");
+		boolean good = true;
+		if (originalValues != null && originalValues.length > 0) {
+			for (String v : originalValues) {
+				if (v != null && v.length() > getMaximumLengthOfSingleValue()) {
+//System.err.println("StringAttribute.areLengthsOfValuesValid(): invalid length of value got "+(v == null ? "null" : v.length())+" want "+getMaximumLengthOfSingleValue());
+					good = false;
+				}
+			}
+		}
+		return good;
+	}
+
+	public boolean isCharacterInValueValid(int c) throws DicomException {
+//System.err.println("StringAttribute.isCharacterInValueValid(): c = "+(char)c+" ("+c+" dec)");
+		return !Character.isISOControl(c) && c != '\\';	// ESC is theoretically permitted, but we clean up ISO 2022 in ingestion, so should not occur internally
+	}
+
+	public boolean areCharactersInValuesValid() throws DicomException {
+//System.err.println("StringAttribute.areCharactersInValuesValid():");
+		boolean good = true;
+		if (originalValues != null && originalValues.length > 0) {
+			for (String v : originalValues) {
+				if (v != null) {
+					for (int i=0; i<v.length(); ++i) {
+						int c = v.codePointAt(i);
+						if (!isCharacterInValueValid(c)) {
+//System.err.println("StringAttribute.isCharacterInValueValid(): invalid character c = "+c);
+							good = false;
+							break;
+						}
+					}
+					if (!good) break;
+				}
+			}
+		}
+		return good;
+	}
+	
+	public boolean areValuesWellFormed() throws DicomException {
+//System.err.println("StringAttribute.areValuesWellFormed():");
+		return true;
+	}
+
+	public boolean isValid() throws DicomException {
+//System.err.println("StringAttribute.isValid():");
+		return areLengthsOfValuesValid()
+		    && areCharactersInValuesValid()
+			&& areValuesWellFormed();
+	}
+	
+	protected boolean allowRepairOfIncorrectLength() {				// if overridden in sub-class to be false, will not repair by truncating (though may stll trim())
+//System.err.println("StringAttribute.allowRepairOfIncorrectLength():");
+		return true;
+	}
+	
+	protected boolean allowRepairOfInvalidCharacterReplacement() {	// if overridden in sub-class to be false, will not repair (replace or remove) bad characters
+//System.err.println("StringAttribute.allowRepairOfInvalidCharacterReplacement():");
+		return true;
+	}
+	
+	protected char getInvalidCharacterReplacement() {					// if overridden in sub-class to be 0, will remove rather than replace character
+//System.err.println("StringAttribute.getInvalidCharacterReplacement():");
+		return ' ';
+	}
+	 
+	public boolean repairValues() throws DicomException {
+//System.err.println("StringAttribute.repairValues():");
+		if (!isValid()) {
+//System.err.println("StringAttribute.repairValues(): not valid so attempting repair");
+			flushCachedCopies();
+			originalByteValues=null;
+			if (originalValues != null && originalValues.length > 0) {
+				originalValues=ArrayCopyUtilities.copyStringArrayRemovingLeadingAndTrailingPadding(originalValues);
+				for (int i=0; i<originalValues.length; ++i) {
+					String v = originalValues[i];
+					if (v != null && v.length() > 0) {
+						StringBuffer buf = new StringBuffer(v.length());
+						for (int j=0; j<v.length(); ++j) {
+							int cp = v.codePointAt(j);
+							if (allowRepairOfInvalidCharacterReplacement() && !isCharacterInValueValid(cp)) {
+								char rc = getInvalidCharacterReplacement();
+//System.err.println("StringAttribute.repairValues(): repairing invalid character by "+(rc == 0 ? "removing it" : ("replacing it with '"+rc+"'")));
+								if (rc != 0) {
+									buf.append(rc);
+								}
+							}
+							else {
+								buf.appendCodePoint(cp);
+							}
+						}
+						v = buf.toString();
+						if (allowRepairOfIncorrectLength() && v.length() > getMaximumLengthOfSingleValue()) {
+							v = v.substring(0,getMaximumLengthOfSingleValue()).trim();	// trim it because truncation may expose embedded spaces that are now trailing
+						}
+						originalValues[i] = v;
+					}
+				}
+			}
+		}
+		return isValid();
 	}
 }
 

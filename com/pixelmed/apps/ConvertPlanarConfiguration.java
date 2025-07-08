@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -10,14 +10,18 @@ import java.awt.*;
 import java.awt.color.*; 
 import java.awt.image.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class of static methods to convert the planar configuration of a multiple samples per pixel image, i.e., to change color-by-plane to color-by-pixel or vice versa.</p>
  *
  * @author	dclunie
  */
 public class ConvertPlanarConfiguration {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertPlanarConfiguration.java,v 1.4 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertPlanarConfiguration.java,v 1.16 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ConvertPlanarConfiguration.class);
 
 	/**
 	 * <p>Read a DICOM color image input format file and change the planar configuration of the encoded pixel data.</p>
@@ -62,7 +66,7 @@ public class ConvertPlanarConfiguration {
 		// fetching of bytes from PixelData is copied from SourceImage class ...
 		byte srcSamples[] = null;
 		{
-			Attribute a = list.get(TagFromName.PixelData);
+			Attribute a = list.getPixelData();
 			if (ValueRepresentation.isOtherByteVR(a.getVR())) {
 				srcSamples = a.getByteValues();
 			}
@@ -139,7 +143,7 @@ public class ConvertPlanarConfiguration {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

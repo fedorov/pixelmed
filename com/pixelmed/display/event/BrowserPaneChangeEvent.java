@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -10,7 +10,7 @@ import com.pixelmed.event.EventContext;
  */
 public class BrowserPaneChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/BrowserPaneChangeEvent.java,v 1.8 2010/03/14 13:58:38 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/BrowserPaneChangeEvent.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
 
 	/***/
 	public static final int IMAGE = 1;
@@ -22,6 +22,8 @@ public class BrowserPaneChangeEvent extends Event {
 	public static final int SPECTROSCOPY = 4;
 	/***/
 	public static final int SR = 5;
+	/***/
+	public static final int TILEDIMAGE = 6;
 	
 	private int browserPaneType;
 

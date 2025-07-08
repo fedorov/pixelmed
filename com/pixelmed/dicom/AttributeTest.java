@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -12,7 +12,7 @@ import java.text.NumberFormat;
  */
 class AttributeTest {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTest.java,v 1.2 2009/12/16 21:56:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTest.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
 
 	boolean testArrayOfShortComparison(String testName,String methodName,short[] valuesSupplied,short[] valuesActual,int vmSupplied,PrintStream log) {
 		boolean success = true;
@@ -959,11 +959,11 @@ class AttributeTest {
 		{
 			String[] values = { "1.5","2.5" };
 			String delimitedValues = "1.5\\2.5";
-			boolean testWasSuccessful = testAttributeWithValues("FloatSingle",new FloatSingleAttribute(TagFromName.BeamAngle),values,delimitedValues,log,true/*isNumericAttribute*/,false/*isStringAttribute*/);
+			boolean testWasSuccessful = testAttributeWithValues("FloatSingle",new FloatSingleAttribute(DicomDictionary.StandardDictionary.getTagFromName("BeamAngle")),values,delimitedValues,log,true/*isNumericAttribute*/,false/*isStringAttribute*/);
 			overallSucess = overallSucess && testWasSuccessful;
 		}
 		{
-			boolean testWasSuccessful = testAttributeWithoutValues("FloatSingle",new FloatSingleAttribute(TagFromName.BeamAngle),log,true/*isNumericAttribute*/,false/*isStringAttribute*/);
+			boolean testWasSuccessful = testAttributeWithoutValues("FloatSingle",new FloatSingleAttribute(DicomDictionary.StandardDictionary.getTagFromName("BeamAngle")),log,true/*isNumericAttribute*/,false/*isStringAttribute*/);
 			overallSucess = overallSucess && testWasSuccessful;
 		}
 

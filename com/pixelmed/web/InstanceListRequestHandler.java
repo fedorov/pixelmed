@@ -1,6 +1,9 @@
-/* Copyright (c) 2004-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,20 +11,22 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.InstanceListRequestHandler InstanceListRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link InstanceListRequestHandler InstanceListRequestHandler} creates a response to an HTTP request for
  * a list of instances for a specified series.</p>
  *
  * @author	dclunie
  */
 class InstanceListRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/InstanceListRequestHandler.java,v 1.8 2013/10/16 15:55:40 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/InstanceListRequestHandler.java,v 1.19 2025/01/29 10:58:09 dclunie Exp $";
 
-	protected InstanceListRequestHandler(String stylesheetPath,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(InstanceListRequestHandler.class);
+
+	protected InstanceListRequestHandler(String stylesheetPath) {
+		super(stylesheetPath);
 	}
 	
 	protected String getWADOParametersIdentifyingInstance(String studyInstanceUID,String seriesInstanceUID,String sopInstanceUID) {
@@ -119,8 +124,8 @@ class InstanceListRequestHandler extends RequestHandler {
 			sendHeaderAndBodyText(out,responseBody,"instance.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("InstanceListRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

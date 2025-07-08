@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -15,7 +15,7 @@ import java.io.ByteArrayOutputStream;
  */
 public class PDataPDU {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/PDataPDU.java,v 1.13 2005/06/01 23:21:52 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/PDataPDU.java,v 1.25 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte[] b;
 
@@ -26,7 +26,7 @@ public class PDataPDU {
 
 	/**
 	 * @param	pdvList
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public PDataPDU(LinkedList pdvList) throws DicomNetworkException {
 
@@ -70,7 +70,7 @@ public class PDataPDU {
 
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public PDataPDU(byte[] pdu) throws DicomNetworkException {
 		b=pdu;
@@ -129,6 +129,7 @@ public class PDataPDU {
 
 	/***/
 	public String toString() {
+//Thread.currentThread().dumpStack();
 		return HexDump.dump(b);
 	}
 }

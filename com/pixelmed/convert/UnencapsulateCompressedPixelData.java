@@ -1,8 +1,11 @@
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+
 package com.pixelmed.convert;
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
 import com.pixelmed.dicom.OtherByteAttributeMultipleCompressedFrames;
+import com.pixelmed.dicom.OtherByteAttributeCompressedSeparateFramesOnDisk;
 import com.pixelmed.dicom.TagFromName;
 import com.pixelmed.dicom.TransferSyntax;
 
@@ -10,7 +13,18 @@ import java.io.FileOutputStream;
 
 import java.text.DecimalFormat;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
+/**
+ * <p>A class to read a DICOM image input format file encoded in a compressed transfer syntax and extract the compressed bitstreams into a file for each frame.</p>
+ *
+ * @author	dclunie
+ */
 public class UnencapsulateCompressedPixelData {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/UnencapsulateCompressedPixelData.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(UnencapsulateCompressedPixelData.class);
 
 	private static String getFileNameExtensionForCompressedPixelData(AttributeList list) {
 		String transferSyntaxUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID);
@@ -33,14 +47,28 @@ public class UnencapsulateCompressedPixelData {
 				list.setDecompressPixelData(false);
 				list.read(arg[0]);
 				String fileNameExtension = getFileNameExtensionForCompressedPixelData(list);
-				OtherByteAttributeMultipleCompressedFrames aPixelData = (OtherByteAttributeMultipleCompressedFrames)(list.get(TagFromName.PixelData));
-				byte[][] frames = aPixelData.getFrames();
-				for (int f=0; f<frames.length; ++f) {
-					String outputFilename = arg[1] + sixDigitZeroPaddedFormat.format(f+1) + "." + fileNameExtension;
-System.err.println("Writing "+outputFilename);
-					FileOutputStream o = new FileOutputStream(outputFilename);
-					o.write(frames[f]);
-					o.close();
+				Attribute aPixelData = list.getPixelData();
+				if (aPixelData instanceof OtherByteAttributeMultipleCompressedFrames) {
+					OtherByteAttributeMultipleCompressedFrames aPixelDataMCF = (OtherByteAttributeMultipleCompressedFrames)aPixelData;
+					byte[][] frames = aPixelDataMCF.getFrames();
+					for (int f=0; f<frames.length; ++f) {
+						String outputFilename = arg[1] + sixDigitZeroPaddedFormat.format(f+1) + "." + fileNameExtension;
+						slf4jlogger.info("Writing {}",outputFilename);
+						FileOutputStream o = new FileOutputStream(outputFilename);
+						o.write(frames[f]);
+						o.close();
+					}
+				}
+				else if (aPixelData instanceof OtherByteAttributeCompressedSeparateFramesOnDisk) {	// (001289)
+					OtherByteAttributeCompressedSeparateFramesOnDisk aPixelDataSFOD = (OtherByteAttributeCompressedSeparateFramesOnDisk)aPixelData;
+					int nFrames = aPixelDataSFOD.getNumberOfFrames();
+					for (int f=0; f<nFrames; ++f) {
+						String outputFilename = arg[1] + sixDigitZeroPaddedFormat.format(f+1) + "." + fileNameExtension;
+						slf4jlogger.info("Writing {}",outputFilename);
+						FileOutputStream o = new FileOutputStream(outputFilename);
+						o.write(aPixelDataSFOD.getByteValuesForSelectedFrame(f));
+						o.close();
+					}
 				}
 			}
 			else {
@@ -50,7 +78,7 @@ System.err.println("Writing "+outputFilename);
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 

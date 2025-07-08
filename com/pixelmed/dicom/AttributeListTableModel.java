@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -16,7 +16,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class AttributeListTableModel extends AbstractTableModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListTableModel.java,v 1.13 2003/10/20 01:05:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListTableModel.java,v 1.24 2025/01/29 10:58:06 dclunie Exp $";
 	
 	/***/
 	protected int columnCount;
@@ -43,6 +43,7 @@ public class AttributeListTableModel extends AbstractTableModel {
 	 * @param	excludeList	the list of attributes to exclude
 	 * @param	t		the tag of the attribute to test
 	 * @param	vr		the VR of the attribute to test
+	 * @return			true if attribute is acceptable for inclusion
 	 */
 	protected boolean isAcceptable(HashSet includeList,HashSet excludeList,AttributeTag t,byte[] vr) {
 		return     (excludeList == null || !excludeList.contains(t))
@@ -143,22 +144,13 @@ public class AttributeListTableModel extends AbstractTableModel {
 	
 	// Implement methods of base class ...
 	
-	/***/
 	public int getColumnCount() { return columnCount; }
-	/***/
+
 	public int getRowCount() { return rowCount;}
-	/**
-	 * @param	row
-	 * @param	col
-	 */
+
 	public Object getValueAt(int row, int col) { return data[row][col]; }
-	/**
-	 * @param	row
-	 * @param	col
-	 */
+
 	public boolean isCellEditable(int row, int col) { return false; }
-	/**
-	 * @param	col
-	 */
+
 	public String getColumnName(int col) { return columnNames[col]; }
 }

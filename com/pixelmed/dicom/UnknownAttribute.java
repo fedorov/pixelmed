@@ -1,10 +1,13 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.*;
 
 import java.text.NumberFormat;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A concrete class specializing {@link com.pixelmed.dicom.Attribute Attribute} for
@@ -20,8 +23,9 @@ import java.text.NumberFormat;
  * @author	dclunie
  */
 public class UnknownAttribute extends Attribute {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnknownAttribute.java,v 1.31 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnknownAttribute.java,v 1.18 2011/11/21 16:47:24 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(UnknownAttribute.class);
 	
 	protected byte[] originalLittleEndianByteValues;
 
@@ -40,8 +44,8 @@ public class UnknownAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UnknownAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -54,8 +58,8 @@ public class UnknownAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UnknownAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -65,8 +69,8 @@ public class UnknownAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		valueLength=vl;
@@ -84,8 +88,8 @@ public class UnknownAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
@@ -98,7 +102,6 @@ public class UnknownAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
 	 */
 	public void removeValues() {
 		valueMultiplicity=0;
@@ -113,14 +116,41 @@ public class UnknownAttribute extends Attribute {
 	public byte[] getVR() { return ValueRepresentation.UN; }
 
 	/**
+	 * @param	v
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v) throws DicomException {
+		originalLittleEndianByteValues=v;
+		valueMultiplicity=1;		// different from normal value types where VM is size of array
+		valueLength=v.length;
+	}
+	
+	/**
+	 * @param	v
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v,boolean big) throws DicomException {
+		if (big) throw new DicomException("Setting UN VR bytes from big endian not supported");
+		setValues(v);
+	}
+
+	/**
 	 * <p>Get the values of this attribute as a byte array.</p>
 	 *
 	 * <p>Always to be interpreted as little endian, per the DICOM definition of UN, regardless of the received transfer syntax.</p>
 	 *
 	 * @return			the values as an array of bytes
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public byte[]   getByteValues() {
+	public byte[] getByteValues() {
+		return originalLittleEndianByteValues;
+	}
+
+	/**
+	 * @throws	DicomException
+	 */
+	public byte[] getByteValues(boolean big) throws DicomException  {
+		if (big) throw new DicomException("Returning UN VR bytes in big endian not supported");
 		return originalLittleEndianByteValues;
 	}
 
@@ -135,13 +165,19 @@ public class UnknownAttribute extends Attribute {
 	 *
 	 * @param	format		the format to use for each numerical or decimal value - ignored
 	 * @return			the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	not thrown
+	 * @throws	DicomException	not thrown
 	 */
 	public String[] getStringValues(NumberFormat format) throws DicomException {
+		String[] values = null;
 		// ignore number format for generic string attributes
 		// should really check for SpecificCharacterSet rather than using default encoding :(
-		String[] originals = { new String(originalLittleEndianByteValues) };
-		return ArrayCopyUtilities.copyStringArrayRemovingLeadingAndTrailingPadding(originals);
+		try {
+			String[] originals = { new String(originalLittleEndianByteValues) };
+			values = ArrayCopyUtilities.copyStringArrayRemovingLeadingAndTrailingPadding(originals);
+		}
+		catch (Exception e) {
+		}
+		return values;
 	}
 
 	/**
@@ -149,7 +185,7 @@ public class UnknownAttribute extends Attribute {
 	 *
 	 * <p>Assumes the caller knows that the UN VR is really a valid FD (e.g., knows the VR of a private attribute).</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public double[] getDoubleValues() throws DicomException {
 		double[] values = null;
@@ -166,7 +202,7 @@ public class UnknownAttribute extends Attribute {
 				}
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 				throw new DicomException(e.toString());
 			}
 		}
@@ -178,7 +214,7 @@ public class UnknownAttribute extends Attribute {
 	 *
 	 * <p>Assumes the caller knows that the UN VR is really a valid FL (e.g., knows the VR of a private attribute).</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public float[] getFloatValues() throws DicomException {
 		float[] values = null;
@@ -195,7 +231,7 @@ public class UnknownAttribute extends Attribute {
 				}
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 				throw new DicomException(e.toString());
 			}
 		}

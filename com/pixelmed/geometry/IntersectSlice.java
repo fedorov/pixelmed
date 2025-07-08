@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
@@ -14,7 +14,7 @@ import javax.vecmath.*;
  */
 class IntersectSlice extends LocalizerPoster {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/IntersectSlice.java,v 1.10 2006/08/13 15:38:17 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/IntersectSlice.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
 	
 	// package scope ... applications use LocalizerPosterFactory
 	IntersectSlice() {

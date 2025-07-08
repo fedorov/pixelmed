@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ package com.pixelmed.dicom;
 abstract public class ArrayCopyUtilities {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ArrayCopyUtilities.java,v 1.13 2013/09/09 15:58:01 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ArrayCopyUtilities.java,v 1.26 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Pack an array of byte values into an array of short.</p>
@@ -235,6 +235,22 @@ abstract public class ArrayCopyUtilities {
 	}
 
 	/**
+	 * <p>Copy an array of float values into an array of double.</p>
+	 *
+	 * @param	src	an array of float
+	 * @return		an array of double
+	 */
+	static public double[] copyFloatToDoubleArray(float[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		double[] dst = new double[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(double)(src[j]);
+		}
+		return dst;
+	}
+
+	/**
 	 * <p>Copy an array of signed values in int, into an array of float.</p>
 	 *
 	 * <p>Sign extension is performed.</p>
@@ -324,6 +340,168 @@ abstract public class ArrayCopyUtilities {
 		}
 		return dst;
 	}
+	
+	/**
+	 * <p>Copy an array of signed values in long, into an array of double.</p>
+	 *
+	 * <p>Sign extension is performed.</p>
+	 *
+	 * @param	src	an array of long, whose values are interpreted as signed
+	 * @return		an array of double
+	 */
+	static public double[] copySignedLongToDoubleArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		double[] dst = new double[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=src[j];			// allow sign extension
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of unsigned values in long, into an array of double.</p>
+	 *
+	 * <p>Sign extension cannot be prevented since Java has no unsigned long type.</p>
+	 *
+	 * @param	src	an array of int, whose values are interpreted as unsigned
+	 * @return		an array of double
+	 */
+	static public double[] copyUnsignedLongToDoubleArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		double[] dst = new double[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(double)(src[j]&0xffffffffffffffffl);	// failed attempt to make sure of no sign extension :(
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of signed values in long, into an array of float.</p>
+	 *
+	 * <p>Sign extension is performed.</p>
+	 *
+	 * @param	src	an array of long, whose values are interpreted as signed
+	 * @return		an array of float
+	 */
+	static public float[] copySignedLongToFloatArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		float[] dst = new float[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=src[j];			// allow sign extension
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of unsigned values in long, into an array of float.</p>
+	 *
+	 * <p>Sign extension cannot be prevented since Java has no unsigned long type.</p>
+	 *
+	 * @param	src	an array of long, whose values are interpreted as unsigned
+	 * @return		an array of float
+	 */
+	static public float[] copyUnsignedLongToFloatArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		float[] dst = new float[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(float)(src[j]&0xffffffffffffffffl);	// failed attempt to make sure of no sign extension :(
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of signed values in long, into an array of int.</p>
+	 *
+	 * <p>The values are truncated as necessary.</p>
+	 *
+	 * @param	src	an array of long, whose values are interpreted as signed
+	 * @return		an array of int
+	 */
+	static public int[] copySignedLongToIntArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		int[] dst = new int[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(int)(src[j]);			// truncates
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of unsigned values in long, into an array of int.</p>
+	 *
+	 * <p>The values are truncated as necessary.</p>
+	 *
+	 * @param	src	an array of long, whose values are interpreted as unsigned
+	 * @return		an array of int
+	 */
+	static public int[] copyUnsignedLongToIntArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		int[] dst = new int[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(int)(src[j]);			// truncates
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of unsigned values in long, into an array of short.</p>
+	 *
+	 * <p>The values are truncated as necessary.</p>
+	 *
+	 * @param	src	an array of long
+	 * @return		an array of short
+	 */
+	static public short[] copyUnsignedLongToShortArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		short[] dst = new short[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(short)(src[j]);		// truncates
+		}
+		return dst;
+	}
+
+	/**
+	 * <p>Copy an array of signed values in long, into an array of short.</p>
+	 *
+	 * <p>The values are truncated as necessary.</p>
+	 *
+	 * @param	src	an array of long
+	 * @return		an array of short
+	 */
+	static public short[] copySignedLongToShortArray(long[] src) {
+		if (src == null) return null;
+		int n=src.length;
+		short[] dst = new short[n];
+		for (int j=0; j<n; ++j) {
+			dst[j]=(short)(src[j]);		// truncates
+		}
+		return dst;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 	/**
 	 * <p>Is this character a valid leading padding character in a DICOM string value ?</p>
@@ -764,6 +942,23 @@ abstract public class ArrayCopyUtilities {
 			if (v > max) max = v;
 		}
 		float[] returnValues = { min, max };
+		return returnValues;
+	}
+
+	/**
+	 * <p>Find the minimum and maximum values in an array.</p>
+	 *
+	 * @param	array	the array
+	 * @return			an array of two values, the first being the minimum and the second the maximum values found
+	 */
+	static public double[] minMax(double[] array) {
+		double min = Double.MAX_VALUE;
+		double max = Double.MIN_VALUE;
+		for (double v : array) {
+			if (v < min) min = v;
+			if (v > max) max = v;
+		}
+		double[] returnValues = { min, max };
 		return returnValues;
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -7,6 +7,9 @@ import com.pixelmed.dicom.SetOfDicomFiles;
 
 import com.pixelmed.utils.MessageLogger;
 import com.pixelmed.utils.PrintStreamMessageLogger;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is designed to support the importation of DICOM files from
@@ -19,8 +22,9 @@ import com.pixelmed.utils.PrintStreamMessageLogger;
  * @author	dclunie
  */
 public class NetworkMediaImporter extends MediaImporter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkMediaImporter.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkMediaImporter.java,v 1.2 2006/10/19 20:09:15 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkMediaImporter.class);	// do not confuse with MessageLogger
 
 	/***/
 	protected SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles();
@@ -40,13 +44,23 @@ public class NetworkMediaImporter extends MediaImporter {
 		}
 	}
 
+	/**
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #NetworkMediaImporter(String,int,String,String,String,MessageLogger)} instead.
+	 * @param	debugLevel	ignored
+	 */
 	public NetworkMediaImporter(String hostname,int port,String calledAETitle,String callingAETitle,
 			String pathName,MessageLogger logger,int debugLevel) {
+		this(hostname,port,calledAETitle,callingAETitle,pathName,logger);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	public NetworkMediaImporter(String hostname,int port,String calledAETitle,String callingAETitle,
+			String pathName,MessageLogger logger) {
 		super(logger);
 		try {
 			importDicomFiles(pathName);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 //System.err.println(setOfDicomFiles);
 		if (setOfDicomFiles.isEmpty()) {
@@ -56,12 +70,16 @@ public class NetworkMediaImporter extends MediaImporter {
 			if (logger != null) {
 				logger.sendLn("Starting network transfer ...");
 			}
-			new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,
-				setOfDicomFiles,
-				0/*compressionLevel*/,
-				(logger == null ? null : new OurMultipleInstanceTransferStatusHandler(logger)),
-				null/*moveOriginatorApplicationEntityTitle*/,0/*moveOriginatorMessageID*/,
-				debugLevel);
+			{
+				StorageSOPClassSCU storageSOPClassSCU = new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,
+					setOfDicomFiles,
+					0/*compressionLevel*/,
+					(logger == null ? null : new OurMultipleInstanceTransferStatusHandler(logger)),
+					null/*moveOriginatorApplicationEntityTitle*/,0/*moveOriginatorMessageID*/);
+				if (logger != null && storageSOPClassSCU.encounteredTrappedExceptions()) {		// (001131)
+					logger.sendLn("Transfer not successful - connection or association failure ?");
+				}
+			}
 			if (logger != null) {
 				logger.sendLn("Finished import and transfer");
 			}
@@ -85,7 +103,7 @@ public class NetworkMediaImporter extends MediaImporter {
 		try {
 			setOfDicomFiles.add(mediaFileName);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 
@@ -105,14 +123,14 @@ public class NetworkMediaImporter extends MediaImporter {
 				String           pathName=arg[4];
 				MessageLogger logger = new PrintStreamMessageLogger(System.err);
 				//MessageLogger logger = null;
-				new NetworkMediaImporter(hostname,port,calledAETitle,callingAETitle,pathName,logger,0/*debugLevel*/);
+				new NetworkMediaImporter(hostname,port,calledAETitle,callingAETitle,pathName,logger);
 			}
 			else {
 				throw new Exception("Argument list must be 5 values");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

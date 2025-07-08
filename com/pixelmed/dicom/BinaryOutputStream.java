@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,7 +18,7 @@ import java.util.Date;	// for test timing of routines
 public class BinaryOutputStream extends FilterOutputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/BinaryOutputStream.java,v 1.13 2013/03/16 16:49:39 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/BinaryOutputStream.java,v 1.26 2025/01/29 10:58:06 dclunie Exp $";
 
 	/***/
 	boolean bigEndian;
@@ -39,7 +39,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	public long getByteOffset() { return byteOffset; }
 
 	/**
-	 * @param	big
+	 * @param	big	true if big endian, false if little endian
 	 */
 	protected void localInit(boolean big) {
 		bigEndian=big;
@@ -66,7 +66,7 @@ public class BinaryOutputStream extends FilterOutputStream {
      * @param      b     the data.
      * @param      off   the start offset in the data.
      * @param      len   the number of bytes to write.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
 	public void write(byte b[],int off,int len) throws IOException {
 //System.err.println("BinaryOutputStream.write(): len = "+len);
@@ -86,7 +86,7 @@ public class BinaryOutputStream extends FilterOutputStream {
      * Writes the specified <code>byte</code> to this output stream. 
      *
      * @param      b   the <code>byte</code>.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
     public void write(int b) throws IOException {
 		out.write(b);
@@ -97,15 +97,15 @@ public class BinaryOutputStream extends FilterOutputStream {
      * Writes <code>b.length</code> bytes to this output stream. 
      *
      * @param      b   the data to be written.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
     public void write(byte b[]) throws IOException {
 		write(b,0,b.length);	// updates byteOffset
     }
 
 	/**
-	 * @param	o
-	 * @param	big
+	 * @param	o	the output stream
+	 * @param	big	true if big endian, false if little endian
 	 */
 	public BinaryOutputStream(OutputStream o,boolean big) {
 		super(o);
@@ -240,10 +240,17 @@ public class BinaryOutputStream extends FilterOutputStream {
 	}
 
 	/**
+	 * @param	v
+	 */
+	final void insertSigned64(long v) {
+		insertUnsigned64(v);
+	}
+
+	/**
 	 * <p>Write one unsigned integer 8 bit value.</p>
 	 *
 	 * @param	v		an int containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeUnsigned8(int v) throws IOException {
 		insertUnsigned8(v);
@@ -254,7 +261,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 * <p>Write one unsigned integer 16 bit value.</p>
 	 *
 	 * @param	v		an int containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeUnsigned16(int v) throws IOException {
 		insertUnsigned16(v);
@@ -265,7 +272,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 * <p>Write one signed integer 16 bit value.</p>
 	 *
 	 * @param	v		an int containing an signed value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeSigned16(int v) throws IOException {
 		insertSigned16(v);
@@ -276,7 +283,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 * <p>Write one unsigned integer 32 bit value.</p>
 	 *
 	 * @param	v		a long containing an unsigned value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeUnsigned32(long v) throws IOException {
 		insertUnsigned32(v);
@@ -287,18 +294,40 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 * <p>Write one signed integer 32 bit value.</p>
 	 *
 	 * @param	v		a long containing an signed value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeSigned32(long v) throws IOException {
 		insertSigned32(v);
 		write(buffer,0,4);
 	}
-	
+
+	/**
+	 * <p>Write one unsigned integer 64 bit value.</p>
+	 *
+	 * @param	v		a long containing an unsigned value
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void writeUnsigned64(long v) throws IOException {
+		insertUnsigned64(v);
+		write(buffer,0,8);
+	}
+
+	/**
+	 * <p>Write one signed integer 64 bit value.</p>
+	 *
+	 * @param	v		a long containing a signed value
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void writeSigned64(long v) throws IOException {
+		insertSigned64(v);
+		write(buffer,0,8);
+	}
+
 	/**
 	 * <p>Write one floating point 32 bit value.</p>
 	 *
 	 * @param	value		a float value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeFloat(float value) throws IOException {
 		int binary = Float.floatToRawIntBits(value);
@@ -310,7 +339,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 * <p>Write one floating point 64 bit value.</p>
 	 *
 	 * @param	value		a double value
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeDouble(double value) throws IOException {
 		long binary = Double.doubleToRawLongBits(value);
@@ -323,14 +352,14 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 *
 	 * @param	w		an array of integers to write
 	 * @param	len		the number of 16 bit values to write
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeUnsigned16(short[] w,int len) throws IOException {
 //System.err.println("BinaryOutputStream.writeUnsigned16(): len = "+len);
 		// if len is really big, allocation of byte buffer may fail with OutOfMemoryError, so do it in smaller pieces ...
+		// don't even bother to test len against BYTE_BUFFER_SIZE, since multiplying short array length by 2 may exceed max positive int (000774)
 		if (len > 0) {
-			int byteLength = len*2;
-			byte  b[] = new byte[byteLength > BYTE_BUFFER_SIZE ? BYTE_BUFFER_SIZE : byteLength];
+			byte  b[] = new byte[BYTE_BUFFER_SIZE];
 			int wcount=0;
 			while (wcount < len) {
 				int bcount = 0;
@@ -354,11 +383,98 @@ public class BinaryOutputStream extends FilterOutputStream {
 	}
 
 	/**
+	 * <p>Write an array of unsigned integer 32 bit values.</p>
+	 *
+	 * @param	w		an array of integers to write
+	 * @param	len		the number of 32 bit values to write
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void writeUnsigned32(int[] w,int len) throws IOException {
+//System.err.println("BinaryOutputStream.writeUnsigned32(): len = "+len);
+		// if len is really big, allocation of byte buffer may fail with OutOfMemoryError, so do it in smaller pieces ...
+		// don't even bother to test len against BYTE_BUFFER_SIZE, since multiplying int array length by 4 may exceed max positive int
+		if (len > 0) {
+			byte  b[] = new byte[BYTE_BUFFER_SIZE];
+			int wcount=0;
+			while (wcount < len) {
+				int bcount = 0;
+				if (bigEndian) {
+					while (wcount<len && bcount <= (BYTE_BUFFER_SIZE-4)) {
+						int value=w[wcount++];
+						b[bcount++]=(byte)(value>>24);
+						b[bcount++]=(byte)(value>>16);
+						b[bcount++]=(byte)(value>>8);
+						b[bcount++]=(byte)value;
+					}
+				}
+				else {
+					while (wcount<len && bcount <= (BYTE_BUFFER_SIZE-4)) {
+						int value=w[wcount++];
+						b[bcount++]=(byte)value;
+						b[bcount++]=(byte)(value>>8);
+						b[bcount++]=(byte)(value>>16);
+						b[bcount++]=(byte)(value>>24);
+					}
+				}
+				write(b,0,bcount);
+			}
+		}
+	}
+
+	/**
+	 * <p>Write an array of unsigned integer 64 bit values.</p>
+	 *
+	 * @param	w		an array of integers to write
+	 * @param	len		the number of 64 bit values to write
+	 * @throws	IOException	if an I/O error occurs
+	 */
+	public final void writeUnsigned64(long[] w,int len) throws IOException {
+//System.err.println("BinaryOutputStream.writeUnsigned64(): len = "+len);
+		// if len is really big, allocation of byte buffer may fail with OutOfMemoryError, so do it in smaller pieces ...
+		// don't even bother to test len against BYTE_BUFFER_SIZE, since multiplying long array length by 8 may exceed max positive int
+		if (len > 0) {
+			byte  b[] = new byte[BYTE_BUFFER_SIZE];
+			int wcount=0;
+			while (wcount < len) {
+				int bcount = 0;
+				if (bigEndian) {
+					while (wcount<len && bcount <= (BYTE_BUFFER_SIZE-8)) {
+						long value=w[wcount++];
+						b[bcount++]=(byte)(value>>56);
+						b[bcount++]=(byte)(value>>48);
+						b[bcount++]=(byte)(value>>40);
+						b[bcount++]=(byte)(value>>32);
+						b[bcount++]=(byte)(value>>24);
+						b[bcount++]=(byte)(value>>16);
+						b[bcount++]=(byte)(value>>8);
+						b[bcount++]=(byte)value;
+					}
+				}
+				else {
+					while (wcount<len && bcount <= (BYTE_BUFFER_SIZE-8)) {
+						long value=w[wcount++];
+						b[bcount++]=(byte)value;
+						b[bcount++]=(byte)(value>>8);
+						b[bcount++]=(byte)(value>>16);
+						b[bcount++]=(byte)(value>>24);
+						b[bcount++]=(byte)(value>>32);
+						b[bcount++]=(byte)(value>>40);
+						b[bcount++]=(byte)(value>>48);
+						b[bcount++]=(byte)(value>>56);
+					}
+				}
+				write(b,0,bcount);
+			}
+		}
+	}
+
+
+	/**
 	 * <p>Write an array of floating point 32 bit values.</p>
 	 *
 	 * @param	f		an array of floats to write
 	 * @param	len		the number of values to write
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeFloat(float[] f,int len) throws IOException {
 		for (int i=0; i<len; ++i) writeFloat(f[i]);
@@ -369,7 +485,7 @@ public class BinaryOutputStream extends FilterOutputStream {
 	 *
 	 * @param	f		an array of floats to write
 	 * @param	len		the number of values to write
-	 * @exception	IOException
+	 * @throws	IOException	if an I/O error occurs
 	 */
 	public final void writeDouble(double[] f,int len) throws IOException {
 		for (int i=0; i<len; ++i) writeDouble(f[i]);
@@ -397,142 +513,142 @@ public class BinaryOutputStream extends FilterOutputStream {
 	/**
 	 * <p>For testing.</p>
 	 *
-	 * @param	arg
+	 * @param	arg file to write to
 	 */
 	public static void main(String arg[]) {
 
 		// little endian ...
 
-		BinaryOutputStream i=null;
+		BinaryOutputStream o=null;
 		try {
-			i = new BinaryOutputStream(new FileOutputStream(arg[0]),false);
+			o = new BinaryOutputStream(new FileOutputStream(arg[0]),false);
 		} catch (Exception e) {
 			System.err.println(e);
 			System.exit(0);
 		}
 
-		i.insertUnsigned8(0xff);
-		i.dumpBuffer("After insertUnsigned8(0xff)",1);
-		i.insertUnsigned16(0xff);
-		i.dumpBuffer("After insertUnsigned16(0xff)",2);
-		i.insertUnsigned32(0xff);
-		i.dumpBuffer("After insertUnsigned32(0xff)",4);
+		o.insertUnsigned8(0xff);
+		o.dumpBuffer("After insertUnsigned8(0xff)",1);
+		o.insertUnsigned16(0xff);
+		o.dumpBuffer("After insertUnsigned16(0xff)",2);
+		o.insertUnsigned32(0xff);
+		o.dumpBuffer("After insertUnsigned32(0xff)",4);
 		
-		i.insertUnsigned8(0xffff);
-		i.dumpBuffer("After insertUnsigned8(0xffff)",1);
-		i.insertUnsigned16(0xffff);
-		i.dumpBuffer("After insertUnsigned16(0xffff)",2);
-		i.insertUnsigned32(0xffff);
-		i.dumpBuffer("After insertUnsigned32(0xffff)",4);
+		o.insertUnsigned8(0xffff);
+		o.dumpBuffer("After insertUnsigned8(0xffff)",1);
+		o.insertUnsigned16(0xffff);
+		o.dumpBuffer("After insertUnsigned16(0xffff)",2);
+		o.insertUnsigned32(0xffff);
+		o.dumpBuffer("After insertUnsigned32(0xffff)",4);
 		
-		i.insertUnsigned8(0xffffff);
-		i.dumpBuffer("After insertUnsigned8(0xffffff)",1);
-		i.insertUnsigned16(0xffffff);
-		i.dumpBuffer("After insertUnsigned16(0xffffff)",2);
-		i.insertUnsigned32(0xffffff);
-		i.dumpBuffer("After insertUnsigned32(0xffffff)",4);
+		o.insertUnsigned8(0xffffff);
+		o.dumpBuffer("After insertUnsigned8(0xffffff)",1);
+		o.insertUnsigned16(0xffffff);
+		o.dumpBuffer("After insertUnsigned16(0xffffff)",2);
+		o.insertUnsigned32(0xffffff);
+		o.dumpBuffer("After insertUnsigned32(0xffffff)",4);
 		
-		i.insertUnsigned8(0xffffffff);
-		i.dumpBuffer("After insertUnsigned8(0xffffffff)",1);
-		i.insertUnsigned16(0xffffffff);
-		i.dumpBuffer("After insertUnsigned16(0xffffffff)",2);
-		i.insertUnsigned32(0xffffffff);
-		i.dumpBuffer("After insertUnsigned32(0xffffffff)",4);
+		o.insertUnsigned8(0xffffffff);
+		o.dumpBuffer("After insertUnsigned8(0xffffffff)",1);
+		o.insertUnsigned16(0xffffffff);
+		o.dumpBuffer("After insertUnsigned16(0xffffffff)",2);
+		o.insertUnsigned32(0xffffffff);
+		o.dumpBuffer("After insertUnsigned32(0xffffffff)",4);
 
 
-		i.insertUnsigned8(0x7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f)",1);
-		i.insertUnsigned16(0x7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f)",2);
-		i.insertUnsigned32(0x7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f)",4);
+		o.insertUnsigned8(0x7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f)",1);
+		o.insertUnsigned16(0x7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f)",2);
+		o.insertUnsigned32(0x7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f)",4);
 		
-		i.insertUnsigned8(0x7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f)",1);
-		i.insertUnsigned16(0x7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f)",2);
-		i.insertUnsigned32(0x7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f)",4);
+		o.insertUnsigned8(0x7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f)",1);
+		o.insertUnsigned16(0x7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f)",2);
+		o.insertUnsigned32(0x7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f)",4);
 		
-		i.insertUnsigned8(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f7f)",1);
-		i.insertUnsigned16(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f7f)",2);
-		i.insertUnsigned32(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f7f)",4);
+		o.insertUnsigned8(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f7f)",1);
+		o.insertUnsigned16(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f7f)",2);
+		o.insertUnsigned32(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f7f)",4);
 		
-		i.insertUnsigned8(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f7f7f)",1);
-		i.insertUnsigned16(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f7f7f)",2);
-		i.insertUnsigned32(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f7f7f)",4);
+		o.insertUnsigned8(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f7f7f)",1);
+		o.insertUnsigned16(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f7f7f)",2);
+		o.insertUnsigned32(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f7f7f)",4);
 
 		// big endian ...
 
 		try {
-			i = new BinaryOutputStream(new FileOutputStream(arg[0]),true);
+			o = new BinaryOutputStream(new FileOutputStream(arg[0]),true);
 		} catch (Exception e) {
 			System.err.println(e);
 			System.exit(0);
 		}
 
-		i.insertUnsigned8(0xff);
-		i.dumpBuffer("After insertUnsigned8(0xff)",1);
-		i.insertUnsigned16(0xff);
-		i.dumpBuffer("After insertUnsigned16(0xff)",2);
-		i.insertUnsigned32(0xff);
-		i.dumpBuffer("After insertUnsigned32(0xff)",4);
+		o.insertUnsigned8(0xff);
+		o.dumpBuffer("After insertUnsigned8(0xff)",1);
+		o.insertUnsigned16(0xff);
+		o.dumpBuffer("After insertUnsigned16(0xff)",2);
+		o.insertUnsigned32(0xff);
+		o.dumpBuffer("After insertUnsigned32(0xff)",4);
 		
-		i.insertUnsigned8(0xffff);
-		i.dumpBuffer("After insertUnsigned8(0xffff)",1);
-		i.insertUnsigned16(0xffff);
-		i.dumpBuffer("After insertUnsigned16(0xffff)",2);
-		i.insertUnsigned32(0xffff);
-		i.dumpBuffer("After insertUnsigned32(0xffff)",4);
+		o.insertUnsigned8(0xffff);
+		o.dumpBuffer("After insertUnsigned8(0xffff)",1);
+		o.insertUnsigned16(0xffff);
+		o.dumpBuffer("After insertUnsigned16(0xffff)",2);
+		o.insertUnsigned32(0xffff);
+		o.dumpBuffer("After insertUnsigned32(0xffff)",4);
 		
-		i.insertUnsigned8(0xffffff);
-		i.dumpBuffer("After insertUnsigned8(0xffffff)",1);
-		i.insertUnsigned16(0xffffff);
-		i.dumpBuffer("After insertUnsigned16(0xffffff)",2);
-		i.insertUnsigned32(0xffffff);
-		i.dumpBuffer("After insertUnsigned32(0xffffff)",4);
+		o.insertUnsigned8(0xffffff);
+		o.dumpBuffer("After insertUnsigned8(0xffffff)",1);
+		o.insertUnsigned16(0xffffff);
+		o.dumpBuffer("After insertUnsigned16(0xffffff)",2);
+		o.insertUnsigned32(0xffffff);
+		o.dumpBuffer("After insertUnsigned32(0xffffff)",4);
 		
-		i.insertUnsigned8(0xffffffff);
-		i.dumpBuffer("After insertUnsigned8(0xffffffff)",1);
-		i.insertUnsigned16(0xffffffff);
-		i.dumpBuffer("After insertUnsigned16(0xffffffff)",2);
-		i.insertUnsigned32(0xffffffff);
-		i.dumpBuffer("After insertUnsigned32(0xffffffff)",4);
+		o.insertUnsigned8(0xffffffff);
+		o.dumpBuffer("After insertUnsigned8(0xffffffff)",1);
+		o.insertUnsigned16(0xffffffff);
+		o.dumpBuffer("After insertUnsigned16(0xffffffff)",2);
+		o.insertUnsigned32(0xffffffff);
+		o.dumpBuffer("After insertUnsigned32(0xffffffff)",4);
 
 
-		i.insertUnsigned8(0x7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f)",1);
-		i.insertUnsigned16(0x7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f)",2);
-		i.insertUnsigned32(0x7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f)",4);
+		o.insertUnsigned8(0x7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f)",1);
+		o.insertUnsigned16(0x7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f)",2);
+		o.insertUnsigned32(0x7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f)",4);
 		
-		i.insertUnsigned8(0x7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f)",1);
-		i.insertUnsigned16(0x7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f)",2);
-		i.insertUnsigned32(0x7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f)",4);
+		o.insertUnsigned8(0x7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f)",1);
+		o.insertUnsigned16(0x7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f)",2);
+		o.insertUnsigned32(0x7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f)",4);
 		
-		i.insertUnsigned8(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f7f)",1);
-		i.insertUnsigned16(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f7f)",2);
-		i.insertUnsigned32(0x7f7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f7f)",4);
+		o.insertUnsigned8(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f7f)",1);
+		o.insertUnsigned16(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f7f)",2);
+		o.insertUnsigned32(0x7f7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f7f)",4);
 		
-		i.insertUnsigned8(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned8(0x7f7f7f7f)",1);
-		i.insertUnsigned16(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned16(0x7f7f7f7f)",2);
-		i.insertUnsigned32(0x7f7f7f7f);
-		i.dumpBuffer("After insertUnsigned32(0x7f7f7f7f)",4);
+		o.insertUnsigned8(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned8(0x7f7f7f7f)",1);
+		o.insertUnsigned16(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned16(0x7f7f7f7f)",2);
+		o.insertUnsigned32(0x7f7f7f7f);
+		o.dumpBuffer("After insertUnsigned32(0x7f7f7f7f)",4);
 	}
 }
 

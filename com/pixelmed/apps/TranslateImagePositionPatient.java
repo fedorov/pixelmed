@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to read a set of DICOM files and translate the Image Position (Patient) by a fixed offset.</p>
@@ -38,8 +40,9 @@ import java.util.Map;
  * @author	dclunie
  */
 public class TranslateImagePositionPatient {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/TranslateImagePositionPatient.java,v 1.12 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/TranslateImagePositionPatient.java,v 1.1 2012/11/21 18:35:27 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(TranslateImagePositionPatient.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 
@@ -151,7 +154,7 @@ public class TranslateImagePositionPatient {
 
 				//File dstFile = new File(dstFolderName,MoveDicomFilesIntoHierarchy.makeHierarchicalPathFromAttributes(list));
 				File dstFile = FileUtilities.makeSameRelativePathNameInDifferentFolder(srcFolderName,dstFolderName,mediaFileName);
-System.err.println("\""+mediaFileName+"\": dstFile =  \""+dstFile+"\"");
+				slf4jlogger.info("\"{}\":  =  \"{}\"",mediaFileName,dstFile);
 				if (dstFile.exists()) {
 					throw new DicomException("\""+mediaFileName+"\": new file \""+dstFile+"\" already exists - not overwriting");
 				}
@@ -166,7 +169,7 @@ System.err.println("\""+mediaFileName+"\": dstFile =  \""+dstFile+"\"");
 				}
 			}
 			catch (Exception e) {
-				System.err.println("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {} exception ",mediaFileName,e);
 			}
 		}
 	}
@@ -232,7 +235,7 @@ System.err.println("\""+mediaFileName+"\": dstFile =  \""+dstFile+"\"");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

@@ -1,8 +1,11 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.File;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This is an abstract class to support creating path names for how to organize the folders and files for stored composite instances based on their SOP Instance UID.</p>
@@ -14,11 +17,13 @@ import java.io.File;
  * <p>Methods are provided to generate pathnames based on the supplied UID, as well as to create any sub-folders required and
  * generate altrernative path names if the existing path name is alreayd in use for some other purpose.
  * 
- * @author	dclunie, jimirrer
+ * @author	dclunie
+ * @author	jimirrer
  */
 public abstract class StoredFilePathStrategy {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategy.java,v 1.2 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategy.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(StoredFilePathStrategy.class);
 
 	protected StoredFilePathStrategy() {}
 
@@ -58,7 +63,7 @@ public abstract class StoredFilePathStrategy {
 	 * @return							the path to the file, which may contain nested sub-folders
 	 */
 	public String makeStoredFilePath(String sopInstanceUID) {
-		return null;					// not an abstract mthod as it should be, since we want to allow legacy use of ReceivedFilePathStrategy, which extends this class
+		return null;					// not an abstract method as it should be, since we want to allow legacy use of ReceivedFilePathStrategy, which extends this class
 	}
 
 	/**
@@ -102,11 +107,11 @@ public abstract class StoredFilePathStrategy {
 		File storedFile = makeStoredFilePath(savedInstancesFolder,sopInstanceUID);
 		if (storedFile.exists()) {
 			if (storedFile.isFile()) {
-if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(): Deleting pre-existing file for same SOPInstanceUID");
+				slf4jlogger.debug("makeReliableStoredFilePathWithFoldersCreated(): Deleting pre-existing file for same SOPInstanceUID");
 				storedFile.delete();		// prior to rename of temporary file, in case might cause renameTo() fail
 			}
 			else {
-if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since "+storedFile+" already used as other than a file (presumably a directory)");
+				slf4jlogger.debug("makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since {} already used as other than a file (presumably a directory)",storedFile);
 				storedFile = makeAlternativeStoredFilePath(savedInstancesFolder,alternativeSubfolder,sopInstanceUID);
 			}
 		}
@@ -114,14 +119,14 @@ if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStore
 		if (parentOfStoredFile != null) {
 			if (parentOfStoredFile.exists()) {
 				if (!parentOfStoredFile.isDirectory()) {
-if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since "+storedFile+" already used as a something other than a directory (presumably a file)");
+					slf4jlogger.debug("makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since {} already used as a something other than a directory (presumably a file)",storedFile);
 					storedFile = makeAlternativeStoredFilePath(savedInstancesFolder,alternativeSubfolder,sopInstanceUID);
 				}
 			}
 			else {
 				parentOfStoredFile.mkdirs();
 				if (!parentOfStoredFile.isDirectory()) {
-if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since cannot make parent directories "+parentOfStoredFile+" for some (unanticipated) reason");
+					slf4jlogger.debug("makeReliableStoredFilePathWithFoldersCreated(): use an alternative file name, since cannot make parent directories {} for some (unanticipated) reason",parentOfStoredFile);
 					storedFile = makeAlternativeStoredFilePath(savedInstancesFolder,alternativeSubfolder,sopInstanceUID);
 					parentOfStoredFile = storedFile.getParentFile();
 					if (parentOfStoredFile != null) {
@@ -149,10 +154,12 @@ if (debugLevel > 0) System.err.println("StoredFilePathStrategy.makeReliableStore
 		return makeReliableStoredFilePathWithFoldersCreated(savedInstancesFolder,defaultAlternativeSubfolder,sopInstanceUID);
 	}
 	
-	protected int debugLevel;
-	
+	/**
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging
+	 * @param	debugLevel	ignored
+	 */
 	public void setDebugLevel(int debugLevel) {
-		this.debugLevel = debugLevel;
+		slf4jlogger.warn("setDebugLevel(): Debug level ignored");
 	}
 	
 	protected void test(String arg[]) {

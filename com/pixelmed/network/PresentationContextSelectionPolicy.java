@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -17,16 +17,21 @@ public interface PresentationContextSelectionPolicy {
 	/**
 	 * Accept or reject Presentation Contexts.
 	 *
-	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects,
-	 *			each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
-	 * @param	associationNumber	for debugging messages
-	 * @param	debugLevel
-	 * @return		the java.util.LinkedList of {@link PresentationContext PresentationContext} objects,
-	 *			as supplied but with the result/reason field set to either "acceptance" or
-	 *			"abstract syntax not supported (provider rejection)" or
-	 *			"transfer syntaxes not supported (provider rejection)" or
-	 *			" no reason (provider rejection)"
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #applyPresentationContextSelectionPolicy(LinkedList,int)} instead.
+	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects, each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
+	 * @param	associationNumber		for debugging messages
+	 * @param	debugLevel				ignored
+	 * @return							the java.util.LinkedList of {@link PresentationContext PresentationContext} objects, as supplied but with the result/reason field set to either "acceptance" or "abstract syntax not supported (provider rejection)" or "transfer syntaxes not supported (provider rejection)" or " no reason (provider rejection)"
 	 */
 	public LinkedList applyPresentationContextSelectionPolicy(LinkedList presentationContexts,int associationNumber,int debugLevel);
+
+	/**
+	 * Accept or reject Presentation Contexts.
+	 *
+	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects, each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
+	 * @param	associationNumber		for debugging messages
+	 * @return							the java.util.LinkedList of {@link PresentationContext PresentationContext} objects, as supplied but with the result/reason field set to either "acceptance" or "abstract syntax not supported (provider rejection)" or "transfer syntaxes not supported (provider rejection)" or " no reason (provider rejection)"
+	 */
+	public LinkedList applyPresentationContextSelectionPolicy(LinkedList presentationContexts,int associationNumber);
 }
 

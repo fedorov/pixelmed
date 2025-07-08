@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -25,6 +25,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to process multiple SR files and their referenced instances (like Presentation States and Segmentations)
  * and copy only the head (most recent) of the Predecessor Documents sequence chain and its references, ignoring
@@ -33,8 +36,9 @@ import java.util.Set;
  * @author	dclunie
  */
 public class CopyOnlyHeadOfMultipleStructuredReportsAndReferences {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CopyOnlyHeadOfMultipleStructuredReportsAndReferences.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CopyOnlyHeadOfMultipleStructuredReportsAndReferences.java,v 1.1 2012/09/08 15:55:02 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DoseReporterWithLegacyOCRAndAutoSendToRegistry.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 
@@ -132,7 +136,7 @@ public class CopyOnlyHeadOfMultipleStructuredReportsAndReferences {
 				}
 			}
 			catch (Exception e) {
-				System.err.println("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -200,7 +204,7 @@ public class CopyOnlyHeadOfMultipleStructuredReportsAndReferences {
 					}
 				}
 				catch (Exception e) {
-					System.err.println("Error: File "+srcDicomFile.getFileName()+" exception "+e);
+					slf4jlogger.error("File {}",srcDicomFile.getFileName(),e);
 				}
 			}
 		}
@@ -211,10 +215,10 @@ public class CopyOnlyHeadOfMultipleStructuredReportsAndReferences {
 			while (i.hasNext()) {
 				SetOfDicomFiles.DicomFile srcDicomFile = (SetOfDicomFiles.DicomFile)i.next();
 				if (dicomFilesToCopy.contains(srcDicomFile)) {
-System.err.println("Copied - SOP Instance "+srcDicomFile.getSOPInstanceUID()+" in file "+srcDicomFile.getFileName());
+					slf4jlogger.info("Copied - SOP Instance {} in file {}",srcDicomFile.getSOPInstanceUID(),srcDicomFile.getFileName());
 				}
 				else {
-System.err.println("Not copied - SOP Instance "+srcDicomFile.getSOPInstanceUID()+" in file "+srcDicomFile.getFileName());
+					slf4jlogger.info("Not copied - SOP Instance {} in file {}",srcDicomFile.getSOPInstanceUID(),srcDicomFile.getFileName());
 				}
 			}
 		}
@@ -239,7 +243,7 @@ System.err.println("Not copied - SOP Instance "+srcDicomFile.getSOPInstanceUID()
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

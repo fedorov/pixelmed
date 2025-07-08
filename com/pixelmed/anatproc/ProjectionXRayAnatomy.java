@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -9,6 +9,9 @@ import com.pixelmed.dicom.TagFromName;
 
 import com.pixelmed.utils.StringUtilities;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class encapsulates information pertaining to anatomy of projection x-ray images.</p>
  * 
@@ -18,8 +21,9 @@ import com.pixelmed.utils.StringUtilities;
  * @author	dclunie
  */
 public class ProjectionXRayAnatomy {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/ProjectionXRayAnatomy.java,v 1.37 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/ProjectionXRayAnatomy.java,v 1.25 2013/01/24 18:32:52 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ProjectionXRayAnatomy.class);
 	
 	protected static String[] newStringArray(String... values) { return values; }		// use 1.5 varargs feature; seems like a lot of trouble to work around lack of string array curly braces outside declarations
 
@@ -560,6 +564,8 @@ public class ProjectionXRayAnatomy {
 		new DisplayableAnatomicConcept("C0030851","18911002",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-91000",	"Penis",			"PENIS",		null,	newStringArray("Penis"),			newStringArray("Penis")),
 		new DisplayableAnatomicConcept("C1278903","181211006",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-55002",	"Pharynx",			"PHARYNX",		null,	newStringArray("Pharynx"),			newStringArray("Pharynx")),
 		new DisplayableAnatomicConcept("C1278980","181422007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-9200B",	"Prostate",			"PROSTATE",		null,	newStringArray("Prostate"),			newStringArray("Prostate")),
+		new DisplayableAnatomicConcept("C0034627","62413002",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12420",	"Radius",			"RADIUS",		null,	newStringArray("Radius"),			newStringArray("Radius")),
+		new DisplayableAnatomicConcept("C1267080","110535000",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12403",	"Radius and ulna",	"RADIUSULNA",	null,	newStringArray("Radius and ulna"),	newStringArray("Radius and ulna")),
 		new DisplayableAnatomicConcept("C0034896","34402009",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-59600",	"Rectum",			"RECTUM",		null,	newStringArray("Rectum"),			newStringArray("Rectum")),
 		new DisplayableAnatomicConcept("C0035561","113197003",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-11300",	"Rib",				"RIB",
 			newStringArray(
@@ -677,6 +683,7 @@ public class ProjectionXRayAnatomy {
 		new DisplayableAnatomicConcept("C0040357","29707007",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-D9800",	"Toe",				"TOE",			null,	newStringArray("Toe"),				newStringArray("Toe")),
 		new DisplayableAnatomicConcept("C0040408","21974007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-53000",	"Tongue",			"TONGUE",		null,	newStringArray("Tongue"),			newStringArray("Tongue")),
 		new DisplayableAnatomicConcept("C0040578","44567001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-25000",	"Trachea",			"TRACHEA",		null,	newStringArray("Trachea"),			newStringArray("Trachea")),
+		new DisplayableAnatomicConcept("C0041600","23416004",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12430",	"Ulna",				"ULNA",			null,	newStringArray("Ulna"),				newStringArray("Ulna")),
 		new DisplayableAnatomicConcept("C0227690","65364008",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-73800",	"Ureter",			"URETER",		null,	newStringArray("Ureter"),			newStringArray("Ureter")),
 		new DisplayableAnatomicConcept("C0041967","13648007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-75000",	"Urethra",			"URETHRA",		null,	newStringArray("Urethra"),			newStringArray("Urethra")),
 		new DisplayableAnatomicConcept("C0042149","35039007",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-83000",	"Uterus",			"UTERUS",		null,	newStringArray("Uterus"),			newStringArray("Uterus")),
@@ -714,17 +721,17 @@ public class ProjectionXRayAnatomy {
 		{
 			CodedSequenceItem anatomicRegionSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.AnatomicRegionSequence);
 			if (anatomicRegionSequence != null) {
-//System.err.println("ProjectionXRayAnatomy.findAnatomicConcept(): anatomicRegionSequence = "+anatomicRegionSequence);
+				slf4jlogger.debug("findAnatomicConcept(): anatomicRegionSequence = {}",anatomicRegionSequence);
 				anatomy = anatomyConcepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(anatomicRegionSequence);
-//if (anatomy != null) System.err.println("ProjectionXRayAnatomy.findAnatomicConcept(): found Anatomy in AnatomicRegionSequence = "+anatomy.toStringBrief());
+				if (anatomy != null) slf4jlogger.debug("findAnatomicConcept(): found Anatomy in AnatomicRegionSequence = {}",anatomy.toStringBrief());
 			}
 		}
 		if (anatomy == null) {
 			String bodyPartExamined = Attribute.getSingleStringValueOrNull(list,TagFromName.BodyPartExamined);
 			if (bodyPartExamined != null) {
-//System.err.println("ProjectionXRayAnatomy.findAnatomicConcept(): bodyPartExamined = "+bodyPartExamined);
+				slf4jlogger.debug("findAnatomicConcept(): bodyPartExamined = {}",bodyPartExamined);
 				anatomy = anatomyConcepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(bodyPartExamined);
-//if (anatomy != null) System.err.println("ProjectionXRayAnatomy.findAnatomicConcept(): found Anatomy in BodyPartExamined = "+anatomy.toStringBrief());
+				if (anatomy != null) slf4jlogger.debug("findAnatomicConcept(): found Anatomy in BodyPartExamined = {}",anatomy.toStringBrief());
 			}
 		}
 		if (anatomy == null) {
@@ -739,25 +746,25 @@ public class ProjectionXRayAnatomy {
 		{
 			CodedSequenceItem viewCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.ViewCodeSequence);
 			if (viewCodeSequence != null) {
-//System.err.println("ProjectionXRayAnatomy.findView(): viewCodeSequence = "+viewCodeSequence);
+				slf4jlogger.debug("findView(): viewCodeSequence = {}",viewCodeSequence);
 				view = viewPositionConcepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(viewCodeSequence);
-//if (view != null) System.err.println("ProjectionXRayAnatomy.findView(): found View in ViewCodeSequence = "+view.toStringBrief());
+				if (view != null) slf4jlogger.debug("findView(): found View in ViewCodeSequence = {}",view.toStringBrief());
 			}
 		}
 		if (view == null) {
 			String viewPosition = Attribute.getSingleStringValueOrNull(list,TagFromName.ViewPosition);
 			if (viewPosition != null) {
-//System.err.println("ProjectionXRayAnatomy.findView(): bodyPartExamined = "+viewPosition);
+				slf4jlogger.debug("findView(): bodyPartExamined = {}",viewPosition);
 				view = viewPositionConcepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(viewPosition);
-//if (view != null) System.err.println("ProjectionXRayAnatomy.findView(): found View in ViewPosition = "+view.toStringBrief());
+				if (view != null) slf4jlogger.debug("findView(): found View in ViewPosition = {}",view.toStringBrief());
 			}
 		}
 		//if (view == null) {
 		//	String bodyPartExamined = Attribute.getSingleStringValueOrNull(list,TagFromName.BodyPartExamined);		// view should NOT be encoded in BodyPartExamined, but sometimes is :(
 		//	if (bodyPartExamined != null) {
-//System.err.println("ProjectionXRayAnatomy.findAnatomicConcept(): bodyPartExamined = "+bodyPartExamined);
+		//		slf4jlogger.debug("findAnatomicConcept(): bodyPartExamined = {}",bodyPartExamined);
 		//		view = viewPositionConcepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(bodyPartExamined);
-//if (view != null) System.err.println("ProjectionXRayAnatomy.findView(): found in BodyPartExamined = "+view.toStringBrief());
+		//		if (view != null) slf4jlogger.debug("findView(): found in BodyPartExamined = {}",view.toStringBrief());
 		//	}
 		//}
 		if (view == null) {
@@ -772,31 +779,31 @@ public class ProjectionXRayAnatomy {
 		{
 			String imageLaterality = Attribute.getSingleStringValueOrNull(list,TagFromName.ImageLaterality);
 			if (imageLaterality != null) {
-//System.err.println("ProjectionXRayAnatomy.findLaterality(): imageLaterality = "+imageLaterality);
+				slf4jlogger.debug("findLaterality(): imageLaterality = {}",imageLaterality);
 				laterality = lateralityConcepts.findCodeStringExact(imageLaterality);
-//if (laterality != null) System.err.println("ProjectionXRayAnatomy.findLaterality(): found Laterality in ImageLaterality = "+laterality.toStringBrief());
+				if (laterality != null) slf4jlogger.debug("findLaterality(): found Laterality in ImageLaterality = {}",laterality.toStringBrief());
 			}
 		}
 		if (laterality == null) {
 			String vLaterality = Attribute.getSingleStringValueOrNull(list,TagFromName.Laterality);
 			if (vLaterality != null) {
-//System.err.println("ProjectionXRayAnatomy.findLaterality(): imageLaterality = "+imageLaterality);
+				slf4jlogger.debug("findLaterality(): laterality = {}",vLaterality);
 				laterality = lateralityConcepts.findCodeStringExact(vLaterality);
-//if (laterality != null) System.err.println("ProjectionXRayAnatomy.findLaterality(): found Laterality in Laterality = "+laterality.toStringBrief());
+				if (laterality != null) slf4jlogger.debug("findLaterality(): found Laterality in Laterality = {}",laterality.toStringBrief());
 			}
 		}
 		if (laterality == null) {
 			if (anatomy != null && !anatomy.isPairedStructure()) {
 				laterality = lateralityConcepts.findCodeStringExact("U");
-//if (laterality != null) System.err.println("ProjectionXRayAnatomy.findLaterality(): anatomy is unpaired structure so use for Laterality = "+laterality.toStringBrief());
+				if (laterality != null) slf4jlogger.debug("findLaterality(): anatomy is unpaired structure so use for Laterality = {}",laterality.toStringBrief());
 			}
 		}
 		if (laterality == null) {
 			String viewPosition = Attribute.getSingleStringValueOrNull(list,TagFromName.ViewPosition);
 			if (viewPosition != null) {
-//System.err.println("ProjectionXRayAnatomy.findView(): bodyPartExamined = "+viewPosition);
+				slf4jlogger.debug("findView(): bodyPartExamined = {}",viewPosition);
 				laterality = lateralityConcepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(viewPosition);
-//if (laterality != null) System.err.println("ProjectionXRayAnatomy.findLaterality(): found Laterality in ViewPosition = "+laterality.toStringBrief());
+				if (laterality != null) slf4jlogger.debug("findLaterality(): found Laterality in ViewPosition = {}",laterality.toStringBrief());
 			}
 		}
 		if (laterality == null) {
@@ -811,57 +818,57 @@ public class ProjectionXRayAnatomy {
 		{
 			String imageComments = Attribute.getSingleStringValueOrNull(list,TagFromName.ImageComments);
 			if (imageComments != null && !StringUtilities.containsRegardlessOfCase(imageComments,badPhraseTriggers)) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): imageComments = "+imageComments);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): imageComments = {}",imageComments);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(imageComments);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = ImageComments "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ImageComments = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String protocolName = Attribute.getSingleStringValueOrNull(list,TagFromName.ProtocolName);
 			if (protocolName != null && !StringUtilities.containsRegardlessOfCase(protocolName,badPhraseTriggers)) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): protocolName = "+seriesDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): protocolName = {}",protocolName);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(protocolName);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in ProtocolName = "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ProtocolName = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String seriesDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.SeriesDescription);
 			if (seriesDescription != null && !StringUtilities.containsRegardlessOfCase(seriesDescription,badPhraseTriggers)) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): seriesDescription = "+seriesDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): seriesDescription = {}",seriesDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(seriesDescription);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in SeriesDescription = "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in SeriesDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			CodedSequenceItem performedProtocolCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.PerformedProtocolCodeSequence);
 			if (performedProtocolCodeSequence != null) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): performedProtocolCodeSequence = "+performedProtocolCodeSequence);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): performedProtocolCodeSequence = {}",performedProtocolCodeSequence);
 				found = concepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(performedProtocolCodeSequence);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = PerformedProtocolCodeSequence "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in PerformedProtocolCodeSequence = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String performedProcedureStepDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.PerformedProcedureStepDescription);
 			if (performedProcedureStepDescription != null && !StringUtilities.containsRegardlessOfCase(performedProcedureStepDescription,badPhraseTriggers)) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): performedProcedureStepDescription = "+performedProcedureStepDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): performedProcedureStepDescription = {}",performedProcedureStepDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(performedProcedureStepDescription);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = PerformedProcedureStepDescription "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in PerformedProcedureStepDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			CodedSequenceItem procedureCodeSequence = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.ProcedureCodeSequence);
 			if (procedureCodeSequence != null) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): procedureCodeSequence = "+procedureCodeSequence);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): procedureCodeSequence = {}",procedureCodeSequence);
 				found = concepts.findCodeInEntriesFirstThenTryCodeMeaningInEntriesThenTryLongestIndividualEntryContainedWithinCodeMeaning(procedureCodeSequence);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = ProcedureCodeSequence "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in ProcedureCodeSequence = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		if (found == null) {
 			String studyDescription = Attribute.getSingleStringValueOrNull(list,TagFromName.StudyDescription);
 			if (studyDescription != null && !StringUtilities.containsRegardlessOfCase(studyDescription,badPhraseTriggers)) {
-//System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): seriesDescription = "+studyDescription);
+				slf4jlogger.debug("findAmongstGeneralAttributes(): seriesDescription = {}",studyDescription);
 				found = concepts.findInEntriesFirstThenTryLongestIndividualEntryContainedWithin(studyDescription);
-//if (found != null) System.err.println("ProjectionXRayAnatomy.findAmongstGeneralAttributes(): found "+concepts.getDescriptionOfConcept()+" in = StudyDescription "+found.toStringBrief());
+				if (found != null) slf4jlogger.debug("findAmongstGeneralAttributes(): found {} in StudyDescription = {}",concepts.getDescriptionOfConcept(),found.toStringBrief());
 			}
 		}
 		return found;
@@ -881,27 +888,27 @@ public class ProjectionXRayAnatomy {
 				list.read(inputFileName);
 				DisplayableAnatomicConcept anatomy = findAnatomicConcept(list);
 				if (anatomy != null) {
-					System.err.print(anatomy);
+					slf4jlogger.info(anatomy.toString());
 				}
 				else {
-					System.err.println("########################### - ANATOMY NOT FOUND - ###########################");
+					slf4jlogger.info("########################### - ANATOMY NOT FOUND - ###########################");
 				}
 				DisplayableViewConcept view = findView(list);
 				if (view != null) {
-					System.err.print(view);
+					slf4jlogger.info(view.toString());
 				}
 				else {
-					System.err.println("########################### - VIEW NOT FOUND - ###########################");
+					slf4jlogger.info("########################### - VIEW NOT FOUND - ###########################");
 				}
 				DisplayableLateralityConcept laterality = findLaterality(list,anatomy);
 				if (laterality != null) {
-					System.err.print(laterality);
+					slf4jlogger.info(laterality.toString());
 				}
 				else {
-					System.err.println("########################### - LATERALITY NOT FOUND - ###########################");
+					slf4jlogger.info("########################### - LATERALITY NOT FOUND - ###########################");
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			}
 		}
 	}

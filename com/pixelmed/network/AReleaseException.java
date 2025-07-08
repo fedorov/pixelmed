@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -7,7 +7,7 @@ package com.pixelmed.network;
  */
 public class AReleaseException extends Exception {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AReleaseException.java,v 1.3 2003/02/23 14:42:13 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AReleaseException.java,v 1.13 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	msg

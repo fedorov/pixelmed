@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -30,7 +30,7 @@ import javax.swing.event.*;
 public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseInformationModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/PatientStudySeriesConcatenationInstanceModel.java,v 1.21 2011/04/20 11:01:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/PatientStudySeriesConcatenationInstanceModel.java,v 1.34 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Construct a model with the attributes from the default dictionary.</p>
@@ -38,7 +38,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * <p>The dictionary {@link com.pixelmed.database.DicomDictionaryForPatientStudySeriesConcatenationInstanceModel DicomDictionaryForPatientStudySeriesConcatenationInstanceModel} is used.</p>
 	 * 
 	 * @param	databaseFileName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName) throws DicomException {
 		super(databaseFileName,InformationEntity.PATIENT,new DicomDictionaryForPatientStudySeriesConcatenationInstanceModel());
@@ -51,7 +51,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * 
 	 * @param	databaseFileName
 	 * @param	databaseServerName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName,String databaseServerName) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.PATIENT,new DicomDictionaryForPatientStudySeriesConcatenationInstanceModel());
@@ -65,7 +65,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * @param	databaseFileName
 	 * @param	databaseServerName
 	 * @param	databaseRootName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName,String databaseServerName,String databaseRootName) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.PATIENT,new DicomDictionaryForPatientStudySeriesConcatenationInstanceModel(),databaseRootName);
@@ -76,7 +76,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 *
 	 * @param	databaseFileName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,InformationEntity.PATIENT,dictionary);
@@ -88,7 +88,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * @param	databaseFileName
 	 * @param	databaseServerName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName,String databaseServerName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.PATIENT,dictionary);
@@ -101,7 +101,7 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * @param	databaseServerName
 	 * @param	dictionary
 	 * @param	databaseRootName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public PatientStudySeriesConcatenationInstanceModel(String databaseFileName,String databaseServerName,DicomDictionary dictionary,String databaseRootName) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.PATIENT,dictionary,databaseRootName);
@@ -249,9 +249,10 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 	 * @param	b
 	 * @param	list
 	 * @param	ie
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void extendStatementStringWithMatchingAttributesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
+//System.err.println("PatientStudySeriesConcatenationInstanceModel.extendStatementStringWithMatchingAttributesForSelectedInformationEntity():");
 
 		// two possibilities ...
 		// 1. iterate through whole list of attributes and insist on match for all present for that IE
@@ -389,14 +390,14 @@ public class PatientStudySeriesConcatenationInstanceModel extends DicomDatabaseI
 			java.util.Set localFileNames = new java.util.HashSet();
 			for (int j=0; j<arg.length; ++j) {
 				String fileName = arg[j];
-System.err.println("reading "+fileName);
+				System.err.print("reading "+fileName);	// no need to use SLF4J since command line utility/test
 				DicomInputStream dfi = new DicomInputStream(new BufferedInputStream(new FileInputStream(fileName)));
 				AttributeList list = new AttributeList();
 				list.read(dfi,TagFromName.PixelData);
 				sopInstanceUIDs.add(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPInstanceUID));
 				dfi.close();
 				//d.extendTablesAsNecessary(list);		// doesn't work with Hypersonic ... ALTER command not supported
-System.err.println("inserting");
+				System.err.print("inserting");
 				d.insertObject(list,fileName,DatabaseInformationModel.FILE_REFERENCED);
 			}
 //System.err.print(d);
@@ -405,13 +406,13 @@ System.err.println("inserting");
 				java.util.Iterator i = sopInstanceUIDs.iterator();
 				while (i.hasNext()) {
 					String uid = (String)i.next();
-System.err.println("Searching database for uid "+uid);
+					System.err.print("Searching database for uid "+uid);
 					java.util.ArrayList result = d.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedUID(InformationEntity.INSTANCE,uid);
 					if (result != null) {
 						for (int r=0; r<result.size(); ++r) {
 							java.util.Map map = (java.util.Map)(result.get(r));
 							String localFileNameValue = (String)map.get(localFileNameColumnName);
-System.err.println("Got record # "+r+" "+localFileNameColumnName+" = "+localFileNameValue);
+							System.err.print("Got record # "+r+" "+localFileNameColumnName+" = "+localFileNameValue);
 							localFileNames.add(localFileNameValue);
 						}
 					}
@@ -422,13 +423,13 @@ System.err.println("Got record # "+r+" "+localFileNameColumnName+" = "+localFile
 				java.util.Iterator i = localFileNames.iterator();
 				while (i.hasNext()) {
 					String localFileNameKeyValue = (String)i.next();
-System.err.println("Searching database for localFileName "+localFileNameKeyValue);
+					System.err.print("Searching database for localFileName "+localFileNameKeyValue);
 					java.util.ArrayList result = d.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(InformationEntity.INSTANCE,localFileNameColumnName,localFileNameKeyValue);
 					if (result != null) {
 						for (int r=0; r<result.size(); ++r) {
 							java.util.Map map = (java.util.Map)(result.get(r));
 							String localFileNameValue = (String)map.get(localFileNameColumnName);
-System.err.println("Got record # "+r+" "+localFileNameColumnName+" = "+localFileNameValue+" is expected = "+localFileNameValue.equals(localFileNameKeyValue));
+							System.err.print("Got record # "+r+" "+localFileNameColumnName+" = "+localFileNameValue+" is expected = "+localFileNameValue.equals(localFileNameKeyValue));
 							localFileNames.add(localFileNameValue);
 						}
 					}
@@ -443,13 +444,12 @@ System.err.println("Got record # "+r+" "+localFileNameColumnName+" = "+localFile
 					System.exit(0);
 				}
 			});
-System.err.println("building tree");
+			System.err.print("building tree");
 			DatabaseTreeBrowser tree = new DatabaseTreeBrowser(d,frame);
-System.err.println("display tree");
+			System.err.print("display tree");
 			frame.setVisible(true); 
 		} catch (Exception e) {
-			System.err.println(e);
-                        e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

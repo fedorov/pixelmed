@@ -1,8 +1,11 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
 import java.io.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class for copying an entire input stream to an output stream.</p>
@@ -10,7 +13,9 @@ import java.io.*;
  * @author	dclunie
  */
 public class CopyStream {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/CopyStream.java,v 1.9 2011/06/21 17:12:46 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/CopyStream.java,v 1.23 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CopyStream.class);
 	
 	private static final int defaultReadBufferSize = 32768;
 	private static final int defaultBufferedInputStreamSizeForFileCopy  = 0;	// i.e., unbuffered
@@ -23,7 +28,7 @@ public class CopyStream {
 	 *
 	 * @param	in			the input stream in which to skip the bytes
 	 * @param	length		number of bytes to read (no more and no less)
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public static void skipInsistently(InputStream in,long length) throws IOException {
 		long remaining = length;
@@ -54,7 +59,7 @@ public class CopyStream {
 	 * @param	in				the source
 	 * @param	out				the destination
 	 * @param	count			the number of bytes to copy
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copyByteSwapped(int readBufferSize,InputStream in,OutputStream out,long count) throws IOException {
 		assert count%2 == 0;
@@ -101,7 +106,7 @@ public class CopyStream {
 	 * @param	in		the source
 	 * @param	out		the destination
 	 * @param	count	the number of bytes to copy
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copyByteSwapped(InputStream in,OutputStream out,long count) throws IOException {
 		copyByteSwapped(defaultReadBufferSize,in,out,count);
@@ -124,10 +129,18 @@ public class CopyStream {
 	 * @param	out				the destination
 	 * @param	count			the number of bytes to copy
 	 * @param	readBufferSize	how much data to read in each request
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(int readBufferSize,InputStream in,OutputStream out,long count) throws IOException {
-//System.err.println("CopyStream.copy(): start count = "+count);
+		copyTraditionalWay(readBufferSize,in,out,count);
+		//copyWithNIOBuffer(readBufferSize,in,out,count);
+	}
+	
+	private static final void copyTraditionalWay(int readBufferSize,InputStream in,OutputStream out,long length) throws IOException {
+		long count = length;
+		slf4jlogger.debug("copyTraditionalWay(): start count = {}",count);
+		long startTime = System.currentTimeMillis();
+		
 		if (readBufferSize == 0) {
 			readBufferSize = defaultReadBufferSize;
 		}
@@ -142,8 +155,43 @@ public class CopyStream {
 				out.write(readBuffer,0,got);
 				count-=got;
 			}
+			else {	// (001004)
+				throw new IOException("read failed with "+count+" bytes remaining to be read, wanted "+length);
+			}
 		}
 		out.flush();
+		
+		slf4jlogger.debug("copyTraditionalWay(): done in {} ms",(System.currentTimeMillis()-startTime));
+	}
+	
+	private static final void copyWithNIOBuffer(int readBufferSize,InputStream in,OutputStream out,long count) throws IOException {
+		// see "https://thomaswabner.wordpress.com/2007/10/09/fast-stream-copy-using-javanio-channels/"
+		// but does not seem to be any faster than copyTraditionalWay() :(
+		slf4jlogger.debug("copyWithNIOBuffer(): start count = {}",count);	// (001005)
+		long startTime = System.currentTimeMillis();
+
+		if (readBufferSize == 0) {
+			readBufferSize = defaultReadBufferSize;
+		}
+		final java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(readBufferSize);
+		
+		final java.nio.channels.ReadableByteChannel inch = java.nio.channels.Channels.newChannel(in);
+		final java.nio.channels.WritableByteChannel outch = java.nio.channels.Channels.newChannel(out);
+		
+		while (inch.read(buffer) != -1) {
+			buffer.flip();
+			outch.write(buffer);
+			buffer.compact();
+		}
+		buffer.flip();
+		while (buffer.hasRemaining()) {
+			outch.write(buffer);
+		}
+
+		inch.close();	// hopefully does not close underlying InputStream, which needs to remain open; ? even necessary :(
+		outch.close();	// hopefully does not close underlying OutputStream, which needs to remain open; ? even necessary :(
+
+		slf4jlogger.debug("copyTraditionalWay(): done in {} ms",(System.currentTimeMillis()-startTime));
 	}
 
 	/**
@@ -162,7 +210,7 @@ public class CopyStream {
 	 * @param	in				the source
 	 * @param	out				the destination
 	 * @param	count			the number of bytes to copy
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(InputStream in,OutputStream out,long count) throws IOException {
 		copy(defaultReadBufferSize,in,out,count);
@@ -184,7 +232,7 @@ public class CopyStream {
 	 * @param	readBufferSize	how much data to read in each request
 	 * @param	in				the source
 	 * @param	out				the destination
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(int readBufferSize,InputStream in,OutputStream out) throws IOException {
 		if (readBufferSize == 0) {
@@ -218,7 +266,7 @@ public class CopyStream {
 	 *
 	 * @param	in		the source
 	 * @param	out		the destination
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(InputStream in,OutputStream out) throws IOException {
 		copy(defaultReadBufferSize,in,out);
@@ -227,23 +275,39 @@ public class CopyStream {
 	/**
 	 * <p>Copy an entire input file to an output file.</p>
 	 *
+	 * @deprecated										SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #copy(File,File,int,int,int)} instead.
 	 * @param	inFile									the source
 	 * @param	outFile									the destination
 	 * @param	readBufferSize							how much data to read in each request
 	 * @param	bufferedInputStreamSizeForFileCopy		the buffered input stream size (or zero if unbuffered)
 	 * @param	bufferedOutputStreamSizeForFileCopy		and the buffered output stream size (or zero if unbuffered)
-	 * @param	debugLevel
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @param	debugLevel								ignored
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(File inFile,File outFile,int readBufferSize,int bufferedInputStreamSizeForFileCopy,int bufferedOutputStreamSizeForFileCopy,int debugLevel) throws IOException {
-if (debugLevel > 0) System.err.println("Using readBufferSize of "+readBufferSize+" bytes");
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		copy(inFile,outFile,readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy);
+	}
+	
+	/**
+	 * <p>Copy an entire input file to an output file.</p>
+	 *
+	 * @param	inFile									the source
+	 * @param	outFile									the destination
+	 * @param	readBufferSize							how much data to read in each request
+	 * @param	bufferedInputStreamSizeForFileCopy		the buffered input stream size (or zero if unbuffered)
+	 * @param	bufferedOutputStreamSizeForFileCopy		and the buffered output stream size (or zero if unbuffered)
+	 * @throws	IOException	thrown if the copying fails for any reason
+	 */
+	public static final void copy(File inFile,File outFile,int readBufferSize,int bufferedInputStreamSizeForFileCopy,int bufferedOutputStreamSizeForFileCopy) throws IOException {
+		slf4jlogger.debug("Using readBufferSize of {} bytes",readBufferSize);
 		boolean useBufferedInputStream = bufferedInputStreamSizeForFileCopy > 0;
 		boolean useBufferedOutputStream = bufferedOutputStreamSizeForFileCopy > 0;
-if (debugLevel > 0) System.err.println((useBufferedInputStream ? "U" : "Not u")+"sing BufferedInputStream"+(useBufferedInputStream ? (" with size of " + bufferedInputStreamSizeForFileCopy + " bytes") : ""));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug((useBufferedInputStream ? "U" : "Not u")+"sing BufferedInputStream"+(useBufferedInputStream ? (" with size of " + bufferedInputStreamSizeForFileCopy + " bytes") : ""));
 		InputStream in = useBufferedInputStream
 						? new BufferedInputStream(new FileInputStream(inFile),bufferedInputStreamSizeForFileCopy)
 						: new FileInputStream(inFile);
-if (debugLevel > 0) System.err.println((useBufferedOutputStream ? "U" : "Not u")+"sing BufferedOutputStream"+(useBufferedOutputStream ? (" with size of " + bufferedOutputStreamSizeForFileCopy + " bytes") : ""));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug((useBufferedOutputStream ? "U" : "Not u")+"sing BufferedOutputStream"+(useBufferedOutputStream ? (" with size of " + bufferedOutputStreamSizeForFileCopy + " bytes") : ""));
 		OutputStream out = useBufferedOutputStream
 						? new BufferedOutputStream(new FileOutputStream(outFile),bufferedOutputStreamSizeForFileCopy)
 						: new FileOutputStream(outFile);
@@ -255,16 +319,32 @@ if (debugLevel > 0) System.err.println((useBufferedOutputStream ? "U" : "Not u")
 	/**
 	 * <p>Copy an entire input file to an output file.</p>
 	 *
+	 * @deprecated										SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #copy(String,String,int,int,int)} instead.
 	 * @param	inFile									the source
 	 * @param	outFile									the destination
 	 * @param	readBufferSize							how much data to read in each request
 	 * @param	bufferedInputStreamSizeForFileCopy		the buffered input stream size (or zero if unbuffered)
 	 * @param	bufferedOutputStreamSizeForFileCopy		and the buffered output stream size (or zero if unbuffered)
-	 * @param	debugLevel
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @param	debugLevel								ignored
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(String inFile,String outFile,int readBufferSize,int bufferedInputStreamSizeForFileCopy,int bufferedOutputStreamSizeForFileCopy,int debugLevel) throws IOException {
-		copy(new File(inFile),new File(outFile),readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy,debugLevel);
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		copy(inFile,outFile,readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy);
+	}
+	
+	/**
+	 * <p>Copy an entire input file to an output file.</p>
+	 *
+	 * @param	inFile									the source
+	 * @param	outFile									the destination
+	 * @param	readBufferSize							how much data to read in each request
+	 * @param	bufferedInputStreamSizeForFileCopy		the buffered input stream size (or zero if unbuffered)
+	 * @param	bufferedOutputStreamSizeForFileCopy		and the buffered output stream size (or zero if unbuffered)
+	 * @throws	IOException	thrown if the copying fails for any reason
+	 */
+	public static final void copy(String inFile,String outFile,int readBufferSize,int bufferedInputStreamSizeForFileCopy,int bufferedOutputStreamSizeForFileCopy) throws IOException {
+		copy(new File(inFile),new File(outFile),readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy);
 	}
 
 
@@ -273,10 +353,10 @@ if (debugLevel > 0) System.err.println((useBufferedOutputStream ? "U" : "Not u")
 	 *
 	 * @param	inFile		the source
 	 * @param	outFile		the destination
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(File inFile,File outFile) throws IOException {
-		copy(inFile,outFile,defaultReadBufferSize,defaultBufferedInputStreamSizeForFileCopy,defaultBufferedOutputStreamSizeForFileCopy,0/*debugLevel*/);
+		copy(inFile,outFile,defaultReadBufferSize,defaultBufferedInputStreamSizeForFileCopy,defaultBufferedOutputStreamSizeForFileCopy);
 	}
 
 	/**
@@ -284,10 +364,10 @@ if (debugLevel > 0) System.err.println((useBufferedOutputStream ? "U" : "Not u")
 	 *
 	 * @param	inFile		the source
 	 * @param	outFile		the destination
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	public static final void copy(String inFile,String outFile) throws IOException {
-		copy(new File(inFile),new File(outFile),defaultReadBufferSize,defaultBufferedInputStreamSizeForFileCopy,defaultBufferedOutputStreamSizeForFileCopy,0/*debugLevel*/);
+		copy(new File(inFile),new File(outFile),defaultReadBufferSize,defaultBufferedInputStreamSizeForFileCopy,defaultBufferedOutputStreamSizeForFileCopy);
 	}
 
 	/**
@@ -321,17 +401,17 @@ if (debugLevel > 0) System.err.println((useBufferedOutputStream ? "U" : "Not u")
 			}
 			else {
 				long startTime=System.currentTimeMillis();
-				copy(inFile,outFile,readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy,1/*debugLevel*/);
+				copy(inFile,outFile,readBufferSize,bufferedInputStreamSizeForFileCopy,bufferedOutputStreamSizeForFileCopy);
 				double copyTime = (System.currentTimeMillis()-startTime)/1000.0;
-				System.err.println("Copy time "+copyTime+" seconds");
+				slf4jlogger.info("Copy time {} seconds",copyTime);
 				long lengthOfFile = new File(inFile).length();
 				double lengthOfFileInMB = ((double)lengthOfFile)/(1024*1024);
 				double copyRate = lengthOfFileInMB/copyTime;
-				System.err.println("Copy rate "+copyRate+" MB/s");
+				slf4jlogger.info("Copy rate {} MB/s",copyRate);
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 }

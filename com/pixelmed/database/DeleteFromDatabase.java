@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -12,6 +12,9 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class provides methods for removing entries from a database, all its children and any associated
  * files that were copied into the database (rather than referenced).</p>
@@ -19,9 +22,9 @@ import java.util.Map;
  * @author	dclunie
  */
 public class DeleteFromDatabase {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DeleteFromDatabase.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DeleteFromDatabase.java,v 1.2 2012/09/07 16:25:32 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DeleteFromDatabase.class);
 	
 	public static void deleteRecordChildrenAndFilesByUniqueKey(DatabaseInformationModel d,String ieName,String keyValue) throws DicomException {
 		InformationEntity ie = InformationEntity.fromString(ieName);	// already handles upper or lower case
@@ -34,7 +37,7 @@ public class DeleteFromDatabase {
 	 * @param	d
 	 * @param	ie
 	 * @param	keyValue					for the PATIENT level, the unique key is the PatientID, otherwise it is the InstanceUID of the entity
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public static void deleteRecordChildrenAndFilesByUniqueKey(DatabaseInformationModel d,InformationEntity ie,String keyValue) throws DicomException {
 		if (ie != null) {
@@ -52,7 +55,7 @@ public class DeleteFromDatabase {
 				if (results != null && results.size() > 0) {
 					for (Map<String,String> result : results) {
 						String localPrimaryKeyValue = result.get(localPrimaryKeyColumnName);
-System.err.println("Deleting "+ie+" "+localPrimaryKeyValue+" "+keyValue);
+						slf4jlogger.info("Deleting {} {} {}",ie,localPrimaryKeyValue,keyValue);
 						deleteRecordChildrenAndFilesByLocalPrimaryKey(d,ie,localPrimaryKeyValue);
 						
 					}
@@ -75,7 +78,7 @@ System.err.println("Deleting "+ie+" "+localPrimaryKeyValue+" "+keyValue);
 	 * @param	d
 	 * @param	ie
 	 * @param	localPrimaryKeyValue
-	 * @exception	DicomException			if the databaseInformationModel or ie are invalid
+	 * @throws	DicomException			if the databaseInformationModel or ie are invalid
 	 */
 	public static void deleteRecordChildrenAndFilesByLocalPrimaryKey(DatabaseInformationModel d,InformationEntity ie,String localPrimaryKeyValue) throws DicomException {
 		if (ie != null) {
@@ -89,14 +92,13 @@ System.err.println("Deleting "+ie+" "+localPrimaryKeyValue+" "+keyValue);
 							String fileReferenceType = result.get(d.getLocalFileReferenceTypeColumnName(ie));
 							if (fileReferenceType != null && fileReferenceType.equals(DatabaseInformationModel.FILE_COPIED)) {
 								try {
-System.err.println("Deleting file "+fileName);
+									slf4jlogger.info("Deleting file {}",fileName);
 									if (!new File(fileName).delete()) {
-										System.err.println("Failed to delete local copy of file "+fileName);
+										slf4jlogger.error("Failed to delete local copy of file {}",fileName);
 									}
 								}
 								catch (Exception e) {
-									e.printStackTrace(System.err);
-									System.err.println("Failed to delete local copy of file "+fileName);
+									slf4jlogger.error("Failed to delete local copy of file {}",fileName,e);
 								}
 							}
 						}
@@ -109,7 +111,7 @@ System.err.println("Deleting file "+fileName);
 						List<Map<String,String>> results = d.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(childIE,localPrimaryKeyValue);
 						if (results == null || results.size() == 0) {
 							// could be because model supports concatenations but this series has no concatentations, so check for instance children of series ...
-System.err.println("No result for "+childIE+", so checking without concatenations");
+							slf4jlogger.info("No result for {}, so checking without concatenations",childIE);
 							childIE = d.getChildTypeForParent(ie,false/*concatenation*/);
 							childLocalPrimaryKeyColumnName = d.getLocalPrimaryKeyColumnName(childIE);
 							results = d.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(childIE,localPrimaryKeyValue);
@@ -123,7 +125,7 @@ System.err.println("No result for "+childIE+", so checking without concatenation
 					}
 
 					// now delete ourselves ...
-System.err.println("Deleting "+ie+" "+localPrimaryKeyValue);
+					slf4jlogger.info("Deleting {} {}",ie,localPrimaryKeyValue);
 					d.deleteRecord(ie,localPrimaryKeyValue);
 				}
 				else {
@@ -168,14 +170,14 @@ System.err.println("Deleting "+ie+" "+localPrimaryKeyValue);
 				if (databaseInformationModel != null) {
 					//{
 					//	List everything = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntity(InformationEntity.PATIENT);
-					//	System.err.println("everything.size() = "+everything.size());
+					//	System.err.println("everything.size() = "+everything.size());	// no need to use SLF4J since command line utility/test
 					//}
 					deleteRecordChildrenAndFilesByUniqueKey(databaseInformationModel,arg[2],arg[3]);
 					databaseInformationModel.close();	// this is really important ... will not persist everything unless we do this
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				System.exit(0);
 			}
 			

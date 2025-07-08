@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,14 +14,18 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to describe a set of DICOM files and their features such as SOP Class, Instance and Transfer Syntax UIDs.</p>
  *
  * @author	dclunie
  */
-public class SetOfDicomFiles extends HashSet {
+public class SetOfDicomFiles extends HashSet<SetOfDicomFiles.DicomFile> {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SetOfDicomFiles.java,v 1.25 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SetOfDicomFiles.java,v 1.9 2011/02/04 20:03:19 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SetOfDicomFiles.class);
 	
 	private HashSet setOfSOPClassUIDs = new HashSet();
 	
@@ -106,6 +110,7 @@ public class SetOfDicomFiles extends HashSet {
 		 * @param	keepPixelData	whether or not to keep the pixel data memory resident as well
 		 */
 		public DicomFile(String fileName,boolean keepList,boolean keepPixelData) {
+			slf4jlogger.debug("DicomFile(): filename={} keepList={} keepPixelData={}",fileName,keepList,keepPixelData);
 			this.fileName=fileName;
 			try {
 				DicomInputStream i = new DicomInputStream(new BufferedInputStream(new FileInputStream(fileName)));
@@ -136,10 +141,13 @@ public class SetOfDicomFiles extends HashSet {
 				if (!keepList) {
 					list=null;
 				}
+				slf4jlogger.debug("DicomFile(): sopClassUID={}",sopClassUID);
+				slf4jlogger.debug("DicomFile(): sopInstanceUID={}",sopInstanceUID);
+				slf4jlogger.debug("DicomFile(): transferSyntaxUID={}",transferSyntaxUID);
 				i.close();
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While reading \"{}\"",fileName,e);
 			}
 		}
 
@@ -170,7 +178,7 @@ public class SetOfDicomFiles extends HashSet {
 	public String toString() {
 		StringBuffer strbuf = new StringBuffer();
 		int j = 0;
-		Iterator i =iterator();
+		Iterator i = iterator();
 		while (i.hasNext()) {
 			strbuf.append("DicomFile [");
 			strbuf.append(Integer.toString(j));
@@ -201,7 +209,7 @@ public class SetOfDicomFiles extends HashSet {
 	 *
 	 * @param	file	a DICOM file
 	 * @return				the DicomFile added
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public DicomFile add(File file) throws IOException {
 		return add(file.getCanonicalPath(),false);
@@ -280,14 +288,45 @@ public class SetOfDicomFiles extends HashSet {
 	}
 	
 	/**
+	 * <p>Construct a set of DICOM files from a list of String path names by reading each file's metaheader, +/- entire attribute list, as necessary.</p>
+	 *
+	 * @param	paths			a list of String DICOM file names (e.g., a Vector or an ArrayList)
+	 * @param	keepList		whether or not to keep the entire attribute list (excluding pixel data unless requested) memory resident
+	 * @param	keepPixelData	whether or not to keep the pixel data memory resident as well
+	 */
+	public SetOfDicomFiles(AbstractList<String> paths,boolean keepList,boolean keepPixelData) {
+		for (int j=0; j< paths.size(); ++j) {
+			String dicomFileName = paths.get(j);
+			if (dicomFileName != null) {
+				add(dicomFileName,keepList,keepPixelData);
+			}
+		}
+	}
+	
+	/**
 	 * <p>Construct a set of DICOM files from an array of String path names by reading each file's metaheader, +/- entire attribute list, as necessary.</p>
 	 *
-	 * @param	paths	a Vector of String DICOM file names
+	 * @param	paths	an array of String DICOM file names
 	 */
 	public SetOfDicomFiles(String[] paths) {
 		for (String dicomFileName : paths) {
 			if (dicomFileName != null) {
 				add(dicomFileName);
+			}
+		}
+	}
+	
+	/**
+	 * <p>Construct a set of DICOM files from an array of String path names by reading each file's metaheader, +/- entire attribute list, as necessary</p>
+	 *
+	 * @param	paths			an array of String DICOM file names
+	 * @param	keepList		whether or not to keep the entire attribute list (excluding pixel data unless requested) memory resident
+	 * @param	keepPixelData	whether or not to keep the pixel data memory resident as well
+	 */
+	public SetOfDicomFiles(String[] paths,boolean keepList,boolean keepPixelData) {
+		for (String dicomFileName : paths) {
+			if (dicomFileName != null) {
+				add(dicomFileName,keepList,keepPixelData);
 			}
 		}
 	}
@@ -307,7 +346,7 @@ public class SetOfDicomFiles extends HashSet {
 	public static void main(String arg[]) {
 		{
 			SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles(arg);
-			System.out.println(setOfDicomFiles.toString());
+			System.err.println(setOfDicomFiles.toString());		// no need to use SLF4J since command line utility/test
 		}
 		{
 			ArrayList<String> arrayList = new ArrayList<String>(arg.length);
@@ -315,7 +354,7 @@ public class SetOfDicomFiles extends HashSet {
 				arrayList.add(f);
 			}
 			SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles(arrayList);
-			System.out.println(setOfDicomFiles.toString());
+			System.err.println(setOfDicomFiles.toString());
 		}
 		{
 			Vector<String> vector = new Vector<String>(arg.length);
@@ -323,7 +362,7 @@ public class SetOfDicomFiles extends HashSet {
 				vector.add(f);
 			}
 			SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles(vector);
-			System.out.println(setOfDicomFiles.toString());
+			System.err.println(setOfDicomFiles.toString());
 		}
 	}
 }

@@ -1,9 +1,6 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
-
-import java.io.File;
-import java.io.IOException;
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
@@ -28,14 +25,21 @@ import com.pixelmed.display.SourceImage;
 import com.pixelmed.utils.MessageLogger;
 import com.pixelmed.utils.PrintStreamMessageLogger;
 
+import java.io.File;
+import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class containing an application for rotating and/or flipping a set of images and updating the other attributes accordingly.</p>
  *
  * @author	dclunie
  */
 public class RotateFlipSetOfImages {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RotateFlipSetOfImages.java,v 1.15 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RotateFlipSetOfImages.java,v 1.4 2012/09/28 21:10:23 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(RotateFlipSetOfImages.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 	
@@ -201,11 +205,13 @@ public class RotateFlipSetOfImages {
 					list.write(dstFile,TransferSyntax.ExplicitVRLittleEndian,true,true);
 				}
 				else {
-					logLn("Error: File "+mediaFileName+" is an unsupported SOP Class "+sopClassUID);
+					//logLn("Error: File "+mediaFileName+" is an unsupported SOP Class "+sopClassUID);
+					slf4jlogger.error("File {} is an unsupported SOP Class {}",mediaFileName,sopClassUID);
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -244,7 +250,7 @@ public class RotateFlipSetOfImages {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

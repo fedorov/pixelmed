@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -26,6 +26,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to process multiple SR files and their referenced instances (like Images, Presentation States and Segmentations)
  * and build Hierarchical SOP Instance Reference Macros with which to (re-)populate CurrentRequestedProcedureEvidenceSequence.</p>
@@ -33,8 +36,9 @@ import java.util.Set;
  * @author	dclunie
  */
 public class AddHierarchicalEvidenceSequencetoStructuredReports {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/AddHierarchicalEvidenceSequencetoStructuredReports.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/AddHierarchicalEvidenceSequencetoStructuredReports.java,v 1.1 2012/09/08 22:26:38 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(AddHierarchicalEvidenceSequencetoStructuredReports.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 
@@ -98,7 +102,7 @@ public class AddHierarchicalEvidenceSequencetoStructuredReports {
 							mapOfSOPInstanceUIDToSOPClassUID.put(sopInstanceUID,sopClassUID);
 						}
 						else if (!existingSOPClassUID.equals(sopClassUID)) {
-							System.err.println("Error: File "+mediaFileName+" SOP Instance UID "+sopInstanceUID+" contains different SOPClassUID "+existingSOPClassUID+" than in current file "+sopClassUID+" - ignoring it");
+							slf4jlogger.error("File {} SOP Instance UID {} contains different SOPClassUID {} than in current file {} - ignoring it",mediaFileName,sopInstanceUID,existingSOPClassUID,sopClassUID);
 						}
 					}
 					{
@@ -107,7 +111,7 @@ public class AddHierarchicalEvidenceSequencetoStructuredReports {
 							mapOfSOPInstanceUIDToSeriesInstanceUID.put(sopInstanceUID,seriesInstanceUID);
 						}
 						else if (!existingSeriesInstanceUID.equals(seriesInstanceUID)) {
-							System.err.println("Error: File "+mediaFileName+" SOP Instance UID "+sopInstanceUID+" contains different SeriesInstanceUID "+existingSeriesInstanceUID+" than in current file "+seriesInstanceUID+" - ignoring it");
+							slf4jlogger.error("File {} SOP Instance UID {} contains different SeriesInstanceUID {} than in current file {} - ignoring it",mediaFileName,sopInstanceUID,existingSeriesInstanceUID,seriesInstanceUID);
 						}
 					}
 					{
@@ -116,13 +120,13 @@ public class AddHierarchicalEvidenceSequencetoStructuredReports {
 							mapOfSOPInstanceUIDToStudyInstanceUID.put(sopInstanceUID,studyInstanceUID);
 						}
 						else if (!existingStudyInstanceUID.equals(studyInstanceUID)) {
-							System.err.println("Error: File "+mediaFileName+" SOP Instance UID "+sopInstanceUID+" contains different StudyInstanceUID "+existingStudyInstanceUID+" than in current file "+studyInstanceUID+" - ignoring it");
+							slf4jlogger.error("File {} SOP Instance UID {} contains different StudyInstanceUID {} than in current file {} - ignoring it",mediaFileName,sopInstanceUID,existingStudyInstanceUID,studyInstanceUID);
 						}
 					}
 				}
 			}
 			catch (Exception e) {
-				System.err.println("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -186,12 +190,12 @@ public class AddHierarchicalEvidenceSequencetoStructuredReports {
 							instanceReferencesInSeries.add(instanceReference);
 						}
 						else {
-							System.err.println("Cannot find hierarchical information for reference to SOP Instance UID "+referencedSOPInstanceUID+" (referenced instance not amongst supplied files)");
+							slf4jlogger.warn("Cannot find hierarchical information for reference to SOP Instance UID {} (referenced instance not amongst supplied files)",referencedSOPInstanceUID);
 						}
 					}
 					
 					for (String referencedStudyInstanceUID : mapOfStudyInstanceUIDToSetOfSeriesInstanceUID.keySet()) {
-System.err.println("STUDY "+referencedStudyInstanceUID);
+						slf4jlogger.info("STUDY {}",referencedStudyInstanceUID);
 						AttributeList referencedStudyList = new AttributeList();
 						aCurrentRequestedProcedureEvidenceSequence.addItem(referencedStudyList);
 						{ Attribute a = new UniqueIdentifierAttribute(TagFromName.StudyInstanceUID); a.addValue(referencedStudyInstanceUID); referencedStudyList.put(a); }
@@ -200,7 +204,7 @@ System.err.println("STUDY "+referencedStudyInstanceUID);
 
 						Set<String> seriesInStudy = mapOfStudyInstanceUIDToSetOfSeriesInstanceUID.get(referencedStudyInstanceUID);
 						for (String referencedSeriesInstanceUID : seriesInStudy) {
-System.err.println("\tSERIES "+referencedSeriesInstanceUID);
+							slf4jlogger.info("\tSERIES {}",referencedSeriesInstanceUID);
 							AttributeList referencedSeriesList = new AttributeList();
 							aReferencedSeriesSequence.addItem(referencedSeriesList);
 							{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SeriesInstanceUID); a.addValue(referencedSeriesInstanceUID); referencedSeriesList.put(a); }
@@ -213,10 +217,10 @@ System.err.println("\tSERIES "+referencedSeriesInstanceUID);
 								aReferencedSOPSequence.addItem(referencedSOPList);
 
 								String referencedSOPInstanceUID = instanceReference.getSOPInstanceUID();
-System.err.println("\t\tINSTANCE SOP Instance "+referencedSOPInstanceUID);
+								slf4jlogger.info("\t\tINSTANCE SOP Instance {}",referencedSOPInstanceUID);
 								{ Attribute a = new UniqueIdentifierAttribute(TagFromName.ReferencedSOPInstanceUID); a.addValue(referencedSOPInstanceUID); referencedSOPList.put(a); }
 								String referencedSOPClassUID    = instanceReference.getSOPClassUID();
-System.err.println("\t\tINSTANCE SOP Class "+referencedSOPClassUID);
+								slf4jlogger.info("\t\tINSTANCE SOP Class {}",referencedSOPClassUID);
 								{ Attribute a = new UniqueIdentifierAttribute(TagFromName.ReferencedSOPClassUID); a.addValue(referencedSOPClassUID); referencedSOPList.put(a); }
 							}
 						}
@@ -238,16 +242,15 @@ System.err.println("\t\tINSTANCE SOP Class "+referencedSOPClassUID);
 								throw new DicomException("\""+srcFileName+"\": parent directory creation failed for \""+dstFile+"\"");
 							}
 						}
-System.err.println("Copying from \""+srcFileName+"\" to \""+dstFile+"\"");
+						slf4jlogger.info("Copying from \"{}\" to \"{}\"",srcFileName,dstFile);
 						list.write(dstFile,TransferSyntax.ExplicitVRLittleEndian,true,true);
 					}
 				}
 			}
 			catch (Exception e) {
-				System.err.println("Error: File "+srcFileName+" exception "+e);
+				slf4jlogger.error("File {}",srcFileName,e);
 			}
 		}
-		
 	}
 	
 	/**
@@ -268,7 +271,7 @@ System.err.println("Copying from \""+srcFileName+"\" to \""+dstFile+"\"");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

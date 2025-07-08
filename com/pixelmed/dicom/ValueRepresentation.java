@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ package com.pixelmed.dicom;
  */
 public class ValueRepresentation {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ValueRepresentation.java,v 1.13 2012/09/20 10:21:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ValueRepresentation.java,v 1.27 2025/01/29 10:58:07 dclunie Exp $";
 
 	/***/
 	public static byte[] AE = { 'A', 'E' };
@@ -44,6 +44,10 @@ public class ValueRepresentation {
 	/***/
 	public static byte[] OF = { 'O', 'F' };
 	/***/
+	public static byte[] OL = { 'O', 'L' };
+	/***/
+	public static byte[] OV = { 'O', 'V' };
+	/***/
 	public static byte[] OW = { 'O', 'W' };
 	/***/
 	public static byte[] OX = { 'O', 'X' };		// OB or OW
@@ -60,7 +64,11 @@ public class ValueRepresentation {
 	/***/
 	public static byte[] ST = { 'S', 'T' };
 	/***/
+	public static byte[] SV = { 'S', 'V' };
+	/***/
 	public static byte[] TM = { 'T', 'M' };
+	/***/
+	public static byte[] UC = { 'U', 'C' };
 	/***/
 	public static byte[] UI = { 'U', 'I' };
 	/***/
@@ -68,9 +76,13 @@ public class ValueRepresentation {
 	/***/
 	public static byte[] UN = { 'U', 'N' };
 	/***/
+	public static byte[] UR = { 'U', 'R' };
+	/***/
 	public static byte[] US = { 'U', 'S' };
 	/***/
 	public static byte[] UT = { 'U', 'T' };
+	/***/
+	public static byte[] UV = { 'U', 'V' };
 	/***/
 	public static byte[] XS = { 'X', 'S' };		// US or SS
 	/***/
@@ -184,6 +196,20 @@ public class ValueRepresentation {
 	/**
 	 * @param	vr
 	 */
+	public static final boolean isOtherLongVR(byte[] vr) {
+		return vr[0]=='O' &&  vr[1]=='L';
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isOtherVeryLongVR(byte[] vr) {
+		return vr[0]=='O' &&  vr[1]=='V';
+	}
+
+	/**
+	 * @param	vr
+	 */
 	public static final boolean isOtherWordVR(byte[] vr) {
 		return vr[0]=='O' &&  vr[1]=='W';
 	}
@@ -221,6 +247,13 @@ public class ValueRepresentation {
 	 */
 	public static final boolean isSignedLongVR(byte[] vr) {
 		return vr[0]=='S' &&  vr[1]=='L';
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isSignedVeryLongVR(byte[] vr) {
+		return vr[0]=='S' &&  vr[1]=='V';
 	}
 
 	/**
@@ -268,6 +301,13 @@ public class ValueRepresentation {
 	/**
 	 * @param	vr
 	 */
+	public static final boolean isUnsignedVeryLongVR(byte[] vr) {
+		return vr[0]=='U' &&  vr[1]=='V';
+	}
+
+	/**
+	 * @param	vr
+	 */
 	public static final boolean isUnknownVR(byte[] vr) {
 		return vr[0]=='U' &&  vr[1]=='N';
 	}
@@ -296,8 +336,22 @@ public class ValueRepresentation {
 	/**
 	 * @param	vr
 	 */
+	public static final boolean isUnlimitedCharactersVR(byte[] vr) {
+		return vr[0]=='U' &&  vr[1]=='C';
+	}
+
+	/**
+	 * @param	vr
+	 */
 	public static final boolean isUnlimitedTextVR(byte[] vr) {
 		return vr[0]=='U' &&  vr[1]=='T';
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isUniversalResourceVR(byte[] vr) {
+		return vr[0]=='U' &&  vr[1]=='R';
 	}
 
 	/**
@@ -336,7 +390,66 @@ public class ValueRepresentation {
 		    || isPersonNameVR(vr)
 		    || isShortStringVR(vr)
 		    || isShortTextVR(vr)
+		    || isUnlimitedCharactersVR(vr)
 		    || isUnlimitedTextVR(vr);
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isDecimalNumberInJSON(byte[] vr) {
+		return isDecimalStringVR(vr)
+		    || isFloatSingleVR(vr)
+		    || isFloatDoubleVR(vr)
+		    ;
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isIntegerNumberInJSON(byte[] vr) {
+		return isIntegerStringVR(vr)
+		    || isSignedLongVR(vr)
+		    || isSignedShortVR(vr)
+		    || isSignedVeryLongVR(vr)		// CP 1889 - hmmm :(
+		    || isUnsignedLongVR(vr)
+		    || isUnsignedShortVR(vr)
+		    || isUnsignedVeryLongVR(vr)		// CP 1889 - hmmm :(
+		    ;
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isNumberInJSON(byte[] vr) {
+		return isDecimalNumberInJSON(vr)
+		    || isIntegerNumberInJSON(vr)
+		    ;
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isBase64EncodedInJSON(byte[] vr) {
+		return isOtherByteVR(vr)
+		    || isOtherDoubleVR(vr)
+		    || isOtherFloatVR(vr)
+		    || isOtherLongVR(vr)
+		    || isOtherVeryLongVR(vr)
+		    || isOtherWordVR(vr)			// CP 1889
+		    || isUnknownVR(vr)
+		    ;
+	}
+
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isStringInJSON(byte[] vr) {
+		return !isBase64EncodedInJSON(vr)
+			&& !isNumberInJSON(vr)
+			&& !isSequenceVR(vr)
+			;
 	}
 	
 	/**
@@ -346,6 +459,16 @@ public class ValueRepresentation {
 		return vr == null ? "" : new String(vr);
 	}
 	
+	/**
+	 * @param	vrs
+	 */
+	public static final byte[] getValueRepresentationFromString(String vrs) {
+		byte[] vr = new byte[2];
+		vr[0] = (byte)vrs.charAt(0);
+		vr[1] = (byte)vrs.charAt(1);
+		return vr;
+	}
+
 	/**
 	 * <p>Get the length of the "word" corresponding to an individual value for this VR,
 	 * such as may be needed when swapping the endianness of values.</p>
@@ -367,12 +490,16 @@ public class ValueRepresentation {
 		 || isUnsignedLongVR(vr)
 		 || isFloatSingleVR(vr)
 		 || isOtherFloatVR(vr)
+		 || isOtherLongVR(vr)
 		) {
 			length=4;
 		}
 		
-		if (isFloatDoubleVR(vr)
+		if (isSignedVeryLongVR(vr)
+		 || isUnsignedVeryLongVR(vr)
+		 || isFloatDoubleVR(vr)
 		 || isOtherDoubleVR(vr)
+		 || isOtherVeryLongVR(vr)
 		) {
 			length=8;
 		}

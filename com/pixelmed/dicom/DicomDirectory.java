@@ -1,20 +1,28 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
+import com.pixelmed.utils.FileUtilities;
+
 import javax.swing.tree.*;
 import javax.swing.event.*;
+
 import java.util.*;
+import java.util.regex.Pattern;
+
 import java.io.File;
 import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * @author	dclunie
  */
 public class DicomDirectory implements TreeModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectory.java,v 1.51 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectory.java,v 1.31 2012/04/05 03:52:12 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(OtherWordAttributeOnDisk.class);
 
 	// Our nodes are all instances of DicomDirectoryRecord ...
 
@@ -28,57 +36,32 @@ public class DicomDirectory implements TreeModel {
 
 	// Methods for TreeModel
 
-	/**
-	 * @param	node
-	 * @param	index
-	 */
 	public Object getChild(Object node,int index) {
 		return ((DicomDirectoryRecord)node).getChildAt(index);
 	}
 
-	/**
-	 * @param	parent
-	 * @param	child
-	 */
 	public int getIndexOfChild(Object parent, Object child) {
 		return ((DicomDirectoryRecord)parent).getIndex((DicomDirectoryRecord)child);
 	}
 
-	/***/
 	public Object getRoot() { return root; }
 
-	/**
-	 * @param	parent
-	 */
 	public int getChildCount(Object parent) {
 		return ((DicomDirectoryRecord)parent).getChildCount();
 	}
 
-	/**
-	 * @param	node
-	 */
 	public boolean isLeaf(Object node) {
 		return ((DicomDirectoryRecord)node).getChildCount() == 0;
 	}
 
-	/**
-	 * @param	path
-	 * @param	newValue
-	 */
 	public void valueForPathChanged(TreePath path, Object newValue) {
 	}
 
-	/**
-	 * @param	tml
-	 */
 	public void addTreeModelListener(TreeModelListener tml) {
 		if (listeners == null) listeners = new Vector();
 		listeners.addElement(tml);
 	}
 
-	/**
-	 * @param	tml
-	 */
 	public void removeTreeModelListener(TreeModelListener tml) {
 		if (listeners == null) listeners.removeElement(tml);
 	}
@@ -94,7 +77,7 @@ public class DicomDirectory implements TreeModel {
 	 * @param	node
 	 * @param	wantConcatenationUID
 	 * @param	useInstanceNumber
-	 * @exception	DicomException
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private DicomDirectoryRecord findOrInsertNewConcatenationDirectoryRecord(DicomDirectoryRecord node,String wantConcatenationUID,String useInstanceNumber) throws DicomException {
 //System.err.println("findOrInsertNewConcatenationDirectoryRecord: "+wantConcatenationUID);
@@ -139,7 +122,7 @@ public class DicomDirectory implements TreeModel {
 	
 	/**
 	 * @param	node
-	 * @exception	DicomException
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private void insertConcatenationNodes(DicomDirectoryRecord node) throws DicomException {
 //System.err.println("insertConcatenationNodes:");
@@ -177,7 +160,7 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * @param	parent
 	 * @param	offset
-	 * @exception	DicomException
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private DicomDirectoryRecord processSubTree(DicomDirectoryRecord parent,long offset) throws DicomException {
 //System.err.println("processSubTree:");
@@ -211,7 +194,7 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * @param	list
 	 * @param	doConcatenations
-	 * @exception	DicomException
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private void makeDicomDirectoryFromExistingAttributeList(AttributeList list,boolean doConcatenations) throws DicomException {
 //long startTime = System.currentTimeMillis();
@@ -341,35 +324,113 @@ public class DicomDirectory implements TreeModel {
 		}
 		dstList.put(a);
 	}
-	
+
 	/**
-	 * @param		rootDirectoryName
-	 * @param		fileName
-	 * @exception	DicomException
+	 * @param		tag
+	 * @param		functionalGroup
+	 * @param		srcList
+	 * @param		dstList
 	 */
-	public void readDicomFileAndAddToDirectory(File rootDirectoryName,String fileName) throws DicomException, IOException {
-//System.err.println("DicomDirectory.readDicomFileAndAddToDirectory(): rootDirectoryName = "+rootDirectoryName);
+	private void findAttributeInSharedFunctionalGroupAndIfPresentAddToDifferentAttributeList(AttributeTag tag,AttributeTag functionalGroup,AttributeList srcList,AttributeList dstList) {
+		SequenceAttribute sa = (SequenceAttribute)SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(srcList,TagFromName.SharedFunctionalGroupsSequence,functionalGroup);
+		if (sa != null) {
+			Attribute a = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(sa,tag);
+			if (a != null) {
+				dstList.put(a);
+			}
+		}
+	}
+
+	/**
+	 * @param		tag
+	 * @param		functionalGroup
+	 * @param		srcList
+	 * @param		dstList
+	 */
+	private void findAttributeInSharedFunctionalGroupAndIfPresentWithValueAddToDifferentAttributeList(AttributeTag tag,AttributeTag functionalGroup,AttributeList srcList,AttributeList dstList) {
+		SequenceAttribute sa = (SequenceAttribute)SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(srcList,TagFromName.SharedFunctionalGroupsSequence,functionalGroup);
+		if (sa != null) {
+			Attribute a = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(sa,tag);
+			if (a != null && a.getVM() > 0) {
+				dstList.put(a);
+			}
+		}
+	}
+
+	/**
+	 * @param		tag
+	 * @param		sequence
+	 * @param		srcList
+	 * @param		dstList
+	 */
+	private void findAttributeNestedInSequenceAndIfPresentWithValueAddToDifferentAttributeList(AttributeTag tag,AttributeTag sequence,AttributeList srcList,AttributeList dstList) {
+		SequenceAttribute sa = (SequenceAttribute)srcList.get(sequence);
+		if (sa != null) {
+			Attribute a = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(sa,tag);
+			if (a != null && a.getVM() > 0) {
+				dstList.put(a);
+			}
+		}
+	}
+
+	/**
+	 * @param		tag
+	 * @param		sequence
+	 * @param		srcList
+	 * @param		dstList
+	 */
+	private void findAttributeNestedInSequenceAndIfPresentAddToDifferentAttributeList(AttributeTag tag,AttributeTag sequence,AttributeList srcList,AttributeList dstList) {
+		SequenceAttribute sa = (SequenceAttribute)srcList.get(sequence);
+		if (sa != null) {
+			Attribute a = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(sa,tag);
+			if (a != null) {
+				dstList.put(a);
+			}
+		}
+	}
+
+	/**
+	 * Read DICOM file and add it to this directory.
+	 *
+	 * @param	rootDirectory	the name of the directory to use as the root, which contains the DICOM file
+	 * @param	fileName			the name of the DICOM file (relative to rootDirectory)
+	 * @throws	IOException			if an I/O error occurs
+	 * @throws	DicomException		if error in DICOM encoding
+	 */
+	public void readDicomFileAndAddToDirectory(File rootDirectory,String fileName) throws DicomException, IOException {
+//System.err.println("DicomDirectory.readDicomFileAndAddToDirectory(): rootDirectory = "+rootDirectory);
 //System.err.println("DicomDirectory.readDicomFileAndAddToDirectory(): fileName = "+fileName);
 		AttributeList list = new AttributeList();
-		list.read(new File(rootDirectoryName,fileName).getCanonicalPath());
+		list.setDecompressPixelData(false);
+		list.read(new File(rootDirectory,fileName).getCanonicalPath(),TagFromName.PixelData);	// no need to read PixelData since not creating icons; do not want to stop any earlier since specific directory records need "igher numbered group attributes
 		addAttributeListFromDicomFileToDirectory(list,fileName);
 	}
 
 	/**
-	 * @param		fileName
-	 * @exception	DicomException
+	 * Read DICOM file and add it to this directory.
+	 *
+	 * @param	fileName		the name of the DICOM file (relative to the current working directory)
+	 * @throws	IOException			if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public void readDicomFileAndAddToDirectory(String fileName) throws DicomException, IOException {
 //System.err.println("DicomDirectory.readDicomFileAndAddToDirectory(): fileName = "+fileName);
 		AttributeList list = new AttributeList();
-		list.read(fileName);
+		list.setDecompressPixelData(false);
+		list.read(fileName,TagFromName.PixelData);	// no need to read PixelData since not creating icons; do not want to stop any earlier since specific directory records need "igher numbered group attributes
 		addAttributeListFromDicomFileToDirectory(list,fileName);
 	}
 		
 	/**
-	 * @param		list
-	 * @param		fileName
-	 * @exception	DicomException
+	 * Add an instance described by a list of attributes to this directory.
+	 *
+	 * Builds the necessary patient, study, series and instance level directory records,
+	 * with the instance level record being the appropriate type for the SOP Class.
+	 *
+	 * @param	list			the list of attributes containing the attributes to add to this directory
+	 * @param	fileName		the name of the DICOM file
+	 * @throws	IOException			if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding, or the SOP Class is not recognized, or the instance already exists in the directory
 	 */
 	public void addAttributeListFromDicomFileToDirectory(AttributeList list,String fileName) throws DicomException, IOException {
 //System.err.println("DicomDirectory adding "+fileName);
@@ -428,7 +489,10 @@ public class DicomDirectory implements TreeModel {
 			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.InstitutionName,list,recordList);				// (DVD:1C if present with value in image)
 			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.InstitutionAddress,list,recordList);			// (DVD:1C if present with value in image)
 			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.PerformingPhysicianName,list,recordList);		// (DVD:1C if present with value in image)
-			
+
+			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.BodyPartExamined,list,recordList);
+			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.Laterality,list,recordList);
+
 			{ AttributeTag t = TagFromName.DirectoryRecordType; Attribute a = new CodeStringAttribute(t); a.addValue(DicomDirectoryRecordType.series); recordList.put(t,a); }
 			
 			findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.SpecificCharacterSet,list,recordList);
@@ -469,22 +533,44 @@ public class DicomDirectory implements TreeModel {
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.InConcatenationNumber,list,recordList);			// optional
 		
 				// could try and extract ImagePositionPatient, ImageOrientationPatient and PixelSpacing from within SharedFunctionalGroupsSequence :(
-				
-				findAttributeAndIfPresentWithValueAddToDifferentAttributeListElseAddDefault(TagFromName.ImageType,list,recordList,"UNKNOWN");	// (XABC-CD,XA1K-CD:1); (DVD:1C if present with value in image)
+				findAttributeInSharedFunctionalGroupAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.PixelSpacing,TagFromName.PixelMeasuresSequence,list,recordList);	// (WSI profile candidate)
+				findAttributeInSharedFunctionalGroupAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImagePositionPatient,TagFromName.PlanePositionSequence,list,recordList);
+				findAttributeInSharedFunctionalGroupAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImageOrientationPatient,TagFromName.PlaneOrientationSequence,list,recordList);
+
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeListElseAddDefault(TagFromName.ImageType,list,recordList,"UNKNOWN");	// (XABC-CD,XA1K-CD:1); (DVD:1C if present with value in image); (WSI profile candidate)
 				findAttributeAndIfPresentAddToDifferentAttributeListElseAddEmpty(TagFromName.CalibrationImage,list,recordList);					// (XABC-CD,XA1K-CD:2); (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ReferencedImageSequence,list,recordList);				// (XABC-CD,XA1K-CD:1C if ImageType value 3 is BIPLANE A or B); (CTMR:1C if present in image); (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImagePositionPatient,list,recordList);				// (CTMR:1C if present in image); (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImageOrientationPatient,list,recordList);				// (CTMR:1C if present in image); (DVD:1C if present with value in image)
-				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.FrameOfReferenceUID,list,recordList);					// (CTMR:1C if present in image)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.FrameOfReferenceUID,list,recordList);					// (CTMR:1C if present in image); (WSI profile candidate)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.PixelSpacing,list,recordList);						// (CTMR:1C if present in image); (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.TableHeight,list,recordList);							// (CTMR:1C if present in image)
-				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.Rows,list,recordList);								// (CTMR:1); (DVD:1)
-				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.Columns,list,recordList);								// (CTMR:1); (DVD:1)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.Rows,list,recordList);								// (CTMR:1); (DVD:1); (WSI profile candidate)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.Columns,list,recordList);								// (CTMR:1); (DVD:1); (WSI profile candidate)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.LossyImageCompressionRatio,list,recordList);			// (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.SynchronizationFrameOfReferenceUID,list,recordList);	// (DVD:1C if present with value in image)
-				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.NumberOfFrames,list,recordList);						// (DVD:1C if present with value in image)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.NumberOfFrames,list,recordList);						// (DVD:1C if present with value in image); (WSI profile candidate)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.AcquisitionTimeSynchronized,list,recordList);			// (DVD:1C if present with value in image)
 				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.AcquisitionDateTime,list,recordList);					// (DVD:1C if present with value in image)
+
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.DimensionOrganizationType,list,recordList);			// (WSI profile candidate)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.TotalPixelMatrixRows,list,recordList);				// (WSI profile candidate)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.TotalPixelMatrixColumns,list,recordList);				// (WSI profile candidate)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImageOrientationSlide,list,recordList);				// (WSI profile candidate)
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ContainerIdentifier,list,recordList);					// (WSI profile candidate)
+				findAttributeNestedInSequenceAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.SpecimenIdentifier,TagFromName.SpecimenDescriptionSequence,list,recordList);			// (WSI profile candidate)
+				findAttributeNestedInSequenceAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.SpecimenShortDescription,TagFromName.SpecimenDescriptionSequence,list,recordList);	// (WSI profile candidate)
+				findAttributeNestedInSequenceAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.SpecimenDetailedDescription,TagFromName.SpecimenDescriptionSequence,list,recordList);	// (WSI profile candidate)
+
+				// BodyPartExamined is Series level
+				// Laterality is Series level
+				findAttributeAndIfPresentAddToDifferentAttributeList(TagFromName.AnatomicRegionSequence,list,recordList);
+				findAttributeAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.ImageLaterality,list,recordList);
+				findAttributeInSharedFunctionalGroupAndIfPresentAddToDifferentAttributeList(TagFromName.AnatomicRegionSequence,TagFromName.FrameAnatomySequence,list,recordList);
+				findAttributeInSharedFunctionalGroupAndIfPresentWithValueAddToDifferentAttributeList(TagFromName.FrameLaterality,TagFromName.FrameAnatomySequence,list,recordList);
+				
+				findAttributeAndIfPresentAddToDifferentAttributeList(TagFromName.PrimaryAnatomicStructureSequence,list,recordList);
+				findAttributeNestedInSequenceAndIfPresentAddToDifferentAttributeList(TagFromName.PrimaryAnatomicStructureSequence,TagFromName.SpecimenDescriptionSequence,list,recordList);	// (WSI profile candidate)
 			}
 			else if (SOPClass.isSpectroscopy(sopClassUID)) {
 				directoryRecordType = DicomDirectoryRecordType.spectroscopy;
@@ -685,9 +771,11 @@ public class DicomDirectory implements TreeModel {
 	 *
 	 * <p>Filenames are NOT checked for compliance with restrictions on length and character set.</p>
 	 *
-	 * @param		fileNames
+	 * @param	fileNames	the names of the DICOM files (relative to the current working directory)
 	 */
 	public DicomDirectory(String[] fileNames) {
+//System.err.println("DicomDirectory.DicomDirectory(String[]): start");
+//long startTime = System.currentTimeMillis();
 		mapOfDirectoryRecordsToSequenceItems = new HashMap();
 		nodeFactory=new DicomDirectoryRecordFactory();
 		root = nodeFactory.getNewTopDirectoryRecord();		// we create our own (empty) root on top
@@ -698,9 +786,11 @@ public class DicomDirectory implements TreeModel {
 			}
 			catch (Exception e) {
 				// Do NOT fail just because one file is unreadable or has a problem
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While reading file \"{}\"",fileName,e);
 			}
 		}
+//long endTime = System.currentTimeMillis();
+//System.err.println("DicomDirectory.DicomDirectory(String[]): DICOMDIR creation - took = "+(endTime-startTime)+" ms");
 	}
 	
 	/**
@@ -710,23 +800,27 @@ public class DicomDirectory implements TreeModel {
 	 *
 	 * <p>Filenames are NOT checked for compliance with restrictions on length and character set.</p>
 	 *
-	 * @param		rootDirectoryName
-	 * @param		fileNames
+	 * @param	rootDirectory	the name of the directory to use as the root, which contains the DICOM file
+	 * @param	fileNames		the names of the DICOM files (relative to rootDirectory)
 	 */
-	public DicomDirectory(File rootDirectoryName,String[] fileNames) {
+	public DicomDirectory(File rootDirectory,String[] fileNames) {
+//System.err.println("DicomDirectory.DicomDirectory(File,String[]): start");
+//long startTime = System.currentTimeMillis();
 		mapOfDirectoryRecordsToSequenceItems = new HashMap();
 		nodeFactory=new DicomDirectoryRecordFactory();
 		root = nodeFactory.getNewTopDirectoryRecord();		// we create our own (empty) root on top
 		for (int i=0; i<fileNames.length; ++i) {
 			String fileName = fileNames[i];
 			try {
-				readDicomFileAndAddToDirectory(rootDirectoryName,fileName);
+				readDicomFileAndAddToDirectory(rootDirectory,fileName);
 			}
 			catch (Exception e) {
 				// Do NOT fail just because one file is unreadable or has a problem
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While reading file \"{}\"",fileName,e);
 			}
 		}
+//long endTime = System.currentTimeMillis();
+//System.err.println("DicomDirectory.DicomDirectory(File,String[]): DICOMDIR creation - took = "+(endTime-startTime)+" ms");
 	}
 	
 	/**
@@ -741,8 +835,8 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * Create a DicomDirectory from a DICOMDIR instance already read as an AttributeList
 	 *
-	 * @param		list
-	 * @exception	DicomException
+	 * @param	list			a list of attributes describing a DICOMDIR instance
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DicomDirectory(AttributeList list) throws DicomException {
 		makeDicomDirectoryFromExistingAttributeList(list,true);
@@ -751,9 +845,9 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * Create a DicomDirectory from a DICOMDIR instance already read as an AttributeList, optionally creating synthetic concatenation records
 	 *
-	 * @param		list
-	 * @param		doConcatenations
-	 * @exception	DicomException
+	 * @param	list				a list of attributes describing a DICOMDIR instance
+	 * @param	doConcatenations	true if synthetic concatenation records are to be created
+	 * @throws	DicomException		if error in DICOM encoding
 	 */
 	public DicomDirectory(AttributeList list,boolean doConcatenations) throws DicomException {
 		makeDicomDirectoryFromExistingAttributeList(list,doConcatenations);
@@ -777,7 +871,6 @@ public class DicomDirectory implements TreeModel {
 		}
 	}
 
-	/***/
 	private AttributeList walkTreeToBuildAttributeList() throws DicomException {
 		AttributeList list = new AttributeList();
 		FileMetaInformation.addFileMetaInformation(list,SOPClass.MediaStorageDirectoryStorage,new UIDGenerator().getAnotherNewUID(),TransferSyntax.ExplicitVRLittleEndian,null);
@@ -815,7 +908,9 @@ public class DicomDirectory implements TreeModel {
 		}
 	}
 
-	/***/
+	/**
+	 * @param	list
+	 */
 	private void walkTreeToFixUpOffsetsInAttributeList(AttributeList list) throws DicomException {
 		SequenceAttribute directoryRecordSequence = (SequenceAttribute)list.get(TagFromName.DirectoryRecordSequence);
 		list.get(TagFromName.OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity).setValue(directoryRecordSequence.getItem(0).getByteOffset());
@@ -827,8 +922,8 @@ public class DicomDirectory implements TreeModel {
 	 * <p>Write the directory to the named file.</p>
 	 *
 	 * @param	name			the file name to write to
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public void write(String name) throws IOException, DicomException {
 		AttributeList list = walkTreeToBuildAttributeList();
@@ -854,13 +949,11 @@ public class DicomDirectory implements TreeModel {
 		return buffer.toString();
 	}
 
-	/***/
 	public String toString() {
 		return walkTreeToString(root);
 	}
 
-	/***/
-	private Map mapOfSOPInstanceUIDToReferencedFileName;
+	private Map<String,String> mapOfSOPInstanceUIDToReferencedFileName;
 
 	/**
 	 * @param	record
@@ -892,12 +985,15 @@ public class DicomDirectory implements TreeModel {
 	}
 
 	/**
-	 * @param	parentFilePath
+	 * <p>Build a map of file names indexed by SOP Instance UID.</p>
+	 *
+	 * @param	parentFilePath	the path to the root of the file names encoded in this directory
+	 * @return					a map of SOP Instance UID keys to file names including the supplied parentFilePath
 	 */
-	public Map getMapOfSOPInstanceUIDToReferencedFileName(String parentFilePath) {
+	public Map<String,String> getMapOfSOPInstanceUIDToReferencedFileName(String parentFilePath) {
 		if (mapOfSOPInstanceUIDToReferencedFileName == null) {
 //long startTime = System.currentTimeMillis();
-			mapOfSOPInstanceUIDToReferencedFileName = new HashMap();
+			mapOfSOPInstanceUIDToReferencedFileName = new HashMap<String,String>();
 			addToMapOfSOPInstanceUIDToReferencedFileName(root,parentFilePath);
 //long currentTime = System.currentTimeMillis();
 //System.err.println("DicomDirectory.getMapOfSOPInstanceUIDToReferencedFileName(): lazy instantiation of mapOfSOPInstanceUIDToReferencedFileName took = "+(currentTime-startTime)+" ms");
@@ -908,21 +1004,28 @@ public class DicomDirectory implements TreeModel {
 	// Convenience methods and their supporting methods ...
 
 	/**
-	 * @param	sopInstanceUID
+	 * <p>Get the file name for the specified SOP Instance UID.</p>
+	 *
+	 * @param	sopInstanceUID		the SOP Instance UID wanted
+	 * @return						the referenced file name, or null if not found
+	 * @throws	DicomException		if map has not been initialized
 	 */
 	public String getReferencedFileNameForSOPInstanceUID(String sopInstanceUID) throws DicomException {
 		if (mapOfSOPInstanceUIDToReferencedFileName == null) {
 			throw new DicomException("Map of SOPInstanceUID to ReferencedFileName has not been initialized");
 		}
 		else {
-			return (String)(mapOfSOPInstanceUIDToReferencedFileName.get(sopInstanceUID));
+			return mapOfSOPInstanceUIDToReferencedFileName.get(sopInstanceUID);
 
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	components
+	 * <p>Build a string representing the path for a parent (root) and components.</p>
+	 *
+	 * @param	parent		parent file path name
+	 * @param	components	array of filename components
+	 * @return				the path
 	 */
 	private static String buildPathFromParentAndStringArray(String parent,String[] components) throws DicomException {
 		File path = (parent == null) ? null : new File(parent);
@@ -947,8 +1050,11 @@ public class DicomDirectory implements TreeModel {
 	}
 
 	/**
-	 * @param	record
-	 * @param	parentFilePath
+	 * <p>Build a string representing the path for a parent (root) and components of a ReferencedFileID.</p>
+	 *
+	 * @param	record			directory record that contains a ReferencedFileID
+	 * @param	parentFilePath	the root path to which the ReferencedFileID is relative
+	 * @return					the path
 	 */
 	private static String getReferencedFileName(DicomDirectoryRecord record,String parentFilePath) {
 		String name=null;
@@ -963,7 +1069,7 @@ public class DicomDirectory implements TreeModel {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return name;
@@ -972,12 +1078,12 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * <p>Get all the referenced file names at or below the specified directory record, and a map to the directory records that reference them.</p>
 	 *
-	 * @param	record
-	 * @param	parentFilePath		the folder in which the DICOMDIR lives (i.e., the base for contained references)
-	 * @return				a java.util.HashMap whose keys are string file names fully qualified by the specified parent, mapped to DicomDirectoryRecords
+	 * @param	record			directory record to start at
+	 * @param	parentFilePath	the folder in which the DICOMDIR lives (i.e., the base for contained references)
+	 * @return					a {@link java.util.HashMap HashMap} whose keys are {@link java.lang.String String} file names fully qualified by the specified parent, mapped to DicomDirectoryRecords
 	 */
-	public static HashMap findAllContainedReferencedFileNamesAndTheirRecords(DicomDirectoryRecord record,String parentFilePath) {
-		HashMap map = new HashMap();
+	public static HashMap<String,DicomDirectoryRecord> findAllContainedReferencedFileNamesAndTheirRecords(DicomDirectoryRecord record,String parentFilePath) {
+		HashMap<String,DicomDirectoryRecord> map = new HashMap<String,DicomDirectoryRecord>();
 		String name = getReferencedFileName(record,parentFilePath);
 		if (name != null && name.length() > 0) {
 			map.put(name,record);
@@ -990,27 +1096,26 @@ public class DicomDirectory implements TreeModel {
 		return map;
 	}
 
-
 	/**
 	 * <p>Get all the referenced file names in the entire directory, and a map to the directory records that reference them.</p>
 	 *
-	 * @param	parentFilePath		the folder in which the DICOMDIR lives (i.e., the base for contained references)
-	 * @return				a java.util.HashMap whose keys are string file names fully qualified by the specified parent, mapped to DicomDirectoryRecords
+	 * @param	parentFilePath	the folder in which the DICOMDIR lives (i.e., the base for contained references)
+	 * @return					a {@link java.util.HashMap HashMap} whose keys are {@link java.lang.String String} file names fully qualified by the specified parent, mapped to DicomDirectoryRecords
 	 */
-	public HashMap findAllContainedReferencedFileNamesAndTheirRecords(String parentFilePath) {
+	public HashMap<String,DicomDirectoryRecord> findAllContainedReferencedFileNamesAndTheirRecords(String parentFilePath) {
 		return findAllContainedReferencedFileNamesAndTheirRecords((DicomDirectoryRecord)(getRoot()),parentFilePath);
 	}
 
 	/**
 	 * <p>Get all the referenced file names at or below the specified directory record.</p>
 	 *
-	 * @param	record
-	 * @param	parentFilePath		the folder in which the DICOMDIR lives (i.e., the base for contained references)
-	 * @return				a java.util.Vector of string file names fully qualified by the specified parent
+	 * @param	record			directory record to start at
+	 * @param	parentFilePath	the folder in which the DICOMDIR lives (i.e., the base for contained references)
+	 * @return					a {@link java.util.Vector Vector} of {@link java.lang.String String} file names fully qualified by the specified parent
 	 */
-	public static Vector findAllContainedReferencedFileNames(DicomDirectoryRecord record,String parentFilePath) {
+	public static Vector<String> findAllContainedReferencedFileNames(DicomDirectoryRecord record,String parentFilePath) {
 //long startTime = System.currentTimeMillis();
-		Vector names = new Vector();
+		Vector<String> names = new Vector<String>();
 		//String name = getReferencedFileName(record,parentFilePath);
 		//if (name != null) names.add(name);
 		//int nChildren = record.getChildCount();
@@ -1019,7 +1124,7 @@ public class DicomDirectory implements TreeModel {
 		//	names.addAll(findAllContainedReferencedFileNames(child,parentFilePath));
 		//}
 		//return names;
-		HashMap map = findAllContainedReferencedFileNamesAndTheirRecords(record,parentFilePath);
+		HashMap<String,DicomDirectoryRecord> map = findAllContainedReferencedFileNamesAndTheirRecords(record,parentFilePath);
 		names.addAll(map.keySet());
 //long currentTime = System.currentTimeMillis();
 //System.err.println("DicomDirectory.findAllContainedReferencedFileNames(): took = "+(currentTime-startTime)+" ms");
@@ -1029,10 +1134,10 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * <p>Get all the referenced file names in the entire directory.</p>
 	 *
-	 * @param	parentFilePath		the folder in which the DICOMDIR lives (i.e., the base for contained references)
-	 * @return				a java.util.Vector of string file names fully qualified by the specified parent
+	 * @param	parentFilePath	the folder in which the DICOMDIR lives (i.e., the base for contained references)
+	 * @return					a {@link java.util.Vector Vector} of {@link java.lang.String String} file names fully qualified by the specified parent
 	 */
-	public Vector findAllContainedReferencedFileNames(String parentFilePath) {
+	public Vector<String> findAllContainedReferencedFileNames(String parentFilePath) {
 		return findAllContainedReferencedFileNames((DicomDirectoryRecord)(getRoot()),parentFilePath);
 	}
 
@@ -1042,7 +1147,7 @@ public class DicomDirectory implements TreeModel {
 	 * @param	attributeLists
 	 * @param	frameOfReferenceUID
 	 */
-	private static void findAllImagesForFrameOfReference(DicomDirectoryRecord record,Vector attributeLists,String frameOfReferenceUID) {
+	private static void findAllImagesForFrameOfReference(DicomDirectoryRecord record,Vector<AttributeList> attributeLists,String frameOfReferenceUID) {
 		if (record != null) {
 			AttributeList list=record.getAttributeList();
 			if (list != null) {
@@ -1066,12 +1171,12 @@ public class DicomDirectory implements TreeModel {
 	 *
 	 * <p>Note that even though FrameOfReference is a series level entity, in the CT/MR profiles it is specified at the IMAGE directory record level.</p>
 	 *
-	 * @param	frameOfReferenceUID
-	 * @return				a java.util.Vector of com.pixelmed.dicom.AttributeList
+	 * @param	frameOfReferenceUID the frame of reference UID to search for
+	 * @return						a {@link java.util.Vector Vector} of {@link com.pixelmed.dicom.AttributeList AttributeList}
 	 */
-	public Vector findAllImagesForFrameOfReference(String frameOfReferenceUID) {
+	public Vector<AttributeList> findAllImagesForFrameOfReference(String frameOfReferenceUID) {
 //long startTime = System.currentTimeMillis();
-		Vector attributeLists = new Vector();
+		Vector<AttributeList> attributeLists = new Vector<AttributeList>();
 		findAllImagesForFrameOfReference((DicomDirectoryRecord)getRoot(),attributeLists,frameOfReferenceUID);
 //long currentTime = System.currentTimeMillis();
 //System.err.println("DicomDirectory.findAllImagesForFrameOfReference(): took = "+(currentTime-startTime)+" ms");
@@ -1081,38 +1186,58 @@ public class DicomDirectory implements TreeModel {
 	/**
 	 * <p>Read DICOM files and create a DICOMDIR.</p>
 	 *
-	 * @param	arg	 optionally the folder in which the files and DICOMDIR are rooted, the filename of the DICOMDIR to be created, then the filenames of the DICOM files to include
+	 * @param	arg	 optionally the folder in which the files and DICOMDIR are rooted, the filename of the DICOMDIR to be created, then optionally a list of all the filenames of the DICOM files to include (otherwise the folder will be searched)
 	 */
 	public static void main(String arg[]) {
 		if (arg.length >= 2) {
 			try {
-				File rootDirectoryName = new File(arg[0]);
+				File rootDirectory = new File(arg[0]);
 				int offset;
 				String dicomdirName;
-				if (rootDirectoryName.isDirectory()) {
+				if (rootDirectory.isDirectory()) {
 					offset = 2;
-					dicomdirName = new File(rootDirectoryName,arg[1]).getCanonicalPath();
+					dicomdirName = new File(rootDirectory,arg[1]).getCanonicalPath();
 				}
 				else {
-					rootDirectoryName = null;
+					rootDirectory = null;
 					offset = 1;
 					dicomdirName = arg[0];
 				}
 				int nFiles  = arg.length - offset;
-				String[] sourceFiles = new String[nFiles];
-				System.arraycopy(arg,offset,sourceFiles,0,nFiles);
+				String[] sourceFiles;
+				if (nFiles == 0 && rootDirectory != null && rootDirectory.isDirectory()) {
+					// search the supplied rootDirectory for all files and supply them to constructor as paths relative to the rootDirectory
+					ArrayList<File> sourceFilesList = FileUtilities.listFilesRecursively(rootDirectory);
+					nFiles = sourceFilesList.size();
+					sourceFiles = new String[nFiles];
+					String canonicalPathOfRootDirectoryForReplacement = "^" + Pattern.quote(rootDirectory.getCanonicalPath()) + File.separator;
+					//sourceFiles = FileUtilities.getCanonicalFileNames(sourceFilesList).toArray(sourceFiles);
+					//for (int i=0; i<nFiles; ++i) {
+					//	sourceFiles[i] = sourceFiles[i].replaceFirst(canonicalPathOfRootDirectoryForReplacement,"");
+//System.err.println("DicomDirectory.main(): sourceFiles["+i+"] = "+sourceFiles[i]);
+					//}
+					int i=0;
+					for (File f : sourceFilesList) {
+//System.err.println("DicomDirectory.main(): sourceFiles["+i+"] = "+sourceFiles[i]);
+						sourceFiles[i++] = f.getCanonicalPath().replaceFirst(canonicalPathOfRootDirectoryForReplacement,"");
+					}
+				}
+				else {
+					sourceFiles = new String[nFiles];
+					System.arraycopy(arg,offset,sourceFiles,0,nFiles);
+				}
 				DicomDirectory dicomDirectory;
-				if (rootDirectoryName == null) {
+				if (rootDirectory == null) {
 					dicomDirectory = new DicomDirectory(sourceFiles);
 				}
 				else {
-					dicomDirectory = new DicomDirectory(rootDirectoryName,sourceFiles);
+					dicomDirectory = new DicomDirectory(rootDirectory,sourceFiles);
 				}
 //System.err.println("DicomDirectory.main(): created:\n"+dicomDirectory);
 				dicomDirectory.write(dicomdirName);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				System.exit(0);
 			}
 		}

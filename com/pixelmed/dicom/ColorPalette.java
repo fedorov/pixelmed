@@ -1,10 +1,13 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import com.pixelmed.utils.ByteArray;
 
 import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to encapsulate color palettes, including serialization and deserialization to and from standard DICOM color palette IODs.</p>
@@ -14,7 +17,9 @@ import java.io.IOException;
  * @author	dclunie
  */
 public class ColorPalette {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ColorPalette.java,v 1.5 2012/07/02 22:30:01 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ColorPalette.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ColorPalette.class);
 	
 	protected String sopInstanceUID = null;
 	protected String contentLabel = null;
@@ -105,6 +110,7 @@ public class ColorPalette {
 					java.util.Date currentDateTime = new java.util.Date();
 					{ Attribute a = new DateAttribute(TagFromName.InstanceCreationDate); a.addValue(new java.text.SimpleDateFormat("yyyyMMdd").format(currentDateTime)); list.put(a); }
 					{ Attribute a = new TimeAttribute(TagFromName.InstanceCreationTime); a.addValue(new java.text.SimpleDateFormat("HHmmss.SSS").format(currentDateTime)); list.put(a); }
+					{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue(DateTimeAttribute.getTimeZone(java.util.TimeZone.getDefault(),currentDateTime)); list.put(a); }
 				}
 				if (iccProfile != null && iccProfile.length > 0) {
 //System.err.println("ColorPalette.getAttributeList(): adding ICCProfile");
@@ -142,6 +148,8 @@ public class ColorPalette {
 	 * @param	dicomFileName		to write
 	 * @param	iccProfileFileName	to read
 	 * @param	aet					our Application Entity Title to include in the metaheader
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	protected void createDICOMInstance(String dicomFileName,String iccProfileFileName,String aet) throws IOException, DicomException {
 		if (iccProfileFileName != null) {
@@ -151,7 +159,7 @@ public class ColorPalette {
 		AttributeList list = getAttributeList();
 		FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,aet);
 //System.err.println(list);
-System.err.println("ColorPalette.createDICOMInstance(): Writing palette to file "+dicomFileName);
+		slf4jlogger.info("createDICOMInstance(): Writing palette to file {}",dicomFileName);
 		list.write(dicomFileName,TransferSyntax.ExplicitVRLittleEndian,true,true);
 	}
 }

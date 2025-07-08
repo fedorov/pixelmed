@@ -1,15 +1,6 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
-
-import java.awt.GridLayout; 
-import java.awt.Color; 
-import java.awt.Container; 
-import java.awt.Dimension;
-import java.io.FileInputStream; 
-import javax.swing.JComponent; 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
 import com.pixelmed.event.ApplicationEventDispatcher; 
 import com.pixelmed.event.Event; 
@@ -21,12 +12,25 @@ import com.pixelmed.dicom.DicomInputStream;
 import com.pixelmed.dicom.GeometryOfVolumeFromAttributeList;
 import com.pixelmed.geometry.GeometryOfVolume;
 
+import java.awt.GridLayout; 
+import java.awt.Color; 
+import java.awt.Container; 
+import java.awt.Dimension;
+import java.io.FileInputStream; 
+import javax.swing.JComponent; 
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 class TestAppMultiFrameCompare extends ApplicationFrame {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFrameCompare.java,v 1.21 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFrameCompare.java,v 1.9 2013/02/20 19:05:52 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(TestAppMultiFrameCompare.class);
 	
 	private static final int findClosestPositionMatch(double source,double[] target) {
 		double lowestDifference = 999999999.0;
@@ -38,7 +42,7 @@ class TestAppMultiFrameCompare extends ApplicationFrame {
 				lowestIndex=i;
 			}
 		}
-System.err.println("findClosestPositionMatch: source "+source+" target "+target[lowestIndex]+" difference "+lowestDifference);
+		slf4jlogger.info("findClosestPositionMatch: source {} target {} difference {}",source,target[lowestIndex],lowestDifference);
 		return lowestIndex;
 	}
 	
@@ -48,7 +52,10 @@ System.err.println("findClosestPositionMatch: source "+source+" target "+target[
 
 	// implement FrameSelectionChangeListener to respond to events from self or elsewhere ...
 	
-	private OurFrameSelectionChangeListener ourFrameSelectionChangeListener;
+	// keep strong references to change listeners for duration of application, since only a WeakReference in ApplicationEventDispatcher, so may go away at GC !!!
+	
+	private OurFrameSelectionChangeListener frameSelectionChangeListener0To1;
+	private OurFrameSelectionChangeListener frameSelectionChangeListener1To0;
 
 	class OurFrameSelectionChangeListener extends SelfRegisteringListener {
 	
@@ -82,27 +89,27 @@ System.err.println("findClosestPositionMatch: source "+source+" target "+target[
 			FrameSelectionChangeEvent fse = (FrameSelectionChangeEvent)e;
 //System.err.println("OurFrameSelectionChangeListener.changed(): source="+whichSource+"("+fse+") target="+whichTarget+" ("+targetEventContext+")");
 			int srcImageIndex = fse.getIndex();
-System.err.println("source slice index "+srcImageIndex);
-			if (srcImageIndex != lastIndex) {	// don't keep doing it if already done
+			slf4jlogger.info("source slice index {}",srcImageIndex);
+			if (srcImageIndex != lastIndex) {	// don't keep doing it if already done ... otherwise would loop back and forth infinitely !
 				lastIndex=srcImageIndex;
 				// assert fse.getEventContext() == sourceEventContext;
 				// assert fse.getEventContext() == eventContextOfSingleImagePanel[whichSource];
 				double sourcePosition = distancesAlongNormal[whichSource][srcImageIndex];
-System.err.println("source slice geometry distance cached "+sourcePosition);
+				slf4jlogger.info("source slice geometry distance cached {}",sourcePosition);
 				int match = findClosestPositionMatch(sourcePosition,distancesAlongNormal[whichTarget]);
-System.err.println("target slice match index "+match);
+				slf4jlogger.info("target slice match index {}",match);
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 					new FrameSelectionChangeEvent(targetEventContext/*eventContextOfSingleImagePanel[whichTarget]*/,match));
 			}
 		}
 		
 	}
-
+	
 	/**
 	 */
 	void addInterleavedFrameSelectionListeners() {
-			new OurFrameSelectionChangeListener(eventContextOfSingleImagePanel[0],eventContextOfSingleImagePanel[1]);
-			new OurFrameSelectionChangeListener(eventContextOfSingleImagePanel[1],eventContextOfSingleImagePanel[0]);
+		frameSelectionChangeListener0To1 = new OurFrameSelectionChangeListener(eventContextOfSingleImagePanel[0],eventContextOfSingleImagePanel[1]);
+		frameSelectionChangeListener1To0 = new OurFrameSelectionChangeListener(eventContextOfSingleImagePanel[1],eventContextOfSingleImagePanel[0]);
 	}
 
 	/**
@@ -118,7 +125,7 @@ System.err.println("target slice match index "+match);
 		multiPanel.setBackground(Color.black);
 		af.eventContextOfSingleImagePanel = new EventContext[2];
 		for (int i=0; i<2; ++i) {
-//System.err.println("looping for next image");
+//System.err.println("looping for next image");	// no need to use SLF4J since command line utility/test
 			try {
 				DicomInputStream in = new DicomInputStream(new FileInputStream(arg[i]));
 				AttributeList list = new AttributeList();
@@ -134,8 +141,7 @@ System.err.println("target slice match index "+match);
 //System.err.println("adding to multiPanel");
 				multiPanel.add(ip);
 			} catch (Exception e) {
-				System.err.println(e);
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				System.exit(0);
 			}
 		}

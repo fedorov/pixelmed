@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -6,7 +6,7 @@ import com.pixelmed.dicom.*;
 
 public class CTDoseCheckDetails {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDoseCheckDetails.java,v 1.2 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDoseCheckDetails.java,v 1.13 2025/01/29 10:58:08 dclunie Exp $";
 	
 	protected boolean alertDLPValueConfigured;
 	protected String  alertDLPValue;
@@ -98,12 +98,12 @@ public class CTDoseCheckDetails {
 			ContentItem alertDLPValueConfiguredContentItem = alertDetailsFragment.getNamedChild("DCM","113901");		// "DLP Alert Value Configured"
 			alertDLPValueConfigured = alertDLPValueConfiguredContentItem != null
 								   && alertDLPValueConfiguredContentItem instanceof ContentItemFactory.CodeContentItem
-								   && ((ContentItemFactory.CodeContentItem)alertDLPValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("R-0038D","SRT");	// "Yes"
+								   && ((ContentItemFactory.CodeContentItem)alertDLPValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("373066001","SCT");	// "Yes"
 
 			ContentItem alertCTDIvolValueConfiguredContentItem = alertDetailsFragment.getNamedChild("DCM","113902");	// "CTDIvol Alert Value Configured"
 			alertCTDIvolValueConfigured = alertCTDIvolValueConfiguredContentItem != null
 								   && alertCTDIvolValueConfiguredContentItem instanceof ContentItemFactory.CodeContentItem
-								   && ((ContentItemFactory.CodeContentItem)alertCTDIvolValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("R-0038D","SRT");	// "Yes"
+								   && ((ContentItemFactory.CodeContentItem)alertCTDIvolValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("373066001","SCT");	// "Yes"
 
 			alertDLPValue                          = alertDetailsFragment.getSingleStringValueOrNullOfNamedChild("DCM","113903");	// "DLP Alert Value"						... should really check units are mGy.cm :(
 			alertCTDIvolValue                      = alertDetailsFragment.getSingleStringValueOrNullOfNamedChild("DCM","113904");	// "CTDIvol Alert Value"					... should really check units are mGy :(
@@ -119,12 +119,12 @@ public class CTDoseCheckDetails {
 			ContentItem notificationDLPValueConfiguredContentItem = notificationDetailsFragment.getNamedChild("DCM","113909");		// "DLP Notification Value Configured"
 			notificationDLPValueConfigured = notificationDLPValueConfiguredContentItem != null
 										  && notificationDLPValueConfiguredContentItem instanceof ContentItemFactory.CodeContentItem
-										  && ((ContentItemFactory.CodeContentItem)notificationDLPValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("R-0038D","SRT");	// "Yes"
+										  && ((ContentItemFactory.CodeContentItem)notificationDLPValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("373066001","SCT");	// "Yes"
 
 			ContentItem notificationCTDIvolValueConfiguredContentItem = notificationDetailsFragment.getNamedChild("DCM","113910");	// "CTDIvol Notification Value Configured"
 			notificationCTDIvolValueConfigured = notificationCTDIvolValueConfiguredContentItem != null
 											  && notificationCTDIvolValueConfiguredContentItem instanceof ContentItemFactory.CodeContentItem
-											  && ((ContentItemFactory.CodeContentItem)notificationCTDIvolValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("R-0038D","SRT");	// "Yes"
+											  && ((ContentItemFactory.CodeContentItem)notificationCTDIvolValueConfiguredContentItem).contentItemValueMatchesCodeValueAndCodingSchemeDesignator("373066001","SCT");	// "Yes"
 
 			notificationDLPValue               = notificationDetailsFragment.getSingleStringValueOrNullOfNamedChild("DCM","113911");	// "DLP Notification Value"						... should really check units are mGy.cm :(
 			notificationCTDIvolValue           = notificationDetailsFragment.getSingleStringValueOrNullOfNamedChild("DCM","113912");	// "CTDIvol Notification Value"					... should really check units are mGy :(
@@ -160,10 +160,10 @@ public class CTDoseCheckDetails {
 			ContentItem alertDetailsFragment = cif.new ContainerContentItem(root,"CONTAINS",new CodedSequenceItem("113900","DCM","Dose Check Alert Details"),true/*continuityOfContentIsSeparate*/);
 			
 			cif.new CodeContentItem(alertDetailsFragment,"CONTAINS",new CodedSequenceItem("113901","DCM","DLP Alert Value Configured"),
-				alertDLPValueConfigured ? new CodedSequenceItem("R-0038D","SRT","Yes") : new CodedSequenceItem("R-00339","SRT","No"));
+				alertDLPValueConfigured ? new CodedSequenceItem("373066001","SCT","Yes") : new CodedSequenceItem("373067005","SCT","No"));
 			
 			cif.new CodeContentItem(alertDetailsFragment,"CONTAINS",new CodedSequenceItem("113902","DCM","CTDIvol Alert Value Configured"),
-				alertCTDIvolValueConfigured ? new CodedSequenceItem("R-0038D","SRT","Yes") : new CodedSequenceItem("R-00339","SRT","No"));
+				alertCTDIvolValueConfigured ? new CodedSequenceItem("373066001","SCT","Yes") : new CodedSequenceItem("373067005","SCT","No"));
 			
 			if (/*alertDLPValueConfigured && */alertDLPValue != null && alertDLPValue.trim().length() > 0) {
 				cif.new NumericContentItem(alertDetailsFragment,"CONTAINS",new CodedSequenceItem("113903","DCM","DLP Alert Value"),alertDLPValue,new CodedSequenceItem("mGy.cm","UCUM","1.8","mGy.cm"));
@@ -193,10 +193,10 @@ public class CTDoseCheckDetails {
 			ContentItem notificationDetailsFragment = cif.new ContainerContentItem(root,"CONTAINS",new CodedSequenceItem("113908","DCM","Dose Check Notification Details"),true/*continuityOfContentIsSeparate*/);
 			
 			cif.new CodeContentItem(notificationDetailsFragment,"CONTAINS",new CodedSequenceItem("113909","DCM","DLP Notification Value Configured"),
-				notificationDLPValueConfigured ? new CodedSequenceItem("R-0038D","SRT","Yes") : new CodedSequenceItem("R-00339","SRT","No"));
+				notificationDLPValueConfigured ? new CodedSequenceItem("373066001","SCT","Yes") : new CodedSequenceItem("373067005","SCT","No"));
 			
 			cif.new CodeContentItem(notificationDetailsFragment,"CONTAINS",new CodedSequenceItem("113910","DCM","CTDIvol Notification Value Configured"),
-				notificationCTDIvolValueConfigured ? new CodedSequenceItem("R-0038D","SRT","Yes") : new CodedSequenceItem("R-00339","SRT","No"));
+				notificationCTDIvolValueConfigured ? new CodedSequenceItem("373066001","SCT","Yes") : new CodedSequenceItem("373067005","SCT","No"));
 			
 			if (/*notificationDLPValueConfigured && */notificationDLPValue != null && notificationDLPValue.trim().length() > 0) {
 				cif.new NumericContentItem(notificationDetailsFragment,"CONTAINS",new CodedSequenceItem("113911","DCM","DLP Notification Value"),notificationDLPValue,new CodedSequenceItem("mGy.cm","UCUM","1.8","mGy.cm"));

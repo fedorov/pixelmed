@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -26,6 +26,9 @@ import com.pixelmed.display.event.RegionSelectionChangeEvent;
 import com.pixelmed.geometry.GeometryOfSlice;
 import com.pixelmed.geometry.GeometryOfVolume;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>Implements a component that extends a SingleImagePanel to also detect region boundaries within a specified region of interest.</p>
  *
@@ -34,9 +37,9 @@ import com.pixelmed.geometry.GeometryOfVolume;
  * @author	dclunie
  */
 class SingleImagePanelWithRegionDetection extends SingleImagePanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithRegionDetection.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithRegionDetection.java,v 1.2 2011/05/25 14:19:17 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SingleImagePanelWithRegionDetection.class);
 
 	// Constructors ...
 
@@ -233,7 +236,7 @@ class SingleImagePanelWithRegionDetection extends SingleImagePanel {
 		double angleBetweenXAxisAndLongestPath = Math.atan((double)(deltaY)/(double)(deltaX));
 
 //System.err.println("Longest from ("+fromX+","+fromY+") to ("+toX+","+toY+") length="+length+" pixels, angle="+angleBetweenXAxisAndLongestPath+" radians or "+(angleBetweenXAxisAndLongestPath*180/Math.PI)+" degrees");
-System.err.println("Long axis length="+length+" pixels ("+(length*pixelSpacing)+" mm)");
+		slf4jlogger.info("Long axis length={} pixels ({} mm)",length,(length*pixelSpacing));
 
 		double mostNegativeNormalDistance = 0;
 		double mostPositiveNormalDistance = 0;
@@ -284,9 +287,9 @@ System.err.println("Long axis length="+length+" pixels ("+(length*pixelSpacing)+
 			}
 		}
 
-System.err.println("Short axis most negative side length="+mostNegativeNormalDistance+" pixels ("+(mostNegativeNormalDistance*pixelSpacing)+" mm)");
-System.err.println("Short axis most positive side length="+mostPositiveNormalDistance+" pixels ("+(mostPositiveNormalDistance*pixelSpacing)+" mm)");
-System.err.println("Short axis total length="+(Math.abs(mostNegativeNormalDistance)+Math.abs(mostPositiveNormalDistance))+" pixels ("+((Math.abs(mostNegativeNormalDistance)+Math.abs(mostPositiveNormalDistance))*pixelSpacing)+" mm)");
+		slf4jlogger.info("Short axis most negative side length={} pixels ({} mm)",mostNegativeNormalDistance,(mostNegativeNormalDistance*pixelSpacing));
+		slf4jlogger.info("Short axis most positive side length={} pixels ({} mm)",mostPositiveNormalDistance,(mostPositiveNormalDistance*pixelSpacing));
+		slf4jlogger.info("Short axis total length={} pixels ({} mm)",(Math.abs(mostNegativeNormalDistance)+Math.abs(mostPositiveNormalDistance)),((Math.abs(mostNegativeNormalDistance)+Math.abs(mostPositiveNormalDistance))*pixelSpacing));
 
 		IntegerPointWithValue resultArray[] = new IntegerPointWithValue[6];
 		resultArray[0]=fromPoint;
@@ -477,7 +480,7 @@ System.err.println("Short axis total length="+(Math.abs(mostNegativeNormalDistan
 				longestPath=findLongestAndShortestPaths(pointsAlreadyChecked,voxelSpacing);
 			}
 			catch (Exception e) {
-				e.printStackTrace();	// possible whilst creating points
+				slf4jlogger.error("",e);	// possible whilst creating points
 			}
 			
 			if (longestPath != null) {
@@ -590,7 +593,7 @@ System.err.println("Short axis total length="+(Math.abs(mostNegativeNormalDistan
 				regionSelectionBRHCX,regionSelectionBRHCY);
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);
 		}
 		
 		repaint();

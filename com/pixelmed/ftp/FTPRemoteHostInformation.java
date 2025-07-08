@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
 
@@ -11,6 +11,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class encapsulates information about remote FTP servers.</p>
@@ -27,8 +30,9 @@ import java.util.TreeMap;
  * @author	dclunie
  */
 public class FTPRemoteHostInformation {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPRemoteHostInformation.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPRemoteHostInformation.java,v 1.2 2010/12/01 13:31:38 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FTPRemoteHostInformation.class);
 
 	public static final String propertyName_FtpRemoteHosts = "Ftp.RemoteHosts";
 	
@@ -106,7 +110,7 @@ public class FTPRemoteHostInformation {
 				}
 			}
 			properties.remove(propertyName_FtpRemoteHosts);
-System.err.println("FTPRemoteHostInformation.getProperties(): after removing existing remote AEs, properties = \n"+properties);
+			slf4jlogger.info("FTPRemoteHostInformation.getProperties(): after removing existing remote AEs, properties = \n{}",properties);
 		}
 		
 		{
@@ -132,7 +136,7 @@ System.err.println("FTPRemoteHostInformation.getProperties(): after removing exi
 			}
 			properties.setProperty(propertyName_FtpRemoteHosts,remoteHosts.toString());
 		}
-System.err.println("FTPRemoteHostInformation.getProperties(): at end, properties = \n"+properties);
+		slf4jlogger.info("FTPRemoteHostInformation.getProperties(): at end, properties = \n{}",properties);
 
 		return properties;
 	}
@@ -161,7 +165,7 @@ System.err.println("FTPRemoteHostInformation.getProperties(): at end, properties
 	 *
 	 * @param	localName
 	 * @param	frh
-	 * @exception	FTPException	if local name already used, or either is null or empty
+	 * @throws	FTPException	if local name already used, or either is null or empty
 	 */
 	public void add(String localName,FTPRemoteHost frh) throws FTPException {
 		if (localName != null && localName.length() > 0) {
@@ -185,7 +189,7 @@ System.err.println("FTPRemoteHostInformation.getProperties(): at end, properties
 	 * @param	password
 	 * @param	directory
 	 * @param	security
-	 * @exception	FTPException	if local name or AET already used, or either is null or empty
+	 * @throws	FTPException	if local name or AET already used, or either is null or empty
 	 */
 	public void add(String localName,String host,String user,String password,String directory,FTPSecurityType security) throws FTPException {
 		FTPRemoteHost frh = new FTPRemoteHost(host,user,password,directory,security);

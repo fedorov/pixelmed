@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -99,7 +99,7 @@ public class TestCommonDoseObserverContext extends TestCase {
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID = "+operatorID,ppadRoot.getNamedChild("DCM","113871").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Person ID Issuer = "+idIssuer,ppadRoot.getNamedChild("DCM","113872").toString());
 		assertEquals("Checking SR fragment","HAS PROPERTIES: TEXT: Organization Name = "+organization,ppadRoot.getNamedChild("DCM","113873").toString());
-		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Technologist",ppadRoot.getNamedChild("DCM","113874").toString());
+		assertEquals("Checking SR fragment","HAS PROPERTIES: CODE: Person Role in Organization = Radiologic Technologist",ppadRoot.getNamedChild("DCM","113874").toString());
 		
 		PersonParticipant ppau = cdoc.getPersonParticipantAuthorizing();
 		

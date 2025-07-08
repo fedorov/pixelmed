@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -6,6 +6,9 @@ import com.pixelmed.utils.FloatFormatter;
 
 import java.util.Iterator;
 import java.util.Locale;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class with methods for constructing a {@link com.pixelmed.dicom.ContentItem ContentItem} of the appropriate class from a list of attributes.</p>
@@ -25,53 +28,49 @@ import java.util.Locale;
  * @author	dclunie
  */
 public class ContentItemFactory {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemFactory.java,v 1.52 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemFactory.java,v 1.32 2013/03/16 16:48:43 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompositeInstanceContext.class);
 	
 	/***/
 	public class UnrecognizedContentItem extends ContentItemWithValue {
 		
 		/**
-		 * @param	parent
+		 * @param	parent							parent content item to add to
 		 */
 		public UnrecognizedContentItem(ContentItem parent) {
 			super(parent,null);
 		}
 		
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public UnrecognizedContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
 		}
 		
 		/**
-		 * @param	parent
-		 * @param	list
-		 * @param	name
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
+		 * @param	valueType						the valueType encoded for the content item (is discarded)
 		 */
-		public UnrecognizedContentItem(ContentItem parent,AttributeList list,String name) {
+		public UnrecognizedContentItem(ContentItem parent,AttributeList list,String valueType) {
 			super(parent,list);
 		}
 		
-		/***/
 		public String getConceptValue()      { return ""; }
 	}
 	
 	/***/
 	public class ContainerContentItem extends ContentItemWithValue {
-		/***/
 		protected String continuityOfContent;
-		/***/
 		protected String templateMappingResource;
-		/***/
 		protected String templateIdentifier;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public ContainerContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -86,17 +85,20 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
 		 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
-		 * @param	templateMappingResource
-		 * @param	templateIdentifier
-		 * @throws	DicomException
+		 * @param	templateMappingResource			identifier of the template mapping resource
+		 * @param	templateIdentifier				identifier of the template
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public ContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate,
-				String templateMappingResource,String templateIdentifier) throws DicomException {
-			super(parent,"CONTAINER",relationshipType,conceptName);
+									String templateMappingResource,String templateIdentifier,
+									String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"CONTAINER",relationshipType,conceptName,observationDateTime,observationUID);
 			continuityOfContent = continuityOfContentIsSeparate ? "SEPARATE" : "CONTINUOUS";
 			{ Attribute a = new CodeStringAttribute(TagFromName.ContinuityOfContent); a.addValue(continuityOfContent); list.put(a); }
 			this.templateMappingResource = templateMappingResource;
@@ -117,39 +119,58 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
 		 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
-		 * @throws	DicomException
+		 * @param	templateMappingResource			identifier of the template mapping resource
+		 * @param	templateIdentifier				identifier of the template
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public ContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate,
+									String templateMappingResource,String templateIdentifier) throws DicomException {
+			this(parent,relationshipType,conceptName,continuityOfContentIsSeparate,
+				 templateMappingResource,templateIdentifier,null/*observationDateTime*/,null/*observationUID*/);
+		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public ContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate) throws DicomException {
-			this(parent,relationshipType,conceptName,true,null,null);
+			this(parent,relationshipType,conceptName,continuityOfContentIsSeparate,null/*templateMappingResource*/,null/*templateIdentifier*/,null/*observationDateTime*/,null/*observationUID*/);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public ContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName) throws DicomException {
-			this(parent,relationshipType,conceptName,true);
+			this(parent,relationshipType,conceptName,true/*continuityOfContentIsSeparate*/);
 		}
 
-		/***/
 		public String getConceptValue()      { return ""; }
 
-		/***/
+		/**
+		 * @return	the continuity of content
+		 */
 		public String getContinuityOfContent()      { return continuityOfContent; }
 
-		/***/
+		/**
+		 * @return	the template mapping resource
+		 */
 		public String getTemplateMappingResource()      { return templateMappingResource; }
 
-		/***/
+		/**
+		 * @return	the template identifier
+		 */
 		public String getTemplateIdentifier()      { return templateIdentifier; }
 
-		/***/
 		public String toString() {
 			return super.toString()
 				   +(continuityOfContent != null && continuityOfContent.length() > 0 ? " ["+continuityOfContent+"]" : "")
@@ -159,13 +180,31 @@ public class ContentItemFactory {
 	}
 	
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
 	 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
-	 * @param	templateMappingResource
-	 * @param	templateIdentifier
-	 * @throws	DicomException
+	 * @param	templateMappingResource			identifier of the template mapping resource
+	 * @param	templateIdentifier				identifier of the template
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public ContainerContentItem makeContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate,
+				String templateMappingResource,String templateIdentifier,String observationDateTime,String observationUID) throws DicomException {
+		return new ContainerContentItem(parent,relationshipType,conceptName,continuityOfContentIsSeparate,templateMappingResource,templateIdentifier,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
+	 * @param	templateMappingResource			identifier of the template mapping resource
+	 * @param	templateIdentifier				identifier of the template
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ContainerContentItem makeContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate,
 				String templateMappingResource,String templateIdentifier) throws DicomException {
@@ -173,11 +212,12 @@ public class ContentItemFactory {
 	}
 	
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
 	 * @param	continuityOfContentIsSeparate	true if SEPARATE, false if CONTINUOUS
-	 * @throws	DicomException
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ContainerContentItem makeContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,boolean continuityOfContentIsSeparate) throws DicomException {
 		return new ContainerContentItem(parent,relationshipType,conceptName,continuityOfContentIsSeparate,null/*templateMappingResource*/,null/*templateIdentifier*/);
@@ -189,28 +229,26 @@ public class ContentItemFactory {
 	 *
 	 * Default to separate continuity
 	 *
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ContainerContentItem makeContainerContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName) throws DicomException {
-		return new ContainerContentItem(parent,relationshipType,conceptName,true/*continuityOfContentIsSeparate*/,null/*templateMappingResource*/,null/*templateIdentifier*/);
+		return new ContainerContentItem(parent,relationshipType,conceptName,true/*continuityOfContentIsSeparate*/,null/*templateMappingResource*/,null/*templateIdentifier*/,null,null);
 	}
 
 	/***/
 	public class CompositeContentItem extends ContentItemWithValue {
 
-		/***/
 		protected AttributeList referencedSOPSequenceItemAttributeList;		// subclasses will use this to extract or to add macro-specific attributes
-		/***/
 		protected String referencedSOPClassUID;
-		/***/
 		protected String referencedSOPInstanceUID;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public CompositeContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -224,38 +262,71 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	referencedSOPClassUID
-		 * @param	referencedSOPInstanceUID
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public CompositeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
-				String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
+				String referencedSOPClassUID,String referencedSOPInstanceUID,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"COMPOSITE",relationshipType,conceptName,observationDateTime,observationUID);
+			doCommonConstructorStuff(referencedSOPClassUID,referencedSOPInstanceUID);
+		}
+
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public CompositeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
+									String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
 			super(parent,"COMPOSITE",relationshipType,conceptName);
 			doCommonConstructorStuff(referencedSOPClassUID,referencedSOPInstanceUID);
 		}
-	
+
 		/**
-		 * @param	parent
-		 * @param	valueType
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	referencedSOPClassUID
-		 * @param	referencedSOPInstanceUID
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	valueType						the value type
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		protected CompositeContentItem(ContentItem parent,String valueType,String relationshipType,CodedSequenceItem conceptName,
-				String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
-			super(parent,valueType,relationshipType,conceptName);
+				String referencedSOPClassUID,String referencedSOPInstanceUID,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,valueType,relationshipType,conceptName,observationDateTime,observationUID);
 			doCommonConstructorStuff(referencedSOPClassUID,referencedSOPInstanceUID);
 		}
-	
+		
 		/**
-		 * @param	referencedSOPClassUID
-		 * @param	referencedSOPInstanceUID
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	valueType						the value type
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		protected CompositeContentItem(ContentItem parent,String valueType,String relationshipType,CodedSequenceItem conceptName,
+									   String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
+			this(parent,valueType,relationshipType,conceptName,
+				referencedSOPClassUID,referencedSOPInstanceUID,null/*observationDateTime*/,null/*observationUID*/);
+		}
+
+		/**
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		protected void doCommonConstructorStuff(String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
 			referencedSOPSequenceItemAttributeList = new AttributeList();
@@ -272,53 +343,67 @@ public class ContentItemFactory {
 			referencedSOPSequence.addItem(referencedSOPSequenceItemAttributeList);
 		}
 	
-		/***/
 		public String getConceptValue()      { return ""; }
 
-		/***/
 		public String toString() {
 			return super.toString()+" = "+referencedSOPClassUID+" : "+referencedSOPInstanceUID;
 		}
 
-		/***/
+		/**
+		 * @return	the SOP Class UID
+		 */
 		public String getReferencedSOPClassUID()    { return referencedSOPClassUID; }
-		/***/
+
+		/**
+		 * @return	the SOP Instance UID
+		 */
 		public String getReferencedSOPInstanceUID() { return referencedSOPInstanceUID; }
 	}
 
-
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	referencedSOPClassUID
-	 * @param	referencedSOPInstanceUID
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	referencedSOPClassUID			the SOP Class UID
+	 * @param	referencedSOPInstanceUID		the SOP Instance UID
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public CompositeContentItem makeCompositeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
-			String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
+			String referencedSOPClassUID,String referencedSOPInstanceUID,String observationDateTime,String observationUID) throws DicomException {
 		return new CompositeContentItem(parent,relationshipType,conceptName,
-			referencedSOPClassUID,referencedSOPInstanceUID);
+			referencedSOPClassUID,referencedSOPInstanceUID,observationDateTime,observationUID);
 	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	referencedSOPClassUID			the SOP Class UID
+	 * @param	referencedSOPInstanceUID		the SOP Instance UID
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public CompositeContentItem makeCompositeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
+														 String referencedSOPClassUID,String referencedSOPInstanceUID) throws DicomException {
+		return new CompositeContentItem(parent,relationshipType,conceptName,referencedSOPClassUID,referencedSOPInstanceUID);
+	}
+
 	/***/
 	public class ImageContentItem extends CompositeContentItem {
 
-		/***/
 		protected int referencedFrameNumber;
-		/***/
 		protected int referencedSegmentNumber;
-		/***/
 		protected String presentationStateSOPClassUID;
-		/***/
 		protected String presentationStateSOPInstanceUID;
-		/***/
 		protected String realWorldValueMappingSOPClassUID;
-		/***/
 		protected String realWorldValueMappingSOPInstanceUID;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public ImageContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -349,32 +434,35 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	referencedSOPClassUID
-		 * @param	referencedSOPInstanceUID
-		 * @param	referencedFrameNumber		if < 1, not added
-		 * @param	referencedSegmentNumber		if < 1, not added
-		 * @param	presentationStateSOPClassUID
-		 * @param	presentationStateSOPInstanceUID
-		 * @param	realWorldValueMappingSOPClassUID
-		 * @param	realWorldValueMappingSOPInstanceUID
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @param	referencedFrameNumber			if &lt; 1, not added
+		 * @param	referencedSegmentNumber			if &lt; 1, not added
+		 * @param	presentationStateSOPClassUID	the SOP Class UID of the presentation state (or null or empty if none)
+		 * @param	presentationStateSOPInstanceUID	the SOP Instance UID of the presentation state (or null or empty if none)
+		 * @param	realWorldValueMappingSOPClassUID	the SOP Class UID of the RWV Map (or null or empty if none)
+		 * @param	realWorldValueMappingSOPInstanceUID	the SOP Instance UID of the RWV Map (or null or empty if none)
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public ImageContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
 				String referencedSOPClassUID,String referencedSOPInstanceUID,
 				int referencedFrameNumber,int referencedSegmentNumber,
 				String presentationStateSOPClassUID,String presentationStateSOPInstanceUID,
-				String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID) throws DicomException {
-			super(parent,"IMAGE",relationshipType,conceptName,referencedSOPClassUID,referencedSOPInstanceUID);
+				String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID,
+				String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"IMAGE",relationshipType,conceptName,referencedSOPClassUID,referencedSOPInstanceUID,observationDateTime,observationUID);
 			this.referencedFrameNumber = referencedFrameNumber < 1 ? 0 : referencedFrameNumber;
 			if (referencedFrameNumber >= 1) {
 				Attribute a = new IntegerStringAttribute(TagFromName.ReferencedFrameNumber); a.addValue(referencedFrameNumber); referencedSOPSequenceItemAttributeList.put(a);
 			}
 			this.referencedSegmentNumber = referencedSegmentNumber < 1 ? 0 : referencedSegmentNumber;
 			if (referencedSegmentNumber >= 1) {
-				Attribute a = new IntegerStringAttribute(TagFromName.ReferencedSegmentNumber); a.addValue(referencedSegmentNumber); referencedSOPSequenceItemAttributeList.put(a);
+				Attribute a = new UnsignedShortAttribute(TagFromName.ReferencedSegmentNumber); a.addValue(referencedSegmentNumber); referencedSOPSequenceItemAttributeList.put(a);
 			}
 			this.presentationStateSOPClassUID = presentationStateSOPClassUID;
 			this.presentationStateSOPInstanceUID = presentationStateSOPInstanceUID;
@@ -399,6 +487,33 @@ public class ContentItemFactory {
 				{ Attribute a = new UniqueIdentifierAttribute(TagFromName.ReferencedSOPInstanceUID); a.addValue(realWorldValueMappingSOPInstanceUID); referencedRealWorldValueMappingInstanceSequenceList.put(a); }
 			}
 		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	referencedSOPClassUID			the SOP Class UID
+		 * @param	referencedSOPInstanceUID		the SOP Instance UID
+		 * @param	referencedFrameNumber			if &lt; 1, not added
+		 * @param	referencedSegmentNumber			if &lt; 1, not added
+		 * @param	presentationStateSOPClassUID	the SOP Class UID of the presentation state (or null or empty if none)
+		 * @param	presentationStateSOPInstanceUID	the SOP Instance UID of the presentation state (or null or empty if none)
+		 * @param	realWorldValueMappingSOPClassUID	the SOP Class UID of the RWV Map (or null or empty if none)
+		 * @param	realWorldValueMappingSOPInstanceUID	the SOP Instance UID of the RWV Map (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public ImageContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
+								String referencedSOPClassUID,String referencedSOPInstanceUID,
+								int referencedFrameNumber,int referencedSegmentNumber,
+								String presentationStateSOPClassUID,String presentationStateSOPInstanceUID,
+								String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID) throws DicomException {
+			this(parent,relationshipType,conceptName,
+				 referencedSOPClassUID,referencedSOPInstanceUID,
+				 referencedFrameNumber,referencedSegmentNumber,
+				 presentationStateSOPClassUID,presentationStateSOPInstanceUID,
+				 realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID,
+				 null/*observationDateTime*/,null/*observationUID*/);
+		}
 	
 		/***/
 		public String toString() {
@@ -410,55 +525,103 @@ public class ContentItemFactory {
 				;
 		}
 
-		/***/
+		/**
+		 * @return	the frame number, or zero if none
+		 */
 		public int getReferencedFrameNumber()    { return referencedFrameNumber; }
-		/***/
+
+		/**
+		 * @return	the segment number, or zero if none
+		 */
 		public int getReferencedSegmentNumber()    { return referencedSegmentNumber; }
-		/***/
+
+		/**
+		 * @return	the SOP Class UID of the presention state, if any
+		 */
 		public String getPresentationStateSOPClassUID()    { return presentationStateSOPClassUID; }
-		/***/
+
+		/**
+		 * @return	the SOP Instance UID of the presention state, if any
+		 */
 		public String getPresentationStateSOPInstanceUID() { return presentationStateSOPInstanceUID; }
-		/***/
+
+		/**
+		 * @return	the SOP Class UID of the RWV Map, if any
+		 */
 		public String getRealWorldValueMappingSOPClassUID()    { return realWorldValueMappingSOPClassUID; }
-		/***/
+
+		/**
+		 * @return	the SOP Instance UID of the RWV Map, if any
+		 */
 		public String getRealWorldValueMappingSOPInstanceUID() { return realWorldValueMappingSOPInstanceUID; }
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	referencedSOPClassUID
-	 * @param	referencedSOPInstanceUID
-	 * @param	referencedFrameNumber		if < 1, not added
-	 * @param	referencedSegmentNumber		if < 1, not added
-	 * @param	presentationStateSOPClassUID
-	 * @param	presentationStateSOPInstanceUID
-	 * @param	realWorldValueMappingSOPClassUID
-	 * @param	realWorldValueMappingSOPInstanceUID
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	referencedSOPClassUID			the SOP Class UID
+	 * @param	referencedSOPInstanceUID		the SOP Instance UID
+	 * @param	referencedFrameNumber			if &lt; 1, not added
+	 * @param	referencedSegmentNumber			if &lt; 1, not added
+	 * @param	presentationStateSOPClassUID	the SOP Class UID of the presentation state (or null or empty if none)
+	 * @param	presentationStateSOPInstanceUID	the SOP Instance UID of the presentation state (or null or empty if none)
+	 * @param	realWorldValueMappingSOPClassUID	the SOP Class UID of the RWV Map (or null or empty if none)
+	 * @param	realWorldValueMappingSOPInstanceUID	the SOP Instance UID of the RWV Map (or null or empty if none)
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ImageContentItem makeImageContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
 			String referencedSOPClassUID,String referencedSOPInstanceUID,
 			int referencedFrameNumber,int referencedSegmentNumber,
 			String presentationStateSOPClassUID,String presentationStateSOPInstanceUID,
-			String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID) throws DicomException {
+			String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID,
+			String observationDateTime,String observationUID) throws DicomException {
 		return new ImageContentItem(parent,relationshipType,conceptName,
 			referencedSOPClassUID,referencedSOPInstanceUID,
 			referencedFrameNumber,referencedSegmentNumber,
 			presentationStateSOPClassUID,presentationStateSOPInstanceUID,
-			realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID);
+			realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID,
+			observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	referencedSOPClassUID			the SOP Class UID
+	 * @param	referencedSOPInstanceUID		the SOP Instance UID
+	 * @param	referencedFrameNumber			if &lt; 1, not added
+	 * @param	referencedSegmentNumber			if &lt; 1, not added
+	 * @param	presentationStateSOPClassUID	the SOP Class UID of the presentation state (or null or empty if none)
+	 * @param	presentationStateSOPInstanceUID	the SOP Instance UID of the presentation state (or null or empty if none)
+	 * @param	realWorldValueMappingSOPClassUID	the SOP Class UID of the RWV Map (or null or empty if none)
+	 * @param	realWorldValueMappingSOPInstanceUID	the SOP Instance UID of the RWV Map (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public ImageContentItem makeImageContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,
+												 String referencedSOPClassUID,String referencedSOPInstanceUID,
+												 int referencedFrameNumber,int referencedSegmentNumber,
+												 String presentationStateSOPClassUID,String presentationStateSOPInstanceUID,
+												 String realWorldValueMappingSOPClassUID,String realWorldValueMappingSOPInstanceUID) throws DicomException {
+		return new ImageContentItem(parent,relationshipType,conceptName,
+									referencedSOPClassUID,referencedSOPInstanceUID,
+									referencedFrameNumber,referencedSegmentNumber,
+									presentationStateSOPClassUID,presentationStateSOPInstanceUID,
+									realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID);
 	}
 
 	/***/
 	public class WaveformContentItem extends CompositeContentItem {
 
-		/***/
 		protected int[] referencedWaveformChannels;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public WaveformContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -467,7 +630,6 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
 		public String toString() {
 			StringBuffer str = new StringBuffer();
 			str.append(super.toString());
@@ -482,21 +644,21 @@ public class ContentItemFactory {
 			return str.toString();
 		}
 
-		/***/
+		/**
+		 * @return	the waveform channels
+		 */
 		public int[] getReferencedWaveformChannels()    { return referencedWaveformChannels; }
 	}
 
 	/***/
 	public class SpatialCoordinatesContentItem extends ContentItemWithValue {
 
-		/***/
 		protected String graphicType;
-		/***/
 		protected float[] graphicData;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public SpatialCoordinatesContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -512,15 +674,17 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	graphicType
-		 * @param	graphicData
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	graphicType						graphic type
+		 * @param	graphicData						graphic data
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public SpatialCoordinatesContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData) throws DicomException {
-			super(parent,"SCOORD",relationshipType,conceptName);
+		public SpatialCoordinatesContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"SCOORD",relationshipType,conceptName,observationDateTime,observationUID);
 			this.graphicType=graphicType;
 			if (graphicType != null) {
 				Attribute a = new CodeStringAttribute(TagFromName.GraphicType); a.addValue(graphicType); list.put(a);
@@ -535,10 +699,20 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	graphicType						graphic type
+		 * @param	graphicData						graphic data
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public SpatialCoordinatesContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData) throws DicomException {
+			this(parent,relationshipType,conceptName,graphicType,graphicData,null/*observationDateTime*/,null/*observationUID*/);
+		}
+
 		public String getConceptValue()      { return ""; }
 
-		/***/
 		public String toString() {
 			StringBuffer str = new StringBuffer();
 			str.append(super.toString());
@@ -555,19 +729,40 @@ public class ContentItemFactory {
 			return str.toString();
 		}
 
-		/***/
+		/**
+		 * @return	the graphic type
+		 */
 		public String getGraphicType()              { return graphicType; }
-		/***/
+
+		/**
+		 * @return	the graphic type
+		 */
 		public float[] getGraphicData()             { return graphicData; }
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	graphicType
-	 * @param	graphicData
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	graphicType						graphic type
+	 * @param	graphicData						graphic data
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public SpatialCoordinatesContentItem makeSpatialCoordinatesContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String observationDateTime,String observationUID) throws DicomException {
+		return new SpatialCoordinatesContentItem(parent,relationshipType,conceptName,graphicType,graphicData,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	graphicType						graphic type
+	 * @param	graphicData						graphic data
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public SpatialCoordinatesContentItem makeSpatialCoordinatesContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData) throws DicomException {
 		return new SpatialCoordinatesContentItem(parent,relationshipType,conceptName,graphicType,graphicData);
@@ -575,16 +770,13 @@ public class ContentItemFactory {
 
 	public class SpatialCoordinates3DContentItem extends ContentItemWithValue {
 
-		/***/
 		protected String graphicType;
-		/***/
 		protected float[] graphicData;
-		/***/
 		protected String referencedFrameOfReferenceUID;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public SpatialCoordinates3DContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -601,16 +793,18 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	graphicType
-		 * @param	graphicData
-		 * @param	referencedFrameOfReferenceUID
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	graphicType						graphic type
+		 * @param	graphicData						graphic data
+		 * @param	referencedFrameOfReferenceUID	frame of reference UID
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public SpatialCoordinates3DContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String referencedFrameOfReferenceUID) throws DicomException {
-			super(parent,"SCOORD3D",relationshipType,conceptName);
+		public SpatialCoordinates3DContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String referencedFrameOfReferenceUID,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"SCOORD3D",relationshipType,conceptName,observationDateTime,observationUID);
 			this.graphicType=graphicType;
 			if (graphicType != null) {
 				Attribute a = new CodeStringAttribute(TagFromName.GraphicType); a.addValue(graphicType); list.put(a);
@@ -630,10 +824,20 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	graphicType						graphic type
+		 * @param	graphicData						graphic data
+		 * @param	referencedFrameOfReferenceUID	frame of reference UID
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public SpatialCoordinates3DContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String referencedFrameOfReferenceUID) throws DicomException {
+			this(parent,relationshipType,conceptName,graphicType,graphicData,referencedFrameOfReferenceUID,null/*observationDateTime*/,null/*observationUID*/);
+		}
 		public String getConceptValue()      { return ""; }
 
-		/***/
 		public String toString() {
 			StringBuffer str = new StringBuffer();
 			str.append(super.toString());
@@ -652,21 +856,47 @@ public class ContentItemFactory {
 			return str.toString();
 		}
 
-		/***/
-		public String getGraphicType()						{ return graphicType; }
-		/***/
-		public float[] getGraphicData()						{ return graphicData; }
-		/***/
+		/**
+		 * @return	the graphic type
+		 */
+		public String getGraphicType()              { return graphicType; }
+
+		/**
+		 * @return	the graphic type
+		 */
+		public float[] getGraphicData()             { return graphicData; }
+
+		/**
+		 * @return	the frame of reference UID
+		 */
 		public String getReferencedFrameOfReferenceUID()	{ return referencedFrameOfReferenceUID; }
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	graphicType
-	 * @param	graphicData
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	graphicType						graphic type
+	 * @param	graphicData						graphic data
+	 * @param	referencedFrameOfReferenceUID	frame of reference UID
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public SpatialCoordinates3DContentItem makeSpatialCoordinates3DContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String referencedFrameOfReferenceUID,String observationDateTime,String observationUID) throws DicomException {
+		return new SpatialCoordinates3DContentItem(parent,relationshipType,conceptName,graphicType,graphicData,referencedFrameOfReferenceUID,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	graphicType						graphic type
+	 * @param	graphicData						graphic data
+	 * @param	referencedFrameOfReferenceUID	frame of reference UID
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public SpatialCoordinates3DContentItem makeSpatialCoordinates3DContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String graphicType,float[] graphicData,String referencedFrameOfReferenceUID) throws DicomException {
 		return new SpatialCoordinates3DContentItem(parent,relationshipType,conceptName,graphicType,graphicData,referencedFrameOfReferenceUID);
@@ -675,18 +905,14 @@ public class ContentItemFactory {
 	/***/
 	public class TemporalCoordinatesContentItem extends ContentItemWithValue {
 
-		/***/
 		protected String temporalRangeType;
-		/***/
 		protected int[] referencedSamplePositions;
-		/***/
 		protected float[] referencedTimeOffsets;
-		/***/
 		protected String[] referencedDateTimes;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public TemporalCoordinatesContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -715,10 +941,8 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
 		public String getConceptValue()      { return ""; }
 
-		/***/
 		public String toString() {
 			StringBuffer str = new StringBuffer();
 			str.append(super.toString());
@@ -751,63 +975,78 @@ public class ContentItemFactory {
 			return str.toString();
 		}
 
-		/***/
+
+		/**
+		 * @return	the temporal range type
+		 */
 		public String getTemporalRangeType()		{ return temporalRangeType; }
-		/***/
+
+		/**
+		 * @return	the referenced sample positions, or null if none
+		 */
 		public int[] getReferencedSamplePositions()	{ return referencedSamplePositions; }
-		/***/
+
+		/**
+		 * @return	the referenced time offsets, or null if none
+		 */
 		public float[] getReferencedTimeOffsets()	{ return referencedTimeOffsets; }
-		/***/
+
+		/**
+		 * @return	the referenced datetimes, or null if none
+		 */
 		public String[] getReferencedDateTimes()	{ return referencedDateTimes; }
 	}
 
 	/***/
 	public class NumericContentItem extends ContentItemWithValue {
 
-		/***/
 		protected String numericValue;
-		/***/
 		protected Double floatingPointValue;		// FD; null if absent
-		/***/
 		protected Integer rationalNumeratorValue;	// SL; null if absent
-		/***/
 		protected Long rationalDenominatorValue;	// UL; null if absent
-		/***/
 		protected CodedSequenceItem units;
-		/***/
 		protected CodedSequenceItem qualifier;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public NumericContentItem(ContentItem parent,AttributeList list) throws DicomException {
 			super(parent,list);
+			AttributeList l = null;
 			SequenceAttribute a=(SequenceAttribute)(list.get(TagFromName.MeasuredValueSequence));
-			if (a != null) {
+			if (a != null) {	// for SR uses (could check valueType.equals("NUM"), but this is more defensive
+//System.err.println("NumericContentItem.NumericContentItem(): SR pattern with MeasuredValueSequence");
 //System.err.println("NumericContentItem: MeasuredValueSequence="+a);
 				Iterator i = a.iterator();
 				if (i.hasNext()) {
 					SequenceItem item = ((SequenceItem)i.next());
 					if (item != null) {
 //System.err.println("NumericContentItem: item="+item);
-						AttributeList l = item.getAttributeList();
-						numericValue=Attribute.getSingleStringValueOrEmptyString(l,TagFromName.NumericValue);
-						{
-							Attribute aFloatingPointValue = l.get(TagFromName.FloatingPointValue);
-							floatingPointValue = (aFloatingPointValue == null || aFloatingPointValue.getVM() == 0) ? null : new Double(aFloatingPointValue.getDoubleValues()[0]);
-						}
-						{
-							Attribute aRationalNumeratorValue = l.get(TagFromName.RationalNumeratorValue);
-							rationalNumeratorValue = (aRationalNumeratorValue == null || aRationalNumeratorValue.getVM() == 0) ? null : new Integer(aRationalNumeratorValue.getIntegerValues()[0]);
-						}
-						{
-							Attribute aRationalDenominatorValue = l.get(TagFromName.RationalDenominatorValue);
-							rationalDenominatorValue = (aRationalDenominatorValue == null || aRationalDenominatorValue.getVM() == 0) ? null : new Long(aRationalDenominatorValue.getLongValues()[0]);
-						}
-						units=CodedSequenceItem.getSingleCodedSequenceItemOrNull(l,TagFromName.MeasurementUnitsCodeSequence);
+						l = item.getAttributeList();
 					}
 				}
+			}
+			else {
+//System.err.println("NumericContentItem.NumericContentItem(): non-SR pattern without MeasuredValueSequence");
+				l = list;	// for non-SR uses (could check valueType.equals("NUMERIC"), but this is more defensive
+			}
+			if (l != null) {
+				numericValue=Attribute.getSingleStringValueOrEmptyString(l,TagFromName.NumericValue);
+				{
+					Attribute aFloatingPointValue = l.get(TagFromName.FloatingPointValue);
+					floatingPointValue = (aFloatingPointValue == null || aFloatingPointValue.getVM() == 0) ? null : new Double(aFloatingPointValue.getDoubleValues()[0]);
+				}
+				{
+					Attribute aRationalNumeratorValue = l.get(TagFromName.RationalNumeratorValue);
+					rationalNumeratorValue = (aRationalNumeratorValue == null || aRationalNumeratorValue.getVM() == 0) ? null : new Integer(aRationalNumeratorValue.getIntegerValues()[0]);
+				}
+				{
+					Attribute aRationalDenominatorValue = l.get(TagFromName.RationalDenominatorValue);
+					rationalDenominatorValue = (aRationalDenominatorValue == null || aRationalDenominatorValue.getVM() == 0) ? null : new Long(aRationalDenominatorValue.getLongValues()[0]);
+				}
+				units=CodedSequenceItem.getSingleCodedSequenceItemOrNull(l,TagFromName.MeasurementUnitsCodeSequence);
 			}
 			if (numericValue == null) numericValue="";	// just for consistency with other string content items
 			
@@ -815,15 +1054,16 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	floatingPointValue		will be converted to string
-		 * @param	units
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	floatingPointValue				will be converted to string
+		 * @param	units							code for the units
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,double floatingPointValue,CodedSequenceItem units) throws DicomException {
-			super(parent,"NUM",relationshipType,conceptName);
+		public NumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,double floatingPointValue,CodedSequenceItem units) throws DicomException {
+			super(parent,isNotSR ? "NUMERIC" : "NUM",relationshipType,conceptName,null,null);
 //System.err.println("NumericContentItem(): constructor checking for need for qualifiers for "+numericValue);
 			if (floatingPointValue == Double.NaN || Double.isNaN(floatingPointValue)) {			// the constant match does not seem to work, hence the method call
 //System.err.println("NumericContentItem(): matches NaN");
@@ -846,24 +1086,39 @@ public class ContentItemFactory {
 				}
 				catch (NumberFormatException e) {
 					// this should never happen, but if it does, leave fullFidelity == false
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);
 				}
 //System.err.println("NumericContentItem(): roundTripValue "+(fullFidelity ? "matches" : "does not match"));
-				doCommonConstructorStuff(finiteLengthStringValue,units,null/*no qualifier*/,fullFidelity ? null : new Double(floatingPointValue),null/*rationalNumeratorValue*/,null/*rationalDenominatorValue*/);
+				doCommonConstructorStuff(isNotSR,finiteLengthStringValue,units,null/*no qualifier*/,fullFidelity ? null : new Double(floatingPointValue),null/*rationalNumeratorValue*/,null/*rationalDenominatorValue*/);
 			}
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	numerator
-		 * @param	denominator
-		 * @param	units
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	floatingPointValue				will be converted to string
+		 * @param	units							code for the units
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,int numerator,long denominator,CodedSequenceItem units) throws DicomException {
-			super(parent,"NUM",relationshipType,conceptName);
+		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,double floatingPointValue,CodedSequenceItem units) throws DicomException {
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,floatingPointValue,units);
+		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numerator						integer numerator
+		 * @param	denominator						integer denominator
+		 * @param	units							code for the units
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,int numerator,long denominator,CodedSequenceItem units,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,isNotSR ? "NUMERIC" : "NUM",relationshipType,conceptName,observationDateTime,observationUID);
 			if (denominator == 0) {
 				constructOnlyQualifier(new CodedSequenceItem("114003","DCM","Divide by zero"));
 			}
@@ -879,74 +1134,161 @@ public class ContentItemFactory {
 				}
 				catch (NumberFormatException e) {
 					// this should never happen, but if it does, leave fullFidelity == false
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);
 				}
 //System.err.println("NumericContentItem(): roundTripValue "+(fullFidelity ? "matches" : "does not match"));
-				doCommonConstructorStuff(finiteLengthStringValue,units,null/*no qualifier*/,fullFidelity ? null : new Double(floatingPointValue),new Integer(numerator),new Long(denominator));
+				doCommonConstructorStuff(isNotSR,finiteLengthStringValue,units,null/*no qualifier*/,fullFidelity ? null : new Double(floatingPointValue),new Integer(numerator),new Long(denominator));
 			}
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	numericValue
-		 * @param	units
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numerator						integer numerator
+		 * @param	denominator						integer denominator
+		 * @param	units							code for the units
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,int numerator,long denominator,CodedSequenceItem units) throws DicomException {
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,numerator,denominator,units,null,null);
+		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	units							code for the units
+		 * @param	qualifier						code for qualifier
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
+			super(parent,isNotSR ? "NUMERIC" : "NUM",relationshipType,conceptName,null,null);
+			doCommonConstructorStuff(isNotSR,numericValue,units,qualifier,null/*floatingPointValue*/,null/*rationalNumeratorValue*/,null/*rationalDenominatorValue*/);
+		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	units							code for the units
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units) throws DicomException {
-			this(parent,relationshipType,conceptName,numericValue,units,null/*qualifier*/);
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,units,null/*qualifier*/);
 		}
-		
+
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	numericValue
-		 * @param	units
-		 * @param	qualifier
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	units							code for the units
+		 * @param	qualifier						code for qualifier
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
-			super(parent,"NUM",relationshipType,conceptName);
-			doCommonConstructorStuff(numericValue,units,qualifier,null/*floatingPointValue*/,null/*rationalNumeratorValue*/,null/*rationalDenominatorValue*/);
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,units,qualifier);
 		}
 		
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	numericValue
-		 * @param	floatingPointValue
-		 * @param	rationalNumeratorValue
-		 * @param	rationalDenominatorValue
-		 * @param	units
-		 * @param	qualifier
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	floatingPointValue				numeric value as floating point
+		 * @param	rationalNumeratorValue			integer numerator
+		 * @param	rationalDenominatorValue		integer denominator
+		 * @param	units							code for the units
+		 * @param	qualifier						code for qualifier
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,isNotSR ? "NUMERIC" : "NUM",relationshipType,conceptName,observationDateTime,observationUID);
+			doCommonConstructorStuff(isNotSR,numericValue,units,qualifier,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue);
+		}
+
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	floatingPointValue				numeric value as floating point
+		 * @param	rationalNumeratorValue			integer numerator
+		 * @param	rationalDenominatorValue		integer denominator
+		 * @param	units							code for the units
+		 * @param	qualifier						code for qualifier
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
-			super(parent,"NUM",relationshipType,conceptName);
-			doCommonConstructorStuff(numericValue,units,qualifier,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue);
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier,null,null);
+		}
+
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	numericValue					numeric value as decimal string
+		 * @param	floatingPointValue				numeric value as floating point
+		 * @param	rationalNumeratorValue			integer numerator
+		 * @param	rationalDenominatorValue		integer denominator
+		 * @param	units							code for the units
+		 * @param	qualifier						code for qualifier
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier,String observationDateTime,String observationUID) throws DicomException {
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier,observationDateTime,observationUID);
 		}
 
 		/**
 		 * <p>Construct numeric content item with empty <code>MeasuredValueSequence</code> with qualifier explaining why it is empty.</p>
 		 *
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	qualifier
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	qualifier						code for qualifier
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem qualifier) throws DicomException {
-			super(parent,"NUM",relationshipType,conceptName);
+		public NumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem qualifier) throws DicomException {
+			super(parent,isNotSR ? "NUMERIC" : "NUM",relationshipType,conceptName,null,null);
 			constructOnlyQualifier(qualifier);
 		}
+
+		/**
+		 * <p>Construct SR numeric content item with empty <code>MeasuredValueSequence</code> with qualifier explaining why it is empty.</p>
+		 *
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	qualifier						code for qualifier
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public NumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem qualifier) throws DicomException {
+			this(parent,false/*isNotSR*/,relationshipType,conceptName,qualifier);
+		}
 		
-		protected void doCommonConstructorStuff(String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue) throws DicomException {
-			SequenceAttribute mvs = new SequenceAttribute(TagFromName.MeasuredValueSequence); list.put(mvs);
-			AttributeList mvl = new AttributeList();
-			mvs.addItem(mvl); 
+		protected void doCommonConstructorStuff(boolean isNotSR,String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue) throws DicomException {
+			AttributeList mvl = null;
+			if (isNotSR) {
+//System.err.println("NumericContentItem.doCommonConstructorStuff(): non-SR pattern without MeasuredValueSequence");
+				mvl = list;		// for non-SR content items, the attributes are added at the same level as the value type, etc.
+			}
+			else {
+//System.err.println("NumericContentItem.doCommonConstructorStuff(): SR pattern with MeasuredValueSequence");
+				// for SR content items, the attributes are nested inside a MeasuredValueSequence
+				SequenceAttribute mvs = new SequenceAttribute(TagFromName.MeasuredValueSequence); list.put(mvs);
+				mvl = new AttributeList();
+				mvs.addItem(mvl);
+			}
 			
 			if (numericValue == null) {
 				this.numericValue = "";		// just for consistency with other string content items
@@ -991,99 +1333,210 @@ public class ContentItemFactory {
 			this.numericValue = "";		// rather than null, just for consistency with other string content items
 		}
 		
-		/***/
+		/**
+		 * @return	the qualifier, or null if none
+		 */
 		public CodedSequenceItem getQualifier()		{ return qualifier; }
 
-		/***/
+		/**
+		 * @return	the units
+		 */
 		public CodedSequenceItem getUnits()		{ return units; }
 
-		/***/
+		/**
+		 * @return	the decimal string numeric value, or null if none
+		 */
 		public String getNumericValue()			{ return numericValue; }
 
-		/***/
+		/**
+		 * @return	true if there is a floating point value encoded
+		 */
 		public boolean hasFloatingPointValue()	{ return floatingPointValue != null; }
 
-		/***/
+		/**
+		 * @return	the floating point value
+		 */
 		public double getFloatingPointValue()	{ return floatingPointValue.doubleValue() ; }
 		
-		/***/
+		/**
+		 * @return	true if there is a rational value encoded with an integer numerator and denominator
+		 */
 		public boolean hasRationalValue()	{ return rationalNumeratorValue != null && rationalDenominatorValue != null; }
 
-		/***/
+		/**
+		 * @return	the rational numerator value
+		 */
 		public int getRationalNumeratorValue()	{ return rationalNumeratorValue.intValue(); }
 
-		/***/
+		/**
+		 * @return	the rational denomninator value
+		 */
 		public long getRationalDenominatorValue()	{ return rationalDenominatorValue.longValue(); }
 		
 
-		/***/
 		public String getConceptValue() {
 			return numericValue+" "+(units == null ? "" : units.getCodeMeaning());
 		}
 
-		/***/
 		public String getConceptNameAndValue() {
 			return getConceptNameCodeMeaning()+" = "+numericValue+" "+(units == null ? "" : units.getCodeMeaning())+" "+(qualifier == null ? "" : qualifier.getCodeMeaning());
 		}
 
-		/***/
 		public String toString() {
 			return super.toString()+" = "+numericValue+" "+(units == null ? "" : units.getCodeMeaning())+" "+(qualifier == null ? "" : qualifier.getCodeMeaning());
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	numericValue
-	 * @param	units
-	 * @param	qualifier
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	units							code for the units
+	 * @param	qualifier						code for qualifier
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
+		return new NumericContentItem(parent,isNotSR,relationshipType,conceptName,numericValue,units,qualifier);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	units							code for the units
+	 * @param	qualifier						code for qualifier
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
 		return new NumericContentItem(parent,relationshipType,conceptName,numericValue,units,qualifier);
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	numericValue
-	 * @param	units
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	units							code for the units
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,double numericValue,CodedSequenceItem units) throws DicomException {
+		return new NumericContentItem(parent,isNotSR,relationshipType,conceptName,numericValue,units);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	units							code for the units
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,double numericValue,CodedSequenceItem units) throws DicomException {
 		return new NumericContentItem(parent,relationshipType,conceptName,numericValue,units);
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	numerator
-	 * @param	denominator
-	 * @param	units
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	units							code for the units
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,CodedSequenceItem units) throws DicomException {
+		return new NumericContentItem(parent,relationshipType,conceptName,numericValue,units);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numerator						integer numerator
+	 * @param	denominator						integer denominator
+	 * @param	units							code for the units
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,int numerator,long denominator,CodedSequenceItem units) throws DicomException {
+		return new NumericContentItem(parent,isNotSR,relationshipType,conceptName,numerator,denominator,units,null,null);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numerator						integer numerator
+	 * @param	denominator						integer denominator
+	 * @param	units							code for the units
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,int numerator,long denominator,CodedSequenceItem units) throws DicomException {
 		return new NumericContentItem(parent,relationshipType,conceptName,numerator,denominator,units);
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	numericValue
-	 * @param	floatingPointValue
-	 * @param	rationalNumeratorValue
-	 * @param	rationalDenominatorValue
-	 * @param	units
-	 * @param	qualifier
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	isNotSR							affects whether value type is NUM (false) or NUMERIC (true)
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	floatingPointValue				numeric value as floating point
+	 * @param	rationalNumeratorValue			integer numerator
+	 * @param	rationalDenominatorValue		integer denominator
+	 * @param	units							code for the units
+	 * @param	qualifier						code for qualifier
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,boolean isNotSR,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
+		return new NumericContentItem(parent,isNotSR,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier,null,null);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	floatingPointValue				numeric value as floating point
+	 * @param	rationalNumeratorValue			integer numerator
+	 * @param	rationalDenominatorValue		integer denominator
+	 * @param	units							code for the units
+	 * @param	qualifier						code for qualifier
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier,String observationDateTime,String observationUID) throws DicomException {
+		return new NumericContentItem(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	numericValue					numeric value as decimal string
+	 * @param	floatingPointValue				numeric value as floating point
+	 * @param	rationalNumeratorValue			integer numerator
+	 * @param	rationalDenominatorValue		integer denominator
+	 * @param	units							code for the units
+	 * @param	qualifier						code for qualifier
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public NumericContentItem makeNumericContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String numericValue,Double floatingPointValue,Integer rationalNumeratorValue,Long rationalDenominatorValue,CodedSequenceItem units,CodedSequenceItem qualifier) throws DicomException {
-		return new NumericContentItem(parent,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier);
+		return new NumericContentItem(parent,false/*isNotSR*/,relationshipType,conceptName,numericValue,floatingPointValue,rationalNumeratorValue,rationalDenominatorValue,units,qualifier,null/*observationDateTime*/,null/*observationUID*/);
 	}
 
 	/***/
@@ -1093,8 +1546,8 @@ public class ContentItemFactory {
 		protected CodedSequenceItem conceptCode;
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public CodeContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
@@ -1102,31 +1555,41 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	conceptCode
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	conceptCode						coded value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public CodeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem conceptCode) throws DicomException {
-			super(parent,"CODE",relationshipType,conceptName);
+		public CodeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem conceptCode,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"CODE",relationshipType,conceptName,observationDateTime,observationUID);
 			this.conceptCode=conceptCode;
 			if (conceptCode != null) {
 				SequenceAttribute a = new SequenceAttribute(TagFromName.ConceptCodeSequence); a.addItem(conceptCode.getAttributeList()); list.put(a);
 			}
 		}
 
-		/***/
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	conceptCode						coded value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public CodeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem conceptCode) throws DicomException {
+			this(parent,relationshipType,conceptName,conceptCode,null/*observationDateTime*/,null/*observationUID*/);
+		}
+		
 		public String getConceptValue() {
 			return (conceptCode == null ? "" : conceptCode.getCodeMeaning());
 		}
 
-		/***/
 		public String toString() {
 			return super.toString()+" = "+(conceptCode == null ? "" : conceptCode.getCodeMeaning());
 		}
 		
-		/***/
 		public CodedSequenceItem getConceptCode()    { return conceptCode; }
 
 		/**
@@ -1134,8 +1597,8 @@ public class ContentItemFactory {
 		 *
 		 * This is more robust than checking code meaning, which may have synomyms, and there is no need to also test code meaning.
 		 *
-		 * @param	csdWanted
-		 * @param	cvWanted
+		 * @param	csdWanted		the coding scheme designator of the coded value wanted
+		 * @param	cvWanted		the code value of the coded value wanted
 		 * @return					true if matches
 		 */
 		public boolean contentItemValueMatchesCodeValueAndCodingSchemeDesignator(String cvWanted,String csdWanted) {
@@ -1152,24 +1615,39 @@ public class ContentItemFactory {
 	}
 	
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	conceptCode
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	conceptCode						coded value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public CodeContentItem makeCodeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem conceptCode,String observationDateTime,String observationUID) throws DicomException {
+		return new CodeContentItem(parent,relationshipType,conceptName,conceptCode,observationDateTime,observationUID);
+	}
+	
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	conceptCode						coded value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public CodeContentItem makeCodeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,CodedSequenceItem conceptCode) throws DicomException {
 		return new CodeContentItem(parent,relationshipType,conceptName,conceptCode);
 	}
-	
+
 	/**
 	 * Test if the coded value of the code content item matches the specified code value and coding scheme designator.
 	 *
 	 * This is more robust than checking code meaning, which may have synomyms, and there is no need to also test code meaning.
 	 *
-	 * @param	ci
-	 * @param	csdWanted
-	 * @param	cvWanted
+	 * @param	ci				the content item to check
+	 * @param	csdWanted		the coding scheme designator of the coded value wanted
+	 * @param	cvWanted		the code value of the coded value wanted
 	 * @return					true if matches
 	 */
 	public static boolean codeContentItemValueMatchesCodeValueAndCodingSchemeDesignator(ContentItem ci,String cvWanted,String csdWanted) {
@@ -1184,13 +1662,12 @@ public class ContentItemFactory {
 	/***/
 	abstract protected class StringContentItem extends ContentItemWithValue {
 
-		/***/
 		protected String stringValue;
 
 		/**
-		 * @param	parent
-		 * @param	list
-		 * @param	tag
+		 * @param	parent							parent content item to add to
+		 * @param	list							list of attributes for this content item
+		 * @param	tag								tag of the attribute containing the string value of this content item
 		 */
 		public StringContentItem(ContentItem parent,AttributeList list,AttributeTag tag) {
 			super(parent,list);
@@ -1198,16 +1675,18 @@ public class ContentItemFactory {
 		}
 
 		/**
-		 * @param	parent
-		 * @param	valueType
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	tagForValue
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	valueType						the value type
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	tagForValue						tag of the attribute to encode the string value of this content item
+		 * @param	stringValue						string value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public StringContentItem(ContentItem parent,String valueType,String relationshipType,CodedSequenceItem conceptName,AttributeTag tagForValue,String stringValue) throws DicomException {
-			super(parent,valueType,relationshipType,conceptName);
+		public StringContentItem(ContentItem parent,String valueType,String relationshipType,CodedSequenceItem conceptName,AttributeTag tagForValue,String stringValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,valueType,relationshipType,conceptName,observationDateTime,observationUID);
 			this.stringValue=stringValue;
 			if (stringValue != null) {
 				Attribute a = AttributeFactory.newAttribute(tagForValue);
@@ -1216,15 +1695,14 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
 		public String getConceptValue() {
 			return stringValue;
 		}
 
 		/**
-		 * @param	tagForValue
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	tagForValue						tag of the attribute to encode the string value of this content item
+		 * @param	stringValue						if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
 		public void setConceptValue(AttributeTag tagForValue,String stringValue) throws DicomException {
 			this.stringValue=stringValue;
@@ -1238,7 +1716,6 @@ public class ContentItemFactory {
 			}
 		}
 
-		/***/
 		public String toString() {
 			return super.toString()+" = "+stringValue;
 		}
@@ -1248,261 +1725,429 @@ public class ContentItemFactory {
 	public class DateTimeContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public DateTimeContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.DateTime);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	dateTimeValue					datetime value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public DateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"DATETIME",relationshipType,conceptName,TagFromName.DateTime,stringValue);
+		public DateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateTimeValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"DATETIME",relationshipType,conceptName,TagFromName.DateTime,dateTimeValue,observationDateTime,observationUID);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	dateTimeValue					datetime value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.DateTime,stringValue);
+		public DateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateTimeValue) throws DicomException {
+			this(parent,relationshipType,conceptName,dateTimeValue,null/*observationDateTime*/,null/*observationUID*/);
+		}
+		
+		/**
+		 * @param	dateTimeValue					if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public void setConceptValue(String dateTimeValue) throws DicomException {
+			setConceptValue(TagFromName.DateTime,dateTimeValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	dateTimeValue					datetime value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public DateTimeContentItem makeDateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new DateTimeContentItem(parent,relationshipType,conceptName,stringValue);
+	public DateTimeContentItem makeDateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateTimeValue,String observationDateTime,String observationUID) throws DicomException {
+		return new DateTimeContentItem(parent,relationshipType,conceptName,dateTimeValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	dateTimeValue					datetime value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public DateTimeContentItem makeDateTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateTimeValue) throws DicomException {
+		return new DateTimeContentItem(parent,relationshipType,conceptName,dateTimeValue);
 	}
 
 	/***/
 	public class DateContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public DateContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.Date);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	dateValue						date value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public DateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"DATE",relationshipType,conceptName,TagFromName.Date,stringValue);
+		public DateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"DATE",relationshipType,conceptName,TagFromName.Date,dateValue,observationDateTime,observationUID);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	dateValue						date value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.Date,stringValue);
+		public DateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateValue) throws DicomException {
+			this(parent,relationshipType,conceptName,dateValue,null/*observationDateTime*/,null/*observationUID*/);
+		}
+		
+		/**
+		 * @param	dateValue						if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public void setConceptValue(String dateValue) throws DicomException {
+			setConceptValue(TagFromName.Date,dateValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	dateValue						date value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public DateContentItem makeDateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new DateContentItem(parent,relationshipType,conceptName,stringValue);
+	public DateContentItem makeDateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateValue,String observationDateTime,String observationUID) throws DicomException {
+		return new DateContentItem(parent,relationshipType,conceptName,dateValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	dateValue						date value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public DateContentItem makeDateContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String dateValue) throws DicomException {
+		return new DateContentItem(parent,relationshipType,conceptName,dateValue);
 	}
 
 	/***/
 	public class TimeContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public TimeContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.Time);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	timeValue						time value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public TimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"TIME",relationshipType,conceptName,TagFromName.Time,stringValue);
+		public TimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String timeValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"TIME",relationshipType,conceptName,TagFromName.Time,timeValue,observationDateTime,observationUID);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	timeValue						time value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.Time,stringValue);
+		public TimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String timeValue) throws DicomException {
+			this(parent,relationshipType,conceptName,timeValue,null/*observationDateTime*/,null/*observationUID*/);
+		}
+
+		/**
+		 * @param	timeValue						if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public void setConceptValue(String timeValue) throws DicomException {
+			setConceptValue(TagFromName.Time,timeValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	timeValue						time value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public TimeContentItem makeTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new TimeContentItem(parent,relationshipType,conceptName,stringValue);
+	public TimeContentItem makeTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String timeValue,String observationDateTime,String observationUID) throws DicomException {
+		return new TimeContentItem(parent,relationshipType,conceptName,timeValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	timeValue						time value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public TimeContentItem makeTimeContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String timeValue) throws DicomException {
+		return new TimeContentItem(parent,relationshipType,conceptName,timeValue);
 	}
 
 	/***/
 	public class PersonNameContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public PersonNameContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.PersonName);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	personNameValue					person name value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public PersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"PNAME",relationshipType,conceptName,TagFromName.PersonName,stringValue);
+		public PersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String personNameValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"PNAME",relationshipType,conceptName,TagFromName.PersonName,personNameValue,observationDateTime,observationUID);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	personNameValue					person name value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.PersonName,stringValue);
+		public PersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String personNameValue) throws DicomException {
+			this(parent,relationshipType,conceptName,personNameValue,null/*observationDateTime*/,null/*observationUID*/);
+		}
+		
+		/**
+		 * @param	personNameValue					if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public void setConceptValue(String personNameValue) throws DicomException {
+			setConceptValue(TagFromName.PersonName,personNameValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	personNameValue					person name value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public PersonNameContentItem makePersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new PersonNameContentItem(parent,relationshipType,conceptName,stringValue);
+	public PersonNameContentItem makePersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String personNameValue,String observationDateTime,String observationUID) throws DicomException {
+		return new PersonNameContentItem(parent,relationshipType,conceptName,personNameValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	personNameValue					person name value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public PersonNameContentItem makePersonNameContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String personNameValue) throws DicomException {
+		return new PersonNameContentItem(parent,relationshipType,conceptName,personNameValue);
 	}
 
 	/***/
 	public class UIDContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public UIDContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.UID);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	uidValue						UID value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public UIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"UIDREF",relationshipType,conceptName,TagFromName.UID,stringValue);
+		public UIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String uidValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"UIDREF",relationshipType,conceptName,TagFromName.UID,uidValue,observationDateTime,observationUID);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	uidValue						UID value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.UID,stringValue);
+		public UIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String uidValue) throws DicomException {
+			this(parent,relationshipType,conceptName,uidValue,null/*observationDateTime*/,null/*observationUID*/);
+		}
+
+		/**
+		 * @param	uidValue						if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public void setConceptValue(String uidValue) throws DicomException {
+			setConceptValue(TagFromName.UID,uidValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	uidValue						UID value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public UIDContentItem makeUIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new UIDContentItem(parent,relationshipType,conceptName,stringValue);
+	public UIDContentItem makeUIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String uidValue,String observationDateTime,String observationUID) throws DicomException {
+		return new UIDContentItem(parent,relationshipType,conceptName,uidValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	uidValue						UID value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public UIDContentItem makeUIDContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String uidValue) throws DicomException {
+		return new UIDContentItem(parent,relationshipType,conceptName,uidValue);
 	}
 
 	/***/
 	public class TextContentItem extends StringContentItem {
 
 		/**
-		 * @param	parent
-		 * @param	list
+		 * @param	parent							parent content item to add to
+		 * @param	list							the list of attributes for this content item
 		 */
 		public TextContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list,TagFromName.TextValue);
 		}
 
 		/**
-		 * @param	parent
-		 * @param	relationshipType
-		 * @param	conceptName
-		 * @param	stringValue
-		 * @throws	DicomException
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	textValue						text value
+		 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+		 * @param	observationUID					Observation UID (or null or empty if none)
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public TextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-			super(parent,"TEXT",relationshipType,conceptName,TagFromName.TextValue,stringValue);
+		public TextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String textValue,String observationDateTime,String observationUID) throws DicomException {
+			super(parent,"TEXT",relationshipType,conceptName,TagFromName.TextValue,textValue,observationDateTime,observationUID);
+		}
+		
+		/**
+		 * @param	parent							parent content item to add to
+		 * @param	relationshipType				relationship type
+		 * @param	conceptName						coded concept name
+		 * @param	textValue						text value
+		 * @throws	DicomException					if error in DICOM encoding
+		 */
+		public TextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String textValue) throws DicomException {
+			this(parent,relationshipType,conceptName,textValue,null/*observationDateTime*/,null/*observationUID*/);
 		}
 
 		/**
-		 * @param	stringValue	if null, removes the value
-		 * @throws	DicomException
+		 * @param	textValue						if null, removes the value
+		 * @throws	DicomException					if error in DICOM encoding
 		 */
-		public void setConceptValue(String stringValue) throws DicomException {
-			setConceptValue(TagFromName.TextValue,stringValue);
+		public void setConceptValue(String textValue) throws DicomException {
+			setConceptValue(TagFromName.TextValue,textValue);
 		}
 	}
 
 	/**
-	 * @param	parent
-	 * @param	relationshipType
-	 * @param	conceptName
-	 * @param	stringValue
-	 * @throws	DicomException
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	textValue						text value
+	 * @param	observationDateTime				Observation DateTime (or null or empty if none)
+	 * @param	observationUID					Observation UID (or null or empty if none)
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
-	public TextContentItem makeTextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String stringValue) throws DicomException {
-		return new TextContentItem(parent,relationshipType,conceptName,stringValue);
+	public TextContentItem makeTextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String textValue,String observationDateTime,String observationUID) throws DicomException {
+		return new TextContentItem(parent,relationshipType,conceptName,textValue,observationDateTime,observationUID);
+	}
+
+	/**
+	 * @param	parent							parent content item to add to
+	 * @param	relationshipType				relationship type
+	 * @param	conceptName						coded concept name
+	 * @param	textValue						text value
+	 * @return									the content item created
+	 * @throws	DicomException					if error in DICOM encoding
+	 */
+	public TextContentItem makeTextContentItem(ContentItem parent,String relationshipType,CodedSequenceItem conceptName,String textValue) throws DicomException {
+		return new TextContentItem(parent,relationshipType,conceptName,textValue);
 	}
 
 	/**
 	 * <p>Construct a content item of the appropriate class from a list of attributes.</p>
 	 *
-	 * @param	parent	the parent to add the content item to
-	 * @param	list	a list of attributes that constitute the content item as it is encoded in a DICOM data set
-	 * @return		a content item
-	 * @throws	DicomException
+	 * @param	parent							the parent to add the content item to
+	 * @param	list							a list of attributes that constitute the content item as it is encoded in a DICOM data set
+	 * @return									a content item
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public ContentItem getNewContentItem(ContentItem parent,AttributeList list) throws DicomException {
 		ContentItem contentItem = null;
@@ -1523,7 +2168,7 @@ public class ContentItemFactory {
 			else if (valueType.equals("CODE")) {
 				contentItem = new CodeContentItem(parent,list);
 			}
-			else if (valueType.equals("NUM")) {
+			else if (valueType.equals("NUM") || valueType.equals("NUMERIC")) {	// NUM is used in SR trees, NUMERIC is used in Acquisition and Protocol templates (PS 3.3 10-2 Content Item Macro).
 				contentItem = new NumericContentItem(parent,list);
 			}
 			else if (valueType.equals("DATETIME")) {

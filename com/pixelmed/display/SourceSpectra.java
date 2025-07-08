@@ -1,11 +1,14 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.dicom.*;
 
 import java.util.*; 
 import java.io.*; 
 
-import com.pixelmed.dicom.*;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class that encapsulates the features and values from an MR spectroscopy source,
@@ -14,9 +17,9 @@ import com.pixelmed.dicom.*;
  * @author	dclunie
  */
 public class SourceSpectra {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceSpectra.java,v 1.19 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceSpectra.java,v 1.7 2006/12/14 23:37:54 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceSpectra.class);
 
 	/***/
 	private float[][] spectra;
@@ -81,8 +84,8 @@ public class SourceSpectra {
 	 * an input stream (such as from a file or the network).</p>
 	 *
 	 * @param	i		the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public SourceSpectra(DicomInputStream i) throws IOException, DicomException {
 		AttributeList list = new AttributeList();
@@ -95,7 +98,7 @@ public class SourceSpectra {
 	 * a list of DICOM attributes.</p>
 	 *
 	 * @param	list		the list of attributes that include the description and values of the spectroscopy data
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public SourceSpectra(AttributeList list) throws DicomException {
 		if (list.get(TagFromName.SpectroscopyData) != null) constructSourceSpectra(list);
@@ -103,7 +106,7 @@ public class SourceSpectra {
 
 	/**
 	 * @param	list
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void constructSourceSpectra(AttributeList list) throws DicomException {
 //System.err.println("constructSourceSpectra - start");
@@ -112,14 +115,14 @@ public class SourceSpectra {
 
 		           nframes = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.NumberOfFrames,1);
 		if (nframes == 0) {		// Siemens bug in MRDCM_VB13A_2.0 - explicitly zero when only 1 frame
-System.err.println("SourceSpectra.constructSourceSpectra(): setting invalid NumberOfFrames value of 0 to 1 instead");
+			slf4jlogger.warn("constructSourceSpectra(): setting invalid NumberOfFrames value of 0 to 1 instead");
 			nframes = 1;
 		}
 		           columns = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Columns,0);
 		              rows = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Rows,0);
 		    dataPointRows  = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.DataPointRows,1);
 		if (dataPointRows == 0) {		// Siemens bug in MRDCM_VB13A_2.0 - explicitly zero
-System.err.println("SourceSpectra.constructSourceSpectra(): setting invalid DataPointRows value of 0 to 1 instead");
+			slf4jlogger.warn("constructSourceSpectra(): setting invalid DataPointRows value of 0 to 1 instead");
 			dataPointRows = 1;
 		}
 		  dataPointColumns = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.DataPointColumns,0);

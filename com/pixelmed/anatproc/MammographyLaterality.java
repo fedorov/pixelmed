@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
 import com.pixelmed.dicom.CodedSequenceItem;
 import com.pixelmed.dicom.DicomException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class encapsulates information pertaining to breast-specific laterality as used in Mammo CAD Image Library entries.</p>
@@ -11,8 +14,9 @@ import com.pixelmed.dicom.DicomException;
  * @author	dclunie
  */
 public class MammographyLaterality {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/MammographyLaterality.java,v 1.1 2013/01/24 18:32:52 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/MammographyLaterality.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MammographyLaterality.class);
 
 	private static Concept left  = new Concept("C0205091");
 	private static Concept right = new Concept("C0205090");
@@ -50,7 +54,7 @@ public class MammographyLaterality {
 						breastLateralityCodedSequenceItem = breastLateralityConcept.getCodedSequenceItem();
 					}
 					catch (DicomException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 						breastLateralityCodedSequenceItem = genericLateralityCodedSequenceItem;
 					}
 				}

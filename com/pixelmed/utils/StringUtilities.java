@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -12,12 +12,28 @@ import java.util.Vector;
  * @author	dclunie
  */
 public class StringUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/StringUtilities.java,v 1.13 2012/02/01 23:02:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/StringUtilities.java,v 1.28 2025/01/29 10:58:09 dclunie Exp $";
 
 	private static Collator ourCollator = Collator.getInstance();
 	static { ourCollator.setStrength(Collator.IDENTICAL); ourCollator.setDecomposition(Collator.FULL_DECOMPOSITION); }
 	
 	private StringUtilities() {}
+	
+	static public final String toUpperCamelCase(String string) {
+		StringBuffer buf = new StringBuffer();
+		boolean captitalize = true;
+		for (char c : string.toCharArray()) {
+			if (captitalize && Character.isLowerCase(c)) {
+				buf.append(Character.toUpperCase(c));
+				captitalize = false;
+			}
+			else {
+				buf.append(c);
+				captitalize = Character.isWhitespace(c);
+			}
+    	}
+		return buf.toString();
+	}
 	
 	/**
 	 * <p>Replace all listed characters in a string with those listed as replacements.</p>
@@ -408,58 +424,38 @@ public class StringUtilities {
 		}
 	}
 	
-	/**
-	 * <p>Unit testing.</p>
+	/*
+	 * <p>Pad a positive integer to make it a specified length.</p>
 	 *
-	 * @param	arg	ignored
+	 * @param	str	the string to pad
+	 * @param	length	the length required
+	 * @param	pad	the pad character
+	 * @return			the padded string
 	 */
-	public static void main(String arg[]) {
-		String s;
-		s="1234";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="1234  ";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="12  34  ";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="  1234";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="  1234  ";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="1";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s=" ";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="    ";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		s="";
-		System.err.println("src <"+s+"> dst <"+removeTrailingSpaces(s)+">");
-		
-		String s1;
-		String s2;
-		
-		s1 = "this is 2 way";
-		s2 = "this is 2 way";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
+	public static String padPositiveInteger(String str,int length,Character pad) {
+		while (str.length() < length) str = pad + str;
+		return str;
+	}
+	
+	/*
+	 * <p>Zero pad a positive integer to make it a specified length.</p>
+	 *
+	 * @param	str	the string to pad
+	 * @param	length	the length required
+	 * @return			the padded string
+	 */
+	public static String zeroPadPositiveInteger(String str,int length) {
+		return padPositiveInteger(str,length,'0');
+	}
 
-		s1 = "this is 2 way";
-		s2 = "this is 10 way";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
-
-		s1 = "this is 10 way";
-		s2 = "this is 2 way";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
-
-		s1 = "this is 2 way";
-		s2 = "this is 2 way plus";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
-
-		s1 = "this is 2 way";
-		s2 = "this is 10 way plus";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
-
-		s1 = "this is 10 way";
-		s2 = "this is 2 way plus";
-		System.err.println("s1 <"+s1+"> s2 <"+s2+"> : compare ="+compareStringsWithEmbeddedNonZeroPaddedIntegers(s1,s2));
-
+	/*
+	 * <p>Make a string a specified length.</p>
+	 *
+	 * @param	str		the string to truncate
+	 * @param	wanted	the maximum length
+	 * @return			the truncated string
+	 */
+	public static String getStringNoLongerThanTruncatedIfNecessary(String str,int wanted) {
+		return str != null && str.length() > wanted ? str.substring(0,wanted) : str;
 	}
 }

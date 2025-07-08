@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
 
@@ -13,11 +13,8 @@ import java.util.Properties;
  */
 public class FTPApplicationProperties {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPApplicationProperties.java,v 1.1 2010/11/15 20:30:23 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPApplicationProperties.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 	
-	public static final String propertyName_ClientDebugLevel = "Ftp.ClientDebugLevel";
-	
-	protected int clientDebugLevel;
 	protected FTPRemoteHostInformation ftpRemoteHostInformation;
 
 	/**
@@ -25,7 +22,6 @@ public class FTPApplicationProperties {
 	 */
 	public FTPApplicationProperties() throws FTPException {
 //System.err.println("FTPApplicationProperties():");
-		clientDebugLevel = 0;
 		ftpRemoteHostInformation = new FTPRemoteHostInformation();
 	}
 	
@@ -36,8 +32,6 @@ public class FTPApplicationProperties {
 	 */
 	public FTPApplicationProperties(Properties properties) throws FTPException {
 //System.err.println("FTPApplicationProperties(Properties): properties ="+properties);
-		clientDebugLevel = Integer.valueOf(properties.getProperty(propertyName_ClientDebugLevel,"0")).intValue();
-
 		ftpRemoteHostInformation = new FTPRemoteHostInformation(properties);
 	}
 	
@@ -54,20 +48,11 @@ public class FTPApplicationProperties {
 			properties = new Properties();
 		}
 		
-		properties.setProperty(propertyName_ClientDebugLevel,Integer.toString(clientDebugLevel));
-		
 		ftpRemoteHostInformation.getProperties(properties);	// remove any existing entries in properties, and add properties for all in ftpRemoteHostInformation
 
 //System.err.println("FTPApplicationProperties.getProperties(): at end, properties = \n"+properties);
 		return properties;
 	}
-
-	/**
-	 * <p>Return the client debug level.</p>
-	 *
-	 * @return	the client debug level
-	 */
-	public int getClientDebugLevel() { return clientDebugLevel; }
 	
 	/**
 	 * <p>Return the network application information.</p>
@@ -80,7 +65,6 @@ public class FTPApplicationProperties {
 	 */
 	public String toString() {
 		StringBuffer str = new StringBuffer();
-		str.append("clientDebugLevel: "+clientDebugLevel+"\n");
 		str.append("Remote applications:\n"+ftpRemoteHostInformation+"\n");
 		return str.toString();
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,7 +14,7 @@ import com.pixelmed.geometry.GeometryOfSlice;
  */
 public class PixelSpacing {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PixelSpacing.java,v 1.4 2013/06/19 12:48:41 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PixelSpacing.java,v 1.14 2025/01/29 10:58:07 dclunie Exp $";
 	
 	protected double spacing;
 	protected String description;

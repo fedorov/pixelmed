@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -27,15 +27,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to identify duplicate images based on having the same pixel data hash and constructing collections of their duplicate Study, Series, SOP Instance and Frame of Reference UIDs.</p>
  *
  * @author	dclunie
  */
 public class UIDMapByMatchingPixelData {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/UIDMapByMatchingPixelData.java,v 1.2 2012/09/08 11:06:55 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/UIDMapByMatchingPixelData.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 	
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(UIDMapByMatchingPixelData.class);
+
 	private Map<String,List<String>> mapOfStudyInstanceUIDsByPixelDataHash    = new TreeMap<String,List<String>>();
 	private Map<String,List<String>> mapOfSeriesInstanceUIDsByPixelDataHash   = new TreeMap<String,List<String>>();
 	private Map<String,List<String>> mapOfSOPInstanceUIDsByPixelDataHash      = new TreeMap<String,List<String>>();
@@ -75,7 +79,7 @@ public class UIDMapByMatchingPixelData {
 				list.read(i);
 				i.close();
 				
-				Attribute aPixelData = list.get(TagFromName.PixelData);
+				Attribute aPixelData = list.getPixelData();
 				if (aPixelData != null && aPixelData.getVL() > 0) {
 					byte[] byteValues = null;
 					if (aPixelData instanceof OtherByteAttribute) {
@@ -175,10 +179,10 @@ public class UIDMapByMatchingPixelData {
 	 */
 	public static void main(String arg[]) {
 		try {
-			System.err.println(new UIDMapByMatchingPixelData(arg));
+			System.err.println(new UIDMapByMatchingPixelData(arg));	// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

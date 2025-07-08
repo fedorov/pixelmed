@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -13,7 +13,7 @@ package com.pixelmed.dicom;
 public class InformationEntity implements Comparable {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/InformationEntity.java,v 1.12 2012/09/07 16:06:03 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/InformationEntity.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
 
 	/***/
 	private int value;
@@ -73,9 +73,6 @@ public class InformationEntity implements Comparable {
 		else return null;
 	}
 	
-	/***/
-	public int getValue() { return value; }
-	
 	/**
 	 * <p>Is this information entity higher in the model than the specified information entity ?</p>
 	 *
@@ -83,7 +80,7 @@ public class InformationEntity implements Comparable {
 	 * @return		a -ve value if this information entity higher in the model than the specified information entity
 	 */
 	public int compareTo(Object ie) {
-		return value - ((InformationEntity)ie).getValue();
+		return value - ((InformationEntity)ie).value;
 	}
 }
 

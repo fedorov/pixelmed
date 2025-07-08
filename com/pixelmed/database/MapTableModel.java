@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -16,7 +16,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class MapTableModel extends AbstractTableModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MapTableModel.java,v 1.8 2012/02/01 23:02:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MapTableModel.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
 	
 	/***/
 	protected int columnCount;

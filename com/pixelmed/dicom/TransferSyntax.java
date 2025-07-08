@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -13,7 +13,7 @@ package com.pixelmed.dicom;
 public class TransferSyntax {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntax.java,v 1.25 2013/09/18 15:42:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntax.java,v 1.40 2025/01/29 10:58:07 dclunie Exp $";
 
 	/***/
 	public static final String ImplicitVRLittleEndian              = "1.2.840.10008.1.2";
@@ -29,6 +29,8 @@ public class TransferSyntax {
 	public static final String JPEGBaseline                        = "1.2.840.10008.1.2.4.50";
 	/***/
 	public static final String JPEGExtended                        = "1.2.840.10008.1.2.4.51";
+	/***/
+	public static final String JPEGFullProgressionNonHierarchical1012 = "1.2.840.10008.1.2.4.55";
 	/***/
 	public static final String JPEGLossless                        = "1.2.840.10008.1.2.4.57";
 	/***/
@@ -50,9 +52,19 @@ public class TransferSyntax {
 	/***/
 	public static final String MPEG4HP41BD                         = "1.2.840.10008.1.2.4.103";
 	/***/
+	public static final String MPEG4HP422D                         = "1.2.840.10008.1.2.4.104";
+	/***/
+	public static final String MPEG4HP423D                         = "1.2.840.10008.1.2.4.105";
+	/***/
+	public static final String MPEG4HP42ST                         = "1.2.840.10008.1.2.4.106";
+	/***/
+	public static final String RLE								   = "1.2.840.10008.1.2.5";
+	/***/
 	public static final String PixelMedBzip2ExplicitVRLittleEndian = "1.3.6.1.4.1.5962.300.1";
 	/***/
 	public static final String PixelMedEncapsulatedRawLittleEndian = "1.3.6.1.4.1.5962.300.2";
+	/***/
+	public static final String Papyrus3ImplicitVRLittleEndian	   = "1.2.840.10008.1.20";
 	
 	/***/
 	protected String transferSyntaxUID;
@@ -68,6 +80,8 @@ public class TransferSyntax {
 	protected boolean lossy;
 	/***/
 	protected boolean recognized;
+	/***/
+	protected boolean jpegFamily;
 	/***/
 	protected String fileNameExtension;
 
@@ -85,6 +99,7 @@ public class TransferSyntax {
 		lossy=false;
 		recognized=false;
 		fileNameExtension="unk";
+		jpegFamily=false;
 
 		if (transferSyntaxUID.equals(ImplicitVRLittleEndian)) {
 			description="Implicit VR Little Endian";
@@ -94,6 +109,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="dat";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(ExplicitVRLittleEndian)) {
 			description="Explicit VR Little Endian";
@@ -103,6 +119,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="dat";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(ExplicitVRBigEndian)) {
 			description="Explicit VR Big Endian";
@@ -112,6 +129,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="dat";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(PixelMedEncapsulatedRawLittleEndian)) {
 			description="PixelMed Encapsulated Raw Little Endian";
@@ -121,6 +139,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="dat";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(JPEGBaseline)) {
 			description="JPEG Baseline";
@@ -130,6 +149,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="jpg";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEGExtended)) {
 			description="JPEG Extended";
@@ -139,6 +159,17 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="jpg";
+			jpegFamily=true;
+		}
+		else if (transferSyntaxUID.equals(JPEGFullProgressionNonHierarchical1012)) {
+			description="JPEG Full Progression, Non-Hierarchical (Process 10 & 12)";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="jpg";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEG2000Lossless)) {
 			description="JPEG 2000 Lossless Only";
@@ -148,6 +179,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="j2k";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEG2000)) {
 			description="JPEG 2000";
@@ -157,6 +189,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="j2k";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEGLossless)) {
 			description="JPEG Lossless";
@@ -166,6 +199,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="jpl";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEGLosslessSV1)) {
 			description="JPEG Lossless SV1";
@@ -175,6 +209,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="jpl";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEGLS)) {
 			description="JPEG-LS";
@@ -184,6 +219,7 @@ public class TransferSyntax {
 			lossy=false;
 			recognized=true;
 			fileNameExtension="jls";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(JPEGNLS)) {
 			description="JPEG-LS Near-lossless";
@@ -193,6 +229,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="jls";
+			jpegFamily=true;
 		}
 		else if (transferSyntaxUID.equals(MPEG2MPML)) {
 			description="MPEG2 MPML";
@@ -202,6 +239,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="mpg";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(MPEG2MPHL)) {
 			description="MPEG2 MPHL";
@@ -211,6 +249,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="mpg";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(MPEG4HP41)) {
 			description="MPEG4 HP/4.1";
@@ -220,6 +259,7 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="mp4";
+			jpegFamily=false;
 		}
 		else if (transferSyntaxUID.equals(MPEG4HP41BD)) {
 			description="MPEG4 HP/4.1 BD";
@@ -229,6 +269,57 @@ public class TransferSyntax {
 			lossy=true;
 			recognized=true;
 			fileNameExtension="mp4";
+			jpegFamily=false;
+		}
+		else if (transferSyntaxUID.equals(MPEG4HP422D)) {
+			description="MPEG4 HP/4.2 2D";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="mp4";
+			jpegFamily=false;
+		}
+		else if (transferSyntaxUID.equals(MPEG4HP423D)) {
+			description="MPEG4 HP/4.2 3D";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="mp4";
+			jpegFamily=false;
+		}
+		else if (transferSyntaxUID.equals(MPEG4HP42ST)) {
+			description="MPEG4 HP/4.2 Stereo";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="mp4";
+			jpegFamily=false;
+		}
+		else if (transferSyntaxUID.equals(RLE)) {
+			description="RLE Lossless";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=false;
+			recognized=true;
+			fileNameExtension="rle";
+			jpegFamily=false;
+		}
+		else if (transferSyntaxUID.equals(Papyrus3ImplicitVRLittleEndian)) {
+			description="Papyrus 3 Implicit VR Little Endian";
+			bigEndian=false;
+			explicitVR=false;
+			encapsulatedPixelData=false;
+			lossy=false;
+			recognized=true;
+			fileNameExtension="dat";
+			jpegFamily=false;
 		}
 	}
 
@@ -266,6 +357,23 @@ public class TransferSyntax {
 	public TransferSyntax(String transferSyntaxUID, String description,boolean explicitVR,boolean bigEndian,boolean encapsulatedPixelData,boolean lossy,String fileNameExtension) {
 		this(transferSyntaxUID,description,explicitVR,bigEndian,encapsulatedPixelData,lossy);
 		this.fileNameExtension=fileNameExtension;
+	}
+
+	/**
+	 * <p>Construct a Transfer Syntax using the specified UID and characteristics.</p>
+	 *
+	 * @param	transferSyntaxUID		the UID to use to refer to this transfer syntax
+	 * @param	description				the description of this transfer syntax
+	 * @param	explicitVR				true if an explicit VR transfer syntax
+	 * @param	bigEndian				true if big-endian transfer syntax
+	 * @param	encapsulatedPixelData	true if a pixel data encapsulated transfer syntax
+	 * @param	lossy					true if lossy compression
+	 * @param	fileNameExtension		fileNameExtension to use if bit stream is to be saved as a file
+	 * @param	jpegFamily				true if uses JPEG family marker segments
+	 */
+	public TransferSyntax(String transferSyntaxUID, String description,boolean explicitVR,boolean bigEndian,boolean encapsulatedPixelData,boolean lossy,String fileNameExtension,boolean jpegFamily) {
+		this(transferSyntaxUID,description,explicitVR,bigEndian,encapsulatedPixelData,lossy,fileNameExtension);
+		this.jpegFamily=jpegFamily;
 	}
 
 	/**
@@ -348,6 +456,15 @@ public class TransferSyntax {
 	public String getFileNameExtension()	{ return fileNameExtension; }
 
 	/**
+	 * <p>Is the Transfer Syntax part of the JPEG family of Transfer Syntaxes?</p>
+	 *
+	 * <p>I.e., those that share the same marker segments, such as the EOI marker used for end of frame in fragment detection.</p>
+	 *
+	 * @return		true if is JPEG family
+	 */
+	public boolean isJPEGFamily()		{ return jpegFamily; }
+
+	/**
 	 * <p>Does the Transfer Syntax use deflate compression ?</p>
 	 *
 	 * @return		true if deflated
@@ -367,6 +484,43 @@ public class TransferSyntax {
 	 * @return		the UID of the Transfer Syntax 
 	 */
 	public String toString() 			{ return transferSyntaxUID; }
+	
+	/**
+	 * <p>Describe the characteristics of Transfer Syntax.</p>
+	 *
+	 * @return		a detailed description of the Transfer Syntax
+	 */
+	public String dump() {
+		StringBuffer buf = new StringBuffer();
+		buf.append("Transfer Syntax UID =");
+		buf.append(transferSyntaxUID);
+		buf.append("\n");
+		buf.append("\tdescription =");
+		buf.append(description);
+		buf.append("\n");
+		buf.append("\tbigEndian =");
+		buf.append(bigEndian);
+		buf.append("\n");
+		buf.append("\texplicitVR =");
+		buf.append(explicitVR);
+		buf.append("\n");
+		buf.append("\tencapsulatedPixelData =");
+		buf.append(encapsulatedPixelData);
+		buf.append("\n");
+		buf.append("\tlossy =");
+		buf.append(lossy);
+		buf.append("\n");
+		buf.append("\trecognized =");
+		buf.append(recognized);
+		buf.append("\n");
+		buf.append("\tfileNameExtension =");
+		buf.append(fileNameExtension);
+		buf.append("\n");
+		buf.append("\tjpegFamily =");
+		buf.append(jpegFamily);
+		buf.append("\n");
+		return buf.toString();
+	}
 	
 	/**
 	 * <p>Is the Transfer Syntax with the specified UID explicit VR ?</p>
@@ -399,7 +553,6 @@ public class TransferSyntax {
 	 * @return		true if little endian
 	 */
 	static public boolean isLittleEndian(String uid)	{ return !isBigEndian(uid); }
-
 
 	/**
 	 * <p>Does the Transfer Syntax encapsulate the pixel data ?</p>

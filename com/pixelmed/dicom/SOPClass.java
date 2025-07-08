@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,7 +22,7 @@ import java.util.Set;
  * @author	dclunie
  */
 public abstract class SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.60 2013/10/16 00:09:18 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.106 2025/02/12 18:15:47 dclunie Exp $";
 
 	/***/
 	public static final String Verification = "1.2.840.10008.1.1";
@@ -38,13 +38,28 @@ public abstract class SOPClass {
 	}
 
 	// Private Storage ...
-
+	
+	public static final String PrivateGEDicomMRImageInfoObject = "1.2.840.113619.4.2";
+	public static final String PrivateGEDicomCTImageInfoObject = "1.2.840.113619.4.3";
+	public static final String PrivateGEDicomDisplayImageInfoObject = "1.2.840.113619.4.4";
 	public static final String PrivateGEPETRawDataStorage = "1.2.840.113619.4.30";
 	public static final String PrivateGE3DModelStorage = "1.2.840.113619.4.26";
 	public static final String PrivateGEeNTEGRAProtocolOrNMGenieStorage = "1.2.840.113619.4.27";
 	public static final String PrivateGECollageStorage = "1.2.528.1.1001.5.1.1.1";
+	public static final String PrivateGERTPlanStorage = "1.2.840.113619.4.5.249";
 	
 	public static final String PrivateSiemensCSANonImageStorage = "1.3.12.2.1107.5.9.1";
+	public static final String PrivateSiemensCTMRVolumeStorage  = "1.3.12.2.1107.5.99.3.10";
+	public static final String PrivateSiemensAXFrameSetsStorage = "1.3.12.2.1107.5.99.3.11";
+
+	public static final String PrivateAgfaBasicAttributePresentationStateStorage = "1.2.124.113532.3500.7";	// Despite the name, this really isn't a presentation state at all (per Impax DCS, is "Change Context object")
+
+	public static final String PrivateMedicalInsight3DSoftcopyPresentationStateStorage = "1.3.6.1.4.1.16978.3.1";
+
+	public static final String PrivateAcusonStructuredReportDetailStorage = "1.2.840.10008.5.1.4.1.1.88.3";
+
+	public static final String PrivateTomTecAnnotationStorage = "1.2.276.0.48.5.1.4.1.1.7";
+	
 	public static final String PrivateFujiCRImageStorage = "1.2.392.200036.9125.1.1.2";
 	
 	public static final String PrivatePhilipsSpecialisedXAStorage       = "1.3.46.670589.2.3.1.1";	// also seen described as "Philips Private X-Ray Image Storage"
@@ -77,14 +92,27 @@ public abstract class SOPClass {
 	public static final String PrivatePhilipsLiveRunStorage             = "1.3.46.670589.7.8.1618510092";
 	public static final String PrivatePhilipsRunStorage                 = "1.3.46.670589.7.8.16185100129";
 	public static final String PrivatePhilipsReconstructionStorage      = "1.3.46.670589.7.8.16185100130";
-	public static final String PrivatePhilipsPrivateXRayMFStorage       = "1.3.46.670589.7.8.1618510091";
+	public static final String PrivatePhilipsXRayMFStorage              = "1.3.46.670589.7.8.1618510091";
+	
+	public static final String PrivatePhilipsHPLive3D01Storage          = "1.2.840.113543.6.6.1.3.10001";
+	public static final String PrivatePhilipsHPLive3D02Storage          = "1.2.840.113543.6.6.1.3.10002";
 
 	public static final String PrivatePMODMultiframeImageStorage		= "2.16.840.1.114033.5.1.4.1.1.130";
+	
+	public static final String PrivateToshibaUSImageStorage		        = "1.2.392.200036.9116.7.8.1.1.1";
+
+	public static final String PrivateERADPracticeBuilderReportTextStorage			= "1.2.826.0.1.3680043.293.1.0.1";
+	public static final String PrivateERADPracticeBuilderReportDictationStorage		= "1.2.826.0.1.3680043.293.1.0.2";
+	
+	public static final String PrivateDcm4cheUpgradedCTImageStorage			= "1.2.40.0.13.1.5.1.4.1.1.2.1";
+	public static final String PrivateDcm4cheUpgradedMRImageStorage			= "1.2.40.0.13.1.5.1.4.1.1.4.1";
+	public static final String PrivateDcm4cheUpgradedPETImageStorage		= "1.2.40.0.13.1.5.1.4.1.1.128.1";
+	public static final String PrivateDcm4cheEncapsulatedDocumentStorage	= "1.2.40.0.13.1.5.1.4.1.1.104.1";
 	
 	public static final String PrivatePixelMedLegacyConvertedEnhancedCTImageStorage		= "1.3.6.1.4.1.5962.301.1";
 	public static final String PrivatePixelMedLegacyConvertedEnhancedMRImageStorage		= "1.3.6.1.4.1.5962.301.2";
 	public static final String PrivatePixelMedLegacyConvertedEnhancedPETImageStorage	= "1.3.6.1.4.1.5962.301.3";
-	public static final String PrivatePixelMedLegacyFloatingPointImageStorage			= "1.3.6.1.4.1.5962.301.9";
+	public static final String PrivatePixelMedFloatingPointImageStorage					= "1.3.6.1.4.1.5962.301.9";
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -96,7 +124,14 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(PrivateGE3DModelStorage)
 		    || sopClassUID.equals(PrivateGEeNTEGRAProtocolOrNMGenieStorage)
 		    || sopClassUID.equals(PrivateGECollageStorage)
+		    || sopClassUID.equals(PrivateGERTPlanStorage)
 		    || sopClassUID.equals(PrivateSiemensCSANonImageStorage)
+		    || sopClassUID.equals(PrivateSiemensCTMRVolumeStorage)
+		    || sopClassUID.equals(PrivateSiemensAXFrameSetsStorage)
+		    || sopClassUID.equals(PrivateAgfaBasicAttributePresentationStateStorage)
+		    || sopClassUID.equals(PrivateMedicalInsight3DSoftcopyPresentationStateStorage)
+		    || sopClassUID.equals(PrivateAcusonStructuredReportDetailStorage)
+		    || sopClassUID.equals(PrivateTomTecAnnotationStorage)
 		    || sopClassUID.equals(PrivatePhilipsVolumeStorage)
 		    || sopClassUID.equals(PrivatePhilipsVolume2Storage)
 		    || sopClassUID.equals(PrivatePhilips3DObjectStorage)
@@ -114,6 +149,11 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(PrivatePhilipsMRExamcardStorage)
 		    || sopClassUID.equals(PrivatePhilips3DPresentationStateStorage)
 		    || sopClassUID.equals(PrivatePhilipsPerfusionStorage)
+		    || sopClassUID.equals(PrivatePhilipsHPLive3D01Storage)
+		    || sopClassUID.equals(PrivatePhilipsHPLive3D02Storage)
+		    || sopClassUID.equals(PrivateERADPracticeBuilderReportTextStorage)
+		    || sopClassUID.equals(PrivateERADPracticeBuilderReportDictationStorage)
+		    || sopClassUID.equals(PrivateDcm4cheEncapsulatedDocumentStorage)
 		);
 	}
 
@@ -124,6 +164,9 @@ public abstract class SOPClass {
 	public static final boolean isPrivateImageStorage(String sopClassUID) {
 		return  sopClassUID != null && (
 				sopClassUID.equals(PrivateFujiCRImageStorage)
+			 || sopClassUID.equals(PrivateGEDicomMRImageInfoObject)
+			 || sopClassUID.equals(PrivateGEDicomCTImageInfoObject)
+			 || sopClassUID.equals(PrivateGEDicomDisplayImageInfoObject)
 			 || sopClassUID.equals(PrivatePhilipsCXImageStorage)
 			 || sopClassUID.equals(PrivatePhilipsCTSyntheticImageStorage)
 			 || sopClassUID.equals(PrivatePhilipsMRSyntheticImageStorage)
@@ -136,12 +179,16 @@ public abstract class SOPClass {
 			 || sopClassUID.equals(PrivatePhilipsLiveRunStorage)
 			 || sopClassUID.equals(PrivatePhilipsRunStorage)
 			 || sopClassUID.equals(PrivatePhilipsReconstructionStorage)
-			 || sopClassUID.equals(PrivatePhilipsPrivateXRayMFStorage)
+			 || sopClassUID.equals(PrivatePhilipsXRayMFStorage)
 			 || sopClassUID.equals(PrivatePMODMultiframeImageStorage)
+			 || sopClassUID.equals(PrivateToshibaUSImageStorage)
 			 || sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedCTImageStorage)
 			 || sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedMRImageStorage)
 			 || sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedPETImageStorage)
-			 || sopClassUID.equals(PrivatePixelMedLegacyFloatingPointImageStorage)
+			 || sopClassUID.equals(PrivatePixelMedFloatingPointImageStorage)
+			 || sopClassUID.equals(PrivateDcm4cheUpgradedCTImageStorage)
+			 || sopClassUID.equals(PrivateDcm4cheUpgradedMRImageStorage)
+			 || sopClassUID.equals(PrivateDcm4cheUpgradedPETImageStorage)
 		);
 	}
 
@@ -239,6 +286,8 @@ public abstract class SOPClass {
 	/***/
 	public static final String EnhancedUSVolumeStorage = "1.2.840.10008.5.1.4.1.1.6.2";
 	/***/
+	public static final String PhotoacousticImageStorage = "1.2.840.10008.5.1.4.1.1.6.3";
+	/***/
 	public static final String SecondaryCaptureImageStorage = "1.2.840.10008.5.1.4.1.1.7";
 	/***/
 	public static final String MultiframeSingleBitSecondaryCaptureImageStorage = "1.2.840.10008.5.1.4.1.1.7.1";
@@ -265,7 +314,13 @@ public abstract class SOPClass {
 	/***/
 	public static final String BreastTomosynthesisImageStorage = "1.2.840.10008.5.1.4.1.1.13.1.3";
 	/***/
+	public static final String BreastProjectionXRayImageStorageForPresentation = "1.2.840.10008.5.1.4.1.1.13.1.4";
+	/***/
+	public static final String BreastProjectionXRayImageStorageForProcessing = "1.2.840.10008.5.1.4.1.1.13.1.5";
+	/***/
 	public static final String NuclearMedicineImageStorage = "1.2.840.10008.5.1.4.1.1.20";
+	/***/
+	public static final String ParametricMapStorage = "1.2.840.10008.5.1.4.1.1.30";
 	/***/
 	public static final String VisibleLightDraftImageStorage = "1.2.840.10008.5.1.4.1.1.77.1";
 	/***/
@@ -291,11 +346,25 @@ public abstract class SOPClass {
 	/***/
 	public static final String OphthalmicTomographyImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.5.4";
 	/***/
+	public static final String WideFieldOphthalmicPhotographyStereographicProjectionImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.5.5";
+	/***/
+	public static final String WideFieldOphthalmicPhotography3DCoordinatesImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.5.6";
+	/***/
+	public static final String OphthalmicOpticalCoherenceTomographyEnFaceImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.5.7";
+	/***/
+	public static final String OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage = "1.2.840.10008.5.1.4.1.1.77.1.5.8";
+	/***/
 	public static final String OphthalmicThicknessMapStorage = "1.2.840.10008.5.1.4.1.1.81.1";
 	/***/
 	public static final String CornealTopographyMapStorage = "1.2.840.10008.5.1.4.1.1.82.1";
 	/***/
 	public static final String VLWholeSlideMicroscopyImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.6";
+	/***/
+	public static final String DermoscopicPhotographyImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.7";
+	/***/
+	public static final String ConfocalMicroscopyImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.8";
+	/***/
+	public static final String ConfocalMicroscopyTiledPyramidalImageStorage = "1.2.840.10008.5.1.4.1.1.77.1.9";
 	/***/
 	public static final String PETImageStorage = "1.2.840.10008.5.1.4.1.1.128";
 	/***/
@@ -307,9 +376,23 @@ public abstract class SOPClass {
 	/***/
 	public static final String SegmentationStorage = "1.2.840.10008.5.1.4.1.1.66.4";
 	/***/
+	public static final String LabelMapSegmentationStorage = "1.2.840.10008.5.1.4.1.1.66.7";
+	/***/
+	public static final String HeightMapSegmentationStorage = "1.2.840.10008.5.1.4.1.1.66.8";
+	/***/
 	public static final String IVOCTImageStorageForPresentation = "1.2.840.10008.5.1.4.1.1.14.1";
 	/***/
 	public static final String IVOCTImageStorageForProcessing = "1.2.840.10008.5.1.4.1.1.14.2";
+
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches an Image Storage SOP Class that uses frames in a tiled layout
+	 */
+	public static final boolean isTiledImageStorage(String sopClassUID) {
+		return sopClassUID != null && (
+		       sopClassUID.equals(VLWholeSlideMicroscopyImageStorage)
+			);
+	}
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -348,6 +431,7 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(UltrasoundImageStorageRetired)
 		    || sopClassUID.equals(UltrasoundImageStorage)
 		    || sopClassUID.equals(EnhancedUSVolumeStorage)
+		    || sopClassUID.equals(PhotoacousticImageStorage)
 		    || sopClassUID.equals(SecondaryCaptureImageStorage)
 		    || sopClassUID.equals(MultiframeSingleBitSecondaryCaptureImageStorage)
 		    || sopClassUID.equals(MultiframeGrayscaleByteSecondaryCaptureImageStorage)
@@ -361,29 +445,44 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(XRay3DAngiographicImageStorage)
 		    || sopClassUID.equals(XRay3DCraniofacialImageStorage)
 		    || sopClassUID.equals(BreastTomosynthesisImageStorage)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForPresentation)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForProcessing)
 		    || sopClassUID.equals(NuclearMedicineImageStorage)
 		    || sopClassUID.equals(VisibleLightDraftImageStorage)
 		    || sopClassUID.equals(VisibleLightMultiFrameDraftImageStorage)
 		    || sopClassUID.equals(VisibleLightEndoscopicImageStorage)
+		    || sopClassUID.equals(VideoEndoscopicImageStorage)
 		    || sopClassUID.equals(VisibleLightMicroscopicImageStorage)
+		    || sopClassUID.equals(VideoMicroscopicImageStorage)
 		    || sopClassUID.equals(VisibleLightSlideCoordinatesMicroscopicImageStorage)
 		    || sopClassUID.equals(VisibleLightPhotographicImageStorage)
+		    || sopClassUID.equals(VideoPhotographicImageStorage)
 		    || sopClassUID.equals(OphthalmicPhotography8BitImageStorage)
 		    || sopClassUID.equals(OphthalmicPhotography16BitImageStorage)
 			|| sopClassUID.equals(OphthalmicTomographyImageStorage)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotographyStereographicProjectionImageStorage)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotography3DCoordinatesImageStorage)
+			|| sopClassUID.equals(OphthalmicOpticalCoherenceTomographyEnFaceImageStorage)
+			|| sopClassUID.equals(OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage)
 			|| sopClassUID.equals(OphthalmicThicknessMapStorage)
 			|| sopClassUID.equals(CornealTopographyMapStorage)
 			|| sopClassUID.equals(VLWholeSlideMicroscopyImageStorage)
+			|| sopClassUID.equals(DermoscopicPhotographyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyTiledPyramidalImageStorage)
 		    || sopClassUID.equals(PETImageStorage)
 		    || sopClassUID.equals(LegacyConvertedEnhancedPETImageStorage)
 		    || sopClassUID.equals(EnhancedPETImageStorage)
 		    || sopClassUID.equals(RTImageStorage)
 			|| sopClassUID.equals(SegmentationStorage)
+			|| sopClassUID.equals(LabelMapSegmentationStorage)
+			|| sopClassUID.equals(HeightMapSegmentationStorage)
 			|| sopClassUID.equals(IVOCTImageStorageForPresentation)
 			|| sopClassUID.equals(IVOCTImageStorageForProcessing)
+			|| sopClassUID.equals(ParametricMapStorage)
 		);
 	}
-	
+			
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
 	 * @return			true if the UID argument matches one of the known standard or private Enhanced Multiframe Image Storage SOP Classes
@@ -402,9 +501,12 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(EnhancedMRColorImageStorage)
 			|| sopClassUID.equals(LegacyConvertedEnhancedMRImageStorage)
 		    || sopClassUID.equals(EnhancedUSVolumeStorage)
+		    || sopClassUID.equals(PhotoacousticImageStorage)
 		    || sopClassUID.equals(EnhancedPETImageStorage)
 			|| sopClassUID.equals(LegacyConvertedEnhancedPETImageStorage)
 			|| sopClassUID.equals(SegmentationStorage)
+			|| sopClassUID.equals(LabelMapSegmentationStorage)
+			|| sopClassUID.equals(HeightMapSegmentationStorage)
 			|| sopClassUID.equals(IVOCTImageStorageForPresentation)
 			|| sopClassUID.equals(IVOCTImageStorageForProcessing)
 		    || sopClassUID.equals(EnhancedXAImageStorage)
@@ -412,11 +514,17 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(XRay3DAngiographicImageStorage)
 		    || sopClassUID.equals(XRay3DCraniofacialImageStorage)
 		    || sopClassUID.equals(BreastTomosynthesisImageStorage)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForPresentation)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForProcessing)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedCTImageStorage)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedMRImageStorage)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedPETImageStorage)
-			|| sopClassUID.equals(PrivatePixelMedLegacyFloatingPointImageStorage)
+			|| sopClassUID.equals(PrivatePixelMedFloatingPointImageStorage)
 			|| sopClassUID.equals(OphthalmicTomographyImageStorage)
+			|| sopClassUID.equals(ParametricMapStorage)
+			|| sopClassUID.equals(VLWholeSlideMicroscopyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyTiledPyramidalImageStorage)
 		);
 	}
 	
@@ -437,17 +545,117 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(EnhancedPETImageStorage)
 			|| sopClassUID.equals(LegacyConvertedEnhancedPETImageStorage)
 			|| sopClassUID.equals(SegmentationStorage)
+			|| sopClassUID.equals(LabelMapSegmentationStorage)
 		    || sopClassUID.equals(XRay3DAngiographicImageStorage)
 		    || sopClassUID.equals(XRay3DCraniofacialImageStorage)
 		    || sopClassUID.equals(BreastTomosynthesisImageStorage)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedCTImageStorage)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedMRImageStorage)
 			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedPETImageStorage)
-			|| sopClassUID.equals(PrivatePixelMedLegacyFloatingPointImageStorage)
+			|| sopClassUID.equals(PrivatePixelMedFloatingPointImageStorage)
 			|| sopClassUID.equals(OphthalmicTomographyImageStorage)
+			|| sopClassUID.equals(ParametricMapStorage)
+		);
+	}
+
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches one of the known standard or private Image Storage SOP Classes that uses the Frame of Reference Module
+	 */
+	public static final boolean isImageWithFrameOfReferenceStorage(String sopClassUID) {
+	return sopClassUID != null && (
+		       isEnhancedMultiframeImageWithPlanePositionOrientationAndMeasuresStorage(sopClassUID)
+		    || sopClassUID.equals(CTImageStorage)
+		    || sopClassUID.equals(MRImageStorage)
+		    || sopClassUID.equals(NuclearMedicineImageStorage)
+		    || sopClassUID.equals(UltrasoundImageStorage)
+		    || sopClassUID.equals(UltrasoundMultiframeImageStorage)
+		    || sopClassUID.equals(RTImageStorage)
+		    || sopClassUID.equals(RTDoseStorage)
+		    || sopClassUID.equals(PETImageStorage)
+		    || sopClassUID.equals(DigitalXRayImageStorageForPresentation)
+		    || sopClassUID.equals(DigitalXRayImageStorageForProcessing)
+		    || sopClassUID.equals(DigitalMammographyXRayImageStorageForPresentation)
+		    || sopClassUID.equals(DigitalMammographyXRayImageStorageForProcessing)
+		    || sopClassUID.equals(DigitalIntraoralXRayImageStorageForPresentation)
+		    || sopClassUID.equals(DigitalIntraoralXRayImageStorageForProcessing)
+		    || sopClassUID.equals(VisibleLightSlideCoordinatesMicroscopicImageStorage)
+			|| sopClassUID.equals(VLWholeSlideMicroscopyImageStorage)
+			|| sopClassUID.equals(DermoscopicPhotographyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyTiledPyramidalImageStorage)
+			|| sopClassUID.equals(EnhancedXAImageStorage)
+			|| sopClassUID.equals(EnhancedXRFImageStorage)
+		    || sopClassUID.equals(EnhancedUSVolumeStorage)
+		    || sopClassUID.equals(PhotoacousticImageStorage)
+			|| sopClassUID.equals(IVOCTImageStorageForPresentation)
+			|| sopClassUID.equals(IVOCTImageStorageForProcessing)
+			|| sopClassUID.equals(CornealTopographyMapStorage)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForPresentation)
+		    || sopClassUID.equals(BreastProjectionXRayImageStorageForProcessing)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotographyStereographicProjectionImageStorage)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotography3DCoordinatesImageStorage)
+			|| sopClassUID.equals(OphthalmicOpticalCoherenceTomographyEnFaceImageStorage)
+			|| sopClassUID.equals(OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage)
+		);
+	}
+
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches one of the known standard or private Image Storage SOP Classes that uses the Synchronization Module
+	 */
+	public static final boolean isImageWithSynchronizationStorage(String sopClassUID) {
+		return sopClassUID != null && (
+			   sopClassUID.equals(NuclearMedicineImageStorage)
+		    || sopClassUID.equals(UltrasoundImageStorage)
+		    || sopClassUID.equals(UltrasoundMultiframeImageStorage)
+		    || sopClassUID.equals(MultiframeGrayscaleByteSecondaryCaptureImageStorage)
+		    || sopClassUID.equals(MultiframeGrayscaleWordSecondaryCaptureImageStorage)
+		    || sopClassUID.equals(MultiframeTrueColorSecondaryCaptureImageStorage)
+		    || sopClassUID.equals(XRayAngiographicImageStorage)
+		    || sopClassUID.equals(XRayRadioFlouroscopicImageStorage)
+		    || sopClassUID.equals(PETImageStorage)
+		    || sopClassUID.equals(EnhancedMRImageStorage)
+		    || sopClassUID.equals(EnhancedMRColorImageStorage)
+		    || sopClassUID.equals(EnhancedCTImageStorage)
+		    || sopClassUID.equals(OphthalmicPhotography8BitImageStorage)
+		    || sopClassUID.equals(OphthalmicPhotography16BitImageStorage)
+		    || sopClassUID.equals(EnhancedXAImageStorage)
+		    || sopClassUID.equals(EnhancedXRFImageStorage)
+		    || sopClassUID.equals(OphthalmicTomographyImageStorage)
+		    || sopClassUID.equals(BreastTomosynthesisImageStorage)
+		    || sopClassUID.equals(EnhancedPETImageStorage)
+		    || sopClassUID.equals(EnhancedUSVolumeStorage)
+		    || sopClassUID.equals(PhotoacousticImageStorage)
+			|| sopClassUID.equals(IVOCTImageStorageForPresentation)
+			|| sopClassUID.equals(IVOCTImageStorageForProcessing)
+			|| sopClassUID.equals(LegacyConvertedEnhancedCTImageStorage)
+			|| sopClassUID.equals(LegacyConvertedEnhancedMRImageStorage)
+			|| sopClassUID.equals(LegacyConvertedEnhancedPETImageStorage)
+			|| sopClassUID.equals(BreastProjectionXRayImageStorageForPresentation)
+			|| sopClassUID.equals(BreastProjectionXRayImageStorageForProcessing)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotography3DCoordinatesImageStorage)
+			|| sopClassUID.equals(WideFieldOphthalmicPhotographyStereographicProjectionImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyImageStorage)
+			|| sopClassUID.equals(ConfocalMicroscopyTiledPyramidalImageStorage)
 		);
 	}
 	
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches one of the known standard or private Legacy Converted Enhanced Multiframe Image Storage SOP Classes
+	 */
+	public static final boolean isLegacyConvertedEnhancedImageStorage(String sopClassUID) {
+		return sopClassUID != null && (
+			   sopClassUID.equals(LegacyConvertedEnhancedCTImageStorage)
+			|| sopClassUID.equals(LegacyConvertedEnhancedMRImageStorage)
+			|| sopClassUID.equals(LegacyConvertedEnhancedPETImageStorage)
+			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedCTImageStorage)
+			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedMRImageStorage)
+			|| sopClassUID.equals(PrivatePixelMedLegacyConvertedEnhancedPETImageStorage)
+		);
+	}
+									   
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
 	 * @return			true if the UID argument matches one of the known standard Multiframe Secondary Capture Image Storage SOP Classes
@@ -468,6 +676,26 @@ public abstract class SOPClass {
 	public static final boolean isSecondaryCaptureImageStorage(String sopClassUID) {
 		return sopClassUID != null && (
 			   sopClassUID.equals(SecondaryCaptureImageStorage)
+		    || isMultiframeSecondaryCaptureImageStorage(sopClassUID)
+		);
+	}
+
+	
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches one of the known standard Multiframe Image Storage SOP Classes
+	 */
+	public static final boolean isMultiframeImageStorage(String sopClassUID) {
+		return sopClassUID != null && (
+		       sopClassUID.equals(NuclearMedicineImageStorage)
+		    || sopClassUID.equals(OphthalmicPhotography8BitImageStorage)	// 001153
+		    || sopClassUID.equals(OphthalmicPhotography16BitImageStorage)	// 001153
+		    || sopClassUID.equals(UltrasoundMultiframeImageStorageRetired)
+		    || sopClassUID.equals(UltrasoundMultiframeImageStorage)
+		    || sopClassUID.equals(XRayAngiographicImageStorage)
+		    || sopClassUID.equals(XRayRadioFlouroscopicImageStorage)
+		    || sopClassUID.equals(XRayAngiographicBiplaneImageStorage)
+		    || isEnhancedMultiframeImageStorage(sopClassUID)
 		    || isMultiframeSecondaryCaptureImageStorage(sopClassUID)
 		);
 	}
@@ -498,6 +726,8 @@ public abstract class SOPClass {
 	/***/
 	public static final String Comprehensive3DSRStorage = "1.2.840.10008.5.1.4.1.1.88.34";
 	/***/
+	public static final String ExtensibleSRStorage = "1.2.840.10008.5.1.4.1.1.88.35";
+	/***/
 	public static final String MammographyCADSRStorage = "1.2.840.10008.5.1.4.1.1.88.50";
 	/***/
 	public static final String ChestCADSRStorage = "1.2.840.10008.5.1.4.1.1.88.65";
@@ -506,9 +736,17 @@ public abstract class SOPClass {
 	/***/
 	public static final String XRayRadiationDoseSRStorage = "1.2.840.10008.5.1.4.1.1.88.67";
 	/***/
+	public static final String RadiopharmaceuticalRadiationDoseSRStorage = "1.2.840.10008.5.1.4.1.1.88.68";
+	/***/
 	public static final String ColonCADSRStorage = "1.2.840.10008.5.1.4.1.1.88.69";
 	/***/
 	public static final String ImplantationPlanSRStorage = "1.2.840.10008.5.1.4.1.1.88.70";
+	/***/
+	public static final String AcquisitionContextSRStorage = "1.2.840.10008.5.1.4.1.1.88.71";
+	/***/
+	public static final String SimplifiedAdultEchoSRStorage = "1.2.840.10008.5.1.4.1.1.88.72";
+	/***/
+	public static final String PatientRadiationDoseSRStorage = "1.2.840.10008.5.1.4.1.1.88.73";
 	/***/
 	public static final String MacularGridThicknessAndVolumeReportStorage = "1.2.840.10008.5.1.4.1.1.79.1";
 	/***/
@@ -526,12 +764,17 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(EnhancedSRStorage)
 		    || sopClassUID.equals(ComprehensiveSRStorage)
 		    || sopClassUID.equals(Comprehensive3DSRStorage)
+		    || sopClassUID.equals(ExtensibleSRStorage)
 		    || sopClassUID.equals(MammographyCADSRStorage)
 		    || sopClassUID.equals(ChestCADSRStorage)
 		    || sopClassUID.equals(ProcedureLogStorage)
 		    || sopClassUID.equals(XRayRadiationDoseSRStorage)
+		    || sopClassUID.equals(RadiopharmaceuticalRadiationDoseSRStorage)
 		    || sopClassUID.equals(ColonCADSRStorage)
 		    || sopClassUID.equals(ImplantationPlanSRStorage)
+		    || sopClassUID.equals(AcquisitionContextSRStorage)
+		    || sopClassUID.equals(SimplifiedAdultEchoSRStorage)
+		    || sopClassUID.equals(PatientRadiationDoseSRStorage)
 		    || sopClassUID.equals(MacularGridThicknessAndVolumeReportStorage)
 		    || sopClassUID.equals(KeyObjectSelectionDocumentStorage)
 			|| sopClassUID.equals(SpectaclePrescriptionReportStorage)
@@ -584,6 +827,20 @@ public abstract class SOPClass {
 	public static final String BlendingSoftcopyPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.4";
 	/***/
 	public static final String XAXRFGrayscaleSoftcopyPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.5";
+	/***/
+	public static final String GrayscalePlanarMPRVolumetricPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.6";
+	/***/
+	public static final String CompositingPlanarMPRVolumetricPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.7";
+	/***/
+	public static final String AdvancedBlendingPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.8";
+	/***/
+	public static final String VolumeRenderingVolumetricPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.9";
+	/***/
+	public static final String SegmentedVolumeRenderingVolumetricPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.10";
+	/***/
+	public static final String MultipleVolumeRenderingVolumetricPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.11";
+	/***/
+	public static final String VariableModalityLUTSoftcopyPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.11.12";
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -596,6 +853,31 @@ public abstract class SOPClass {
 		    || sopClassUID.equals(PseudoColorSoftcopyPresentationStateStorage)
 		    || sopClassUID.equals(BlendingSoftcopyPresentationStateStorage)
 		    || sopClassUID.equals(XAXRFGrayscaleSoftcopyPresentationStateStorage)
+		    || sopClassUID.equals(GrayscalePlanarMPRVolumetricPresentationStateStorage)
+		    || sopClassUID.equals(CompositingPlanarMPRVolumetricPresentationStateStorage)
+		    || sopClassUID.equals(AdvancedBlendingPresentationStateStorage)
+		    || sopClassUID.equals(VolumeRenderingVolumetricPresentationStateStorage)
+		    || sopClassUID.equals(SegmentedVolumeRenderingVolumetricPresentationStateStorage)
+		    || sopClassUID.equals(MultipleVolumeRenderingVolumetricPresentationStateStorage)
+		    || sopClassUID.equals(VariableModalityLUTSoftcopyPresentationStateStorage)
+		);
+	}
+
+	//  Waveform Presentation State ...
+
+	/***/
+	public static final String WaveformPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.9.100.1";
+	/***/
+	public static final String WaveformAcquisitionPresentationStateStorage = "1.2.840.10008.5.1.4.1.1.9.100.2";
+
+	/**
+	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
+	 * @return			true if the UID argument matches one of the known standard Presentation State Storage SOP Classes (currently just the Grayscale Softcopy Presentation State Storage SOP Class)
+	 */
+	public static final boolean isWaveformPresentationState(String sopClassUID) {
+		return sopClassUID != null && (
+		       sopClassUID.equals(WaveformPresentationStateStorage)
+		    || sopClassUID.equals(WaveformAcquisitionPresentationStateStorage)
 		);
 	}
 
@@ -606,19 +888,31 @@ public abstract class SOPClass {
 	/***/
 	public static final String GeneralECGStorage = "1.2.840.10008.5.1.4.1.1.9.1.2";
 	/***/
-	public static final String AmbulatoryECGStorage = "1.2.840.10008.5.1.4.1.1.9.1.3";
-	/***/
 	public static final String HemodynamicWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.2.1";
 	/***/
+	public static final String AmbulatoryECGStorage = "1.2.840.10008.5.1.4.1.1.9.1.3";
+	/***/
 	public static final String CardiacElectrophysiologyWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.3.1";
+	/***/
+	public static final String BasicVoiceStorage = "1.2.840.10008.5.1.4.1.1.9.4.1";
+	/***/
+	public static final String GeneralAudioWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.4.2";
 	/***/
 	public static final String ArterialPulseWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.5.1";
 	/***/
 	public static final String RespiratoryWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.6.1";
 	/***/
-	public static final String BasicVoiceStorage = "1.2.840.10008.5.1.4.1.1.9.4.1";
+	public static final String MultichannelRespiratoryWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.6.2";
 	/***/
-	public static final String GeneralAudioWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.4.2";
+	public static final String RoutineScalpElectroencephalogramWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.7.1";
+	/***/
+	public static final String ElectromyogramWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.7.2";
+	/***/
+	public static final String ElectrooculogramWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.7.3";
+	/***/
+	public static final String SleepElectroencephalogramWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.7.4";
+	/***/
+	public static final String BodyPositionWaveformStorage = "1.2.840.10008.5.1.4.1.1.9.8.1";
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -628,13 +922,19 @@ public abstract class SOPClass {
 		return sopClassUID != null && (
 		       sopClassUID.equals(TwelveLeadECGStorage)
 		    || sopClassUID.equals(GeneralECGStorage)
-		    || sopClassUID.equals(AmbulatoryECGStorage)
 		    || sopClassUID.equals(HemodynamicWaveformStorage)
+		    || sopClassUID.equals(AmbulatoryECGStorage)
 		    || sopClassUID.equals(CardiacElectrophysiologyWaveformStorage)
-		    || sopClassUID.equals(ArterialPulseWaveformStorage)
-		    || sopClassUID.equals(RespiratoryWaveformStorage)
 		    || sopClassUID.equals(BasicVoiceStorage)
 		    || sopClassUID.equals(GeneralAudioWaveformStorage)
+			|| sopClassUID.equals(ArterialPulseWaveformStorage)
+		    || sopClassUID.equals(RespiratoryWaveformStorage)
+		    || sopClassUID.equals(MultichannelRespiratoryWaveformStorage)
+		    || sopClassUID.equals(RoutineScalpElectroencephalogramWaveformStorage)
+		    || sopClassUID.equals(ElectromyogramWaveformStorage)
+		    || sopClassUID.equals(ElectrooculogramWaveformStorage)
+		    || sopClassUID.equals(SleepElectroencephalogramWaveformStorage)
+		    || sopClassUID.equals(BodyPositionWaveformStorage)
 		);
 	}
 
@@ -674,15 +974,38 @@ public abstract class SOPClass {
 	/***/
 	public static final String RTBeamsTreatmentRecordStorage = "1.2.840.10008.5.1.4.1.1.481.4";
 	/***/
-	public static final String RTIonBeamsTreatmentRecordStorage = "1.2.840.10008.5.1.4.1.1.481.9";
-	/***/
 	public static final String RTPlanStorage = "1.2.840.10008.5.1.4.1.1.481.5";
-	/***/
-	public static final String RTIonPlanStorage = "1.2.840.10008.5.1.4.1.1.481.8";
 	/***/
 	public static final String RTBrachyTreatmentRecordStorage = "1.2.840.10008.5.1.4.1.1.481.6";
 	/***/
 	public static final String RTTreatmentSummaryRecordStorage = "1.2.840.10008.5.1.4.1.1.481.7";
+	/***/
+	public static final String RTIonPlanStorage = "1.2.840.10008.5.1.4.1.1.481.8";
+	/***/
+	public static final String RTIonBeamsTreatmentRecordStorage = "1.2.840.10008.5.1.4.1.1.481.9";
+	/***/
+	public static final String RTPhysicianIntentStorage = "1.2.840.10008.5.1.4.1.1.481.10";
+	/***/
+	public static final String RTSegmentAnnotationStorage = "1.2.840.10008.5.1.4.1.1.481.11";
+	/***/
+	public static final String RTRadiationSetStorage = "1.2.840.10008.5.1.4.1.1.481.12";
+	/***/
+	public static final String CArmPhotonElectronRadiationStorage = "1.2.840.10008.5.1.4.1.1.481.13";
+	/***/
+	public static final String TomotherapeuticRadiationStorage = "1.2.840.10008.5.1.4.1.1.481.14";
+	/***/
+	public static final String RoboticArmRadiationStorage = "1.2.840.10008.5.1.4.1.1.481.15";
+	/***/
+	public static final String RTRadiationRecordSetStorage = "1.2.840.10008.5.1.4.1.1.481.16";
+	/***/
+	public static final String RTRadiationSalvageRecordStorage = "1.2.840.10008.5.1.4.1.1.481.17";
+	/***/
+	public static final String TomotherapeuticRadiationRecordStorage = "1.2.840.10008.5.1.4.1.1.481.18";
+	/***/
+	public static final String CArmPhotonElectronRadiationRecordStorage = "1.2.840.10008.5.1.4.1.1.481.19";
+	/***/
+	public static final String RoboticRadiationRecordStorage = "1.2.840.10008.5.1.4.1.1.481.20";
+
 	/***/
 	public static final String RTBeamsDeliveryInstructionStorageTrial = "1.2.840.10008.5.1.4.34.1";
 	/***/
@@ -697,11 +1020,22 @@ public abstract class SOPClass {
 		       sopClassUID.equals(RTDoseStorage)
 		    || sopClassUID.equals(RTStructureSetStorage)
 		    || sopClassUID.equals(RTBeamsTreatmentRecordStorage)
-		    || sopClassUID.equals(RTIonBeamsTreatmentRecordStorage)
 		    || sopClassUID.equals(RTPlanStorage)
-		    || sopClassUID.equals(RTIonPlanStorage)
 		    || sopClassUID.equals(RTBrachyTreatmentRecordStorage)
 		    || sopClassUID.equals(RTTreatmentSummaryRecordStorage)
+		    || sopClassUID.equals(RTIonPlanStorage)
+		    || sopClassUID.equals(RTIonBeamsTreatmentRecordStorage)
+		    || sopClassUID.equals(RTPhysicianIntentStorage)
+		    || sopClassUID.equals(RTSegmentAnnotationStorage)
+		    || sopClassUID.equals(RTRadiationSetStorage)
+		    || sopClassUID.equals(CArmPhotonElectronRadiationStorage)
+		    || sopClassUID.equals(TomotherapeuticRadiationStorage)
+		    || sopClassUID.equals(RoboticArmRadiationStorage)
+		    || sopClassUID.equals(RTRadiationRecordSetStorage)
+		    || sopClassUID.equals(RTRadiationSalvageRecordStorage)
+		    || sopClassUID.equals(TomotherapeuticRadiationRecordStorage)
+		    || sopClassUID.equals(CArmPhotonElectronRadiationRecordStorage)
+		    || sopClassUID.equals(RoboticRadiationRecordStorage)
 		    || sopClassUID.equals(RTBeamsDeliveryInstructionStorageTrial)
 		    || sopClassUID.equals(RTBeamsDeliveryInstructionStorage)
 		);
@@ -741,6 +1075,8 @@ public abstract class SOPClass {
 	public static final String EncapsulatedPDFStorage = "1.2.840.10008.5.1.4.1.1.104.1";
 	/***/
 	public static final String EncapsulatedCDAStorage = "1.2.840.10008.5.1.4.1.1.104.2";
+	/***/
+	public static final String EncapsulatedSTLStorage = "1.2.840.10008.5.1.4.1.1.104.3";
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -750,6 +1086,8 @@ public abstract class SOPClass {
 		return sopClassUID != null && (
 		       sopClassUID.equals(EncapsulatedPDFStorage)
 			|| sopClassUID.equals(EncapsulatedCDAStorage)
+			|| sopClassUID.equals(EncapsulatedSTLStorage)
+			|| sopClassUID.equals(PrivateDcm4cheEncapsulatedDocumentStorage)
 		);
 	}
 
@@ -765,6 +1103,8 @@ public abstract class SOPClass {
 	public static final String RealWorldValueMappingStorage = "1.2.840.10008.5.1.4.1.1.67";
 	/***/
 	public static final String SurfaceSegmentationStorage = "1.2.840.10008.5.1.4.1.1.66.5";
+	/***/
+	public static final String TractographyResultsStorage = "1.2.840.10008.5.1.4.1.1.66.6";
 	/***/
 	public static final String SurfaceScanMeshStorage = "1.2.840.10008.5.1.4.1.1.68.1";
 	/***/
@@ -816,6 +1156,7 @@ public abstract class SOPClass {
 			|| sopClassUID.equals(StereometricRelationshipStorage)
 			|| sopClassUID.equals(RealWorldValueMappingStorage)
 			|| sopClassUID.equals(SurfaceSegmentationStorage)
+			|| sopClassUID.equals(TractographyResultsStorage)
 			|| sopClassUID.equals(SurfaceScanMeshStorage)
 			|| sopClassUID.equals(SurfaceScanPointCloudStorage)
 			|| sopClassUID.equals(BasicStructuredDisplayStorage)
@@ -1119,6 +1460,7 @@ public abstract class SOPClass {
 		UltrasoundImageStorageRetired,
 		UltrasoundImageStorage,
 		EnhancedUSVolumeStorage,
+		PhotoacousticImageStorage,
 		SecondaryCaptureImageStorage,
 		MultiframeSingleBitSecondaryCaptureImageStorage,
 		MultiframeGrayscaleByteSecondaryCaptureImageStorage,
@@ -1132,6 +1474,8 @@ public abstract class SOPClass {
 		XRay3DAngiographicImageStorage,
 		XRay3DCraniofacialImageStorage,
 		BreastTomosynthesisImageStorage,
+		BreastProjectionXRayImageStorageForPresentation,
+		BreastProjectionXRayImageStorageForProcessing,
 		NuclearMedicineImageStorage,
 		VisibleLightDraftImageStorage,
 		VisibleLightMultiFrameDraftImageStorage,
@@ -1145,9 +1489,16 @@ public abstract class SOPClass {
 		OphthalmicPhotography8BitImageStorage,
 		OphthalmicPhotography16BitImageStorage,
 		OphthalmicTomographyImageStorage,
+		WideFieldOphthalmicPhotographyStereographicProjectionImageStorage,
+		WideFieldOphthalmicPhotography3DCoordinatesImageStorage,
+		OphthalmicOpticalCoherenceTomographyEnFaceImageStorage,
+		OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage,
 		OphthalmicThicknessMapStorage,
 		CornealTopographyMapStorage,
 		VLWholeSlideMicroscopyImageStorage,
+		DermoscopicPhotographyImageStorage,
+		ConfocalMicroscopyImageStorage,
+		ConfocalMicroscopyTiledPyramidalImageStorage,
 		PETImageStorage,
 		RTImageStorage,
 		IVOCTImageStorageForPresentation,
@@ -1156,12 +1507,17 @@ public abstract class SOPClass {
 		EnhancedSRStorage,
 		ComprehensiveSRStorage,
 		Comprehensive3DSRStorage,
+		ExtensibleSRStorage,
 		MammographyCADSRStorage,
 		ChestCADSRStorage,
 		ProcedureLogStorage,
 		XRayRadiationDoseSRStorage,
+		RadiopharmaceuticalRadiationDoseSRStorage,
 		ColonCADSRStorage,
 		ImplantationPlanSRStorage,
+		AcquisitionContextSRStorage,
+		SimplifiedAdultEchoSRStorage,
+		PatientRadiationDoseSRStorage,
 		MacularGridThicknessAndVolumeReportStorage,
 		KeyObjectSelectionDocumentStorage,
 		GrayscaleSoftcopyPresentationStateStorage,
@@ -1169,6 +1525,15 @@ public abstract class SOPClass {
 		PseudoColorSoftcopyPresentationStateStorage,
 		BlendingSoftcopyPresentationStateStorage,
 		XAXRFGrayscaleSoftcopyPresentationStateStorage,
+		GrayscalePlanarMPRVolumetricPresentationStateStorage,
+		CompositingPlanarMPRVolumetricPresentationStateStorage,
+		AdvancedBlendingPresentationStateStorage,
+		VolumeRenderingVolumetricPresentationStateStorage,
+		SegmentedVolumeRenderingVolumetricPresentationStateStorage,
+		MultipleVolumeRenderingVolumetricPresentationStateStorage,
+		VariableModalityLUTSoftcopyPresentationStateStorage,
+		WaveformPresentationStateStorage,
+		WaveformAcquisitionPresentationStateStorage,
 		TwelveLeadECGStorage,
 		GeneralECGStorage,
 		AmbulatoryECGStorage,
@@ -1200,13 +1565,20 @@ public abstract class SOPClass {
 		RealWorldValueMappingStorage,
 		EncapsulatedPDFStorage,
 		EncapsulatedCDAStorage,
+		EncapsulatedSTLStorage,
 		PrivateGEPETRawDataStorage,
 		PrivateGE3DModelStorage,
 		PrivateSiemensCSANonImageStorage,
+		PrivateSiemensCTMRVolumeStorage,
+		PrivateSiemensAXFrameSetsStorage,
+		PrivateAcusonStructuredReportDetailStorage,
+		PrivateTomTecAnnotationStorage,
 		PrivateFujiCRImageStorage,
 		EnhancedMRColorImageStorage,
 		EnhancedPETImageStorage,
 		SegmentationStorage,
+		LabelMapSegmentationStorage,
+		HeightMapSegmentationStorage,
 		SurfaceSegmentationStorage,
 		SurfaceScanMeshStorage,
 		SurfaceScanPointCloudStorage,
@@ -1423,7 +1795,9 @@ public abstract class SOPClass {
 				DigitalXRayImageStorageForPresentation,
 				DigitalMammographyXRayImageStorageForProcessing,
 				DigitalMammographyXRayImageStorageForPresentation,
-				BreastTomosynthesisImageStorage
+				BreastTomosynthesisImageStorage,
+				BreastProjectionXRayImageStorageForPresentation,
+				BreastProjectionXRayImageStorageForProcessing
 			});
 
 		plausibleStandardSOPClassUIDsForModality.put(
@@ -1447,6 +1821,7 @@ public abstract class SOPClass {
 				MultiframeGrayscaleWordSecondaryCaptureImageStorage,
 				MultiframeTrueColorSecondaryCaptureImageStorage,
 				VisibleLightSlideCoordinatesMicroscopicImageStorage,
+				VLWholeSlideMicroscopyImageStorage,
 				EncapsulatedPDFStorage
 			});
 		plausibleStandardSOPClassUIDsForModality.put(
@@ -1472,6 +1847,8 @@ public abstract class SOPClass {
 				VisibleLightPhotographicImageStorage,
 				OphthalmicPhotography8BitImageStorage,
 				OphthalmicPhotography16BitImageStorage,
+				WideFieldOphthalmicPhotographyStereographicProjectionImageStorage,
+				WideFieldOphthalmicPhotography3DCoordinatesImageStorage,
 				EncapsulatedPDFStorage
 			});
 
@@ -1484,6 +1861,8 @@ public abstract class SOPClass {
 				MultiframeGrayscaleWordSecondaryCaptureImageStorage,
 				MultiframeTrueColorSecondaryCaptureImageStorage,
 				OphthalmicTomographyImageStorage,
+				OphthalmicOpticalCoherenceTomographyEnFaceImageStorage,
+				OphthalmicOpticalCoherenceTomographyBscanVolumeAnalysisStorage,
 				EncapsulatedPDFStorage
 			});
 
@@ -1509,6 +1888,16 @@ public abstract class SOPClass {
 				IVOCTImageStorageForPresentation,
 				IVOCTImageStorageForProcessing,
 				EncapsulatedPDFStorage
+			});
+
+		plausibleStandardSOPClassUIDsForModality.put(
+			"PA",
+			new String[] {
+				SecondaryCaptureImageStorage,
+				MultiframeGrayscaleByteSecondaryCaptureImageStorage,
+				MultiframeGrayscaleWordSecondaryCaptureImageStorage,
+				MultiframeTrueColorSecondaryCaptureImageStorage,
+				PhotoacousticImageStorage
 			});
 
 		plausibleStandardSOPClassUIDsForModality.put(
@@ -1550,15 +1939,39 @@ public abstract class SOPClass {
 				EnhancedSRStorage,
 				ComprehensiveSRStorage,
 				Comprehensive3DSRStorage,
+				ExtensibleSRStorage,
 				MammographyCADSRStorage,
 				ChestCADSRStorage,
 				ProcedureLogStorage,
 				XRayRadiationDoseSRStorage,
+				RadiopharmaceuticalRadiationDoseSRStorage,
 				ColonCADSRStorage,
 				ImplantationPlanSRStorage,
+				AcquisitionContextSRStorage,
+				SimplifiedAdultEchoSRStorage,
+				PatientRadiationDoseSRStorage,
 				MacularGridThicknessAndVolumeReportStorage,
 				KeyObjectSelectionDocumentStorage,
 				SpectaclePrescriptionReportStorage
+			});
+
+		plausibleStandardSOPClassUIDsForModality.put(
+			"PR",
+			new String[] {
+				GrayscaleSoftcopyPresentationStateStorage,
+				ColorSoftcopyPresentationStateStorage,
+				PseudoColorSoftcopyPresentationStateStorage,
+				BlendingSoftcopyPresentationStateStorage,
+				XAXRFGrayscaleSoftcopyPresentationStateStorage,
+				GrayscalePlanarMPRVolumetricPresentationStateStorage,
+				CompositingPlanarMPRVolumetricPresentationStateStorage,
+				AdvancedBlendingPresentationStateStorage,
+				VolumeRenderingVolumetricPresentationStateStorage,
+				SegmentedVolumeRenderingVolumetricPresentationStateStorage,
+				MultipleVolumeRenderingVolumetricPresentationStateStorage,
+				VariableModalityLUTSoftcopyPresentationStateStorage,
+				WaveformPresentationStateStorage,
+				WaveformAcquisitionPresentationStateStorage
 			});
 
 		plausibleStandardSOPClassUIDsForModality.put(
@@ -1586,6 +1999,8 @@ public abstract class SOPClass {
 			"SEG",
 			new String[] {
 				SegmentationStorage,
+				LabelMapSegmentationStorage,
+				HeightMapSegmentationStorage,
 				SurfaceSegmentationStorage
 			});
 		plausibleStandardSOPClassUIDsForModality.put(
@@ -1658,12 +2073,17 @@ public abstract class SOPClass {
 				RespiratoryWaveformStorage,
 				EncapsulatedPDFStorage
 			});
+		plausibleStandardSOPClassUIDsForModality.put(
+			"M3D",
+			new String[] {
+				EncapsulatedSTLStorage
+			});
 	}
 	
 	/**
 	 * <p>Return a plausible set of SOP Classes with which to encode a specified modality.</p>
 	 *
-	 * <p>Useful for association negitation for a C-GET operation when the SOP Classes to be retrieved are not explicitly known.</p>
+	 * <p>Useful for association negotiation for a C-GET operation when the SOP Classes to be retrieved are not explicitly known.</p>
 	 *
 	 * <p>Includes both those SOP Classes that have mandatory fixed modality values, as well as
 	 * likely secondary capture, encapsulated, raw data and more general SOP Classes that could be used.</p>
@@ -1690,5 +2110,33 @@ public abstract class SOPClass {
 			};
 		}
 		return sopClassUIDs;
+	}
+	
+	/**
+	 * <p>Return the standard specified Modality for a Storage SOP Class, or a conventional choice if not enumerated by the standard.</p>
+	 *
+	 * <p>Will return "OT" if the SOP Class is not recognized or is not specific to a particular Modality.</p>
+	 *
+	 * @param	sopClassUID	a DICOM standard Storage SOP Class UID
+	 * @return				a DICOM standard string value for Modality
+	 */
+	public static String selectModalityForSOPClass(String sopClassUID) {	// (001334)
+		String modality = "OT";
+		if (sopClassUID != null
+		 && sopClassUID.length() > 0
+		 && !isSecondaryCaptureImageStorage(sopClassUID)
+		 && !isRawData(sopClassUID)
+		 && !isEncapsulatedDocument(sopClassUID)
+		) {
+			for (String modalityCandidate : plausibleStandardSOPClassUIDsForModality.keySet()) {
+				String[] sopClassUIDCandidates = plausibleStandardSOPClassUIDsForModality.get(modalityCandidate);
+				for (String sopClassUIDCandidate : sopClassUIDCandidates) {
+					if (sopClassUID.equals(sopClassUIDCandidate)) {
+						return modalityCandidate;
+					}
+				}
+			}
+		}
+		return modality;
 	}
 }

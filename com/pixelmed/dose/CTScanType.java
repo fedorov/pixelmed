@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -7,7 +7,7 @@ import com.pixelmed.dicom.DicomException;
 
 public class CTScanType {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTScanType.java,v 1.15 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTScanType.java,v 1.27 2025/01/29 10:58:08 dclunie Exp $";
 	
 	private String description;
 	
@@ -26,6 +26,8 @@ public class CTScanType {
 	public static final CTScanType STATIONARY = new CTScanType("Stationary");
 	
 	public static final CTScanType FREE = new CTScanType("Free");
+	
+	public static final CTScanType CONEBEAM = new CTScanType("Cone Beam");
 	
 	public static final CTScanType UNKNOWN = new CTScanType("Unknown");
 	
@@ -68,6 +70,11 @@ public class CTScanType {
 			) {
 				found = LOCALIZER;
 			}
+			else if (description.equals(CONEBEAM.toString().toUpperCase(java.util.Locale.US))
+			 || description.equals("Cone Beam")		// with space
+			) {
+				found = CONEBEAM;
+			}
 		}
 		return found;
 	}
@@ -77,7 +84,10 @@ public class CTScanType {
 		if (csi != null) {
 			String cv = csi.getCodeValue();
 			String csd = csi.getCodingSchemeDesignator();
-			if (csd.equals("SRT") && cv.equals("P5-08001")) {		// "Spiral Acquisition"
+			if (csd.equals("SRT") && cv.equals("P5-08001")			// "Spiral Acquisition"
+			 || csd.equals("SCT") && cv.equals("116152004")
+			 || csd.equals("UMLS") && cv.equals("C0860888")
+			) {
 				found = HELICAL;
 			}
 			else if (csd.equals("DCM") && cv.equals("113804")) {	// "Sequenced Acquisition"
@@ -92,6 +102,11 @@ public class CTScanType {
 			else if (csd.equals("DCM") && cv.equals("113807")) {	// "Free Acquisition"
 				found = FREE;
 			}
+			else if (csd.equals("SRT") && cv.equals("R-FB8F1")		// "Cone Beam Acquisition"
+			      || csd.equals("SCT") && cv.equals("702569007")
+			 ) {
+				found = CONEBEAM;
+			}
 		}
 		return found;
 	}
@@ -103,7 +118,7 @@ public class CTScanType {
 				csi = new CodedSequenceItem("113805","DCM","Constant Angle Acquisition");
 			}
 			else if (scanType.equals(CTScanType.HELICAL)) {
-				csi = new CodedSequenceItem("P5-08001","SRT","Spiral Acquisition");
+				csi = new CodedSequenceItem("116152004","SCT","Spiral Acquisition");
 			}
 			else if (scanType.equals(CTScanType.AXIAL)) {
 				csi = new CodedSequenceItem("113804","DCM","Sequenced Acquisition");
@@ -112,7 +127,10 @@ public class CTScanType {
 				csi = new CodedSequenceItem("113806","DCM","Stationary Acquisition");
 			}
 			else if (scanType.equals(CTScanType.FREE)) {
-				csi = new CodedSequenceItem("113807","DCM","FREE Acquisition");
+				csi = new CodedSequenceItem("113807","DCM","Free Acquisition");
+			}
+			else if (scanType.equals(CTScanType.CONEBEAM)) {
+				csi = new CodedSequenceItem("702569007","SCT","Cone Beam Acquisition");
 			}
 			// else if UNKNOWN return nothing
 		}

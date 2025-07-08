@@ -1,6 +1,11 @@
-/* Copyright (c) 2004-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.utils.FloatFormatter;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -11,24 +16,24 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
-import com.pixelmed.utils.FileUtilities;
-import com.pixelmed.utils.FloatFormatter;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.ImageDisplayRequestHandler ImageDisplayRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link ImageDisplayRequestHandler ImageDisplayRequestHandler} creates a response to an HTTP request for
  * a page that displays all the images in a specified series.</p>
  *
  * @author	dclunie
  */
 class ImageDisplayRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/ImageDisplayRequestHandler.java,v 1.10 2012/07/31 15:35:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/ImageDisplayRequestHandler.java,v 1.22 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageDisplayRequestHandler.class);
 	
 	private String imageDisplayTemplateFileName;
 
-	protected ImageDisplayRequestHandler(String stylesheetPath,String imageDisplayTemplateFileName,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	protected ImageDisplayRequestHandler(String stylesheetPath,String imageDisplayTemplateFileName) {
+		super(stylesheetPath);
 		this.imageDisplayTemplateFileName=imageDisplayTemplateFileName;
 	}
 	
@@ -40,7 +45,7 @@ class ImageDisplayRequestHandler extends RequestHandler {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 			values=null;
 		}
 		return values;
@@ -51,13 +56,16 @@ class ImageDisplayRequestHandler extends RequestHandler {
 			int returnValue = 0;
 			String si1 = (String)(((Map)o1).get("INSTANCENUMBER"));
 			String si2 = (String)(((Map)o2).get("INSTANCENUMBER"));
+			if (si1 == null) si1="";
+			if (si2 == null) si2="";
 			try {
-				int i1 = (si1 != null && si1.length() > 0) ? Integer.parseInt(si1) : 0;
-				int i2 = (si2 != null && si2.length() > 0) ? Integer.parseInt(si2) : 0;
+				int i1 = si1.length() > 0 ? Integer.parseInt(si1) : 0;
+				int i2 = si2.length() > 0 ? Integer.parseInt(si2) : 0;
 				returnValue = i1 - i2;
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
+				returnValue = si1.compareTo(si2);
 			}
 			return returnValue;
 		}
@@ -90,7 +98,7 @@ class ImageDisplayRequestHandler extends RequestHandler {
 			}
 						
 			String template = FileUtilities.readFile(fileStream);
-if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): Template is "+template);
+			slf4jlogger.trace("generateResponseToGetRequest(): Template is\n{}",template);
 
 			// replace ####REPLACEMEWITHLISTOFSOPINSTANCEUIDS#### with list of
 			// the form:
@@ -122,7 +130,7 @@ if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.gene
 							
 				double[] windowCenters = getDoubleArrayOrNullFromDatabaseStringValue((String)(instance.get("WINDOWCENTER")));
 				double windowCenter = windowCenters == null || windowCenters.length == 0 ? 0 : windowCenters[0];
-if (webServerDebugLevel > 1) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): instance "+s+" windowCenter="+windowCenter);
+				slf4jlogger.trace("generateResponseToGetRequest(): instance {} windowCenter={}",s,windowCenter);
 				windowCenterReplacementStrbuf.append(prefix);
 				//windowCenterReplacementStrbuf.append("\"");
 				windowCenterReplacementStrbuf.append(windowCenter);
@@ -130,7 +138,7 @@ if (webServerDebugLevel > 1) System.err.println("ImageDisplayRequestHandler.gene
 
 				double[] windowWidths  = getDoubleArrayOrNullFromDatabaseStringValue((String)(instance.get("WINDOWWIDTH")));
 				double windowWidth = windowWidths == null || windowWidths.length == 0 ? 0 : windowWidths[0];
-if (webServerDebugLevel > 1) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): instance "+s+" windowWidth="+windowWidth);
+				slf4jlogger.trace("generateResponseToGetRequest(): instance {} windowWidth={}",s,windowWidth);
 				windowWidthReplacementStrbuf.append(prefix);
 				//windowWidthReplacementStrbuf.append("\"");
 				windowWidthReplacementStrbuf.append(windowWidth);
@@ -143,23 +151,23 @@ if (webServerDebugLevel > 1) System.err.println("ImageDisplayRequestHandler.gene
 			windowWidthReplacementStrbuf.append("\n");
 						
 			String sopInstanceUIDReplacement = sopInstanceUIDReplacementStrbuf.toString();
-if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): sopInstanceUIDReplacement is "+sopInstanceUIDReplacement);
+			slf4jlogger.trace("generateResponseToGetRequest(): sopInstanceUIDReplacement is {}",sopInstanceUIDReplacement);
 			template = template.replaceFirst("####REPLACEMEWITHLISTOFSOPINSTANCEUIDS####",sopInstanceUIDReplacement);
 						
 			String windowCenterReplacement = windowCenterReplacementStrbuf.toString();
-if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): windowCenterReplacement is "+windowCenterReplacement);
+			slf4jlogger.trace("generateResponseToGetRequest(): windowCenterReplacement is {}",windowCenterReplacement);
 			template = template.replaceFirst("####REPLACEMEWITHWINDOWCENTERS####",windowCenterReplacement);
 						
 			String windowWidthReplacement = windowWidthReplacementStrbuf.toString();
-if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): windowWidthReplacement is "+windowWidthReplacement);
+			slf4jlogger.trace("generateResponseToGetRequest(): windowWidthReplacement is {}",windowWidthReplacement);
 			template = template.replaceFirst("####REPLACEMEWITHWINDOWWIDTHS####",windowWidthReplacement);
 						
-if (webServerDebugLevel > 2) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): Response after replacement is "+template);
+			slf4jlogger.trace("generateResponseToGetRequest(): Response after replacement is \n{}",template);
 			sendHeaderAndBodyText(out,template,"imagedisplay.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("ImageDisplayRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

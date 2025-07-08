@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.event;
 
@@ -9,7 +9,7 @@ package com.pixelmed.event;
  */
 public class Event /*extends EventObject*/ {	// why bother extending java.util.EventObject
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/Event.java,v 1.2 2004/09/30 12:51:52 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/Event.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 	
 	/***/
 	private EventContext eventContext;			// may be null

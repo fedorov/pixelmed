@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -17,13 +17,14 @@ import java.util.HashMap;
  */
 public class DictionaryOfConcepts {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/DictionaryOfConcepts.java,v 1.8 2012/02/01 23:02:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/DictionaryOfConcepts.java,v 1.19 2025/01/29 10:58:05 dclunie Exp $";
 
 	protected DisplayableConcept[] conceptEntries;
 	protected HashMap schemeAndValuePairsToConceptEntries;
 	protected HashMap meaningsAndSynonymsToConceptEntries;
 	protected HashMap codeStringEquivalentToConceptEntries;
 	protected HashMap<String,DisplayableConcept> conceptUniqueIdentifierToConceptEntries = new HashMap<String,DisplayableConcept>();
+	protected HashMap<String,DisplayableConcept> conceptIdentifierToConceptEntries = new HashMap<String,DisplayableConcept>();
 	protected String[] badWords;
 	protected String descriptionOfConcept;
 		
@@ -74,6 +75,10 @@ public class DictionaryOfConcepts {
 				String key = concept.getConceptUniqueIdentifier();
 				conceptUniqueIdentifierToConceptEntries.put(key,concept);
 			}
+			{
+				String key = concept.getConceptIdentifier();
+				conceptIdentifierToConceptEntries.put(key,concept);
+			}
 		}
 	}
 	
@@ -103,6 +108,14 @@ public class DictionaryOfConcepts {
 		
 	public DisplayableConcept find(Concept key) {
 		return (DisplayableConcept)(conceptUniqueIdentifierToConceptEntries.get(key.getConceptUniqueIdentifier()));
+	}
+		
+	public DisplayableConcept findByConceptUniqueIdentifier(String key) {
+		return (DisplayableConcept)(conceptUniqueIdentifierToConceptEntries.get(key));
+	}
+		
+	public DisplayableConcept findByConceptIdentifier(String key) {
+		return (DisplayableConcept)(conceptIdentifierToConceptEntries.get(key));
 	}
 		
 	public DisplayableConcept findCodeStringExact(String key) {

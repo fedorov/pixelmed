@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.validate;
 
@@ -13,7 +13,7 @@ import org.w3c.dom.Document;
 import java.io.*;
 
 /**
- * <p>The {@link com.pixelmed.validate.DicomInstanceValidator DicomInstanceValidator} class is
+ * <p>The {@link DicomInstanceValidator DicomInstanceValidator} class is
  * for validating composite storage SOP instances against the standard IOD for the corresponding storage SOP Class.</p>
  *
  * <p>Typically used by reading the list of attributes that comprise an object, validating them
@@ -33,8 +33,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class DicomInstanceValidator {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/DicomInstanceValidator.java,v 1.4 2011/05/12 12:37:31 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/DicomInstanceValidator.java,v 1.16 2025/01/29 10:58:09 dclunie Exp $";
 
 	/***/
 	private Transformer transformer;
@@ -56,7 +55,7 @@ public class DicomInstanceValidator {
 	 *
 	 * <p>Once created, a validator may be reused for as many validations as desired.</p>
 	 *
-	 * @exception	javax.xml.transform.TransformerConfigurationException
+	 * @throws	javax.xml.transform.TransformerConfigurationException
 	 */
 	public DicomInstanceValidator() throws javax.xml.transform.TransformerConfigurationException {
 		InputStream transformStream = DicomInstanceValidator.class.getResourceAsStream("/com/pixelmed/validate/"+"DicomIODDescriptionsCompiled.xsl");
@@ -71,9 +70,9 @@ public class DicomInstanceValidator {
 	 *
 	 * @param	list	the list of attributes comprising the DICOM composite storage instance to be validated
 	 * @return		a string describing the results of the validation
-	 * @exception	javax.xml.parsers.ParserConfigurationException
-	 * @exception	javax.xml.transform.TransformerException
-	 * @exception	java.io.UnsupportedEncodingException
+	 * @throws	javax.xml.parsers.ParserConfigurationException
+	 * @throws	javax.xml.transform.TransformerException
+	 * @throws	java.io.UnsupportedEncodingException
 	 */
 	public String validate(AttributeList list) throws
 			javax.xml.parsers.ParserConfigurationException,
@@ -99,9 +98,9 @@ public class DicomInstanceValidator {
 			AttributeList list = new AttributeList();
 			list.read(arg[0],TagFromName.PixelData);
 			DicomInstanceValidator validator = new DicomInstanceValidator();
-			System.out.print(validator.validate(list));
+			System.out.print(validator.validate(list));	// no need to use SLF4J since command line utility/test
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }
