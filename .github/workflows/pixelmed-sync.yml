@@ -50,7 +50,7 @@ jobs:
       - name: Download and extract new release
         if: steps.compare.outcome == 'success'
         run: |
-          mkdir new_release
+          mkdir ../new_release
           wget "${{ steps.get_link.outputs.link }}" -O ../new_release/source.tar.bz2
           tar -xjf ../new_release/source.tar.bz2 -C ../new_release
           rm ../new_release/source.tar.bz2
