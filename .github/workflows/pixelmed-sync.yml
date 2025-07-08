@@ -18,7 +18,7 @@ jobs:
         run: |
           page_url="https://www.dclunie.com/pixelmed/software/current/index.html"
           # Extract the latest tar.bz2 link with the correct pattern
-          link=$(curl -s "$page_url" | grep -oP 'href="([^"]*pixelmedjavadicom_sourcerelease\\.\\d{8}\\.tar\\.bz2)"' | head -n1 | cut -d'"' -f2)
+          link=$(grep -oP '(pixelmedjavadicom_sourcerelease\.\d+\.tar\.bz2)' | head -n1)
           if [ -z "$link" ]; then
             echo "No source release found."
             exit 1
