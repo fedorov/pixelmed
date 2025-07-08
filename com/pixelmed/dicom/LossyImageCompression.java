@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to categorize DICOM images as having been lossy compressed or not.</p>
@@ -12,8 +15,10 @@ import java.io.FileInputStream;
  */
 public class LossyImageCompression {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/LossyImageCompression.java,v 1.5 2012/02/01 23:02:09 dclunie Exp $";
-	
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/LossyImageCompression.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(LossyImageCompression.class);
+
 	/**
 	 * <p>determine if an image has ever been lossy compressed.</p>
 	 *
@@ -24,14 +29,14 @@ public class LossyImageCompression {
 		// ignore the fact that the LossyImageCompression is supposed to be a string with values "00" or "01" ... works this way even if (incorrectly) a numeric
 		// ignore the fact that LossyImageCompressionRatio may be multi-valued
 		// ignore the fact that LossyImageCompressionMethod may be multi-valued
-//System.err.println("Checking LossyImageCompression "+Attribute.getSingleIntegerValueOrDefault(list,TagFromName.LossyImageCompression,-1));
-//System.err.println("Checking LossyImageCompressionRatio "+Attribute.getSingleDoubleValueOrDefault(list,TagFromName.LossyImageCompressionRatio,-1));
-//System.err.println("Checking LossyImageCompressionMethod length "+Attribute.getSingleStringValueOrEmptyString(list,TagFromName.LossyImageCompressionMethod).length());
-//System.err.println("Checking DerivationDescription "+Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.DerivationDescription).toLowerCase(java.util.Locale.US).indexOf("lossy"));
-//System.err.println("Checking TransferSyntaxUID = "+Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID));
-//System.err.println("Checking TransferSyntaxUID lossy "+new TransferSyntax(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID)).isLossy());
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking LossyImageCompression {}",Attribute.getSingleIntegerValueOrDefault(list,TagFromName.LossyImageCompression,-1));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking LossyImageCompressionRatio {}",Attribute.getSingleDoubleValueOrDefault(list,TagFromName.LossyImageCompressionRatio,-1));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking LossyImageCompressionMethod length {}",Attribute.getSingleStringValueOrEmptyString(list,TagFromName.LossyImageCompressionMethod).length());
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking DerivationDescription {}",Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.DerivationDescription).toLowerCase(java.util.Locale.US).indexOf("lossy"));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking TransferSyntaxUID {}",Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID));
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("hasEverBeenLossyCompressed(): Checking TransferSyntaxUID lossy {}",new TransferSyntax(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID)).isLossy());
 		return Attribute.getSingleIntegerValueOrDefault(list,TagFromName.LossyImageCompression,-1) > 0
-		    || Attribute.getSingleDoubleValueOrDefault(list,TagFromName.LossyImageCompressionRatio,-1) > 1.0
+		    || Attribute.getSingleDoubleValueOrDefault(list,TagFromName.LossyImageCompressionRatio,-1) > 0
 		    || Attribute.getSingleStringValueOrEmptyString(list,TagFromName.LossyImageCompressionMethod).length() > 0
 		    || Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.DerivationDescription).toLowerCase(java.util.Locale.US).indexOf("lossy") > -1
 		    || new TransferSyntax(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID)).isLossy()
@@ -47,13 +52,23 @@ public class LossyImageCompression {
 	public static String describeLossyCompression(AttributeList list) {
 		String value;
 		if (LossyImageCompression.hasEverBeenLossyCompressed(list)) {
-			String ratio = Attribute.getSingleStringValueOrNull(list,TagFromName.LossyImageCompressionRatio);
-			if (ratio != null) {
-				ratio = ratio.replaceFirst("0*$","");
+			//String ratio = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.LossyImageCompressionRatio);
+			String ratio = Double.toString(Attribute.getSingleDoubleValueOrDefault(list,TagFromName.LossyImageCompressionRatio,-1));
+			slf4jlogger.debug("describeLossyCompression(): LossyImageCompressionRatio "+ratio);
+			if (ratio.length() > 0) {
+				if (ratio.contains(".")) {
+					ratio = ratio.replaceFirst("0+$","");
+					slf4jlogger.debug("describeLossyCompression(): LossyImageCompressionRatio after removing trailing zeroes if period "+ratio);
+				}
 				ratio = ratio.replaceFirst("[.]$","");
+				slf4jlogger.debug("describeLossyCompression(): LossyImageCompressionRatio after possibly removing trailing period "+ratio);
+				if (ratio.equals("0")) {
+					ratio="";
+				}
+				slf4jlogger.debug("describeLossyCompression(): LossyImageCompressionRatio after possibly removing only zero "+ratio);
 			}
-			String method = Attribute.getSingleStringValueOrNull(list,TagFromName.LossyImageCompressionMethod);
-			if (method != null) {
+			String method = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.LossyImageCompressionMethod);
+			if (method.length() > 0) {
 				if (method.equals("ISO_10918_1")) {
 					method="JPEG";
 				}
@@ -67,13 +82,13 @@ public class LossyImageCompression {
 					method="MPEG2";
 				}
 			}
-			if (method == null && ratio == null) {
+			if (method.length() == 0 && ratio.length() == 0) {
 				value = "Lossy";
 			}
-			else if (ratio == null) {
+			else if (ratio.length() == 0) {
 				value = "Lossy "+method;
 			}
-			else if (method == null) {
+			else if (method.length() == 0) {
 				value = "Lossy "+ratio+":1";
 			}
 			else {
@@ -83,6 +98,7 @@ public class LossyImageCompression {
 		else {
 			value = "";
 		}
+		slf4jlogger.debug("describeLossyCompression(): LossyImageCompressionRatio returning "+value);
 		return value;
 	}
 
@@ -98,10 +114,10 @@ public class LossyImageCompression {
 			DicomInputStream in = new DicomInputStream(new BufferedInputStream(new FileInputStream(dicomFileName)));
 			list.read(in,TagFromName.PixelData);
 			in.close();
-			System.out.println(hasEverBeenLossyCompressed(list));
+			System.out.println(hasEverBeenLossyCompressed(list));	// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

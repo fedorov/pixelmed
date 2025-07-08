@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -10,6 +10,7 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
@@ -34,11 +35,15 @@ import java.awt.image.SampleModel;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class BufferedImageUtilities {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/BufferedImageUtilities.java,v 1.58 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(BufferedImageUtilities.class);
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/BufferedImageUtilities.java,v 1.40 2013/02/01 13:53:20 dclunie Exp $";
-	
-	// The following image description stuff is extracted from Greg Guerin's
+	// The following image description stuff is derived and extended from Greg Guerin's
 	// ImagerTrials stuff at "http://www.amug.org/~glguerin/other/index.html#ImagerTrials"
 
 	protected static final String[] imageTypeNames =
@@ -135,16 +140,28 @@ public class BufferedImageUtilities {
 	 * @param	out
 	 */
 	public static void describeImage(BufferedImage image,PrintStream out) {
+		out.print(describeImage(image));
+	}
+	
+	/**
+	 * <p>Describe characteristics of BufferedImage's Raster, SampleModel, ColorModel, etc.</p>
+	 *
+	 * @param	image
+	 * return			description
+	 */
+	public static String describeImage(BufferedImage image) {
+		StringBuffer buf = new StringBuffer();
 		if (image == null) {
-			out.println("Image: null");
+			buf.append("Image: null\n");
 		}
 		else {
-			out.println("Image: "+image);
-			out.println("Image: width "+image.getWidth());
-			out.println("Image: height "+image.getHeight());
-			describeRaster(image.getRaster(),out);
-			describeColorModel(image.getColorModel(),out);
+			buf.append("Image: "+image+"\n");
+			buf.append("Image: width "+image.getWidth()+"\n");
+			buf.append("Image: height "+image.getHeight()+"\n");
+			buf.append(describeRaster(image.getRaster()));
+			buf.append(describeColorModel(image.getColorModel()));
 		}
+		return buf.toString();
 	}
 
 	/**
@@ -154,34 +171,71 @@ public class BufferedImageUtilities {
 	 * @param	out
 	 */
 	public static void describeRaster(Raster raster,PrintStream out) {
+		out.print(describeRaster(raster));
+	}
+	
+	/**
+	 * <p>Describe characteristics of Raster.</p>
+	 *
+	 * @param	raster
+	 * return			description
+	 */
+	public static String describeRaster(Raster raster) {
+		StringBuffer buf = new StringBuffer();
 		if (raster == null) {
-			out.println("    **** Raster: null");
+			buf.append("    **** Raster: null\n");
 		}
 		else {
-			out.println("    **** Raster: "+raster);
-			out.println( "    **** Raster: " + raster.getClass().getName());
+			buf.append("    **** Raster: "+raster+"\n");
+			buf.append( "    **** Raster: " + raster.getClass().getName()+"\n");
 			SampleModel model = raster.getSampleModel();
 			if (model == null) {
-				out.println("    SampleModel: null");
+				buf.append("    SampleModel: null\n");
 			}
 			else {
-				out.println("    SampleModel: "+model);
-				out.println("    SampleModel: " + model.getClass().getName() + " -- "
+				buf.append("    SampleModel: "+model+"\n");
+				buf.append("    SampleModel: " + model.getClass().getName() + " -- "
 					+ model.getNumDataElements() + " " 
 					+ transferTypeName(model.getTransferType()) + "s/pixel, "
-					+ model.getNumBands() + " bands" );
+					+ model.getNumBands() + " bands");
+				if (model instanceof ComponentSampleModel) {
+					ComponentSampleModel csm = (ComponentSampleModel)model;
+					// int pixelStride, int scanlineStride, int[] bankIndices, int[] bandOffsets
+					buf.append(", pixel stride " + csm.getPixelStride());
+					buf.append(", scanline stride " + csm.getScanlineStride());
+					{
+						buf.append(", bank indices [");
+						int[] bankIndices = csm.getBankIndices();
+						for (int i=0; i<bankIndices.length; ++i) {
+							if (i>0) buf.append(",");
+							buf.append(bankIndices[i]);
+						}
+						buf.append("]");
+					}
+					{
+						buf.append(", band offsets [");
+						int[] bankOffsets = csm.getBandOffsets();
+						for (int i=0; i<bankOffsets.length; ++i) {
+							if (i>0) buf.append(",");
+							buf.append(bankOffsets[i]);
+						}
+						buf.append("]");
+					}
+				}
+				buf.append("\n");
 			}
 			DataBuffer buffer = raster.getDataBuffer();
 			if (buffer == null) {
-				out.println("     DataBuffer: null");
+				buf.append("     DataBuffer: null\n");
 			}
 			else {
-				out.println("     DataBuffer: "+buffer);
-				out.println("     DataBuffer: " + buffer.getClass().getName() + " -- "
+				buf.append("     DataBuffer: "+buffer+"\n");
+				buf.append("     DataBuffer: " + buffer.getClass().getName() + " -- "
 					+ buffer.getNumBanks() + " " 
-					+ transferTypeName(buffer.getDataType()) + " banks" );
+					+ transferTypeName(buffer.getDataType()) + " banks\n");
 			}
 		}
+		return buf.toString();
 	}
 
 	/**
@@ -191,11 +245,22 @@ public class BufferedImageUtilities {
 	 * @param	out
 	 */
 	public static void describeColorModel(ColorModel model,PrintStream out) {
+		out.print(describeColorModel(model));
+	}
+	
+	/**
+	 * <p>Describe characteristics of ColorModel.</p>
+	 *
+	 * @param	model
+	 * return			description
+	 */
+	public static String describeColorModel(ColorModel model) {
+		StringBuffer buf = new StringBuffer();
 		if (model == null) {
-			out.println("     ColorModel: null");
+			buf.append("     ColorModel: null\n");
 		}
 		else {
-			out.println("     ColorModel: ="+model);
+			buf.append("     ColorModel: ="+model+"\n");
 			ColorSpace space = model.getColorSpace();
 			String alpha = "no alpha";
 			if (model.hasAlpha()) {
@@ -213,13 +278,14 @@ public class BufferedImageUtilities {
 				parts = String.valueOf(ccomp) + ":" + comp;
 			}
 
-			out.println("     ColorModel: " + model.getClass().getName() + " -- "
+			buf.append("     ColorModel: " + model.getClass().getName() + " -- "
 				+ model.getPixelSize() + " bits/" + parts + "-part "
-				+ transferTypeName(model.getTransferType()) + " pixel, " + alpha );
+				+ transferTypeName(model.getTransferType()) + " pixel, " + alpha + "\n");
 
-			out.println("     ColorSpace: " + space.getClass().getName() + " -- "
-				+ typeName(space)  + " space" );
+			buf.append("     ColorSpace: " + space.getClass().getName() + " -- "
+				+ typeName(space)  + " space\n" );
 		}
+		return buf.toString();
 	}
 	
 	// End of Greg Guerin's stuff
@@ -241,7 +307,7 @@ public class BufferedImageUtilities {
 				graphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 			}
 			catch (java.awt.HeadlessException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return graphicsConfiguration;
@@ -264,9 +330,9 @@ public class BufferedImageUtilities {
 			colorModel = graphicsConfiguration.getColorModel();
 		}
 		if (colorModel == null) {
-//System.err.println("BufferedImageUtilities.initializeMostFavorableColorModel(): no model from getLocalGraphicsEnvironment; perhaps headless");
+		slf4jlogger.debug("initializeMostFavorableColorModel(): no model from getLocalGraphicsEnvironment; perhaps headless");
 			if (System.getProperty("os.name","").equals("Mac OS X")) {
-//System.err.println("BufferedImageUtilities.initializeMostFavorableColorModel(): on Mac OS X, so assume 32 bit ARGB");
+		slf4jlogger.debug("initializeMostFavorableColorModel(): on Mac OS X, so assume 32 bit ARGB");
 				colorModel = new DirectColorModel(
 					ColorSpace.getInstance(ColorSpace.CS_sRGB),
 					32,		// bits
@@ -279,7 +345,7 @@ public class BufferedImageUtilities {
 				);
 			}
 			else {
-//System.err.println("BufferedImageUtilities.initializeMostFavorableColorModel(): not on Mac OS X, so assume  24 bit RGB");
+		slf4jlogger.debug("initializeMostFavorableColorModel(): not on Mac OS X, so assume  24 bit RGB");
 				colorModel = new DirectColorModel(
 					ColorSpace.getInstance(ColorSpace.CS_sRGB),
 					24,		// bits
@@ -292,7 +358,7 @@ public class BufferedImageUtilities {
 				);
 			}
 		}
-//System.err.println("BufferedImageUtilities.initializeMostFavorableColorModel():");
+		slf4jlogger.debug("initializeMostFavorableColorModel():");
 //describeColorModel(colorModel,System.err);
 		return colorModel;
 	}
@@ -301,18 +367,18 @@ public class BufferedImageUtilities {
 	 * @param	srcImage
 	 */
 	public static final BufferedImage convertToMostFavorableImageTypeWithPixelCopy(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): start");
+		long startTime = System.currentTimeMillis();
 		//ColorModel dstColorModel = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().getColorModel();
 		ColorModel dstColorModel = getMostFavorableColorModel();
 		if (dstColorModel == null) {
-System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): no mostFavorableColorModel - doing nothing");
+			slf4jlogger.info("convertToMostFavorableImageTypeWithPixelCopy(): no mostFavorableColorModel - doing nothing");
 			return srcImage;
 		}
 		
 		ColorModel srcColorModel = srcImage.getColorModel();
 		if (dstColorModel.equals(srcColorModel)) {
-System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): already mostFavorableColorModel - doing nothing");
+			slf4jlogger.info("convertToMostFavorableImageTypeWithPixelCopy(): already mostFavorableColorModel - doing nothing");
 			return srcImage;
 		}
 				
@@ -323,7 +389,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		
 		if (srcSampleModel instanceof java.awt.image.MultiPixelPackedSampleModel) {
 			// This is encountered with single bit images
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): not attempting to convert MultiPixelPackedSampleModel this way");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): not attempting to convert MultiPixelPackedSampleModel this way");
 			return null;
 		}
 
@@ -331,9 +397,16 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 		int srcNumBands = srcRaster.getNumBands();
 
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): srcImage ="+srcImage);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): srcSampleModel ="+srcSampleModel);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): srcSampleModel.getPixelStride() ="+((ComponentSampleModel)srcSampleModel).getPixelStride());
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): srcImage ={}",srcImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): srcSampleModel ={}",srcSampleModel);
+		{
+			if (srcSampleModel instanceof ComponentSampleModel) {
+				slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): srcSampleModel.getPixelStride() ={}",((ComponentSampleModel)srcSampleModel).getPixelStride());
+			}
+			else {
+				slf4jlogger.info("convertToMostFavorableImageTypeWithPixelCopy(): srcSampleModel is not ComponentSampleModel but is {}",srcSampleModel.getClass().getName());
+			}
+		}
 
 		WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(width,height);
 		DataBuffer dstDataBuffer = dstRaster.getDataBuffer();
@@ -342,8 +415,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		SampleModel dstSampleModel = dstImage.getSampleModel();
 		int dstNumBands = dstRaster.getNumBands();
         
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): dstImage ="+dstImage);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): dstSampleModel ="+dstSampleModel);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): dstImage ={}",dstImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): dstSampleModel ={}",dstSampleModel);
 
 		int srcPixels[] = null; // to disambiguate SampleModel.getPixels() method signature
 		srcPixels = srcSampleModel.getPixels(0,0,width,height,srcPixels,srcDataBuffer);
@@ -353,10 +426,10 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		dstPixels = dstSampleModel.getPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		int dstPixelsLength = dstPixels.length;
         
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy() after getPixels, elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy() after getPixels, elapsed: {} ms",(System.currentTimeMillis()-startTime));
 
 		if (srcNumBands == 1 && dstNumBands == 4 && srcPixelsLength*4 == dstPixelsLength) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): converting gray to RGBA");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): converting gray to RGBA");
 		int dstIndex=0;
 		for (int srcIndex=0; srcIndex<srcPixelsLength; ++srcIndex) {
 			dstPixels[dstIndex++]=srcPixels[srcIndex];
@@ -367,7 +440,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else if (srcNumBands == 1 && dstNumBands == 3 && srcPixelsLength*3 == dstPixelsLength) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): converting gray to RGB");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): converting gray to RGB");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength; ++srcIndex) {
 				dstPixels[dstIndex++]=srcPixels[srcIndex];
@@ -377,7 +450,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else if (srcNumBands == 3 && dstNumBands == 4 && srcPixelsLength*4 == dstPixelsLength*3) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): converting pixel or band interleaved 3 band to RGBA");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): converting pixel or band interleaved 3 band to RGBA");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength;) {
 				dstPixels[dstIndex++]=srcPixels[srcIndex++];
@@ -388,7 +461,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else if (srcNumBands == 3 && dstNumBands == 3 && srcPixelsLength == dstPixelsLength) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): converting pixel or band interleaved 3 band to RGB");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): converting pixel or band interleaved 3 band to RGB");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength;) {
 				dstPixels[dstIndex++]=srcPixels[srcIndex++];
@@ -398,11 +471,11 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else {
-System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): No conversion supported");
+			slf4jlogger.info("convertToMostFavorableImageTypeWithPixelCopy(): No conversion supported");
 			dstImage=srcImage;
 		}
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPixelCopy(): done = "+dstImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithPixelCopy(): done = {}",dstImage);
 		return dstImage;
 	}
 
@@ -410,99 +483,101 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	 * @param	srcImage
 	 */
 	public static final BufferedImage convertToMostFavorableImageTypeWithDataBufferCopy(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): start");
+		long startTime = System.currentTimeMillis();
 		ColorModel dstColorModel = getMostFavorableColorModel();
 		if (dstColorModel == null) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): no mostFavorableColorModel - doing nothing");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): no mostFavorableColorModel - doing nothing");
 			return srcImage;
 		}
 		ColorModel srcColorModel = srcImage.getColorModel();
 		if (dstColorModel.equals(srcColorModel)) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): already mostFavorableColorModel - doing nothing");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): already mostFavorableColorModel - doing nothing");
 			return srcImage;
 		}
 
 		int srcColorModelNumComponents = srcColorModel.getNumComponents();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorModelNumComponents = "+srcColorModelNumComponents);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorModelNumComponents = {}",srcColorModelNumComponents);
 		int dstColorModelNumComponents = dstColorModel.getNumComponents();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorModelNumComponents = "+dstColorModelNumComponents);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorModelNumComponents = {}",dstColorModelNumComponents);
 
 		if (srcColorModelNumComponents != dstColorModelNumComponents) {
 			return null;	// bail out before wasting time allocating dstRaster, which takes a while
 		}
 
-//		ColorSpace srcColorSpace = srcColorModel.getColorSpace();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcColorSpace = "+srcColorSpace);
-//		int srcColorSpaceType =srcColorSpace.getType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcColorSpaceType = "+srcColorSpaceType);
-//		ColorSpace dstColorSpace = dstColorModel.getColorSpace();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorSpace = "+dstColorSpace);
-//		int dstColorSpaceType = dstColorSpace.getType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorSpaceType = "+dstColorSpaceType);
-
+		if (slf4jlogger.isDebugEnabled()) {
+			ColorSpace srcColorSpace = srcColorModel.getColorSpace();
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcColorSpace = {}",srcColorSpace);
+			int srcColorSpaceType =srcColorSpace.getType();
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcColorSpaceType = {}",srcColorSpaceType);
+			ColorSpace dstColorSpace = dstColorModel.getColorSpace();
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorSpace = {}",dstColorSpace);
+			int dstColorSpaceType = dstColorSpace.getType();
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstColorSpaceType = {}",dstColorSpaceType);
+		}
+		
 		int columns = srcImage.getWidth();
 		int rows = srcImage.getHeight();
 
 		SampleModel srcSampleModel = srcImage.getSampleModel();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcSampleModel = "+srcSampleModel);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcSampleModel = {}",srcSampleModel);
 		int srcDataType = srcSampleModel.getDataType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataType = "+srcDataType);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataType = {}",srcDataType);
 		WritableRaster srcRaster = srcImage.getRaster();
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 		int srcDataBufferType = srcDataBuffer.getDataType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferType = "+srcDataBufferType);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferType = {}",srcDataBufferType);
 		int srcNumBands = srcRaster.getNumBands();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcNumBands = "+srcNumBands);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcNumBands = {}",srcNumBands);
 		int srcPixelStride = srcNumBands;
 		int srcScanlineStride = columns*srcNumBands;
 		if (srcSampleModel instanceof ComponentSampleModel) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcSampleModel is instanceof ComponentSampleModel");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcSampleModel is instanceof ComponentSampleModel");
 			ComponentSampleModel srcComponentSampleModel = (ComponentSampleModel)srcSampleModel;
 			srcPixelStride = srcComponentSampleModel.getPixelStride();			// should be either srcNumBands if color-by-pixel, or 1 if color-by-plane
 			srcScanlineStride = srcComponentSampleModel.getScanlineStride();	// should be either columns*srcNumBands if color-by-pixel, or columns if color-by-plane
 		}
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcPixelStride = "+srcPixelStride);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcScanlineStride = "+srcScanlineStride);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcPixelStride = {}",srcPixelStride);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcScanlineStride = {}",srcScanlineStride);
 		int srcDataBufferOffset = srcDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferOffset = "+srcDataBufferOffset);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferOffset = {}",srcDataBufferOffset);
 		int srcFrameLength = rows*columns*srcNumBands;
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcFrameLength = "+srcFrameLength);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcFrameLength = {}",srcFrameLength);
 		int srcDataBufferNumBanks = srcDataBuffer.getNumBanks();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferNumBanks = "+srcDataBufferNumBanks);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcDataBufferNumBanks = {}",srcDataBufferNumBanks);
 
 
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy() before creating dstRaster - elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy() before creating dstRaster - elapsed: {} ms",(System.currentTimeMillis()-startTime));
 		WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(columns,rows);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy() before creating dstImage - elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy() before creating dstImage - elapsed: {} ms",(System.currentTimeMillis()-startTime));
 		BufferedImage dstImage = new BufferedImage(dstColorModel, dstRaster, dstColorModel.isAlphaPremultiplied(), null);
 		SampleModel dstSampleModel = dstImage.getSampleModel();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstSampleModel = "+dstSampleModel);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstSampleModel = {}",dstSampleModel);
 		int dstDataType = dstSampleModel.getDataType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataType = "+dstDataType);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy() before getting dstDataBuffer - elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataType = {}",dstDataType);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy() before getting dstDataBuffer - elapsed: {} ms",(System.currentTimeMillis()-startTime));
 		DataBuffer dstDataBuffer = dstRaster.getDataBuffer();
 		int dstDataBufferType = dstDataBuffer.getDataType();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferType = "+dstDataBufferType);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferType = {}",dstDataBufferType);
 		int dstNumBands = dstRaster.getNumBands();
 		int dstPixelStride = dstNumBands;
 		int dstScanlineStride = columns*dstNumBands;
 		if (dstSampleModel instanceof ComponentSampleModel) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstSampleModel is instanceof ComponentSampleModel");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstSampleModel is instanceof ComponentSampleModel");
 			ComponentSampleModel dstComponentSampleModel = (ComponentSampleModel)dstSampleModel;
 			dstPixelStride = dstComponentSampleModel.getPixelStride();			// should be either dstNumBands if color-by-pixel, or 1 if color-by-plane
 			dstScanlineStride = dstComponentSampleModel.getScanlineStride();	// should be either columns*dstNumBands if color-by-pixel, or columns if color-by-plane
 		}
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstPixelStride = "+dstPixelStride);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstScanlineStride = "+dstScanlineStride);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstPixelStride = {}",dstPixelStride);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstScanlineStride = {}",dstScanlineStride);
 		int dstDataBufferOffset = dstDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferOffset = "+dstDataBufferOffset);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferOffset = {}",dstDataBufferOffset);
 		int dstFrameLength = rows*columns*dstNumBands;
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstFrameLength = "+dstFrameLength);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstFrameLength = {}",dstFrameLength);
 		int dstDataBufferNumBanks = dstDataBuffer.getNumBanks();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferNumBanks = "+dstDataBufferNumBanks);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstDataBufferNumBanks = {}",dstDataBufferNumBanks);
 		
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy() before attempting copy - elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy() before attempting copy - elapsed: {} ms",(System.currentTimeMillis()-startTime));
 
 		if (srcDataBufferNumBanks == 1 && dstDataBufferNumBanks == 1
 		 && srcSampleModel instanceof ComponentSampleModel && dstSampleModel instanceof SinglePixelPackedSampleModel
@@ -510,15 +585,15 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		 && srcDataBuffer instanceof DataBufferByte && dstDataBuffer instanceof DataBufferInt
 		 && srcPixelStride == srcNumBands
 		 && srcNumBands == dstNumBands) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): converting "+srcNumBands+" band interleaved byte ComponentSampleModel to "+dstNumBands+" band int SinglePixelPackedSampleModel");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): converting {} band interleaved byte ComponentSampleModel to {} band int SinglePixelPackedSampleModel",srcNumBands,dstNumBands);
 			byte[][] srcPixelBanks = ((DataBufferByte)srcDataBuffer).getBankData();
 			byte[] srcPixelBank = srcPixelBanks[0];
 			int srcPixelBankLength = srcPixelBank.length;
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): srcPixelBankLength = "+srcPixelBankLength);
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): srcPixelBankLength = {}",srcPixelBankLength);
 			int[][] dstPixelBanks = ((DataBufferInt)dstDataBuffer).getBankData();
 			int[] dstPixelBank = dstPixelBanks[0];
 			int dstPixelBankLength = dstPixelBank.length;
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): dstPixelBankLength = "+dstPixelBankLength);
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): dstPixelBankLength = {}",dstPixelBankLength);
 
 			int[] dstBitMasks = ((SinglePixelPackedSampleModel)dstSampleModel).getBitMasks();
 			int[] dstBitOffsets = ((SinglePixelPackedSampleModel)dstSampleModel).getBitOffsets();
@@ -537,8 +612,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		else {
 			dstImage=null;
 		}
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithDataBufferCopy(): done = "+dstImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithDataBufferCopy(): done = {}",dstImage);
 		return dstImage;
 	}
 
@@ -546,12 +621,12 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	 * @param	srcImage
 	 */
 	public static final BufferedImage convertToMostFavorableImageTypeWithBandCombineOp(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithBandCombineOp(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithBandCombineOp(): start");
+		long startTime = System.currentTimeMillis();
 		//ColorModel dstColorModel = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().getColorModel();
 		ColorModel dstColorModel = getMostFavorableColorModel();
 		if (dstColorModel == null) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithBandCombineOp(): no mostFavorableColorModel - doing nothing");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithBandCombineOp(): no mostFavorableColorModel - doing nothing");
 			return srcImage;
 		}
 		
@@ -597,7 +672,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			}
 		}
 		else {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithBandCombineOp(): mostFavorableColorModel does not have 4 components - doing nothing");
+			slf4jlogger.debug("convertToMostFavorableImageTypeWithBandCombineOp(): mostFavorableColorModel does not have 4 components - doing nothing");
 			return null;
 		}
 		
@@ -606,8 +681,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(srcImage.getWidth(),srcImage.getHeight());
 		BufferedImage dstImage = new BufferedImage(dstColorModel,dstRaster,dstColorModel.isAlphaPremultiplied(),null);
 		bandCombineOp.filter(srcImage.getRaster(),dstRaster);
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithBandCombineOp() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithBandCombineOp(): done = "+dstImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithBandCombineOp() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithBandCombineOp(): done = {}",dstImage);
 		return dstImage;
 	}
 
@@ -615,14 +690,14 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	 * @param	srcImage
 	 */
 	public static final BufferedImage convertToMostFavorableImageTypeWithGraphicsDraw(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithGraphicsDraw(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithGraphicsDraw(): start");
+		long startTime = System.currentTimeMillis();
 
 	// See "http://forums.java.net/jive/thread.jspa?messageID=180964"
 	
 		BufferedImage dstImage = null;
 		GraphicsConfiguration graphicsConfiguration = getDefaultGraphicsConfiguration();
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithGraphicsDraw(): graphicsConfiguration = "+graphicsConfiguration);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithGraphicsDraw(): graphicsConfiguration = {}",graphicsConfiguration);
 		if (graphicsConfiguration != null) {
 			dstImage = graphicsConfiguration.createCompatibleImage(srcImage.getWidth(),srcImage.getHeight());
 			if (dstImage != null) {
@@ -632,8 +707,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				g2.dispose();
 			}
 		}
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithGraphicsDraw() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithGraphicsDraw(): done = "+dstImage);
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithGraphicsDraw() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertToMostFavorableImageTypeWithGraphicsDraw(): done = {}",dstImage);
 		return dstImage;
 	}
 
@@ -643,7 +718,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	public static final BufferedImage convertToMostFavorableImageType(BufferedImage srcImage) {
 		BufferedImage dstImage = null;
 		if (srcImage.getColorModel().equals(getMostFavorableColorModel())) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageType(): do nothing since same ColorModel");
+		slf4jlogger.debug("convertToMostFavorableImageType(): do nothing since same ColorModel");
 			dstImage = srcImage;
 		}
 		else {
@@ -651,16 +726,16 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				dstImage = convertToMostFavorableImageTypeWithDataBufferCopy(srcImage);
 			//}
 			if (dstImage == null) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithDataBufferCopy failed");
+		slf4jlogger.debug("convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithDataBufferCopy failed");
 				dstImage = convertToMostFavorableImageTypeWithPixelCopy(srcImage);
 			}
 			if (dstImage == null) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithPixelCopy failed");
+		slf4jlogger.debug("convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithPixelCopy failed");
 				dstImage = convertToMostFavorableImageTypeWithGraphicsDraw(srcImage);
 			}
 			if (dstImage == null) {
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithGraphicsDraw failed");
-//System.err.println("BufferedImageUtilities.convertToMostFavorableImageType(): returning srcImage");
+		slf4jlogger.debug("convertToMostFavorableImageType(): convertToMostFavorableImageTypeWithGraphicsDraw failed");
+		slf4jlogger.debug("convertToMostFavorableImageType(): returning srcImage");
 				dstImage=srcImage;	// do no conversion and hope for the best (performance) :(
 			}
 		}
@@ -671,8 +746,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	 * @param	srcImage
 	 */
 	public static final BufferedImage convertToThreeChannelImageTypeIfFour(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertToThreeChannelImageType(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertToThreeChannelImageType(): start");
+		long startTime = System.currentTimeMillis();
 		int srcNumBands = srcImage.getRaster().getNumBands();
 		if (srcNumBands != 4) {
 			return srcImage;	// do nothing
@@ -698,8 +773,8 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(srcImage.getWidth(),srcImage.getHeight());
 		BufferedImage dstImage = new BufferedImage(dstColorModel,dstRaster,dstColorModel.isAlphaPremultiplied(),null);
 		collapseToThreeBandsOp.filter(srcImage.getRaster(),dstRaster);
-//System.err.println("BufferedImageUtilities.convertToThreeChannelImageType() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertToThreeChannelImageType(): done");
+		slf4jlogger.debug("convertToThreeChannelImageType() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertToThreeChannelImageType(): done");
 		return dstImage;
 	}
 	
@@ -718,7 +793,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		ResamplingVector(int nSrcSamples,int nDstSamples) {
 			//divisor = nDstSamples*nSrcSamples;
 			divisor = 1000;
-//System.err.println("ResamplingVector(): divisor ="+divisor);
+			slf4jlogger.debug("ResamplingVector(): divisor ={}",divisor);
 			double ratioSrcToDst = ((double)nSrcSamples)/nDstSamples;
 			maxNumberOfSrcSamplesPerDst = (int)java.lang.Math.ceil(ratioSrcToDst)+1;
 			double srcOffset = 0;
@@ -738,7 +813,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 					double weightForThisSrc=java.lang.Math.min(1.0-srcOffset,stillNeedFromSrcForCurrentDst);
 					stillNeedFromSrcForCurrentDst-=weightForThisSrc;
 					srcOffset+=weightForThisSrc;
-//System.err.println("dstIndex ="+dstIndex+" srcIndex="+srcIndex+" weightForThisSrc="+weightForThisSrc+" *divisor="+(int)(weightForThisSrc*divisor));
+					slf4jlogger.trace("dstIndex ={} srcIndex={} weightForThisSrc={} *divisor={}",dstIndex,srcIndex,weightForThisSrc,(int)(weightForThisSrc*divisor));
 					//arrayOfWeights[dstIndex][i]=weightForThisSrc;
 					arrayOfWeights[dstIndex][i]=(int)(weightForThisSrc*divisor);
 					//sumOfWeights[dstIndex]+=weightForThisSrc;
@@ -751,13 +826,13 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 					}
 				}
 			}
-			//dump();
+			if (slf4jlogger.isDebugEnabled()) dump();
 		}
 		
 		void dump() {
 			for (int dstIndex=0; dstIndex<arrayOfSrcIndices.length; ++dstIndex) {
 				for (int i=0; i<numberOfEntries[dstIndex]; ++i) {
-//System.err.println("dstIndex ="+dstIndex+" srcIndex="+arrayOfSrcIndices[dstIndex][i]+" weight="+arrayOfWeights[dstIndex][i]);
+					slf4jlogger.debug("dstIndex ={} srcIndex={} weight={}",dstIndex,arrayOfSrcIndices[dstIndex][i],arrayOfWeights[dstIndex][i]);
 				}
 			}
 		}
@@ -778,16 +853,16 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 	public final BufferedImage resample(BufferedImage srcImage,int selectionWidth,int selectionHeight,int selectionXOffset,int selectionYOffset,int dstWidth,int dstHeight,boolean signed,int backgroundValue) {
 		int srcWidth = srcImage.getWidth();
 		int srcHeight = srcImage.getHeight();
-//System.err.println("BufferedImageUtilities.resample():");
-//System.err.println("BufferedImageUtilities.resample(): srcWidth = "+srcWidth);
-//System.err.println("BufferedImageUtilities.resample(): srcHeight = "+srcHeight);
-//System.err.println("BufferedImageUtilities.resample(): selectionWidth = "+selectionWidth);
-//System.err.println("BufferedImageUtilities.resample(): selectionHeight = "+selectionHeight);
-//System.err.println("BufferedImageUtilities.resample(): selectionXOffset = "+selectionXOffset);
-//System.err.println("BufferedImageUtilities.resample(): selectionYOffset = "+selectionYOffset);
-//System.err.println("BufferedImageUtilities.resample(): dstWidth = "+dstWidth);
-//System.err.println("BufferedImageUtilities.resample(): dstHeight = "+dstHeight);
-//System.err.println("BufferedImageUtilities.resample(): signed = "+signed);
+		slf4jlogger.debug("resample():");
+		slf4jlogger.debug("resample(): srcWidth = {}",srcWidth);
+		slf4jlogger.debug("resample(): srcHeight = {}",srcHeight);
+		slf4jlogger.debug("resample(): selectionWidth = {}",selectionWidth);
+		slf4jlogger.debug("resample(): selectionHeight = {}",selectionHeight);
+		slf4jlogger.debug("resample(): selectionXOffset = {}",selectionXOffset);
+		slf4jlogger.debug("resample(): selectionYOffset = {}",selectionYOffset);
+		slf4jlogger.debug("resample(): dstWidth = {}",dstWidth);
+		slf4jlogger.debug("resample(): dstHeight = {}",dstHeight);
+		slf4jlogger.debug("resample(): signed = {}",signed);
 
 		// Do not resample if not needed ...
 		if (srcWidth == dstWidth && srcHeight == dstHeight
@@ -796,59 +871,58 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			return srcImage;
 		}
 
-//System.err.println("BufferedImageUtilities.resample(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("resample(): start");
+		long startTime = System.currentTimeMillis();
        
 		ColorModel srcColorModel = srcImage.getColorModel();
-//System.err.println("BufferedImageUtilities.resample(): srcColorModel.getPixelSize() = "+srcColorModel.getPixelSize());
+		slf4jlogger.debug("resample(): srcColorModel.getPixelSize() = {}",srcColorModel.getPixelSize());
 		SampleModel srcSampleModel = srcImage.getSampleModel();
 		WritableRaster srcRaster = srcImage.getRaster();
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 		int srcDataBufferOffset = srcDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.resample(): srcDataBuffer is "+srcDataBuffer.getClass().getName());
-//System.err.println("BufferedImageUtilities.resample(): srcDataBuffer.getOffset() is "+srcDataBufferOffset);
+		slf4jlogger.debug("resample(): srcDataBuffer is {}",srcDataBuffer.getClass().getName());
+		slf4jlogger.debug("resample(): srcDataBuffer.getOffset() is {}",srcDataBufferOffset);
 		int srcNumBands = srcRaster.getNumBands();
-//System.err.println("BufferedImageUtilities.resample(): srcNumBands = "+srcNumBands);
+		slf4jlogger.debug("resample(): srcNumBands = {}",srcNumBands);
 
 		// DataBufferShort will not be encountered ... see comments in SourceImage.java
 		if (srcNumBands != 1 || !(srcDataBuffer instanceof DataBufferUShort /*|| srcDataBuffer instanceof DataBufferShort*/ || srcDataBuffer instanceof DataBufferByte || srcDataBuffer instanceof DataBufferFloat || srcDataBuffer instanceof DataBufferDouble) || srcColorModel.getPixelSize() == 1) {
-//System.err.println("BufferedImageUtilities.resample(): not doing our own resampling");
-//System.err.println("BufferedImageUtilities.resample(): before resampleWithGraphicsDraw elapsed ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): not doing our own resampling");
+			slf4jlogger.debug("resample(): before resampleWithGraphicsDraw elapsed = {} ms",(System.currentTimeMillis()-startTime));
 			BufferedImage dstImage = null;
 			try {
 				//dstImage = resampleWithAffineTransformOp(srcImage,dstWidth,dstHeight);	// just doesn't work ... always throws exceptions; also doesn't address offset  :(
-				//dstImage = resampleWithGraphicsDraw(srcImage,selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);
-				dstImage = resampleWithGraphicsDraw(convertToMostFavorableImageType(srcImage),selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);
-				//dstImage = resampleWithGraphicsDraw(srcImage,selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);
+				dstImage = resampleWithGraphicsDraw(srcImage,selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);		// need to use this for 16 bit color ? performance impact on Mac with other image types ? :( (000984); will cause color windowing to fail on single bit images (000996)
+				//dstImage = resampleWithGraphicsDraw(convertToMostFavorableImageType(srcImage),selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);	// was using this before but will NOT work for 16 bit color (000984)
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 				dstImage = null;
 			}
-//System.err.println("BufferedImageUtilities.resample(): after resampleWithGraphicsDraw elapsed ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): after resampleWithGraphicsDraw elapsed = {} ms",(System.currentTimeMillis()-startTime));
 			//return dstImage == null ? srcImage : dstImage;
 			return dstImage;
 		}
 
 		BufferedImage dstImage = null;
-//System.err.println("BufferedImageUtilities.resample(): hVector");
+		slf4jlogger.debug("resample(): hVector");
 		ResamplingVector hVector =  new ResamplingVector(selectionWidth,dstWidth);
-//System.err.println("BufferedImageUtilities.resample(): vVector");
+		slf4jlogger.debug("resample(): vVector");
 		ResamplingVector vVector =  new ResamplingVector(selectionHeight,dstHeight);
 		
 		int leftSideLimit = 0;										// prevents horizontal resampling from wrapping to previous or next line
 		int rightSideLimit = srcWidth - 1;							// NOT selectionWidth
-//System.err.println("BufferedImageUtilities.resample(): leftSideLimit = "+leftSideLimit);
-//System.err.println("BufferedImageUtilities.resample(): rightSideLimit = "+rightSideLimit);
+		slf4jlogger.debug("resample(): leftSideLimit = {}",leftSideLimit);
+		slf4jlogger.debug("resample(): rightSideLimit = {}",rightSideLimit);
 
 		int topSideLimit = selectionYOffset < 0 ? -selectionYOffset : 0;
 		int bottomSideLimit = topSideLimit + srcHeight - 1;
-//System.err.println("BufferedImageUtilities.resample(): topSideLimit = "+topSideLimit);
-//System.err.println("BufferedImageUtilities.resample(): bottomSideLimit = "+bottomSideLimit);
+		slf4jlogger.debug("resample(): topSideLimit = {}",topSideLimit);
+		slf4jlogger.debug("resample(): bottomSideLimit = {}",bottomSideLimit);
 
 
 		if (srcDataBuffer instanceof DataBufferUShort) {
-//System.err.println("BufferedImageUtilities.resample(): DataBufferUShort");
+			slf4jlogger.debug("resample(): DataBufferUShort");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				new int[] {16},
@@ -866,7 +940,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				new int[] {0}
 			);
 		
-//System.err.println("BufferedImageUtilities.resample(): got info ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got info = {} ms",(System.currentTimeMillis()-startTime));
 
 			int srcmask=signed ? 0xffffffff : 0x0000ffff;
 		
@@ -878,21 +952,21 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 			//	srcPixels = ((DataBufferShort)srcDataBuffer).getData();
 			//}
 			int srcPixelsLength = srcPixels.length;
-//System.err.println("BufferedImageUtilities.resample(): got srcPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got srcPixels = {} ms",(System.currentTimeMillis()-startTime));
 
 			int dstPixelsLength = dstWidth*dstHeight;
 			short dstPixels[] = new short[dstPixelsLength];
-//System.err.println("BufferedImageUtilities.resample(): got dstPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got dstPixels = {} ms",(System.currentTimeMillis()-startTime));
 
-//System.err.println("BufferedImageUtilities.resample(): single band");
-//System.err.println("BufferedImageUtilities.resample(): single band ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): single band");
+			slf4jlogger.debug("resample(): single band = {} ms",(System.currentTimeMillis()-startTime));
 			int dstRowBuffers[] = new int[selectionHeight*dstWidth];
 			int bufferRowIndex[] = new int[selectionHeight];			// saves slow multiplication of selectionHeight*dstWidth
 			int srcPixelOffset=srcDataBufferOffset;						// not zero, since may be later in shared buffer of multiple frames
 			int dstPixelOffset=0;
 			int lastBufferRowIndex=0;
 			srcPixelOffset+=selectionYOffset*srcWidth;
-//System.err.println("BufferedImageUtilities.resample(): srcPixelOffset = "+srcPixelOffset);
+			slf4jlogger.debug("resample(): srcPixelOffset = {}",srcPixelOffset);
 			for (int srcY=0; srcY<selectionHeight; ++srcY,srcPixelOffset+=srcWidth/*,dstPixelOffset+=dstWidth*/) {
 				bufferRowIndex[srcY]=lastBufferRowIndex;
 				lastBufferRowIndex+=dstWidth;
@@ -943,14 +1017,14 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				}
 			}
 				
-//System.err.println("BufferedImageUtilities.resample(): done with pixel copy ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with pixel copy = {} ms",(System.currentTimeMillis()-startTime));
 			DataBuffer dstDataBuffer = new DataBufferUShort(dstPixels,dstWidth,0);
 			WritableRaster dstRaster = Raster.createWritableRaster(dstSampleModel,dstDataBuffer,new Point(0,0));
 			dstImage = new BufferedImage(dstColorModel,dstRaster,true,null);	// no properties hash table
-//System.err.println("BufferedImageUtilities.resample(): done with creating dstImage ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with creating dstImage = {} ms",(System.currentTimeMillis()-startTime));
 		}
 		else if (srcDataBuffer instanceof DataBufferByte) {
-//System.err.println("BufferedImageUtilities.resample(): DataBufferByte");
+			slf4jlogger.debug("resample(): DataBufferByte");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				new int[] {8},
@@ -968,22 +1042,22 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				new int[] {0}
 			);
 		
-//System.err.println("BufferedImageUtilities.resample(): got info ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got info = {} ms",(System.currentTimeMillis()-startTime));
 
 			int srcmask=signed ? 0xffffffff : 0x000000ff;
 		
 			byte srcPixels[];
 			srcPixels = ((DataBufferByte)srcDataBuffer).getData();
 			int srcPixelsLength = srcPixels.length;
-//System.err.println("BufferedImageUtilities.resample(): got srcPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got srcPixels = {} ms",(System.currentTimeMillis()-startTime));
 
 			int dstPixelsLength = dstWidth*dstHeight;
 			byte dstPixels[] = new byte[dstPixelsLength];
-//System.err.println("BufferedImageUtilities.resample(): got dstPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got dstPixels = {} ms",(System.currentTimeMillis()-startTime));
        
 
-//System.err.println("BufferedImageUtilities.resample(): single band");
-//System.err.println("BufferedImageUtilities.resample(): single band ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): single band");
+			slf4jlogger.debug("resample(): single band = {} ms",(System.currentTimeMillis()-startTime));
 			int dstRowBuffers[] = new int[selectionHeight*dstWidth];
 			int bufferRowIndex[] = new int[selectionHeight];			// saves slow multiplication of selectionHeight*dstWidth
 			int srcPixelOffset=srcDataBufferOffset;						// not zero, since may be later in shared buffer of multiple frames
@@ -1001,7 +1075,7 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 					int dstPixel=0;
 					for (int x=0; x<numberOfEntries; ++x) {
 						int srcX=arrayOfSrcIndices[x]+selectionXOffset;
-//System.err.println("BufferedImageUtilities.resample(): srcX = "+srcX);
+						slf4jlogger.trace("resample(): srcX = {}",srcX);
 						int weightX=arrayOfWeights[x];
 						if (srcX >= leftSideLimit && srcX <= rightSideLimit) {
 							int srcIndex = srcPixelOffset+srcX;
@@ -1039,14 +1113,14 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				}
 			}
 				
-//System.err.println("BufferedImageUtilities.resample(): done with pixel copy ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with pixel copy = {} ms",(System.currentTimeMillis()-startTime));
 			DataBuffer dstDataBuffer = new DataBufferByte(dstPixels,dstWidth,0);
 			WritableRaster dstRaster = Raster.createWritableRaster(dstSampleModel,dstDataBuffer,new Point(0,0));
 			dstImage = new BufferedImage(dstColorModel,dstRaster,true,null);	// no properties hash table
-//System.err.println("BufferedImageUtilities.resample(): done with creating dstImage ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with creating dstImage = {} ms",(System.currentTimeMillis()-startTime));
 		}
 		else if (srcDataBuffer instanceof DataBufferFloat) {
-//System.err.println("BufferedImageUtilities.resample(): DataBufferFloat");
+			slf4jlogger.debug("resample(): DataBufferFloat");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				false,		// has alpha
@@ -1063,26 +1137,26 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				new int[] {0}
 			);
 		
-//System.err.println("BufferedImageUtilities.resample(): got info ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got info = {} ms",(System.currentTimeMillis()-startTime));
 		
 			float srcPixels[] = ((DataBufferFloat)srcDataBuffer).getData();
 
 			int srcPixelsLength = srcPixels.length;
-//System.err.println("BufferedImageUtilities.resample(): got srcPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got srcPixels = {} ms",(System.currentTimeMillis()-startTime));
 
 			int dstPixelsLength = dstWidth*dstHeight;
 			float dstPixels[] = new float[dstPixelsLength];
-//System.err.println("BufferedImageUtilities.resample(): got dstPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got dstPixels = {} ms",(System.currentTimeMillis()-startTime));
 
-//System.err.println("BufferedImageUtilities.resample(): single band");
-//System.err.println("BufferedImageUtilities.resample(): single band ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): single band");
+			slf4jlogger.debug("resample(): single band = {} ms",(System.currentTimeMillis()-startTime));
 			float dstRowBuffers[] = new float[selectionHeight*dstWidth];
 			int bufferRowIndex[] = new int[selectionHeight];			// saves slow multiplication of selectionHeight*dstWidth
 			int srcPixelOffset=srcDataBufferOffset;						// not zero, since may be later in shared buffer of multiple frames
 			int dstPixelOffset=0;
 			int lastBufferRowIndex=0;
 			srcPixelOffset+=selectionYOffset*srcWidth;
-//System.err.println("BufferedImageUtilities.resample(): srcPixelOffset = "+srcPixelOffset);
+			slf4jlogger.debug("resample(): srcPixelOffset = {}",srcPixelOffset);
 			for (int srcY=0; srcY<selectionHeight; ++srcY,srcPixelOffset+=srcWidth/*,dstPixelOffset+=dstWidth*/) {
 				bufferRowIndex[srcY]=lastBufferRowIndex;
 				lastBufferRowIndex+=dstWidth;
@@ -1101,15 +1175,15 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 //if (srcY == 0) { System.err.println("BufferedImageUtilities.resample(): srcIndex = "+srcIndex); }
 							if (srcIndex > 0 && srcIndex < srcPixelsLength) {
 								dstPixel+=(float)(srcPixels[srcIndex])*weightX;
-//System.err.println("BufferedImageUtilities.resample(): srcIndex = "+srcIndex+" srcPixels[srcIndex] = "+srcPixels[srcIndex]+" weightX = "+weightX+" dstPixel now = "+dstPixel);
+								slf4jlogger.trace("resample(): srcIndex = {} srcPixels[srcIndex] = {} weightX = {} dstPixel now = {}",srcIndex,srcPixels[srcIndex],weightX,dstPixel);
 							}
 						}
 						else {
 							dstPixel+=(backgroundValue*weightX);
-//System.err.println("BufferedImageUtilities.resample(): backgroundValue = "+backgroundValue+" weightX = "+weightX+" dstPixel now = "+dstPixel);
+							slf4jlogger.trace("resample(): backgroundValue = {} weightX = {} dstPixel now = {}",backgroundValue,weightX,dstPixel);
 						}
 					}
-//System.err.println("BufferedImageUtilities.resample(): dstPixelOffset = "+dstPixelOffset+" dstRowBuffers[dstPixelOffset] was = "+dstRowBuffers[dstPixelOffset]+" dstPixel = "+dstPixel+" sumOfWeights = "+sumOfWeights+" replacing dstRowBuffers[dstPixelOffset] with dstPixel/sumOfWeights = "+(dstPixel/sumOfWeights));
+					slf4jlogger.trace("resample(): dstPixelOffset = {} dstRowBuffers[dstPixelOffset] was = {} dstPixel = {} sumOfWeights = {} replacing dstRowBuffers[dstPixelOffset] with dstPixel/sumOfWeights = {}",dstPixelOffset,dstRowBuffers[dstPixelOffset],dstPixel,sumOfWeights,(dstPixel/sumOfWeights));
 					dstRowBuffers[dstPixelOffset++]=dstPixel/sumOfWeights;
 				}
 			}
@@ -1127,26 +1201,26 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 						int weightY=arrayOfWeights[y];
 						if (srcY >= topSideLimit && srcY <= bottomSideLimit) {
 							dstPixel+=dstRowBuffers[bufferRowIndex[srcY]+dstX]*weightY;
-//System.err.println("BufferedImageUtilities.resample(): srcY = "+srcY+" bufferRowIndex[srcY] = "+bufferRowIndex[srcY]+" dstX = "+dstX+" dstRowBuffers[bufferRowIndex[srcY]+dstX] = "+dstRowBuffers[bufferRowIndex[srcY]+dstX]+" weightY = "+weightY+" dstPixel now = "+dstPixel);
+							slf4jlogger.trace("resample(): srcY = {} bufferRowIndex[srcY] = {} dstX = {} dstRowBuffers[bufferRowIndex[srcY]+dstX] = {} weightY = {} dstPixel now = {}",srcY,bufferRowIndex[srcY],dstX,dstRowBuffers[bufferRowIndex[srcY]+dstX],weightY,dstPixel);
 						}
 						else {
 							dstPixel+=(backgroundValue*weightY);
-//System.err.println("BufferedImageUtilities.resample(): backgroundValue = "+backgroundValue+" weightY = "+weightY+" dstPixel now = "+dstPixel);
+							slf4jlogger.trace("resample(): backgroundValue = {} weightY = {} dstPixel now = {}",backgroundValue,weightY,dstPixel);
 						}
 					}
 					dstPixels[pixelOffset+dstX]=dstPixel/sumOfWeights;			// this is faster than single increment
-//System.err.println("BufferedImageUtilities.resample(): pixelOffset = "+pixelOffset+" dstX = "+dstX+" dstPixel = "+dstPixel+" sumOfWeights = "+sumOfWeights+" replacing dstPixels[pixelOffset+dstX] with dstPixel/sumOfWeights = "+dstPixels[pixelOffset+dstX]);
+					slf4jlogger.trace("resample(): pixelOffset = {} dstX = {} dstPixel = {} sumOfWeights = {} replacing dstPixels[pixelOffset+dstX] with dstPixel/sumOfWeights = {}",pixelOffset,dstX,dstPixel,sumOfWeights,dstPixels[pixelOffset+dstX]);
 				}
 			}
 				
-//System.err.println("BufferedImageUtilities.resample(): done with pixel copy ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with pixel copy = {} ms",(System.currentTimeMillis()-startTime));
 			DataBuffer dstDataBuffer = new DataBufferFloat(dstPixels,dstWidth,0);
 			WritableRaster dstRaster = Raster.createWritableRaster(dstSampleModel,dstDataBuffer,new Point(0,0));
 			dstImage = new BufferedImage(dstColorModel,dstRaster,true,null);	// no properties hash table
-//System.err.println("BufferedImageUtilities.resample(): done with creating dstImage ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with creating dstImage = {} ms",(System.currentTimeMillis()-startTime));
 		}
 		else if (srcDataBuffer instanceof DataBufferDouble) {
-//System.err.println("BufferedImageUtilities.resample(): DataBufferDouble");
+			slf4jlogger.debug("resample(): DataBufferDouble");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				false,		// has alpha
@@ -1163,26 +1237,26 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				new int[] {0}
 			);
 		
-//System.err.println("BufferedImageUtilities.resample(): got info ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got info = {} ms",(System.currentTimeMillis()-startTime));
 		
 			double srcPixels[] = ((DataBufferDouble)srcDataBuffer).getData();
 
 			int srcPixelsLength = srcPixels.length;
-//System.err.println("BufferedImageUtilities.resample(): got srcPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got srcPixels = {} ms",(System.currentTimeMillis()-startTime));
 
 			int dstPixelsLength = dstWidth*dstHeight;
 			double dstPixels[] = new double[dstPixelsLength];
-//System.err.println("BufferedImageUtilities.resample(): got dstPixels ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): got dstPixels = {} ms",(System.currentTimeMillis()-startTime));
 
-//System.err.println("BufferedImageUtilities.resample(): single band");
-//System.err.println("BufferedImageUtilities.resample(): single band ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): single band");
+			slf4jlogger.debug("resample(): single band = {} ms",(System.currentTimeMillis()-startTime));
 			double dstRowBuffers[] = new double[selectionHeight*dstWidth];
 			int bufferRowIndex[] = new int[selectionHeight];			// saves slow multiplication of selectionHeight*dstWidth
 			int srcPixelOffset=srcDataBufferOffset;						// not zero, since may be later in shared buffer of multiple frames
 			int dstPixelOffset=0;
 			int lastBufferRowIndex=0;
 			srcPixelOffset+=selectionYOffset*srcWidth;
-//System.err.println("BufferedImageUtilities.resample(): srcPixelOffset = "+srcPixelOffset);
+			slf4jlogger.debug("resample(): srcPixelOffset = {}",srcPixelOffset);
 			for (int srcY=0; srcY<selectionHeight; ++srcY,srcPixelOffset+=srcWidth/*,dstPixelOffset+=dstWidth*/) {
 				bufferRowIndex[srcY]=lastBufferRowIndex;
 				lastBufferRowIndex+=dstWidth;
@@ -1233,37 +1307,37 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				}
 			}
 				
-//System.err.println("BufferedImageUtilities.resample(): done with pixel copy ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with pixel copy = {} ms",(System.currentTimeMillis()-startTime));
 			DataBuffer dstDataBuffer = new DataBufferDouble(dstPixels,dstWidth,0);
 			WritableRaster dstRaster = Raster.createWritableRaster(dstSampleModel,dstDataBuffer,new Point(0,0));
 			dstImage = new BufferedImage(dstColorModel,dstRaster,true,null);	// no properties hash table
-//System.err.println("BufferedImageUtilities.resample(): done with creating dstImage ="+(System.currentTimeMillis()-startTime)+" ms");
+			slf4jlogger.debug("resample(): done with creating dstImage = {} ms",(System.currentTimeMillis()-startTime));
 		}
 		// else should never get here, since took care of this and returned earlier
 		
-//System.err.println("BufferedImageUtilities.resample() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("resample() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
 		return dstImage;
 	}
 
 	public final BufferedImage resampleWithGraphicsDraw(BufferedImage srcImage,int selectionWidth,int selectionHeight,int selectionXOffset,int selectionYOffset,int dstWidth,int dstHeight) {
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): start");
+		long startTime = System.currentTimeMillis();
 		BufferedImage dstImage = null;
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): try source ColorModel");
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): try source ColorModel");
 		ColorModel dstColorModel = srcImage.getColorModel();
 		dstImage = resampleWithGraphicsDraw(srcImage,dstColorModel,selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);
 		if (dstImage == null) {
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): source ColorModel failed; try most favorable instead");
+			slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): source ColorModel failed; try most favorable instead");
 			dstColorModel = getMostFavorableColorModel();
 			dstImage = resampleWithGraphicsDraw(srcImage,dstColorModel,selectionWidth,selectionHeight,selectionXOffset,selectionYOffset,dstWidth,dstHeight);
 		}
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): done");
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,int,int,int,int,int,int): done");
+		slf4jlogger.debug("resampleWithGraphicsDraw() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
 		return dstImage;
 	}
 	
 	private final static BufferedImage resampleWithGraphicsDraw(BufferedImage srcImage,ColorModel dstColorModel,int selectionWidth,int selectionHeight,int selectionXOffset,int selectionYOffset,int dstWidth,int dstHeight) {
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,ColorModel,int,int,int,int,int,int): start");
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,ColorModel,int,int,int,int,int,int): start");
 		BufferedImage dstImage = null;
 		if (dstColorModel != null) {
 			WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(dstWidth,dstHeight);
@@ -1274,115 +1348,114 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				}
 				//catch (java.awt.image.ImagingOpException e) {
 				catch (Exception e) {
-					//e.printStackTrace(System.err);
-					//System.err.println(e);
+					//slf4jlogger.error("",e);
 					dstImage = null;
 				}
 			}
 		}
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,ColorModel,int,int,int,int,int,int): done");
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,ColorModel,int,int,int,int,int,int): done");
 		return dstImage;
 	}
 	
 	private final static void resampleWithGraphicsDraw(BufferedImage srcImage,BufferedImage dstImage,int selectionWidth,int selectionHeight,int selectionXOffset,int selectionYOffset,int dstWidth,int dstHeight) {
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,BufferedImage,int,int,int,int,int,int): start");
-				Graphics2D g2d = dstImage.createGraphics();
-				//Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
-				//Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_BILINEAR;
-				Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): renderingHintValue = "+renderingHintValue);
-				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,renderingHintValue);
-				
-				int sx1 = selectionXOffset;
-				int sy1 = selectionYOffset;
-				int sx2 = selectionXOffset+selectionWidth-1;
-				int sy2 = selectionYOffset+selectionHeight-1;
-				int dx1 = 0;
-				int dy1 = 0;
-				int dx2 = dstWidth-1;
-				int dy2 = dstHeight-1;
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested sx1 = "+sx1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested sy1 = "+sy1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested sx2 = "+sx2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested sy2 = "+sy2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested dx1 = "+dx1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested dy1 = "+dy1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested dx2 = "+dx2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): requested dy2 = "+dy2);
-
-				int srcWidth = srcImage.getWidth();
-				int srcHeight = srcImage.getHeight();
-
-				if (sx1 < 0) {
-					int dstDelta = (int)(-sx1 * ((double)dstWidth)/selectionWidth + 0.5);
-					dx1+=dstDelta;
-					sx1=0;
-				}
-				if (sx1 >= srcWidth) {
-					int dstDelta = (int)((sx1-srcWidth+1) * ((double)dstWidth)/selectionWidth + 0.5);
-					dx1-=dstDelta;
-					sx1=srcWidth-1;
-				}
-				
-				if (sx2 < 0) {
-					int dstDelta = (int)(-sx2 * ((double)dstWidth)/selectionWidth + 0.5);
-					dx2+=dstDelta;
-					sx2=0;
-				}
-				if (sx2 >= srcWidth) {
-					int dstDelta = (int)((sx2-srcWidth+1) * ((double)dstWidth)/selectionWidth + 0.5);
-					dx2-=dstDelta;
-					sx2=srcWidth-1;
-				}
-				
-				if (sy1 < 0) {
-					int dstDelta = (int)(-sy1 * ((double)dstHeight)/selectionHeight + 0.5);
-					dy1+=dstDelta;
-					sy1=0;
-				}
-				if (sy1 >= srcHeight) {
-					int dstDelta = (int)((sy1-srcHeight+1) * ((double)dstHeight)/selectionHeight + 0.5);
-					dy1-=dstDelta;
-					sy1=srcHeight-1;
-				}
-				
-				if (sy2 < 0) {
-					int dstDelta = (int)(-sy2 * ((double)dstHeight)/selectionHeight + 0.5);
-					dy2+=dstDelta;
-					sy2=0;
-				}
-				if (sy2 >= srcHeight) {
-					int dstDelta = (int)((sy2-srcHeight+1) * ((double)dstHeight)/selectionHeight + 0.5);
-					dy2-=dstDelta;
-					sy2=srcHeight-1;
-				}
-
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped sx1 = "+sx1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped sy1 = "+sy1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped sx2 = "+sx2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped sy2 = "+sy2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped dx1 = "+dx1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped dy1 = "+dy1);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped dx2 = "+dx2);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(): clipped dy2 = "+dy2);
-				
-				g2d.drawImage(srcImage,dx1,dy1,dx2,dy2,sx1,sy1,sx2,sy2,Color.black,null);
-//System.err.println("BufferedImageUtilities.resampleWithGraphicsDraw(BufferedImage,BufferedImage,int,int,int,int,int,int): done");
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,BufferedImage,int,int,int,int,int,int): start");
+		Graphics2D g2d = dstImage.createGraphics();
+		//Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
+		//Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_BILINEAR;
+		Object renderingHintValue = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+		slf4jlogger.debug("resampleWithGraphicsDraw(): renderingHintValue = {}",renderingHintValue);
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,renderingHintValue);
+		
+		int sx1 = selectionXOffset;
+		int sy1 = selectionYOffset;
+		int sx2 = selectionXOffset+selectionWidth-1;
+		int sy2 = selectionYOffset+selectionHeight-1;
+		int dx1 = 0;
+		int dy1 = 0;
+		int dx2 = dstWidth-1;
+		int dy2 = dstHeight-1;
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested sx1 = {}",sx1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested sy1 = {}",sy1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested sx2 = {}",sx2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested sy2 = {}",sy2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested dx1 = {}",dx1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested dy1 = {}",dy1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested dx2 = {}",dx2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): requested dy2 = {}",dy2);
+		
+		int srcWidth = srcImage.getWidth();
+		int srcHeight = srcImage.getHeight();
+		
+		if (sx1 < 0) {
+			int dstDelta = (int)(-sx1 * ((double)dstWidth)/selectionWidth + 0.5);
+			dx1+=dstDelta;
+			sx1=0;
+		}
+		if (sx1 >= srcWidth) {
+			int dstDelta = (int)((sx1-srcWidth+1) * ((double)dstWidth)/selectionWidth + 0.5);
+			dx1-=dstDelta;
+			sx1=srcWidth-1;
+		}
+		
+		if (sx2 < 0) {
+			int dstDelta = (int)(-sx2 * ((double)dstWidth)/selectionWidth + 0.5);
+			dx2+=dstDelta;
+			sx2=0;
+		}
+		if (sx2 >= srcWidth) {
+			int dstDelta = (int)((sx2-srcWidth+1) * ((double)dstWidth)/selectionWidth + 0.5);
+			dx2-=dstDelta;
+			sx2=srcWidth-1;
+		}
+		
+		if (sy1 < 0) {
+			int dstDelta = (int)(-sy1 * ((double)dstHeight)/selectionHeight + 0.5);
+			dy1+=dstDelta;
+			sy1=0;
+		}
+		if (sy1 >= srcHeight) {
+			int dstDelta = (int)((sy1-srcHeight+1) * ((double)dstHeight)/selectionHeight + 0.5);
+			dy1-=dstDelta;
+			sy1=srcHeight-1;
+		}
+		
+		if (sy2 < 0) {
+			int dstDelta = (int)(-sy2 * ((double)dstHeight)/selectionHeight + 0.5);
+			dy2+=dstDelta;
+			sy2=0;
+		}
+		if (sy2 >= srcHeight) {
+			int dstDelta = (int)((sy2-srcHeight+1) * ((double)dstHeight)/selectionHeight + 0.5);
+			dy2-=dstDelta;
+			sy2=srcHeight-1;
+		}
+		
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped sx1 = {}",sx1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped sy1 = {}",sy1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped sx2 = {}",sx2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped sy2 = {}",sy2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped dx1 = {}",dx1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped dy1 = {}",dy1);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped dx2 = {}",dx2);
+		slf4jlogger.debug("resampleWithGraphicsDraw(): clipped dy2 = {}",dy2);
+		
+		g2d.drawImage(srcImage,dx1,dy1,dx2,dy2,sx1,sy1,sx2,sy2,Color.black,null);
+		slf4jlogger.debug("resampleWithGraphicsDraw(BufferedImage,BufferedImage,int,int,int,int,int,int): done");
 	}
 	
 	public static final BufferedImage resampleWithAffineTransformOp(BufferedImage srcImage,double sx,double sy) {
-//System.err.println("BufferedImageUtilities.resampleWithAffineTransformOp(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("resampleWithAffineTransformOp(): start");
+		long startTime = System.currentTimeMillis();
 		AffineTransform transform = AffineTransform.getScaleInstance(sx,sy);
 		AffineTransformOp transformOp=new AffineTransformOp(transform,AffineTransformOp.TYPE_BILINEAR);
  		BufferedImage dstImage = transformOp.createCompatibleDestImage(srcImage,srcImage.getColorModel());	// otherwise returns, say RGBA even if gray
 		dstImage = transformOp.filter(srcImage,dstImage);
-//System.err.println("BufferedImageUtilities.resampleWithAffineTransformOp() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("resampleWithAffineTransformOp() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
 		return dstImage;
 	}
 
 	public static final BufferedImage resampleWithAffineTransformOp(BufferedImage srcImage,int dstWidth,int dstHeight) {
-//System.err.println("BufferedImageUtilities.resampleWithAffineTransformOp():");
+		slf4jlogger.debug("resampleWithAffineTransformOp():");
 		int srcWidth = srcImage.getWidth();
 		int srcHeight = srcImage.getHeight();
 		double sx = ((double)dstWidth)/srcWidth;
@@ -1397,9 +1470,9 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 		int srcHeight = srcImage.getHeight();
 		WritableRaster srcRaster = srcImage.getRaster();
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
-//System.err.println("BufferedImageUtilities.flipHorizontally(): srcDataBuffer is "+srcDataBuffer.getClass().getName());
+		slf4jlogger.debug("flipHorizontally(): srcDataBuffer is {}",srcDataBuffer.getClass().getName());
 		int srcDataBufferOffset = srcDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.flipHorizontally(): srcDataBuffer.getOffset() is "+srcDataBufferOffset);
+		slf4jlogger.debug("flipHorizontally(): srcDataBuffer.getOffset() is {}",srcDataBufferOffset);
 		int srcNumBands = srcRaster.getNumBands();
 
 		if (srcNumBands == 1) {
@@ -1433,11 +1506,11 @@ System.err.println("BufferedImageUtilities.convertToMostFavorableImageTypeWithPi
 				}
 			}
 			else {
-System.err.println("BufferedImageUtilities.flipHorizontally(): cannot flip unsupported DataBuffer type of "+srcDataBuffer.getClass().getName());
+				slf4jlogger.info("BufferedImageUtilities.flipHorizontally(): cannot flip unsupported DataBuffer type of {}",srcDataBuffer.getClass().getName());
 			}
 		}
 		else {
-System.err.println("BufferedImageUtilities.flipHorizontally(): cannot flip more than one band; number of bands is"+srcNumBands);
+			slf4jlogger.info("BufferedImageUtilities.flipHorizontally(): cannot flip more than one band; number of bands is {}",srcNumBands);
 		}
 		// May or may not have been changed, but would have been changed in place
 	}
@@ -1448,9 +1521,9 @@ System.err.println("BufferedImageUtilities.flipHorizontally(): cannot flip more 
 		int srcHeight = srcImage.getHeight();
 		WritableRaster srcRaster = srcImage.getRaster();
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
-//System.err.println("BufferedImageUtilities.flipVertically(): srcDataBuffer is "+srcDataBuffer.getClass().getName());
+		slf4jlogger.debug("flipVertically(): srcDataBuffer is {}",srcDataBuffer.getClass().getName());
 		int srcDataBufferOffset = srcDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.flipVertically(): srcDataBuffer.getOffset() is "+srcDataBufferOffset);
+		slf4jlogger.debug("flipVertically(): srcDataBuffer.getOffset() is {}",srcDataBufferOffset);
 		int srcNumBands = srcRaster.getNumBands();
 
 		if (srcNumBands == 1) {
@@ -1461,12 +1534,12 @@ System.err.println("BufferedImageUtilities.flipHorizontally(): cannot flip more 
 				for (int srcX=0; srcX<srcWidth; ++srcX) {
 					int srcPixelOffset = srcDataBufferOffset + srcX;
 					for (int srcY=0,dstY=srcHeight-1; dstY>=0; ++srcY,--dstY) {
-//System.err.println("BufferedImageUtilities.flipVertically(): srcPixelOffset="+srcPixelOffset+" srcX="+srcX+" srcY="+srcY+" dstY="+dstY+" srcPixelOffset+srcY*srcWidth="+(srcPixelOffset+srcY*srcWidth)+" value="+srcPixels[srcPixelOffset+srcY*srcWidth]);
+						slf4jlogger.trace("flipVertically(): srcPixelOffset={} srcX={} srcY={} dstY={} srcPixelOffset+srcY*srcWidth={} value={}",srcPixelOffset,srcX,srcY,dstY,(srcPixelOffset+srcY*srcWidth),srcPixels[srcPixelOffset+srcY*srcWidth]);
 						colBuffer[dstY] = srcPixels[srcPixelOffset+srcY*srcWidth];
 					}
 					srcPixelOffset = srcDataBufferOffset + srcX;
 					for (int y=0; y<srcHeight; ++y) {
-//System.err.println("BufferedImageUtilities.flipVertically(): srcPixelOffset="+srcPixelOffset+" srcX="+srcX+" y="+y+" srcPixelOffset+y*srcWidth="+(srcPixelOffset+y*srcWidth)+" value="+ colBuffer[y]);
+						slf4jlogger.trace("flipVertically(): srcPixelOffset={} srcX={} y={} srcPixelOffset+y*srcWidth={} value={}",srcPixelOffset,srcX,y,(srcPixelOffset+y*srcWidth),colBuffer[y]);
 						srcPixels[srcPixelOffset+y*srcWidth] = colBuffer[y];
 					}
 				}
@@ -1486,11 +1559,11 @@ System.err.println("BufferedImageUtilities.flipHorizontally(): cannot flip more 
 				}
 			}
 			else {
-System.err.println("BufferedImageUtilities.flipVertically(): cannot flip unsupported DataBuffer type of "+srcDataBuffer.getClass().getName());
+				slf4jlogger.info("BufferedImageUtilities.flipVertically(): cannot flip unsupported DataBuffer type of {}",srcDataBuffer.getClass().getName());
 			}
 		}
 		else {
-System.err.println("BufferedImageUtilities.flipVertically(): cannot flip more than one band; number of bands is"+srcNumBands);
+slf4jlogger.info("BufferedImageUtilities.flipVertically(): cannot flip more than one band; number of bands is{}",srcNumBands);
 		}
 		// May or may not have been changed, but would have been changed in place
 	}
@@ -1504,12 +1577,12 @@ System.err.println("BufferedImageUtilities.flipVertically(): cannot flip more th
 		WritableRaster srcRaster = srcImage.getRaster();
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 		int srcDataBufferOffset = srcDataBuffer.getOffset();
-//System.err.println("BufferedImageUtilities.resample(): srcDataBuffer is "+srcDataBuffer.getClass().getName());
-//System.err.println("BufferedImageUtilities.resample(): srcDataBuffer.getOffset() is "+srcDataBufferOffset);
+		slf4jlogger.debug("rotateAndFlipSwappingRowsAndColumns(): srcDataBuffer is {}",srcDataBuffer.getClass().getName());
+		slf4jlogger.debug("rotateAndFlipSwappingRowsAndColumns(): srcDataBuffer.getOffset() is {}",srcDataBufferOffset);
 		int srcNumBands = srcRaster.getNumBands();
 
 		if (srcNumBands != 1 || !(srcDataBuffer instanceof DataBufferUShort || srcDataBuffer instanceof DataBufferByte)) {
-System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns(): cannot do our own rotating");
+			slf4jlogger.info("rotateAndFlipSwappingRowsAndColumns(): cannot do our own rotating");
 			return srcImage;		// Give up if we don't know how to get pixels
 		}
 
@@ -1519,7 +1592,7 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 		BufferedImage dstImage = null;
 
 		if (srcDataBuffer instanceof DataBufferUShort) {
-//System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns(): DataBufferUShort");
+			slf4jlogger.debug("rotateAndFlipSwappingRowsAndColumns(): DataBufferUShort");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				new int[] {16},
@@ -1555,7 +1628,7 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 			dstImage = new BufferedImage(dstColorModel,dstRaster,true,null);	// no properties hash table
 		}
 		else if (srcDataBuffer instanceof DataBufferByte) {
-//System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns(): DataBufferByte");
+			slf4jlogger.debug("rotateAndFlipSwappingRowsAndColumns(): DataBufferByte");
 			ColorModel dstColorModel = new ComponentColorModel(
 				ColorSpace.getInstance(ColorSpace.CS_GRAY),
 				new int[] {8},
@@ -1627,27 +1700,27 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 		long b  = Math.round(y + 1.772  *(cb-128)                   );
 				
 		if (r < 0) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping -ve r = "+r+" to 0");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping -ve r = {} to 0",r);
 			r=0;
 		}
 		if (r > 255) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping overrange r = "+r+" to 255");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping overrange r = {} to 255",r);
 			r=255;
 		}
 		if (g < 0) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping -ve g = "+g+" to 0");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping -ve g = {} to 0",g);
 			g=0;
 		}
 		if (g > 255) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping overrange g = "+g+" to 255");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping overrange g = {} to 255",g);
 			g=255;
 		}
 		if (b < 0) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping -ve b = "+b+" to 0");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping -ve b = {} to 0",b);
 			b=0;
 		}
 		if (b > 255) {
-//System.err.println("BufferedImage.convertYBRToRGB(): clamping overrange b = "+b+" to 255");
+			//slf4jlogger.trace("BufferedImage.convertYBRToRGB(): clamping overrange b = {} to 255",b);
 			b=255;
 		}
 
@@ -1672,8 +1745,8 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 	 * @return				a BufferedImage with pixel values that really are RGB
 	 */
 	public static final BufferedImage convertYBRToRGB(BufferedImage srcImage) {
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): start");
-//long startTime = System.currentTimeMillis();
+		slf4jlogger.debug("convertYBRToRGB(): start");
+		long startTime = System.currentTimeMillis();
 
 		ColorModel srcColorModel = srcImage.getColorModel();
 		ColorModel dstColorModel = srcColorModel;
@@ -1687,9 +1760,16 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 		DataBuffer srcDataBuffer = srcRaster.getDataBuffer();
 		int srcNumBands = srcRaster.getNumBands();
 
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): srcImage ="+srcImage);
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): srcSampleModel ="+srcSampleModel);
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): srcSampleModel.getPixelStride() ="+((ComponentSampleModel)srcSampleModel).getPixelStride());
+		slf4jlogger.debug("convertYBRToRGB(): srcImage ={}",srcImage);
+		slf4jlogger.debug("convertYBRToRGB(): srcSampleModel ={}",srcSampleModel);
+		{
+			if (srcSampleModel instanceof ComponentSampleModel) {	// (000990)
+				slf4jlogger.debug("convertYBRToRGB(): srcSampleModel.getPixelStride() ={}",((ComponentSampleModel)srcSampleModel).getPixelStride());
+			}
+			else {
+				slf4jlogger.info("convertYBRToRGB(): srcSampleModel is not ComponentSampleModel but is {}",srcSampleModel.getClass().getName());
+			}
+		}
 
 		WritableRaster dstRaster = dstColorModel.createCompatibleWritableRaster(width,height);
 		DataBuffer dstDataBuffer = dstRaster.getDataBuffer();
@@ -1698,8 +1778,8 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 		SampleModel dstSampleModel = dstImage.getSampleModel();
 		int dstNumBands = dstRaster.getNumBands();
         
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): dstImage ="+dstImage);
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): dstSampleModel ="+dstSampleModel);
+		slf4jlogger.debug("convertYBRToRGB(): dstImage ={}",dstImage);
+		slf4jlogger.debug("convertYBRToRGB(): dstSampleModel ={}",dstSampleModel);
 
 		int srcPixels[] = null; // to disambiguate SampleModel.getPixels() method signature
 		srcPixels = srcSampleModel.getPixels(0,0,width,height,srcPixels,srcDataBuffer);
@@ -1709,11 +1789,11 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 		dstPixels = dstSampleModel.getPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		int dstPixelsLength = dstPixels.length;
         
-//System.err.println("BufferedImageUtilities.convertYBRToRGB() after getPixels, elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
+		slf4jlogger.debug("convertYBRToRGB() after getPixels, elapsed: {} ms",(System.currentTimeMillis()-startTime));
 
 		byte[] convertedRGB = new byte[3];
 		if (srcNumBands == 4 && dstNumBands == 4 && srcPixelsLength == dstPixelsLength) {
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): converting pixel or band interleaved 4 band YBRA to RGBA");
+		slf4jlogger.debug("convertYBRToRGB(): converting pixel or band interleaved 4 band YBRA to RGBA");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength;) {
 				byte y  = (byte)(srcPixels[srcIndex++]);
@@ -1729,7 +1809,7 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 			dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else if (srcNumBands == 3 && dstNumBands == 3 && srcPixelsLength == dstPixelsLength) {
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): converting pixel or band interleaved 3 band YBR to RGB");
+		slf4jlogger.debug("convertYBRToRGB(): converting pixel or band interleaved 3 band YBR to RGB");
 			int dstIndex=0;
 			for (int srcIndex=0; srcIndex<srcPixelsLength;) {
 				byte y  = (byte)(srcPixels[srcIndex++]);
@@ -1743,11 +1823,46 @@ System.err.println("BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns()
 			dstSampleModel.setPixels(0,0,width,height,dstPixels,dstDataBuffer);
 		}
 		else {
-System.err.println("BufferedImageUtilities.convertYBRToRGB(): No conversion supported");
+			slf4jlogger.info("convertYBRToRGB(): No conversion supported");
 			dstImage=null;
 		}
-//System.err.println("BufferedImageUtilities.convertYBRToRGB() elapsed: "+(System.currentTimeMillis()-startTime)+" ms");
-//System.err.println("BufferedImageUtilities.convertYBRToRGB(): done = "+dstImage);
+		slf4jlogger.debug("convertYBRToRGB() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("convertYBRToRGB(): done = {}",dstImage);
+		return dstImage;
+	}
+
+	/**
+	 * @param	srcImage
+	 */
+	public static final BufferedImage createEmptyBufferedImageOfSameTypeAndSize(BufferedImage srcImage) {
+		// https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
+		ColorModel cm = srcImage.getColorModel();
+		return new BufferedImage(cm,srcImage.getRaster().createCompatibleWritableRaster(),cm.isAlphaPremultiplied(),null);
+	}
+	
+	/**
+	 * @param	srcImage
+	 * @param	clipRect
+	 * @param	clipBackgroundColor
+	 */
+	public static final BufferedImage clipToRectangleWithGraphicsDraw(BufferedImage srcImage,Rectangle clipRect,Color clipBackgroundColor) {
+		slf4jlogger.debug("clipToRectangleWithGraphicsDraw(): start");
+		long startTime = System.currentTimeMillis();
+		int srcType = srcImage.getType();
+		//BufferedImage dstImage = new BufferedImage(srcImage.getWidth(),srcImage.getHeight(),srcType);		// doesn't work because our type may be 0
+		BufferedImage dstImage = createEmptyBufferedImageOfSameTypeAndSize(srcImage);
+		{
+			if (dstImage != null) {
+				Graphics2D g2 = dstImage.createGraphics();
+				g2.setComposite(AlphaComposite.Src);
+				g2.setBackground(clipBackgroundColor);
+				g2.clip(clipRect);
+				g2.drawImage(srcImage,0,0,null);
+				g2.dispose();
+			}
+		}
+		slf4jlogger.debug("clipToRectangleWithGraphicsDraw() elapsed: {} ms",(System.currentTimeMillis()-startTime));
+		slf4jlogger.debug("clipToRectangleWithGraphicsDraw(): done = {}",dstImage);
 		return dstImage;
 	}
 }

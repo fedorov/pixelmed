@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class ByteArray {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.15 2009/12/29 00:58:28 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.25 2025/01/29 10:58:09 dclunie Exp $";
 
 	private ByteArray() {}
 	

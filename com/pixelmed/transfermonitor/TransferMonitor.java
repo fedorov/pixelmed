@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.transfermonitor;
 
@@ -15,7 +15,7 @@ import java.util.Map;
 public class TransferMonitor {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/transfermonitor/TransferMonitor.java,v 1.1 2005/10/01 19:34:02 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/transfermonitor/TransferMonitor.java,v 1.11 2025/01/29 10:58:09 dclunie Exp $";
 	
 	// static stuff to maintain collection of ourselves
 	

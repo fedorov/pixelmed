@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -19,18 +19,21 @@ import java.util.Date;
 import com.pixelmed.database.DatabaseInformationModel;
 import com.pixelmed.utils.CopyStream;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 abstract class RequestHandler {
-	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/RequestHandler.java,v 1.5 2012/07/31 15:35:09 dclunie Exp $";
+	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/RequestHandler.java,v 1.17 2025/01/29 10:58:10 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(RequestHandler.class);
 
 	protected String stylesheetPath;
-	protected int webServerDebugLevel;
 	
-	protected RequestHandler(String stylesheetPath,int webServerDebugLevel) {
+	protected RequestHandler(String stylesheetPath) {
 		this.stylesheetPath=stylesheetPath;
-		this.webServerDebugLevel=webServerDebugLevel;
 	}
 	
 	/**
@@ -40,7 +43,7 @@ abstract class RequestHandler {
 	 * @param	request				the request parsed out of the the URI
 	 * @param	requestType			the value XXXX of the <code>"?requestType=XXXX"</code> argument, which may be null
 	 * @param	out				where to send the request response
-	 * @exception					if cannot send the response
+	 * @throws					if cannot send the response
 	 */
 	abstract protected void generateResponseToGetRequest(DatabaseInformationModel databaseInformationModel,String rootURL,String requestURI,WebRequest request,String requestType,OutputStream out) throws IOException;
 
@@ -69,7 +72,7 @@ abstract class RequestHandler {
 	final public void sendHeaderAndBodyOfFile(OutputStream out,File file,String nameToUse,String contentType,Date lastModified) throws IOException {
 		PrintWriter writer = new PrintWriter(new OutputStreamWriter(out,"UTF-8"));
 		long fileLength = file.length();
-if (webServerDebugLevel > 0) System.err.println("RequestHandler.sendHeaderAndBodyOfFile(): Length = "+fileLength);
+		slf4jlogger.debug("sendHeaderAndBodyOfFile(): Length = {}",fileLength);
 		writer.print("HTTP/1.1 200 OK\r\n");
 		if (lastModified != null) {
 			writer.print("Last-Modified: "+getFormattedDateTimeForResponse(lastModified)+"\r\n");
@@ -109,7 +112,7 @@ if (webServerDebugLevel > 0) System.err.println("RequestHandler.sendHeaderAndBod
 			writer.flush();
 		}
 		catch (IOException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -7,6 +7,9 @@ import java.io.*;
 import java.util.zip.*;
 
 import com.pixelmed.utils.ByteArray;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to copy DICOM attributes from anm input stream to an output stream,
@@ -18,9 +21,9 @@ import com.pixelmed.utils.ByteArray;
  * @author	dclunie
  */
 public class DicomStreamCopier {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomStreamCopier.java,v 1.33 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomStreamCopier.java,v 1.17 2008/04/07 06:20:41 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomStreamCopier.class);
 
 	/***/
 	private static DicomDictionary dictionary;
@@ -42,7 +45,7 @@ public class DicomStreamCopier {
 	private static final int bufferSize = 32768;	// must be a multiple of largest VR word size re. endianness, which is 8 for for FD
 
 	/**
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	private AttributeTag readAttributeTag() throws IOException {
 		int group   = i.readUnsigned16();
@@ -52,7 +55,7 @@ public class DicomStreamCopier {
 
 	/**
 	 * @param	tag
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
 	private void writeAttributeTag(AttributeTag tag) throws IOException {
 		o.writeUnsigned16(tag.getGroup());
@@ -63,10 +66,11 @@ public class DicomStreamCopier {
 	 * @param	byteOffset
 	 * @param	lengthToRead
 	 * @param	doCopy
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @param	isSignedPixelRepresentation	the PixelRepresentation in an enclosing data set is signed (needed to choose VR for US/SS VR data elements)
+	 * @throws	IOException					if an I/O error occurs
+	 * @throws	DicomException
 	 */
-	private long copySequenceAttribute(long byteOffset,long lengthToRead,boolean doCopy) throws IOException, DicomException {
+	private long copySequenceAttribute(long byteOffset,long lengthToRead,boolean doCopy,boolean isSignedPixelRepresentation) throws IOException, DicomException {
 		boolean undefinedLength = lengthToRead == 0xffffffffl;
 		long endByteOffset=(undefinedLength) ? 0xffffffffl : byteOffset+lengthToRead-1;
 
@@ -98,7 +102,7 @@ public class DicomStreamCopier {
 					if (doCopy) {
 						o.writeUnsigned32(0xffffffffl);		// always make undefined length, since lengths may change between implicit and explicit
 					}
-					byteOffset=copy(byteOffset,vl,false/*stopAfterMetaInformationHeader*/,false/*copyMetaInformationHeader*/,doCopy,false);
+					byteOffset=copy(byteOffset,vl,false/*stopAfterMetaInformationHeader*/,false/*copyMetaInformationHeader*/,doCopy,false,isSignedPixelRepresentation);	// propagates appropriate isSignedPixelRepresentation into sequence items to allow determination of signed dependent VR of US/SS for nested elements (000919)
 					if (doCopy && vl != 0xffffffffl) {
 //System.err.println("copySequenceAttribute: add item delimiter since we are converting fixed length item to undefined length item");
 						writeAttributeTag(TagFromName.ItemDelimitationItem);
@@ -128,16 +132,21 @@ public class DicomStreamCopier {
 	}
 
 	/**
+	 * <p>Copy a dicom input stream to a dicom output stream, using any meta information header if present in input, but not copying it.</p>
+	 *
+	 * <p>Implements the CP 1066 proposal to handle values too long to fit in Explicit VR by writing a UN rather than the actual VR.</p>
+	 *
 	 * @param	byteOffset
 	 * @param	lengthToRead
 	 * @param	stopAfterMetaInformationHeader
 	 * @param	copyMetaInformationHeader
 	 * @param	doCopy
-	 * @param	closeWhenDone			close the output stream when finished; needed to flush any compressed output if compressor pushed on stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @param	closeWhenDone					close the output stream when finished; needed to flush any compressed output if compressor pushed on stream
+	 * @param	isSignedPixelRepresentation		the PixelRepresentation in an enclosing data set is signed (needed to choose VR for US/SS VR data elements)
+	 * @throws	IOException						if an I/O error occurs
+	 * @throws	DicomException
 	 */
-	private long copy(long byteOffset,long lengthToRead,boolean stopAfterMetaInformationHeader,boolean copyMetaInformationHeader,boolean doCopy,boolean closeWhenDone) throws IOException, DicomException {
+	private long copy(long byteOffset,long lengthToRead,boolean stopAfterMetaInformationHeader,boolean copyMetaInformationHeader,boolean doCopy,boolean closeWhenDone,boolean isSignedPixelRepresentation) throws IOException, DicomException {
 		if (i.areReadingDataSet()) {
 			// Test to see whether or not a codec needs to be pushed on the stream ... after the first time, the TransferSyntax will always be ExplicitVRLittleEndian 
 //System.err.println("DicomStreamCopier.copy(): Input stream - testing for deflate and bzip2 TS");
@@ -150,8 +159,9 @@ public class DicomStreamCopier {
 			else if (i.getTransferSyntaxToReadDataSet().isBzip2ed()) {
 				// insert bzip2 into input stream and make a new DicomInputStream
 //System.err.println("DicomStreamCopier.copy(): Input stream - creating new DicomInputStream from bzip2");
+				// NB. Older implementations of BZip2CompressorInputStream used to expect the "BZ" prefix to be stripped; this is no longer the case; the code here is unchanged so the "BZ" prefix must be present or will fail (000964)
 				try {
-					Class classToUse = Thread.currentThread().getContextClassLoader().loadClass("org.apache.excalibur.bzip2.CBZip2InputStream");
+					Class classToUse = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream");
 					Class [] argTypes  = {InputStream.class};
 					Object[] argValues = {i};
 					InputStream bzipInputStream = (InputStream)(classToUse.getConstructor(argTypes).newInstance(argValues));
@@ -186,8 +196,9 @@ public class DicomStreamCopier {
 			else if (o.getTransferSyntaxToWriteDataSet().isBzip2ed()) {
 				// insert bzip2 into output stream and make a new DicomOutputStream
 //System.err.println("DicomStreamCopier.copy(): Output stream - creating new DicomOutputStream from bzip2");
+				// NB. Older implementations of BZip2CompressorOutputStream used to expect the "BZ" prefix to be stripped; this is no longer the case; the code here is unchanged so the "BZ" prefix must be expected by recipients or they will fail (000964)
 				try {
-					Class classToUse = Thread.currentThread().getContextClassLoader().loadClass("org.apache.excalibur.bzip2.CBZip2OutputStream");
+					Class classToUse = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream");
 					Class [] argTypes  = {OutputStream.class};
 					Object[] argValues = {o};
 					//Object[] argValues = {o.getUnderlyingOutputStream()};
@@ -217,7 +228,6 @@ public class DicomStreamCopier {
 
 		String lastTransferSyntaxUIDEncountered=null;
 		long lastFileMetaInformationGroupLengthEncountered=0;
-		int pixelRepresentation=0;
 		int bitsAllocated=0;
 		
 		boolean  inputExplicit = i.getTransferSyntaxInUse().isExplicitVR();		// set these here because may have switched from meta-header to data set
@@ -275,7 +285,7 @@ public class DicomStreamCopier {
 					long vl = i.readUnsigned32();		// always implicit VR form for items and delimiters
 					byteOffset+=4;
 					if (doCopy) o.writeUnsigned32(vl);
-System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toHexString(vl)+">");
+					slf4jlogger.warn("Ignoring bad Item at {} {} VL=<0x{}>",byteOffset,tag,Long.toHexString(vl));
 					// let's just ignore it for now
 					continue;
 				}
@@ -337,8 +347,16 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 							vr = ValueRepresentation.OW;	// PS 3.5 A.1 says the lookup table data should be OW
 						}
 						else if (ValueRepresentation.isUnspecifiedShortVR(vr)) {
-							vr = (pixelRepresentation == 0) ? ValueRepresentation.US : ValueRepresentation.SS;
+							vr = isSignedPixelRepresentation ? ValueRepresentation.SS : ValueRepresentation.US;
 						}
+						
+						if (ValueRepresentation.isShortValueLengthVR(vr) && vl > AttributeList.maximumShortVRValueLength) {
+							// we are screwed ... cannot write in specified VR without truncation ... use CP 1066 UN VR instead
+							slf4jlogger.warn("Using UN rather than {} because because VL ({} dec, 0x{}) is too long to fit in 16 bits for tag {}",ValueRepresentation.getAsString(vr),vl,Long.toHexString(vl),tag);
+							vr = ValueRepresentation.UN;
+							swapEndian = i.getTransferSyntaxInUse().isBigEndian();	// no longer care about output endianness, because UN is ALWAYS interpreted as little endian
+						}
+						
 						o.write(vr,0,2);
 
 						if (ValueRepresentation.isShortValueLengthVR(vr)) {
@@ -366,7 +384,7 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 //System.err.println("copy: vl = "+vl);
 				
 				if (ValueRepresentation.isSequenceVR(vr) || vl == 0xffffffffl) {
-					byteOffset=copySequenceAttribute(byteOffset,vl,doCopy);
+					byteOffset=copySequenceAttribute(byteOffset,vl,doCopy,isSignedPixelRepresentation);
 				}
 				else if (tag.equals(TagFromName.FileMetaInformationGroupLength)) {
 					if (vl != 4) throw new DicomException("Error copying FileMetaInformationGroupLength from meta information header - value wrong length "+vl);
@@ -383,9 +401,10 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 				}
 				else if (tag.equals(TagFromName.PixelRepresentation)) {
 					if (vl != 2) throw new DicomException("Error copying PixelRepresentation - value wrong length "+vl);
-					pixelRepresentation=i.readUnsigned16();
+					int pixelRepresentation=i.readUnsigned16();
 					if (doCopy) o.writeUnsigned16(pixelRepresentation);
 					byteOffset+=2;
+					isSignedPixelRepresentation = pixelRepresentation == 1;
 				}
 				else if (tag.equals(TagFromName.BitsAllocated)) {
 					if (vl != 2) throw new DicomException("Error copying BitsAllocated - value wrong length "+vl);
@@ -428,7 +447,7 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 //System.err.println("Found meta-header");
 						if (i.areReadingMetaHeader()) {
 							long metaLength=lastFileMetaInformationGroupLengthEncountered;
-							byteOffset=copy(byteOffset,metaLength,true,copyMetaInformationHeader,doCopy,false);		// detects and sets transfer syntax for reading dataset
+							byteOffset=copy(byteOffset,metaLength,true,copyMetaInformationHeader,doCopy,false,false/*isSignedPixelRepresentation*/);		// detects and sets transfer syntax for reading dataset
 							i.setReadingDataSet();
 							o.setWritingDataSet();
 							if (stopAfterMetaInformationHeader) {
@@ -437,7 +456,7 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 							}
 							else {
 //System.err.println("Calling copy");
-								byteOffset=copy(byteOffset,0xffffffffl,false,copyMetaInformationHeader,doCopy,true);	// read to end
+								byteOffset=copy(byteOffset,0xffffffffl,false,copyMetaInformationHeader,doCopy,true,false/*isSignedPixelRepresentation*/);	// read to end
 							}
 						}
 						else {
@@ -482,15 +501,17 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 	/**
 	 * <p>Copy a dicom input stream to a dicom output stream, using any meta information header if present in input, but not copying it.</p>
 	 *
+	 * <p>Implements the CP 1066 proposal to handle values too long to fit in Explicit VR by writing a UN rather than the actual VR.</p>
+	 *
 	 * @param	i		the input stream
 	 * @param	o		the output stream, which is closed after the copy is done
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public DicomStreamCopier(DicomInputStream i,DicomOutputStream o) throws DicomException,IOException {
 		this.i=i;
 		this.o=o;
-		copy(0,0xffffffffl,false/*stopAfterMetaInformationHeader*/,false/*copyMetaInformationHeader*/,true/*doCopy*/,true/*closeWhenDone*/);
+		copy(0,0xffffffffl,false/*stopAfterMetaInformationHeader*/,false/*copyMetaInformationHeader*/,true/*doCopy*/,true/*closeWhenDone*/,false/*isSignedPixelRepresentation*/);
 	}
 	
 	/**
@@ -506,7 +527,7 @@ System.err.println("Ignoring bad Item at "+byteOffset+" "+tag+" VL=<0x"+Long.toH
 			new  DicomStreamCopier(i,o);
 		} catch (Exception e) {
 			//System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

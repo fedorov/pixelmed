@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -15,6 +15,9 @@ import java.io.IOException;
 
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class that supports matching the geometry of a superimposed DICOM image
  * and an underlying images, and creating BufferedImages suitable for
@@ -24,8 +27,9 @@ import java.util.Vector;
  */
 
 public class SuperimposedDicomImage extends SuperimposedImage {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedDicomImage.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SuperimposedDicomImage.java,v 1.4 2013/10/16 16:08:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SuperimposedDicomImage.class);
 	
 	/**
 	 * @param	list
@@ -57,7 +61,7 @@ public class SuperimposedDicomImage extends SuperimposedImage {
 //System.err.println("SuperimposedDicomImage.doCommonConstructorStuff(): has a SourceImage and one or more frames");
 				superimposedGeometry = new GeometryOfVolumeFromAttributeList(list);
 				if (!superimposedGeometry.isVolumeSampledRegularlyAlongFrameDimension()) {
-System.err.println("SuperimposedDicomImage.doCommonConstructorStuff(): Warning: superimposed geometry is not a single regularly sampled volume");
+					slf4jlogger.warn("doCommonConstructorStuff(): superimposed geometry is not a single regularly sampled volume");
 				}
 			}
 		}
@@ -79,7 +83,7 @@ System.err.println("SuperimposedDicomImage.doCommonConstructorStuff(): Warning: 
 				String outputFileName = arg[2];
 				ConsumerFormatImageMaker.convertFileToEightBitImage(underlyingFileName,outputFileName,"jpeg",
 					0/*windowCenter*/,0/*windowWidth*/,0/*imageWidth*/,0/*imageHeight*/,100/*imageQuality*/,"all_color",
-					superimposedImages,null/*arrayOfPerFrameShapes*/,0/*debugLevel*/);
+					superimposedImages,null/*arrayOfPerFrameShapes*/);
 			}
 			else {
 				AttributeList underlyingList = new AttributeList();
@@ -96,7 +100,7 @@ System.err.println("SuperimposedDicomImage.doCommonConstructorStuff(): Warning: 
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

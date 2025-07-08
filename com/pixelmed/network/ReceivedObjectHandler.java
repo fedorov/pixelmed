@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -26,7 +26,7 @@ private class OurReceivedObjectHandler extends ReceivedObjectHandler {
 				i.close();
                 databaseInformationModel.insertObject(list,dicomFileName);
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                slf4jlogger.error("", e);;
             }
         }
     }
@@ -39,7 +39,7 @@ private class OurReceivedObjectHandler extends ReceivedObjectHandler {
  * @author	dclunie
  */
 abstract public class ReceivedObjectHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedObjectHandler.java,v 1.7 2011/04/20 11:01:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedObjectHandler.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * <p>Do something with the received data set stored in the specified file name.</p>
@@ -47,9 +47,9 @@ abstract public class ReceivedObjectHandler {
 	 * @param	fileName		where the received data set has been stored
 	 * @param	transferSyntax		the transfer syntax in which the data set was received and is stored
 	 * @param	callingAETitle		the AE title of the caller who sent the data set
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
 	abstract public void sendReceivedObjectIndication(String fileName,String transferSyntax,String callingAETitle) throws DicomNetworkException, DicomException, IOException;
 }

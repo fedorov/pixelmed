@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,11 @@ import java.io.*;
  */
 public class UniqueIdentifierAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.12 2006/10/08 14:48:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.30 2025/01/29 10:58:07 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 64;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -36,8 +40,8 @@ public class UniqueIdentifierAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UniqueIdentifierAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -49,8 +53,8 @@ public class UniqueIdentifierAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UniqueIdentifierAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl.longValue(),i);
@@ -94,22 +98,79 @@ public class UniqueIdentifierAttribute extends StringAttribute {
 			|| t.equals(TagFromName.ReferencedTransferSyntaxUIDInFile);
 	}
 	
+	static public boolean isWellKnownRelated(AttributeTag t) {
+		return t.equals(TagFromName.EquipmentFrameOfReferenceUID);
+	}
+	
 	static public boolean isCodingSchemeRelated(AttributeTag t) {
 		return t.equals(TagFromName.CodingSchemeUID)
 			|| t.equals(TagFromName.ContextGroupExtensionCreatorUID);
 	}
-	
+
 	static public boolean isPrivateRelated(AttributeTag t) {
 		return t.equals(TagFromName.PrivateInformationCreatorUID)
-			|| t.equals(TagFromName.PrivateRecordUID);
+			|| t.equals(TagFromName.PrivateRecordUID)
+			|| t.equals(TagFromName.CreatorVersionUID);
 	}
 
 	static public boolean isTransient(AttributeTag t) {
 		return !isSOPClassRelated(t)
 			&& !isTransferSyntaxRelated(t)
+			&& !isWellKnownRelated(t)
 			&& !isCodingSchemeRelated(t)
 			&& !isPrivateRelated(t);
 	}
 
+	static public boolean isPrivateNonTransient(AttributeTag t,AttributeList list) {
+		boolean nonTransientAttribute = false;
+		if (t.isPrivate()) {
+			String creator = list.getPrivateCreatorString(t);
+			int group = t.getGroup();
+			int element = t.getElement();
+			int elementInBlock = element & 0x00ff;
+			if (group == 0x7fd1 && creator.equals("SIEMENS SYNGO ULTRA-SOUND TOYON DATA STREAMING")) {
+				if (elementInBlock == 0x0009) {	// UI	Volume Version ID ... not really a UID at all
+					nonTransientAttribute = true;
+				}
+			}
+			else if (group == 0x0099 && creator.equals("NQHeader")) {
+				if (elementInBlock == 0x0001) {	// UI	Version ... is UI VR but does not seem to really be a UI at all
+					nonTransientAttribute = true;
+				}
+			}
+		}
+		return nonTransientAttribute;
+	}
+
+	static public boolean isTransient(AttributeTag t,AttributeList list) {
+		return isTransient(t)
+			&& !isPrivateNonTransient(t,list);
+	}
+
+	//protected final boolean allowRepairOfIncorrectLength() { return true; }				// moot, since we do not check this in repairValues(), i.e., hard-coded
+	
+	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
+
+	public final boolean isCharacterInValueValid(int c) throws DicomException {
+		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == '.');
+	}
+	
+	public boolean repairValues() throws DicomException {
+		if (!isValid()) {
+			flushCachedCopies();
+			originalByteValues=null;
+			if (originalValues != null && originalValues.length > 0) {
+				// removing padding is the best we can do without loosing the meaning of the value ... may still be invalid :(
+				// do not just use ArrayCopyUtilities.copyStringArrayRemovingLeadingAndTrailingPadding(originalValues), since it only handle space character
+				for (int i=0; i<originalValues.length; ++i) {
+					String v = originalValues[i];
+					if (v != null && v.length() > 0) {
+						originalValues[i] = v.trim();
+					}
+				}
+			}
+		}
+		return isValid();
+	}
 }
 

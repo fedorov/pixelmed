@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -23,7 +23,7 @@ import java.util.TreeSet;
  */
 public class SourceImageSubset extends SourceImage {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageSubset.java,v 1.1 2013/10/16 16:08:58 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageSubset.java,v 1.11 2025/01/29 10:58:07 dclunie Exp $";
 
 	protected SourceImage parent;
 	protected int[] parentFrameNumbers;

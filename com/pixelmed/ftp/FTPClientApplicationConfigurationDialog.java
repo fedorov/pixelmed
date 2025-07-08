@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
 
@@ -40,14 +40,18 @@ import java.util.Set;
 //import java.util.StringTokenizer;
 //import java.util.TreeMap;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class provides a user interface for applications to configure and test properties related to remote FTP hosts.</p>
   *
  * @author	dclunie
  */
 public class FTPClientApplicationConfigurationDialog {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPClientApplicationConfigurationDialog.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPClientApplicationConfigurationDialog.java,v 1.1 2010/11/15 20:30:23 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FTPClientApplicationConfigurationDialog.class);
 
 	protected FTPRemoteHostInformation ftpRemoteHostInformation;
 	protected FTPApplicationProperties ftpApplicationProperties;
@@ -87,7 +91,7 @@ public class FTPClientApplicationConfigurationDialog {
 				infoFromProperties.add(localName,rhd);
 //System.err.println("FTPClientApplicationConfigurationDialog.AddRemoteHostActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -111,7 +115,7 @@ public class FTPClientApplicationConfigurationDialog {
 				}
 //System.err.println("FTPClientApplicationConfigurationDialog.EditRemoteHostActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -127,7 +131,7 @@ public class FTPClientApplicationConfigurationDialog {
 				}
 //System.err.println("FTPClientApplicationConfigurationDialog.RemoveRemoteHostActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -135,8 +139,8 @@ public class FTPClientApplicationConfigurationDialog {
 	protected class DoneActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
 			// do nothing ... we have been modifying the FTPRemoteHostInformation inside the existing FTPApplicationProperties all along
-System.err.println("ftpRemoteHostInformation after = \n"+ftpRemoteHostInformation);
-System.err.println("ftpApplicationProperties after = \n"+ftpApplicationProperties);
+			slf4jlogger.info("ftpRemoteHostInformation after = \n{}",ftpRemoteHostInformation);
+			slf4jlogger.info("ftpApplicationProperties after = \n{}",ftpApplicationProperties);
 			dialog.dispose();
 		}
 	}
@@ -287,22 +291,20 @@ System.err.println("ftpApplicationProperties after = \n"+ftpApplicationPropertie
 			Properties properties = new Properties(/*defaultProperties*/);
 			properties.load(in);
 			in.close();
-System.err.println("properties="+properties);
+			System.err.println("properties="+properties);	// no need to use SLF4J since command line utility/test
 			FTPApplicationProperties ftpApplicationProperties = new FTPApplicationProperties(properties);
 			FTPRemoteHostInformation ftpRemoteHostInformation = ftpApplicationProperties.getFTPRemoteHostInformation();
 //System.err.println("ftpRemoteHostInformation before = "+ftpRemoteHostInformation);
 			new FTPClientApplicationConfigurationDialog(null,ftpRemoteHostInformation,ftpApplicationProperties);
 			properties = ftpApplicationProperties.getProperties(properties);
-System.err.println("properties after="+properties);
+			System.err.println("properties after="+properties);
 			FileOutputStream out = new FileOutputStream(propertiesFileName);
 			properties.store(out,"Edited and saved from user interface");
 			out.close();
 		}
 		catch (Exception e) {
-			System.err.println(e);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
-
-
 	}
 }
 

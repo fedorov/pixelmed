@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -7,6 +7,9 @@ import javax.swing.tree.*;
 
 import com.pixelmed.dicom.*;
 import com.pixelmed.utils.StringUtilities;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Instances of the {@link com.pixelmed.database.DatabaseTreeRecord DatabaseTreeRecord} class represent
@@ -21,8 +24,9 @@ import com.pixelmed.utils.StringUtilities;
  * @author	dclunie
  */
 public class DatabaseTreeRecord implements Comparable, MutableTreeNode {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeRecord.java,v 1.35 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeRecord.java,v 1.24 2011/11/15 14:46:18 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DatabaseTreeRecord.class);
 
 	private DatabaseInformationModel d;
 	private DatabaseTreeRecord parent;
@@ -155,7 +159,7 @@ public class DatabaseTreeRecord implements Comparable, MutableTreeNode {
 							d.deleteRecord(current.getInformationEntity(),current.getLocalPrimaryKeyValue());	// take care to use IE d key of child not parent (this) node !
 						}
 						catch (DicomException e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("Ignoring exception during record deletion",e);
 						}
 					}
 					else {
@@ -330,7 +334,7 @@ public class DatabaseTreeRecord implements Comparable, MutableTreeNode {
 			}
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);;
 			returnedRecords = null;
 		}
 

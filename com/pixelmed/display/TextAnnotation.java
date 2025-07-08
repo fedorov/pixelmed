@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -15,7 +15,7 @@ import java.awt.geom.Point2D;
  */
 class TextAnnotation {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TextAnnotation.java,v 1.7 2011/05/25 14:19:17 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TextAnnotation.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
 	private String string;
 	private Point2D anchorPoint;

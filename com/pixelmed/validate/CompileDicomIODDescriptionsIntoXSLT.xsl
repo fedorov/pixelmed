@@ -302,11 +302,25 @@
 			<xslout:choose>
 			<xsl:for-each select="definedterm">
 				<xsl:choose>
-				<xsl:when test="count(../@valueselector) &gt; 0">
-					<xslout:when test="{../../@name}/value[@number={../@valueselector}] = '{@value}'">T</xslout:when>
+				<xsl:when test="@value = ''">	<!-- handle zero length defined term specially, in that absence is equivalent to presence with an empty value -->
+					<xsl:choose>
+					<xsl:when test="count(../@valueselector) &gt; 0">
+						<xslout:when test="count({../../@name}/value[@number={../@valueselector}]) = 0 or {../../@name}/value[@number={../@valueselector}] = ''">T</xslout:when>
+					</xsl:when>
+					<xsl:otherwise>
+						<xslout:when test="count({../../@name}/value) = 0 or {../../@name}/value = ''">T</xslout:when>
+					</xsl:otherwise>
+					</xsl:choose>
 				</xsl:when>
 				<xsl:otherwise>
-					<xslout:when test="{../../@name}/value = '{@value}'">T</xslout:when>
+					<xsl:choose>
+					<xsl:when test="count(../@valueselector) &gt; 0">
+						<xslout:when test="{../../@name}/value[@number={../@valueselector}] = '{@value}'">T</xslout:when>
+					</xsl:when>
+					<xsl:otherwise>
+						<xslout:when test="{../../@name}/value = '{@value}'">T</xslout:when>
+					</xsl:otherwise>
+					</xsl:choose>
 				</xsl:otherwise>
 				</xsl:choose>
 			</xsl:for-each>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -8,6 +8,7 @@ import java.util.Vector;
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
+import com.pixelmed.dicom.DicomDictionary;
 import com.pixelmed.dicom.SequenceAttribute;
 import com.pixelmed.dicom.SequenceItem;
 import com.pixelmed.dicom.SOPClass;
@@ -20,8 +21,10 @@ import com.pixelmed.dicom.TagFromName;
  */
 public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechniqueAnnotations {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/MammoDemographicAndTechniqueAnnotations.java,v 1.14 2010/01/31 11:59:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/MammoDemographicAndTechniqueAnnotations.java,v 1.27 2025/01/29 10:58:07 dclunie Exp $";
 	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	protected void initializeDefaultLayout() {
 		layout=new Vector();
 		
@@ -60,34 +63,34 @@ public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechn
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," SN# ",true,false,0,3,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.DeviceSerialNumber,null,null,null,true,false,0,4,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," Det# ",true,false,0,5,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.DetectorID,null,null,null,true,false,0,6,null,NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("DetectorID"),null,null,null,true,false,0,6,null,NOSPECIAL));
 
 		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.InstitutionName,null,null,null,true,false,1,0,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," ",true,true,1,1,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.InstitutionAddress,null,null,null,true,false,1,2,null,NOSPECIAL));
 		
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.FilterMaterial,null,null,null,true,false,2,0,null,NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("FilterMaterial"),null,null,null,true,false,2,0,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null,"/",true,false,2,1,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.AnodeTargetMaterial,null,null,null,true,false,2,2,null,NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("AnodeTargetMaterial"),null,null,null,true,false,2,2,null,NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," ",true,false,2,3,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.CompressionForce,null,null,null,true,false,2,4,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("CompressionForce"),null,null,null,true,false,2,4,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," N ",true,false,2,5,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.BodyPartThickness,null,null,null,true,false,2,6,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("BodyPartThickness"),null,null,null,true,false,2,6,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," mm ",true,false,2,7,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.PositionerPrimaryAngle,null,null,null,true,false,2,8,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("PositionerPrimaryAngle"),null,null,null,true,false,2,8,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," deg ",true,false,2,9,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.RelativeXRayExposure,null,null,null,true,false,2,10,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("RelativeXRayExposure"),null,null,null,true,false,2,10,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," exp",true,false,2,11,null,NOSPECIAL));
 		
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.KVP,null,null,null,true,false,3,0,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("KVP"),null,null,null,true,false,3,0,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," kVP ",true,false,3,1,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.Exposure,null,null,null,true,false,3,3,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("Exposure"),null,null,null,true,false,3,3,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," mAs ",true,false,3,4,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.ExposureTime,null,null,null,true,false,3,5,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("ExposureTime"),null,null,null,true,false,3,5,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," s Breast ",true,false,3,6,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.OrganDose,null,null,null,true,false,3,7,"#.###",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("OrganDose"),null,null,null,true,false,3,7,"#.###",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," dGy ESD ",true,false,3,8,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.EntranceDoseInmGy,null,null,null,true,false,3,9,"#.#",NOSPECIAL));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("EntranceDoseInmGy"),null,null,null,true,false,3,9,"#.#",NOSPECIAL));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," mGy",true,false,3,10,null,NOSPECIAL));
 
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null,"Operator ",true,false,4,0,null,NOSPECIAL));
@@ -95,11 +98,11 @@ public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechn
 
 		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.ReasonForRequestedProcedureCodeSequence,null,TagFromName.RequestAttributesSequence,null,true,false,5,0,null,CODEMEANING));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," ",true,false,5,1,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.PartialView,null,null,"PARTIAL",true,false,5,2,null,TEXTIFYESNO));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("PartialView"),null,null,"PARTIAL",true,false,5,2,null,TEXTIFYESNO));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," ",true,false,5,3,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.PartialViewCodeSequence,null,null,null,true,false,5,4,null,CODEMEANING));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("PartialViewCodeSequence"),null,null,null,true,false,5,4,null,CODEMEANING));
 		layout.add(new AnnotationLayoutConfigurationEntry(null,null,null,null," ",true,false,5,5,null,NOSPECIAL));
-		layout.add(new AnnotationLayoutConfigurationEntry(null,TagFromName.BreastImplantPresent,null,null,"IMPLANT",true,false,5,6,null,TEXTIFYESNO));
+		layout.add(new AnnotationLayoutConfigurationEntry(null,dictionary.getTagFromName("BreastImplantPresent"),null,null,"IMPLANT",true,false,5,6,null,TEXTIFYESNO));
 	}
 
 	/**
@@ -113,7 +116,42 @@ public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechn
 		if (list != null) {
 			String codingSchemeDesignator = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CodingSchemeDesignator);
 			String codeValue = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CodeValue);
-			if (codingSchemeDesignator.equals("SNM3") || codingSchemeDesignator.equals("SRT")) {
+			if (codingSchemeDesignator.equals("SCT")) {
+				if (codeValue.equals("399260004")) {
+					abbreviation = "ML";
+				}
+				else if (codeValue.equals("399368009")) {
+					abbreviation = "MLO";
+				}
+				else if (codeValue.equals("399352003")) {
+					abbreviation = "LM";
+				}
+				else if (codeValue.equals("399099002")) {
+					abbreviation = "LMO";
+				}
+				else if (codeValue.equals("399162004")) {
+					abbreviation = "CC";
+				}
+				else if (codeValue.equals("399196006")) {
+					abbreviation = "FB";
+				}
+				else if (codeValue.equals("399188001")) {
+					abbreviation = "SIO";
+				}
+				else if (codeValue.equals("441555000")) {
+					abbreviation = "ISO";
+				}
+				else if (codeValue.equals("399265009")) {
+					abbreviation = "XCC";
+				}
+				else if (codeValue.equals("399192008")) {
+					abbreviation = "XCCL";
+				}
+				else if (codeValue.equals("399101009")) {
+					abbreviation = "XCCM";
+				}
+			}
+			else if (codingSchemeDesignator.equals("SNM3") || codingSchemeDesignator.equals("SRT")) {
 				if (codeValue.equals("R-10224")) {
 					abbreviation = "ML";
 				}
@@ -163,7 +201,51 @@ public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechn
 		if (list != null) {
 			String codingSchemeDesignator = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CodingSchemeDesignator);
 			String codeValue = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CodeValue);
-			if (codingSchemeDesignator.equals("SNM3") || codingSchemeDesignator.equals("SRT")) {
+			if (codingSchemeDesignator.equals("SCT")) {
+				if (codeValue.equals("399161006")) {
+					abbreviation = "CV";
+				}
+				else if (codeValue.equals("399011000")) {
+					abbreviation = "AT";
+				}
+				else if (codeValue.equals("399197002")) {
+					abbreviation = "...RL";
+				}
+				else if (codeValue.equals("399226006")) {
+					abbreviation = "...RM";
+				}
+				else if (codeValue.equals("414493004")) {
+					abbreviation = "...RI";
+				}
+				else if (codeValue.equals("415670009")) {
+					abbreviation = "...RS";
+				}
+				else if (codeValue.equals("399209000")) {
+					abbreviation = "...ID";
+				}
+				else if (codeValue.equals("442581004")) {
+					abbreviation = "...NP";
+				}
+				else if (codeValue.equals("441752004")) {
+					abbreviation = "...AC";
+				}
+				else if (codeValue.equals("442593008")) {
+					abbreviation = "...IMF";
+				}
+				else if (codeValue.equals("442580003")) {
+					abbreviation = "...AX";
+				}
+				else if (codeValue.equals("399163009")) {
+					abbreviation = "M...";
+				}
+				else if (codeValue.equals("399055006")) {
+					abbreviation = "S...";
+				}
+				else if (codeValue.equals("399110001")) {
+					abbreviation = "TAN";
+				}
+			}
+			else if (codingSchemeDesignator.equals("SNM3") || codingSchemeDesignator.equals("SRT")) {
 				if (codeValue.equals("R-102D2")) {
 					abbreviation = "CV";
 				}
@@ -212,14 +294,43 @@ public class MammoDemographicAndTechniqueAnnotations extends DemographicAndTechn
 	}
 
 	/**
+	 * <p>Return the most specific frame, image or laterality.</p>
+	 *
+	 * @param	list
+	 * @return			a single String value, null if cannot be obtained
+	 */
+	public static String getLaterality(AttributeList list) {
+		String laterality = null;
+		{
+			SequenceAttribute sharedattr = (SequenceAttribute)list.get(TagFromName.SharedFunctionalGroupsSequence);	// may be null if absent
+			AttributeList sharedlist = SequenceAttribute.getAttributeListFromSelectedItemWithinSequence(sharedattr,0);
+			if (sharedlist != null) {
+				laterality = SequenceAttribute.getSingleStringValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(sharedlist,TagFromName.FrameAnatomySequence,TagFromName.FrameLaterality,null);
+			}
+		}
+		if (laterality == null || laterality.length() == 0) {
+			laterality = Attribute.getSingleStringValueOrNull(list,TagFromName.ImageLaterality);
+		}
+		if (laterality == null || laterality.length() == 0) {
+			laterality = Attribute.getSingleStringValueOrNull(list,TagFromName.Laterality);
+		}
+		return laterality;
+	}
+
+	/**
 	 * <p>Return an abbreviation for laterality, view and view modifier.</p>
 	 *
 	 * @param	list	
 	 * @return			a string value with an ACR/DICOM/IHE specified abbreviation
 	 */
-	protected static String getAbbreviationFromImageLateralityViewModifierAndViewModifierCodeSequenceAttributes(AttributeList list) {
+	public static String getAbbreviationFromImageLateralityViewModifierAndViewModifierCodeSequenceAttributes(AttributeList list) {
 		StringBuffer buf = new StringBuffer();
-		buf.append(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.ImageLaterality));
+		{
+			String laterality = getLaterality(list);
+			if (laterality != null) {
+				buf.append(laterality);
+			}
+		}
 		Attribute aViewCodeSequence = list.get(TagFromName.ViewCodeSequence);
 		if (aViewCodeSequence != null && aViewCodeSequence instanceof SequenceAttribute) {
 			SequenceAttribute saViewCodeSequence = (SequenceAttribute)aViewCodeSequence;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -96,7 +96,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -189,7 +189,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -271,7 +271,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -360,7 +360,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -457,7 +457,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -557,7 +557,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -647,7 +647,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -743,7 +743,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -845,7 +845,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));
@@ -936,7 +936,7 @@ public class TestMultiFrameImageFactoryDateTime extends TestCase {
 		
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			AttributeList enhancedList = MultiFrameImageFactory.createEnhancedImageFromFrameSet(frameSet,null/*filesBySOPInstanceUID*/,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,false/*useRandomFrameOrder*/,false/*doNotEncodeStackInformation*/);
 //System.err.println(enhancedList);
 			assertEquals("ContentDate in top level dataset",contentDateValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentDate));
 			assertEquals("ContentTime in top level dataset",contentTimeValue1,Attribute.getSingleStringValueOrEmptyString(enhancedList,TagFromName.ContentTime));

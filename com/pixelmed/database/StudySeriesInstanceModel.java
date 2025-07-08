@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -25,7 +25,7 @@ import java.util.Map;
 public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/StudySeriesInstanceModel.java,v 1.12 2011/04/04 14:47:14 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/StudySeriesInstanceModel.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Construct a model with the attributes from the default dictionary.</p>
@@ -33,7 +33,7 @@ public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 	 * <p>The dictionary {@link com.pixelmed.database.DicomDictionaryForStudySeriesInstanceModel DicomDictionaryForStudySeriesInstanceModel} is used.</p>
 	 * 
 	 * @param	databaseFileName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceModel(String databaseFileName) throws DicomException {
 		super(databaseFileName,InformationEntity.STUDY,new DicomDictionaryForStudySeriesInstanceModel());
@@ -46,7 +46,7 @@ public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 	 * 
 	 * @param	databaseFileName
 	 * @param	databaseServerName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceModel(String databaseFileName,String databaseServerName) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.STUDY,new DicomDictionaryForStudySeriesInstanceModel());
@@ -57,7 +57,7 @@ public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 	 *
 	 * @param	databaseFileName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceModel(String databaseFileName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,InformationEntity.STUDY,dictionary);
@@ -69,7 +69,7 @@ public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 	 * @param	databaseFileName
 	 * @param	databaseServerName
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StudySeriesInstanceModel(String databaseFileName,String databaseServerName,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,databaseServerName,InformationEntity.STUDY,dictionary);
@@ -169,7 +169,7 @@ public class StudySeriesInstanceModel extends DicomDatabaseInformationModel {
 	 * @param	b
 	 * @param	list
 	 * @param	ie
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void extendStatementStringWithMatchingAttributesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 

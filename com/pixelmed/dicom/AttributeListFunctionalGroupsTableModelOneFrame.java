@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,9 +17,9 @@ import java.io.*;
  * @author	dclunie
  */
 public class AttributeListFunctionalGroupsTableModelOneFrame extends AttributeListFunctionalGroupsTableModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListFunctionalGroupsTableModelOneFrame.java,v 1.7 2005/01/21 19:17:26 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListFunctionalGroupsTableModelOneFrame.java,v 1.19 2025/01/29 10:58:06 dclunie Exp $";
 
-	// Methods specific to AttributeListTableModel ...
+	// Methods specific to AttributeListFunctionalGroupsTableModelOneFrame ...
 		
 	/***/
 	public AttributeListFunctionalGroupsTableModelOneFrame() {
@@ -27,16 +27,16 @@ public class AttributeListFunctionalGroupsTableModelOneFrame extends AttributeLi
 	}
 	
 	/**
-	 * @param	list
+	 * @param	list		the list of attributes whose values to use
 	 */
 	public AttributeListFunctionalGroupsTableModelOneFrame(AttributeList list) {
 		super(list);
 	}
 	
 	/**
-	 * @param	list
-	 * @param	includeList
-	 * @param	excludeList
+	 * @param	list		the list of attributes whose values to use
+	 * @param	includeList	attributes to include
+	 * @param	excludeList	attributes to exclude
 	 */
 	public AttributeListFunctionalGroupsTableModelOneFrame(AttributeList list,HashSet includeList,HashSet excludeList) {
 		super(list,includeList,excludeList);
@@ -109,7 +109,9 @@ public class AttributeListFunctionalGroupsTableModelOneFrame extends AttributeLi
 	/**
 	 * <p>Update anything that varies on a per-frame basis to the values for the specified frame.</p>
 	 *
-	 * @param	frameNumber	the selected frame, numbered from 0
+	 * <p>Clear any displayed value if frameNumber out of range.</p>
+	 *
+	 * @param	frameNumber	the selected frame, numbered from 0, -1 if no frame is selected
 	 */
 	public void selectValuesForDifferentFrame(int frameNumber) {
 //System.err.println("AttributeListFunctionalGroupsTableModelOneFrame.selectValuesForDifferentFrame: frame "+frameNumber);
@@ -122,10 +124,15 @@ public class AttributeListFunctionalGroupsTableModelOneFrame extends AttributeLi
 //System.err.println("AttributeListFunctionalGroupsTableModelOneFrame.selectValuesForDifferentFrame: trying name "+name);
 				Object value = values.get(name);
 				// leave stuff that doesn't vary per-frame alone
-				if (value instanceof String[] && ((String[])value).length > frameNumber) {
-					String v = ((String[])value)[frameNumber];
-					data[0][j] = v;
+				if (value instanceof String[]) {
+					if (frameNumber != -1 && ((String[])value).length > frameNumber) {
+						String v = ((String[])value)[frameNumber];
+						data[0][j] = v;
 //System.err.println("AttributeListFunctionalGroupsTableModelOneFrame.selectValuesForDifferentFrame: changing value of name "+name+" to "+v);
+					}
+					else {
+						data[0][j] = "";
+					}
 				}
 				++j;
 			}

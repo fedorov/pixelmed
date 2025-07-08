@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,13 +21,18 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>Various static methods helpful for handling files.</p>
  *
  * @author	dclunie
  */
 public class FileUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.18 2012/11/18 10:25:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.33 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FileUtilities.class);
 
 	private FileUtilities() {}
 
@@ -35,7 +41,7 @@ public class FileUtilities {
 	 *
 	 * @param	srcFile			the source
 	 * @param	dstFile			the destination
-	 * @exception	IOException	thrown if the copying fails for any reason
+	 * @throws	IOException	thrown if the copying fails for any reason
 	 */
 	static public final void renameElseCopyTo(File srcFile,File dstFile) throws IOException {
 //System.err.println("FileUtilities.renameElseCopyTo(): renaming "+srcFile+" to "+dstFile);
@@ -60,7 +66,7 @@ public class FileUtilities {
 	 *				The ArrayList will be empty if the path is empty or does not exist
 	 *				or if an error occurs.
 	 */
-	static public final ArrayList listFilesRecursively(File initialPath) {
+	static public final ArrayList<File> listFilesRecursively(File initialPath) {
 //System.err.println("FileUtilities.listFilesRecursively(): "+initialPath);
 		ArrayList filesFound = new ArrayList();
 		if (initialPath != null && initialPath.exists()) {
@@ -86,12 +92,20 @@ public class FileUtilities {
 					}
 				}
 				catch (SecurityException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);
 				}
 			}
 			// else what else could it be
 		}
 		return filesFound;
+	}
+	
+	static public final ArrayList<String> getCanonicalFileNames(ArrayList<File> files) throws IOException {
+		ArrayList<String> filenames = new ArrayList<String>();
+		for (File f : files) {
+			filenames.add(f.getCanonicalPath());
+		}
+		return filenames;
 	}
 
 	/**
@@ -99,7 +113,7 @@ public class FileUtilities {
 	 *
 	 * @param	reader		The file reader
 	 * @return			The contents of the file as a <code>String</code>.
-	 * @exception			If an IO error occurs.
+	 * @throws	IOException	If an IO error occurs.
 	 */
 	static public final String readFile(Reader reader) throws IOException {
 		StringBuffer strbuf = new StringBuffer();
@@ -116,7 +130,7 @@ public class FileUtilities {
 	 *
 	 * @param	stream		The input stream (e.g., from <code>class.getResourceAsStream()</code>)
 	 * @return			The contents of the file as a <code>String</code>.
-	 * @exception			If an IO error occurs.
+	 * @throws	IOException	If an IO error occurs.
 	 */
 	static public final String readFile(InputStream stream) throws IOException {
 		Reader reader = new BufferedReader(new InputStreamReader(stream));
@@ -129,7 +143,7 @@ public class FileUtilities {
 	 *
 	 * @param	file		The file
 	 * @return			The contents of the file as a <code>String</code>.
-	 * @exception			If an IO error occurs.
+	 * @throws	IOException	If an IO error occurs.
 	 */
 	static public final String readFile(File file) throws IOException {
 		Reader reader = new FileReader(file);
@@ -141,10 +155,57 @@ public class FileUtilities {
 	 *
 	 * @param	filename	The file
 	 * @return			The contents of the file as a <code>String</code>.
-	 * @exception			If an IO error occurs.
+	 * @throws	IOException	If an IO error occurs.
 	 */
 	static public final String readFile(String filename) throws IOException {
 		return readFile(new File(filename));
+	}
+	
+	/**
+	 * <p>Read an entire input stream, such as from a resource in a jar file, into an array of bytes.</p>
+	 *
+	 * <p>Modelled after Files.readAllBytes(InputStream(Path path), from which the following description is paraphrased:</p>
+	 *
+	 * <p>Reads all the bytes from an input stream. The method ensures that the input stream is closed when all bytes have been read or an I/O error, or other runtime exception, is thrown.</p>
+	 *
+	 * <p>Note that this method is intended for simple cases where it is convenient to read all bytes into a byte array. It is not intended for reading in large input streams.</p>
+	 *
+	 * @param	stream		The input stream (e.g., from <code>class.getResourceAsStream()</code>)
+	 * @return				The contents of the stream
+	 * @throws	IOException	If an IO error occurs.
+	 */
+	public static byte[] readAllBytes(InputStream stream) throws IOException {
+		byte[] allBytes = null;
+		int readBufferSize = 32768;
+		byte[] readBuffer = new byte[readBufferSize];
+		try {
+			boolean more = true;
+			do {
+				int count = stream.read(readBuffer,0,readBufferSize);
+				if (count > 0) {
+					if (allBytes == null) {
+						allBytes = new byte[count];
+						System.arraycopy(readBuffer,0,allBytes,0,count);	// rather than returning readBuffer, since may not gave used whole readBufferSize
+					}
+					else {
+						byte[] newAllBytes = new byte[allBytes.length+count];
+						System.arraycopy(allBytes,0,newAllBytes,0,allBytes.length);
+						System.arraycopy(readBuffer,0,newAllBytes,allBytes.length,count);
+						allBytes = newAllBytes;
+					}
+				}
+				else {
+					break;
+				}
+			} while (true);
+		}
+		catch (IOException e) {
+			throw e;
+		}
+		finally {
+			stream.close();
+		}
+		return allBytes;
 	}
 
 	/**
@@ -153,9 +214,9 @@ public class FileUtilities {
 	 *
 	 * @param	fileName	The name of the file to find
 	 * @return			A file if found.
-	 * @exception			If the file cannot be found.
+	 * @throws	FileNotFoundException	If the file cannot be found.
 	 */
-	static public final File getFileFromNameInsensitiveToCaseIfNecessary(String fileName) throws java.io.FileNotFoundException {
+	static public final File getFileFromNameInsensitiveToCaseIfNecessary(String fileName) throws FileNotFoundException {
 		File file = new File(fileName);
 //System.err.println("FileUtilities.getFileFromNameInsensitiveToCaseIfNecessary(): Trying "+file);
 		if (!file.exists()) {
@@ -200,7 +261,7 @@ public class FileUtilities {
 							}
 						}
 						if (file == null) {
-							throw new java.io.FileNotFoundException(fileName + "(No such file or lower or upper case variants)");
+							throw new FileNotFoundException(fileName + "(No such file or lower or upper case variants)");
 						}
 					}
 				}

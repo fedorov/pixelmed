@@ -1,8 +1,38 @@
 <definitions>
+	<defineiod name="Segmentation" sopclass="1.2.840.10008.5.1.4.1.1.66.4">
+		<invokemodule name="FileMetaInformationModule"							type="M"/>
+		<invokemodule name="PatientModule"										type="M"/>
+		<invokemodule name="ClinicalTrialSubjectModule"							type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
+												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
+												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
+												 or count(ClinicalTrialSubjectReadingID) &gt; 0"/>
+		<invokemodule name="GeneralStudyModule"									type="M"/>
+		<invokemodule name="PatientStudyModule"									type="U" condition="count(AdmittingDiagnosesDescription) &gt; 0 or count(AdmittingDiagnosesCodeSequence) &gt; 0
+												 or count(PatientAge) &gt; 0 or count(PatientSize) &gt; 0
+												 or count(PatientWeight) &gt; 0 or count(PatientSizeCodeSequence) &gt; 0 or count(Occupation) &gt; 0
+												 or count(AdditionalPatientHistory) &gt; 0"/>
+		<invokemodule name="ClinicalTrialStudyModule" 							type="U" condition="count(ClinicalTrialTimePointID) &gt; 0 or count(ClinicalTrialTimePointDescription) &gt; 0"/>
+		<invokemodule name="GeneralSeriesModule"								type="M"/>
+		<invokemodule name="SegmentationSeriesModule"							type="M"/>
+		<invokemodule name="ClinicalTrialSeriesModule"							type="U" condition="count(ClinicalTrialCoordinatingCenterName) &gt; 0"/>
+		<invokemodule name="FrameOfReferenceModule"								type="C" condition="count(//DerivationImageSequence) = 0 or count(FrameOfReferenceUID) &gt; 0"/>
+		<invokemodule name="GeneralEquipmentModule"								type="M"/>
+		<invokemodule name="EnhancedGeneralEquipmentModule"						type="M"/>
+		<invokemodule name="GeneralImageModule"									type="M"/>
+		<invokemodule name="ImagePixelModule"									type="M"/>
+		<invokemodule name="SegmentationImageModule"							type="M"/>
+		<invokemodule name="MultiFrameFunctionalGroupsCommonModule"				type="M"/>
+		<invokemodule name="MultiFrameFunctionalGroupsForSegmentationModule"	type="M"/>
+		<invokemodule name="MultiFrameDimensionModule"							type="M"/>
+		<invokemodule name="SpecimenModule"										type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="CommonInstanceReferenceModule"						type="C" condition="count(//DerivationImageSequence) &gt; 0 or count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="SOPCommonModule"									type="M"/>
+		<invokemodule name="FrameExtractionModule"								type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
+	</defineiod>
+
 	<defineiod name="RawData" sopclass="1.2.840.10008.5.1.4.1.1.66">
 		<invokemodule name="FileMetaInformationModule"			type="M"/>
 		<invokemodule name="PatientModule"				type="M"/>
-		<invokemodule name="SpecimenIdentificationModule"		type="U" condition="count(SpecimenAccessionNumber) &gt; 0 or count(SpecimenSequence) &gt; 0"/>
 		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
 												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
 												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
@@ -19,17 +49,17 @@
 		<invokemodule name="SynchronizationModule" 			type="C" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
 												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
 												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
-												 or count(TimeDistributionProtocol)"/>
+												 or count(TimeDistributionProtocol) &gt; 0"/>
 		<invokemodule name="GeneralEquipmentModule"			type="M"/>
-		<invokemodule name="AcquisitionContextModule"			type="M"/>
-		<invokemodule name="RawDataModule"				type="M"/>
+		<invokemodule name="AcquisitionContextModule"		type="M"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="RawDataModule"					type="M"/>
 		<invokemodule name="SOPCommonModule"				type="M"/>
 	</defineiod>
 
 	<defineiod name="EnhancedCTImage" sopclass="1.2.840.10008.5.1.4.1.1.2.1">
 		<invokemodule name="FileMetaInformationModule"			type="M"/>
 		<invokemodule name="PatientModule"				type="M"/>
-		<invokemodule name="SpecimenIdentificationModule"		type="U" condition="count(SpecimenAccessionNumber) &gt; 0 or count(SpecimenSequence) &gt; 0"/>
 		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
 												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
 												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
@@ -47,7 +77,7 @@
 		<invokemodule name="SynchronizationModule" 			type="C" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
 												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
 												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
-												 or count(TimeDistributionProtocol)"/>
+												 or count(TimeDistributionProtocol) &gt; 0"/>
 		<invokemodule name="GeneralEquipmentModule"			type="M"/>
 		<invokemodule name="EnhancedGeneralEquipmentModule"			type="M"/>
 		<invokemodule name="ImagePixelModule"				type="M"/>
@@ -75,14 +105,66 @@
 		<invokemodule name="RespiratorySynchronizationModule"		type="C" condition="count(RespiratoryMotionCompensationTechnique) &gt; 0 or count(RespiratorySignalSource) &gt; 0"/>
 		<invokemodule name="SupplementalPaletteColorLookupTableModule"	type="C" condition="PixelPresentation/value[@number=1]='COLOR' or PixelPresentation/value[@number=1]='MIXED'"/>
 		<invokemodule name="AcquisitionContextModule"			type="M"/>
-		<invokemodule name="EnhancedCTImageModule"			type="M"/>
-		<invokemodule name="SOPCommonModule"				type="M"/>
+		<invokemodule name="DeviceModule"						type="U" condition="count(DeviceSequence) &gt; 0"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="EnhancedCTImageModule"				type="M"/>
+		<invokemodule name="SOPCommonModule"					type="M"/>
+		<invokemodule name="CommonInstanceReferenceModule"		type="U" condition="count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="FrameExtractionModule"				type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
+	</defineiod>
+
+	<defineiod name="LegacyConvertedEnhancedCTImage" sopclass="1.2.840.10008.5.1.4.1.1.2.2">
+		<invokemodule name="FileMetaInformationModule"			type="M"/>
+		<invokemodule name="PatientModule"				type="M"/>
+		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
+												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
+												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
+												 or count(ClinicalTrialSubjectReadingID) &gt; 0"/>
+		<invokemodule name="GeneralStudyModule"				type="M"/>
+		<invokemodule name="PatientStudyModule"				type="U" condition="count(AdmittingDiagnosesDescription) &gt; 0 or count(AdmittingDiagnosesCodeSequence) &gt; 0
+												 or count(PatientAge) &gt; 0 or count(PatientSize) &gt; 0
+												 or count(PatientWeight) &gt; 0 or count(PatientSizeCodeSequence) &gt; 0 or count(Occupation) &gt; 0
+												 or count(AdditionalPatientHistory) &gt; 0"/>
+		<invokemodule name="ClinicalTrialStudyModule" 			type="U" condition="count(ClinicalTrialTimePointID) &gt; 0 or count(ClinicalTrialTimePointDescription) &gt; 0"/>
+		<invokemodule name="GeneralSeriesModule"			type="M"/>
+		<invokemodule name="ClinicalTrialSeriesModule"			type="U" condition="count(ClinicalTrialCoordinatingCenterName) &gt; 0"/>
+		<invokemodule name="CTSeriesModule"				type="M"/>
+		<invokemodule name="FrameOfReferenceModule"			type="M"/>
+		<invokemodule name="SynchronizationModule" 			type="U" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
+												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
+												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
+												 or count(TimeDistributionProtocol) &gt; 0"/>
+		<invokemodule name="GeneralEquipmentModule"			type="M"/>
+		<invokemodule name="EnhancedGeneralEquipmentModule"	type="U"/>	<!-- no condition, since any of its attributes may optionally be present in GeneralEquipmentModule -->
+		<invokemodule name="ImagePixelModule"				type="M"/>
+		<invokemodule name="ContrastBolusModule"			type="U" condition="count(ContrastBolusAgent) &gt; 0 or count(ContrastBolusAgentSequence) &gt; 0
+												 or count(ContrastBolusRoute) &gt; 0 or count(ContrastBolusAdministrationRouteSequence) &gt; 0
+												 or count(ContrastBolusVolume) &gt; 0 or count(ContrastBolusStartTime) &gt; 0
+												 or count(ContrastBolusStopTime) &gt; 0 or count(ContrastBolusTotalDose) &gt; 0
+												 or count(ContrastBolusFlowRate) &gt; 0 or count(ContrastBolusDuration) &gt; 0
+												 or count(ContrastBolusIngredient) &gt; 0 or count(ContrastBolusIngredientConcentration) &gt; 0"/>
+		<invokemodule name="EnhancedContrastBolusModule"	type="U" condition="count(ContrastBolusAgentSequence/ContrastBolusAgentNumber) &gt; 0"/>
+		<invokemodule name="MultiFrameFunctionalGroupsCommonModule"	type="M"/>
+		<invokemodule name="MultiFrameFunctionalGroupsForLegacyConvertedEnhancedCTImageModule"		type="M"/>
+		<invokemodule name="MultiFrameDimensionModule"			type="U"  condition="count(DimensionOrganizationSequence) &gt; 0 or count(DimensionIndexSequence) &gt; 0 or count(//DimensionIndexValues) &gt; 0"/>
+		<invokemodule name="CardiacSynchronizationModule"		type="U" condition="count(CardiacSynchronizationTechnique) &gt; 0 or count(CardiacSignalSource) &gt; 0
+												 or count(CardiacRRIntervalSpecified) &gt; 0 or count(CardiacBeatRejectionTechnique) &gt; 0
+												 or count(LowRRValue) &gt; 0 or count(HighRRValue) &gt; 0
+												 or count(IntervalsAcquired) &gt; 0 or count(IntervalsRejected) &gt; 0
+												 or count(//CardiacSynchronizationSequence) &gt; 0"/>
+		<invokemodule name="RespiratorySynchronizationModule"	type="U" condition="count(RespiratoryMotionCompensationTechnique) &gt; 0 or count(RespiratorySignalSource) &gt; 0"/>
+		<invokemodule name="AcquisitionContextModule"			type="M"/>
+		<invokemodule name="DeviceModule"						type="U" condition="count(DeviceSequence) &gt; 0"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="EnhancedCTImageModule"				type="M"/>
+		<invokemodule name="SOPCommonModule"					type="M"/>
+		<invokemodule name="CommonInstanceReferenceModule"		type="U" condition="count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="FrameExtractionModule"				type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
 	</defineiod>
 
 	<defineiod name="EnhancedMRImage" sopclass="1.2.840.10008.5.1.4.1.1.4.1">
 		<invokemodule name="FileMetaInformationModule"			type="M"/>
 		<invokemodule name="PatientModule"				type="M"/>
-		<invokemodule name="SpecimenIdentificationModule"		type="U" condition="count(SpecimenAccessionNumber) &gt; 0 or count(SpecimenSequence) &gt; 0"/>
 		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
 												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
 												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
@@ -100,7 +182,7 @@
 		<invokemodule name="SynchronizationModule" 			type="C" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
 												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
 												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
-												 or count(TimeDistributionProtocol)"/>
+												 or count(TimeDistributionProtocol) &gt; 0"/>
 		<invokemodule name="GeneralEquipmentModule"			type="M"/>
 		<invokemodule name="EnhancedGeneralEquipmentModule"			type="M"/>
 		<invokemodule name="ImagePixelModule"				type="M"/>
@@ -129,8 +211,10 @@
 		<invokemodule name="BulkMotionSynchronizationModule"		type="C" condition="count(BulkMotionCompensationTechnique) &gt; 0 or count(BulkMotionSignalSource) &gt; 0"/>
 		<invokemodule name="SupplementalPaletteColorLookupTableModule"	type="C" condition="PixelPresentation/value[@number=1]='COLOR' or PixelPresentation/value[@number=1]='MIXED'"/>
 		<invokemodule name="AcquisitionContextModule"			type="M"/>
-		<invokemodule name="EnhancedMRImageModule"			type="M"/>
-		<invokemodule name="MRPulseSequenceModule"			type="C" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'
+		<invokemodule name="DeviceModule"						type="U" condition="count(DeviceSequence) &gt; 0"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="EnhancedMRImageModule"				type="M"/>
+		<invokemodule name="MRPulseSequenceModule"				type="C" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'
 												 or count(PulseSequenceName) &gt; 0 or count(MRAcquisitionType) &gt; 0
 												 or count(EchoPulseSequence) &gt; 0 or count(MultipleSpinEcho) &gt; 0
 												 or count(MultiPlanarExcitation) &gt; 0 or count(PhaseContrast) &gt; 0
@@ -140,13 +224,14 @@
 												 or count(GeometryOfKSpaceTraversal) &gt; 0 or count(RectilinearPhaseEncodeReordering) &gt; 0
 												 or count(SegmentedKSpaceTraversal) &gt; 0 or count(CoverageOfKSpace) &gt; 0
 												 or count(NumberOfKSpaceTrajectories) &gt; 0"/>
-		<invokemodule name="SOPCommonModule"				type="M"/>
+		<invokemodule name="SOPCommonModule"					type="M"/>
+		<invokemodule name="CommonInstanceReferenceModule"		type="U" condition="count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="FrameExtractionModule"				type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
 	</defineiod>
 
 	<defineiod name="LegacyConvertedEnhancedMRImage" sopclass="1.2.840.10008.5.1.4.1.1.4.4">
 		<invokemodule name="FileMetaInformationModule"			type="M"/>
 		<invokemodule name="PatientModule"				type="M"/>
-		<invokemodule name="SpecimenIdentificationModule"		type="U" condition="count(SpecimenAccessionNumber) &gt; 0 or count(SpecimenSequence) &gt; 0"/>
 		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
 												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
 												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
@@ -158,48 +243,45 @@
 												 or count(AdditionalPatientHistory) &gt; 0"/>
 		<invokemodule name="ClinicalTrialStudyModule" 			type="U" condition="count(ClinicalTrialTimePointID) &gt; 0 or count(ClinicalTrialTimePointDescription) &gt; 0"/>
 		<invokemodule name="GeneralSeriesModule"			type="M"/>
-		<invokemodule name="ClinicalTrialSeriesModule"			type="U" condition="count(ClinicalTrialCoordinatingCenterName) &gt; 0"/>
-		<invokemodule name="MRSeriesModule"				type="M"/>
+		<invokemodule name="ClinicalTrialSeriesModule"		type="U" condition="count(ClinicalTrialCoordinatingCenterName) &gt; 0"/>
+		<invokemodule name="MRSeriesModule"					type="M"/>
 		<invokemodule name="FrameOfReferenceModule"			type="M"/>
 		<invokemodule name="SynchronizationModule" 			type="U" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
 												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
 												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
-												 or count(TimeDistributionProtocol)"/>
+												 or count(TimeDistributionProtocol) &gt; 0"/>
 		<invokemodule name="GeneralEquipmentModule"			type="M"/>
-		<invokemodule name="EnhancedGeneralEquipmentModule"			type="U"/>
+		<invokemodule name="EnhancedGeneralEquipmentModule"	type="U"/>	<!-- no condition, since any of its attributes may optionally be present in GeneralEquipmentModule -->
 		<invokemodule name="ImagePixelModule"				type="M"/>
-		<invokemodule name="EnhancedContrastBolusModule"		type="U" condition="count(ContrastBolusAgentSequence) &gt; 0 or count(//ContrastBolusUsageSequence) &gt; 0
-												 or count(ContrastBolusAgent) &gt; 0 or count(ContrastBolusAgentSequence) &gt; 0
+		<invokemodule name="ContrastBolusModule"			type="U" condition="count(ContrastBolusAgent) &gt; 0 or count(ContrastBolusAgentSequence) &gt; 0
 												 or count(ContrastBolusRoute) &gt; 0 or count(ContrastBolusAdministrationRouteSequence) &gt; 0
 												 or count(ContrastBolusVolume) &gt; 0 or count(ContrastBolusStartTime) &gt; 0
 												 or count(ContrastBolusStopTime) &gt; 0 or count(ContrastBolusTotalDose) &gt; 0
 												 or count(ContrastBolusFlowRate) &gt; 0 or count(ContrastBolusDuration) &gt; 0
 												 or count(ContrastBolusIngredient) &gt; 0 or count(ContrastBolusIngredientConcentration) &gt; 0"/>
-		<invokemodule name="ContrastBolusModule"		type="U" condition="count(ContrastBolusAgent) &gt; 0 or count(ContrastBolusAgentSequence) &gt; 0
-												 or count(ContrastBolusRoute) &gt; 0 or count(ContrastBolusAdministrationRouteSequence) &gt; 0
-												 or count(ContrastBolusVolume) &gt; 0 or count(ContrastBolusStartTime) &gt; 0
-												 or count(ContrastBolusStopTime) &gt; 0 or count(ContrastBolusTotalDose) &gt; 0
-												 or count(ContrastBolusFlowRate) &gt; 0 or count(ContrastBolusDuration) &gt; 0
-												 or count(ContrastBolusIngredient) &gt; 0 or count(ContrastBolusIngredientConcentration) &gt; 0"/>
+		<invokemodule name="EnhancedContrastBolusModule"	type="U" condition="count(ContrastBolusAgentSequence/ContrastBolusAgentNumber) &gt; 0"/>
 		<invokemodule name="MultiFrameFunctionalGroupsCommonModule"	type="M"/>
-		<invokemodule name="MultiFrameFunctionalGroupsForEnhancedMRImageModule"		type="M"/>
-		<invokemodule name="MultiFrameDimensionModule"			type="U"/>
+		<invokemodule name="MultiFrameFunctionalGroupsForLegacyConvertedEnhancedMRImageModule"		type="M"/>
+		<invokemodule name="MultiFrameDimensionModule"			type="U"  condition="count(DimensionOrganizationSequence) &gt; 0 or count(DimensionIndexSequence) &gt; 0 or count(//DimensionIndexValues) &gt; 0"/>
 		<invokemodule name="CardiacSynchronizationModule"		type="U" condition="count(CardiacSynchronizationTechnique) &gt; 0 or count(CardiacSignalSource) &gt; 0
 												 or count(CardiacRRIntervalSpecified) &gt; 0 or count(CardiacBeatRejectionTechnique) &gt; 0
 												 or count(LowRRValue) &gt; 0 or count(HighRRValue) &gt; 0
 												 or count(IntervalsAcquired) &gt; 0 or count(IntervalsRejected) &gt; 0
 												 or count(//CardiacSynchronizationSequence) &gt; 0"/>
-		<invokemodule name="RespiratorySynchronizationModule"		type="U" condition="count(RespiratoryMotionCompensationTechnique) &gt; 0 or count(RespiratorySignalSource) &gt; 0"/>
-		<invokemodule name="BulkMotionSynchronizationModule"		type="U" condition="count(BulkMotionCompensationTechnique) &gt; 0 or count(BulkMotionSignalSource) &gt; 0"/>
+		<invokemodule name="RespiratorySynchronizationModule"	type="U" condition="count(RespiratoryMotionCompensationTechnique) &gt; 0 or count(RespiratorySignalSource) &gt; 0"/>
+		<invokemodule name="BulkMotionSynchronizationModule"	type="U" condition="count(BulkMotionCompensationTechnique) &gt; 0 or count(BulkMotionSignalSource) &gt; 0"/>
 		<invokemodule name="AcquisitionContextModule"			type="M"/>
-		<invokemodule name="EnhancedMRImageModule"			type="M"/>
-		<invokemodule name="SOPCommonModule"				type="M"/>
+		<invokemodule name="DeviceModule"						type="U" condition="count(DeviceSequence) &gt; 0"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
+		<invokemodule name="EnhancedMRImageModule"				type="M"/>
+		<invokemodule name="SOPCommonModule"					type="M"/>
+		<invokemodule name="CommonInstanceReferenceModule"		type="U" condition="count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="FrameExtractionModule"				type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
 	</defineiod>
 
 	<defineiod name="MRSpectroscopy" sopclass="1.2.840.10008.5.1.4.1.1.4.2">
 		<invokemodule name="FileMetaInformationModule"			type="M"/>
 		<invokemodule name="PatientModule"				type="M"/>
-		<invokemodule name="SpecimenIdentificationModule"		type="U" condition="count(SpecimenAccessionNumber) &gt; 0 or count(SpecimenSequence) &gt; 0"/>
 		<invokemodule name="ClinicalTrialSubjectModule"			type="U" condition="count(ClinicalTrialSponsorName) &gt; 0 or count(ClinicalTrialProtocolID) &gt; 0
 												 or count(ClinicalTrialProtocolName) &gt; 0 or count(ClinicalTrialSiteID) &gt; 0
 												 or count(ClinicalTrialSiteName) &gt; 0 or count(ClinicalTrialSubjectID) &gt; 0
@@ -217,7 +299,7 @@
 		<invokemodule name="SynchronizationModule" 			type="C" condition="count(SynchronizationFrameOfReferenceUID) &gt; 0 or count(SynchronizationTrigger) &gt; 0
 												 or count(TriggerSourceOrType) &gt; 0 or count(SynchronizationChannel) &gt; 0
 												 or count(AcquisitionTimeSynchronized) &gt; 0 or count(TimeSource) &gt; 0
-												 or count(TimeDistributionProtocol)"/>
+												 or count(TimeDistributionProtocol) &gt; 0"/>
 		<invokemodule name="GeneralEquipmentModule"			type="M"/>
 		<invokemodule name="EnhancedGeneralEquipmentModule"			type="M"/>
 		<invokemodule name="EnhancedContrastBolusModule"		type="C" condition="count(ContrastBolusAgentSequence) &gt; 0 or count(//ContrastBolusUsageSequence) &gt; 0
@@ -245,6 +327,7 @@
 		<invokemodule name="BulkMotionSynchronizationModule"		type="C" condition="count(BulkMotionCompensationTechnique) &gt; 0 or count(BulkMotionSignalSource) &gt; 0"/>
 		<invokemodule name="SupplementalPaletteColorLookupTableModule"	type="C" condition="PixelPresentation/value[@number=1]='COLOR' or PixelPresentation/value[@number=1]='MIXED'"/>
 		<invokemodule name="AcquisitionContextModule"			type="M"/>
+		<invokemodule name="SpecimenModule"						type="U" condition="count(ContainerIdentifier) &gt; 0 or count(IssuerOfTheContainerIdentifierSequence) &gt; 0 or count(AlternateContainerIdentifierSequence) &gt; 0 or count(ContainerTypeCodeSequence) &gt; 0 or count(ContainerDescription) &gt; 0 or count(ContainerComponentSequence) &gt; 0 or count(SpecimenDescriptionSequence) &gt; 0"/>
 		<invokemodule name="MRSpectroscopyModule"			type="M"/>
 		<invokemodule name="MRSpectroscopyPulseSequenceModule"		type="C" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'
 												 or count(PulseSequenceName) &gt; 0 or count(MRSpectroscopyAcquisitionType) &gt; 0
@@ -255,7 +338,9 @@
 												 or count(SegmentedKSpaceTraversal) &gt; 0 or count(CoverageOfKSpace) &gt; 0
 												 or count(NumberOfKSpaceTrajectories) &gt; 0"/>
 		<invokemodule name="MRSpectroscopyDataModule"			type="M"/>
-		<invokemodule name="SOPCommonModule"				type="M"/>
+		<invokemodule name="SOPCommonModule"					type="M"/>
+		<invokemodule name="CommonInstanceReferenceModule"		type="U" condition="count(ReferencedSeriesSequence) &gt; 0 or count(StudiesContainingOtherReferencedInstancesSequence) &gt; 0"/>
+		<invokemodule name="FrameExtractionModule"				type="C" condition="count(FrameExtractionSequence) &gt; 0"/>
 	</defineiod>
 
 	<definemodule name="FileMetaInformationModule">
@@ -302,17 +387,30 @@
 		<attribute name="OtherPatientNames"				vr="PN" type="3" vmmin="1" vmmax="n"/>
 		<attribute name="EthnicGroup"					vr="SH" type="3" vmmin="1" vmmax="1"/>
 		<attribute name="PatientComments"				vr="LT" type="3" vmmin="1" vmmax="1"/>
-		<attribute name="PatientSpeciesDescription"		vr="LO" type="1C" vmmin="1" vmmax="1" condition="count(PatientSpeciesCodeSequence) = 0 and (count(PatientSpeciesDescription) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0)" mbpo="T"/>
-		<sequence name="PatientSpeciesCodeSequence"		vr="SQ" type="1C" vmmin="1" vmmax="1" condition="count(PatientSpeciesDescription) = 0 and (count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0)" mbpo="T">
+		<attribute name="PatientSpeciesDescription"		vr="LO" type="1C" vmmin="1" vmmax="1" condition="count(PatientSpeciesCodeSequence) = 0 and (count(PatientSpeciesDescription) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0 or count(StrainDescription) &gt; 0 or count(StrainNomenclature) &gt; 0 or count(StrainCodeSequence) &gt; 0 or count(StrainAdditionalInformation) &gt; 0 or count(StrainStockSequence) &gt; 0)" mbpo="T"/>
+		<sequence name="PatientSpeciesCodeSequence"		vr="SQ" type="1C" vmmin="1" vmmax="1" condition="count(PatientSpeciesDescription) = 0 and (count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0 or count(StrainDescription) &gt; 0 or count(StrainNomenclature) &gt; 0 or count(StrainCodeSequence) &gt; 0 or count(StrainAdditionalInformation) &gt; 0 or count(StrainStockSequence) &gt; 0)" mbpo="T">
 			<includemacro name="CodeSequenceMacro"/>
 		</sequence>
-		<attribute name="PatientBreedDescription"		vr="LO" type="2C" vmmin="1" vmmax="1" condition="count(PatientBreedCodeSequence/Item) = 0 and (count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0)" mbpo="T"/>
-		<sequence name="PatientBreedCodeSequence"		vr="SQ" type="2C" vmmin="1" vmmax="1" condition="count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0" mbpo="F">
+		<attribute name="PatientBreedDescription"		vr="LO" type="2C" vmmin="1" vmmax="1" condition="count(PatientBreedCodeSequence/Item) = 0 and (count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0 or count(StrainDescription) &gt; 0 or count(StrainNomenclature) &gt; 0 or count(StrainCodeSequence) &gt; 0 or count(StrainAdditionalInformation) &gt; 0 or count(StrainStockSequence) &gt; 0)" mbpo="T"/>
+		<sequence name="PatientBreedCodeSequence"		vr="SQ" type="2C" vmmin="0" vmmax="1" condition="count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0 or count(StrainDescription) &gt; 0 or count(StrainNomenclature) &gt; 0 or count(StrainCodeSequence) &gt; 0 or count(StrainAdditionalInformation) &gt; 0 or count(StrainStockSequence) &gt; 0" mbpo="F">
 			<includemacro name="CodeSequenceMacro"/>
 		</sequence>
-		<sequence name="PatientBreedRegistrationSequence"	vr="SQ" type="2C" vmmin="1" vmmax="1" condition="count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0" mbpo="F">
+		<sequence name="BreedRegistrationSequence"		vr="SQ" type="2C" vmmin="0" vmmax="1" condition="count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0 or count(StrainDescription) &gt; 0 or count(StrainNomenclature) &gt; 0 or count(StrainCodeSequence) &gt; 0 or count(StrainAdditionalInformation) &gt; 0 or count(StrainStockSequence) &gt; 0" mbpo="F">
 			<attribute name="BreedRegistrationNumber"	vr="LO" type="1" vmmin="1" vmmax="n"/>
 			<sequence name="BreedRegistryCodeSequence"	vr="SQ" type="1" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+		</sequence>
+		<attribute name="StrainDescription"				vr="UC" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="StrainNomenclature"			vr="LO" type="3" vmmin="1" vmmax="1"/>
+		<sequence  name="StrainCodeSequence"			vr="SQ" type="3" vmmin="1" vmmax="n">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<attribute name="StrainAdditionalInformation"	vr="UT" type="3" vmmin="1" vmmax="1"/>
+		<sequence  name="StrainStockSequence"			vr="SQ" type="3" vmmin="1" vmmax="1">
+			<attribute name="StrainStockNumber"			vr="LO" type="3" vmmin="1" vmmax="1"/>
+			<attribute name="StrainSource"				vr="LO" type="3" vmmin="1" vmmax="1"/>
+			<sequence  name="StrainSourceRegistryCodeSequence"	vr="SQ" type="3" vmmin="1" vmmax="1">
 				<includemacro name="CodeSequenceMacro"/>
 			</sequence>
 		</sequence>
@@ -328,6 +426,8 @@
 				<definedterm value="GUARDIAN"/>
 				<definedterm value="CUSTODIAN"/>
 				<definedterm value="AGENT"/>
+				<definedterm value="INVESTIGATOR"/>
+				<definedterm value="VETERINARIAN"/>
 			</definedtermslist>
 		</attribute>
 		<attribute name="ResponsibleOrganization"		vr="LO" type="2C" vmmin="1" vmmax="1" condition="count(PatientSpeciesDescription) &gt; 0 or count(PatientSpeciesCodeSequence) &gt; 0 or count(PatientBreedDescription) &gt; 0 or count(PatientBreedCodeSequence) &gt; 0 or count(BreedRegistrationSequence) &gt; 0" mbpo="T"/>
@@ -337,21 +437,11 @@
 				<definedterm value="NO"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="DeidentificationMethod"			vr="LO" type="3"  vmmin="1" vmmax="n" condition="PatientIdentityRemoved/value[@number=1] = 'YES' and count(DeidentificationMethodCodeSequence) = 0" mbpo="T"/>
+		<attribute name="DeidentificationMethod"			vr="LO" type="1C" vmmin="1" vmmax="n" condition="PatientIdentityRemoved/value[@number=1] = 'YES' and count(DeidentificationMethodCodeSequence) = 0" mbpo="T"/>
 		<sequence name="DeidentificationMethodCodeSequence"	vr="SQ" type="1C" vmmin="1" vmmax="n" condition="PatientIdentityRemoved/value[@number=1] = 'YES' and count(DeidentificationMethod) = 0" mbpo="T">
 			<includemacro name="CodeSequenceMacro"/>
 		</sequence>
-	</definemodule>
-	
-	<definemodule name="SpecimenIdentificationModule">
-		<attribute name="SpecimenAccessionNumber"			vr="LO" type="1" vmmin="1" vmmax="1"/>
-		<sequence name="SpecimenSequence"				vr="SQ" type="2" vmmin="0" vmmax="n">
-			<attribute name="SpecimenIdentifier"			vr="LO" type="2" vmmin="1" vmmax="1"/>
-			<sequence name="SpecimenTypeCodeSequence"		vr="SQ" type="2" vmmin="1" vmmax="1">
-				<includemacro name="CodeSequenceMacro"/>
-			</sequence>
-			<attribute name="SlideIdentifier"			vr="LO" type="1C" vmmin="1" vmmax="1" nocondition=""/>
-		</sequence>
+		<includemacro name="PatientGroupMacro"/>
 	</definemodule>
 	
 	<definemodule name="ClinicalTrialSubjectModule">
@@ -472,6 +562,7 @@
 				<definedterm value="HD"/>
 				<definedterm value="SR"/>
 				<definedterm value="IVUS"/>
+				<definedterm value="SEG"/>
 			</definedtermslist>
 		</attribute>
 		<attribute name="SeriesInstanceUID"				vr="UI" type="1"  vmmin="1" vmmax="1"/>
@@ -495,37 +586,121 @@
 			<includemacro name="PersonIdentificationMacro"/>
 		</sequence>
 		<sequence name="ReferencedPerformedProcedureStepSequence"	vr="SQ" type="3" vmmin="0" vmmax="1">
-			<attribute name="ReferencedSOPClassUID"			vr="UI" type="1" vmmin="1" vmmax="1"/>
-			<attribute name="ReferencedSOPInstanceUID"		vr="UI" type="1" vmmin="1" vmmax="1"/>
+			<includemacro name="SOPInstanceReferenceMacro"/>
 		</sequence>
 		<attribute name="BodyPartExamined"				vr="CS" type="3"  vmmin="1" vmmax="1">
 			<definedtermslist valueselector="1">
-				<definedterm value="SKULL"/>
-				<definedterm value="CSPINE"/>
-				<definedterm value="TSPINE"/>
-				<definedterm value="LSPINE"/>
-				<definedterm value="SSPINE"/>
-				<definedterm value="COCCYX"/>
-				<definedterm value="CHEST"/>
-				<definedterm value="CLAVICLE"/>
-				<definedterm value="BREAST"/>
-				<definedterm value="ABDOMEN"/>
-				<definedterm value="PELVIS"/>
-				<definedterm value="HIP"/>
-				<definedterm value="SHOULDER"/>
-				<definedterm value="ELBOW"/>
-				<definedterm value="KNEE"/>
+				<definedterm value="ABDOMENPELVIS"/>
+				<definedterm value="ADRENAL"/>
 				<definedterm value="ANKLE"/>
-				<definedterm value="HAND"/>
-				<definedterm value="FOOT"/>
-				<definedterm value="EXTREMITY"/>
-				<definedterm value="HEAD"/>
-				<definedterm value="HEART"/>
-				<definedterm value="NECK"/>
-				<definedterm value="LEG"/>
+				<definedterm value="AORTA"/>
 				<definedterm value="ARM"/>
+				<definedterm value="AXILLA"/>
+				<definedterm value="BACK"/>
+				<definedterm value="BLADDER"/>
+				<definedterm value="BRAIN"/>
+				<definedterm value="BREAST"/>
+				<definedterm value="BRONCHUS"/>
+				<definedterm value="BUTTOCK"/>
+				<definedterm value="CALCANEUS"/>
+				<definedterm value="CALF"/>
+				<definedterm value="CAROTID"/>
+				<definedterm value="CEREBELLUM"/>
+				<definedterm value="CERVIX"/>
+				<definedterm value="CHEEK"/>
+				<definedterm value="CHEST"/>
+				<definedterm value="CHESTABDOMEN"/>
+				<definedterm value="CHESTABDPELVIS"/>
+				<definedterm value="CIRCLEOFWILLIS"/>
+				<definedterm value="CLAVICLE"/>
+				<definedterm value="COCCYX"/>
+				<definedterm value="COLON"/>
+				<definedterm value="CORNEA"/>
+				<definedterm value="CORONARYARTERY"/>
+				<definedterm value="CSPINE"/>
+				<definedterm value="CTSPINE"/>
+				<definedterm value="DUODENUM"/>
+				<definedterm value="EAR"/>
+				<definedterm value="ELBOW"/>
+				<definedterm value="ESOPHAGUS"/>
+				<definedterm value="EXTREMITY"/>
+				<definedterm value="EYE"/>
+				<definedterm value="EYELID"/>
+				<definedterm value="FACE"/>
+				<definedterm value="FEMUR"/>
+				<definedterm value="FINGER"/>
+				<definedterm value="FOOT"/>
+				<definedterm value="GALLBLADDER"/>
+				<definedterm value="HAND"/>
+				<definedterm value="HEAD"/>
+				<definedterm value="HEADNECK"/>
+				<definedterm value="HEART"/>
+				<definedterm value="HIP"/>
+				<definedterm value="HUMERUS"/>
+				<definedterm value="IAC"/>
+				<definedterm value="ILEUM"/>
+				<definedterm value="ILIUM"/>
 				<definedterm value="JAW"/>
+				<definedterm value="JAW"/>
+				<definedterm value="JEJUNUM"/>
+				<definedterm value="KIDNEY"/>
+				<definedterm value="KNEE"/>
+				<definedterm value="LARYNX"/>
+				<definedterm value="LEG"/>
+				<definedterm value="LIVER"/>
+				<definedterm value="LSPINE"/>
+				<definedterm value="LSSPINE"/>
+				<definedterm value="LUNG"/>
+				<definedterm value="MAXILLA"/>
+				<definedterm value="MEDIASTINUM"/>
+				<definedterm value="MOUTH"/>
+				<definedterm value="NECK"/>
+				<definedterm value="NECKCHEST"/>
+				<definedterm value="NECKCHESTABDOMEN"/>
+				<definedterm value="NECKCHESTABDPELV"/>
+				<definedterm value="NOSE"/>
+				<definedterm value="ORBIT"/>
+				<definedterm value="OVARY"/>
+				<definedterm value="PANCREAS"/>
+				<definedterm value="PAROTID"/>
+				<definedterm value="PATELLA"/>
+				<definedterm value="PELVIS"/>
+				<definedterm value="PENIS"/>
+				<definedterm value="PHARYNX"/>
 				<definedterm value="PROSTATE"/>
+				<definedterm value="RECTUM"/>
+				<definedterm value="RIB"/>
+				<definedterm value="SCALP"/>
+				<definedterm value="SCAPULA"/>
+				<definedterm value="SCLERA"/>
+				<definedterm value="SCROTUM"/>
+				<definedterm value="SHOULDER"/>
+				<definedterm value="SKULL"/>
+				<definedterm value="SPINE"/>
+				<definedterm value="SPLEEN"/>
+				<definedterm value="SSPINE"/>
+				<definedterm value="STERNUM"/>
+				<definedterm value="STOMACH"/>
+				<definedterm value="SUBMANDIBULAR"/>
+				<definedterm value="TESTIS"/>
+				<definedterm value="THIGH"/>
+				<definedterm value="THUMB"/>
+				<definedterm value="THYMUS"/>
+				<definedterm value="THYROID"/>
+				<definedterm value="TLSPINE"/>
+				<definedterm value="TMJ"/>
+				<definedterm value="TOE"/>
+				<definedterm value="TONGUE"/>
+				<definedterm value="TRACHEA"/>
+				<definedterm value="TSPINE"/>
+				<definedterm value="URETER"/>
+				<definedterm value="URETHRA"/>
+				<definedterm value="UTERUS"/>
+				<definedterm value="VAGINA"/>
+				<definedterm value="VULVA"/>
+				<definedterm value="WHOLEBODY"/>
+				<definedterm value="WRIST"/>
+				<definedterm value="ZYGOMA"/>
 			</definedtermslist>
 		</attribute>
 		<attribute name="PatientPosition"				vr="CS" type="2C" vmmin="1" vmmax="1" condition="count(PatientOrientationCodeSequence) = 0 and (Modality/value[@number=1]='CT' or Modality/value[@number=1]='MR')" mbpo="T">
@@ -538,6 +713,14 @@
 				<definedterm value="FFDL"/>
 				<definedterm value="FFP"/>
 				<definedterm value="FFS"/>
+				<definedterm value="LFP"/>
+				<definedterm value="LFS"/>
+				<definedterm value="RFP"/>
+				<definedterm value="RFS"/>
+				<definedterm value="AFDR"/>
+				<definedterm value="AFDL"/>
+				<definedterm value="PFDR"/>
+				<definedterm value="PFDL"/>
 			</definedtermslist>
 		</attribute>
 		<attribute name="SmallestPixelValueInSeries"			vr="XS" type="3"  vmmin="1" vmmax="1"/>
@@ -568,8 +751,7 @@
 			</enumeratedvalueslist>
 		</attribute>
 		<sequence name="ReferencedPerformedProcedureStepSequence"	vr="SQ" type="1C" vmmin="1" vmmax="1" nocondition="">
-			<attribute name="ReferencedSOPClassUID"			vr="UI" type="1"  vmmin="1" vmmax="1"/>
-			<attribute name="ReferencedSOPInstanceUID"		vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<includemacro name="SOPInstanceReferenceMacro"/>
 		</sequence>
 	</definemodule>
 	
@@ -824,6 +1006,12 @@
 		<attribute name="NumberOfFrames"				vr="IS" type="1" vmmin="1" vmmax="1">
 			<verify test="number(NumberOfFrames/value)=0" status="Error" message="value of 0 is illegal"/>
 		</attribute>
+		<attribute name="StereoPairsPresent"			vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="YES"/>
+				<enumeratedvalue value="NO"/>
+			</enumeratedvalueslist>
+		</attribute>
 		<attribute name="ConcatenationFrameOffsetNumber"		vr="UL" type="1C" vmmin="1" vmmax="1" condition="count(ConcatenationUID) &gt; 0" mbpo="F"/>
 		<attribute name="RepresentativeFrameNumber"			vr="US" type="3" vmmin="1" vmmax="1"/>
 		<attribute name="ConcatenationUID"				vr="UI" type="1C" vmmin="1" vmmax="1" nocondition=""/>
@@ -831,9 +1019,34 @@
 		<attribute name="InConcatenationNumber"				vr="US" type="1C" vmmin="1" vmmax="1" condition="count(ConcatenationUID) &gt; 0" mbpo="F"/>
 		<attribute name="InConcatenationTotalNumber"			vr="US" type="3C" vmmin="1" vmmax="1" condition="count(ConcatenationUID) &gt; 0"/>
 	</definemodule>
+	
+	<definemodule name="MultiFrameFunctionalGroupsForSegmentationModule">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(//DerivationImageSequence) = 0 or count(PixelMeasuresSequence) &gt; 0" mbpo="T"/>
+			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(//DerivationImageSequence) = 0 or count(PlanePositionSequence) &gt; 0" mbpo="T"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) &gt; 0" status="Error" message="PlanePositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(//DerivationImageSequence) = 0 or count(PlaneOrientationSequence) &gt; 0" mbpo="T"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) &gt; 0" status="Error" message="PlaneOrientationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(//PixelMeasuresSequence) = 0 or count(//PlanePositionSequence) = 0 or count(//PlaneOrientationSequence) = 0" mbpo="T"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/DerivationImageSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/DerivationImageSequence) &gt; 0" status="Error" message="DerivationImageSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
+			<includemacro name="SegmentationMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/SegmentIdentificationSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/SegmentIdentificationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/SegmentIdentificationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/SegmentIdentificationSequence) &gt; 0" status="Error" message="SegmentIdentificationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+		</sequence>
+		<verifyanywhere test="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item) != /DicomObject/NumberOfFrames/value[@number=1]" status="Error" message="Number of PerFrameFunctionalGroupsSequence Items must equal NumberOfFrames"/>
+		<sequence  name="PerFrameFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(//DerivationImageSequence) = 0 or count(PixelMeasuresSequence) &gt; 0" mbpo="T"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(//DerivationImageSequence) = 0 or count(PlanePositionSequence) &gt; 0" mbpo="T"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(//DerivationImageSequence) = 0 or count(PlaneOrientationSequence) &gt; 0" mbpo="T"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(//PixelMeasuresSequence) = 0 or count(//PlanePositionSequence) = 0 or count(//PlaneOrientationSequence) = 0" mbpo="T"/>
+			<includemacro name="FrameContentMacro"			type="M"/>
+			<includemacro name="SegmentationMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/SegmentIdentificationSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/SegmentIdentificationSequence) &gt; 0"/>
+		</sequence>
+	</definemodule>
 
 	<definemodule name="MultiFrameFunctionalGroupsForEnhancedCTImageModule">
-		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="2"  vmmin="0" vmmax="1">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
 			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) &gt; 0"/>
 			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
@@ -880,6 +1093,9 @@
 			<includemacro name="CTPixelValueTransformationMacro"	type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0"/>
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0" status="Error" message="PixelValueTransformationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 			<includemacro name="CTAdditionalXRaySourceMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTAdditionalXRaySourceSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTAdditionalXRaySourceSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTAdditionalXRaySourceSequence) &gt; 0" status="Error" message="CTAdditionalXRaySourceSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="TemporalPositionMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0" status="Error" message="TemporalPositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 		</sequence>
 		<verifyanywhere test="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item) != /DicomObject/NumberOfFrames/value[@number=1]" status="Error" message="Number of PerFrameFunctionalGroupsSequence Items must equal NumberOfFrames"/>
 		<sequence  name="PerFrameFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="n">
@@ -907,11 +1123,67 @@
 			<includemacro name="CTXRayDetailsMacro"			type="C" condition="((/DicomObject/ImageType/value[@number=1] = 'ORIGINAL' or /DicomObject/ImageType/value[@number=1] = 'MIXED') and count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTXRayDetailsSequence) = 0) or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTXRayDetailsSequence) &gt; 0"/>
 			<includemacro name="CTPixelValueTransformationMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0"/>
 			<includemacro name="CTAdditionalXRaySourceMacro"	type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTAdditionalXRaySourceSequence) &gt; 0"/>
+			<includemacro name="TemporalPositionMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0"/>
+		</sequence>
+	</definemodule>
+	
+	<definemodule name="MultiFrameFunctionalGroupsForLegacyConvertedEnhancedCTImageModule">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) &gt; 0"/>
+			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) &gt; 0" status="Error" message="PlanePositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) &gt; 0" status="Error" message="PlaneOrientationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="ReferencedImageMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ReferencedImageSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ReferencedImageSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ReferencedImageSequence) &gt; 0" status="Error" message="ReferencedImageSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/DerivationImageSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/DerivationImageSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/DerivationImageSequence) &gt; 0" status="Error" message="DerivationImageSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="CardiacSynchronizationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CardiacSynchronizationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CardiacSynchronizationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CardiacSynchronizationSequence) &gt; 0" status="Error" message="CardiacSynchronizationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="FrameAnatomyMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameAnatomySequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameAnatomySequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameAnatomySequence) &gt; 0" status="Error" message="FrameAnatomySequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="FrameVOILUTMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameVOILUTSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameVOILUTSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameVOILUTSequence) &gt; 0" status="Error" message="FrameVOILUTSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="ContrastBolusUsageMacro"		type="C" condition="count(/DicomObject/ContrastBolusAgentSequence) &gt; 0 and (count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusUsageSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusUsageSequence) &gt; 0)"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusAgentSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusAgentSequence) &gt; 0" status="Error" message="ContrastBolusAgentSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="RespiratorySynchronizationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RespiratorySynchronizationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RespiratorySynchronizationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RespiratorySynchronizationSequence) &gt; 0" status="Error" message="RespiratorySynchronizationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="IrradiationEventIdentificationMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/IrradiationEventIdentificationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/IrradiationEventIdentificationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/IrradiationEventIdentificationSequence) &gt; 0" status="Error" message="IrradiationEventIdentificationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="CTImageFrameTypeMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence) &gt; 0" status="Error" message="CTImageFrameTypeSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="CTPixelValueTransformationMacro"	type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0" status="Error" message="PixelValueTransformationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="TemporalPositionMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0" status="Error" message="TemporalPositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="UnassignedSharedConvertedAttributesMacro"	type="M"/>
+		</sequence>
+		<verifyanywhere test="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item) != /DicomObject/NumberOfFrames/value[@number=1]" status="Error" message="Number of PerFrameFunctionalGroupsSequence Items must equal NumberOfFrames"/>
+		<sequence  name="PerFrameFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0"/>
+			<includemacro name="FrameContentMacro"			type="M"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) &gt; 0"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) &gt; 0"/>
+			<includemacro name="ReferencedImageMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ReferencedImageSequence) &gt; 0"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/DerivationImageSequence) &gt; 0"/>
+			<includemacro name="CardiacSynchronizationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CardiacSynchronizationSequence) &gt; 0"/>
+			<includemacro name="FrameAnatomyMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameAnatomySequence) &gt; 0"/>
+			<includemacro name="FrameVOILUTMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameVOILUTSequence) &gt; 0"/>
+			<includemacro name="ContrastBolusUsageMacro"		type="C" condition="count(/DicomObject/ContrastBolusAgentSequence) &gt; 0 and (count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusUsageSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusUsageSequence) &gt; 0)"/>
+			<includemacro name="RespiratorySynchronizationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RespiratorySynchronizationSequence) &gt; 0"/>
+			<includemacro name="IrradiationEventIdentificationMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/IrradiationEventIdentificationSequence) &gt; 0"/>
+			<includemacro name="CTImageFrameTypeMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence) &gt; 0"/>
+			<includemacro name="CTPixelValueTransformationMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0"/>
+			<includemacro name="TemporalPositionMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0"/>
+			<includemacro name="UnassignedPerFrameConvertedAttributesMacro"	type="M"/>
+			<includemacro name="ImageFrameConversionSourceMacro"	type="M"/>
 		</sequence>
 	</definemodule>
 	
 	<definemodule name="MultiFrameFunctionalGroupsForEnhancedMRImageModule">
-		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="2"  vmmin="0" vmmax="1">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
 			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) &gt; 0"/>
 			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
@@ -965,6 +1237,8 @@
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRVelocityEncodingSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRVelocityEncodingSequence) &gt; 0" status="Error" message="MRVelocityEncodingSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 			<includemacro name="MRArterialSpinLabelingMacro"		type="C" condition="(/DicomObject/ImageType/value[@number=3] = 'ASL' and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRArterialSpinLabelingSequence) = 0) or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRArterialSpinLabelingSequence) &gt; 0"/>
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRArterialSpinLabelingSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRArterialSpinLabelingSequence) &gt; 0" status="Error" message="MRArterialSpinLabelingSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="TemporalPositionMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0" status="Error" message="TemporalPositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 		</sequence>
 		<verifyanywhere test="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item) != /DicomObject/NumberOfFrames/value[@number=1]" status="Error" message="Number of PerFrameFunctionalGroupsSequence Items must equal NumberOfFrames"/>
 		<sequence  name="PerFrameFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="n">
@@ -994,11 +1268,67 @@
 			<includemacro name="MRMetaboliteMapMacro"		type="C" condition="(/DicomObject/ImageType/value[@number=3] = 'METABOLITE_MAP' and count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRMetaboliteMapSequence) = 0) or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRMetaboliteMapSequence) &gt; 0"/>
 			<includemacro name="MRVelocityEncodingMacro"		type="C" condition="((/DicomObject/PhaseContrast/value[@number=1] = 'YES' and (/DicomObject/ImageType/value[@number=1] = 'ORIGINAL' or /DicomObject/ImageType/value[@number=1] = 'MIXED')) and count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRVelocityEncodingSequence) = 0) or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRVelocityEncodingSequence) &gt; 0"/>
 			<includemacro name="MRArterialSpinLabelingMacro"	type="C" condition="(/DicomObject/ImageType/value[@number=3] = 'ASL' and count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRArterialSpinLabelingSequence) = 0) or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRArterialSpinLabelingSequence) &gt; 0"/>
+			<includemacro name="TemporalPositionMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0"/>
+		</sequence>
+	</definemodule>
+	
+	<definemodule name="MultiFrameFunctionalGroupsForLegacyConvertedEnhancedMRImageModule">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) &gt; 0"/>
+			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) &gt; 0" status="Error" message="PlanePositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) &gt; 0" status="Error" message="PlaneOrientationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="ReferencedImageMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ReferencedImageSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ReferencedImageSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ReferencedImageSequence) &gt; 0" status="Error" message="ReferencedImageSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/DerivationImageSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/DerivationImageSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/DerivationImageSequence) &gt; 0" status="Error" message="DerivationImageSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="CardiacSynchronizationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CardiacSynchronizationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CardiacSynchronizationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CardiacSynchronizationSequence) &gt; 0" status="Error" message="CardiacSynchronizationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="FrameAnatomyMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameAnatomySequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameAnatomySequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameAnatomySequence) &gt; 0" status="Error" message="FrameAnatomySequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="PixelValueTransformationMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelValueTransformationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0" status="Error" message="PixelValueTransformationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="FrameVOILUTMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameVOILUTSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameVOILUTSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameVOILUTSequence) &gt; 0" status="Error" message="FrameVOILUTSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="RealWorldValueMappingMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RealWorldValueMappingSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RealWorldValueMappingSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RealWorldValueMappingSequence) &gt; 0" status="Error" message="RealWorldValueMappingSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="ContrastBolusUsageMacro"		type="C" condition="count(/DicomObject/ContrastBolusAgentSequence) &gt; 0 and (count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusUsageSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusUsageSequence) &gt; 0)"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusAgentSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusAgentSequence) &gt; 0" status="Error" message="ContrastBolusAgentSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="RespiratorySynchronizationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RespiratorySynchronizationSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/RespiratorySynchronizationSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RespiratorySynchronizationSequence) &gt; 0" status="Error" message="RespiratorySynchronizationSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="MRImageFrameTypeMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence) &gt; 0" status="Error" message="CTImageFrameTypeSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="TemporalPositionMacro"	type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0"/>
+			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/TemporalPositionSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0" status="Error" message="TemporalPositionSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
+			<includemacro name="UnassignedSharedConvertedAttributesMacro"	type="M"/>
+		</sequence>
+		<verifyanywhere test="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item) != /DicomObject/NumberOfFrames/value[@number=1]" status="Error" message="Number of PerFrameFunctionalGroupsSequence Items must equal NumberOfFrames"/>
+		<sequence  name="PerFrameFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0"/>
+			<includemacro name="FrameContentMacro"			type="M"/>
+			<includemacro name="PlanePositionMacro"			type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlanePositionSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlanePositionSequence) &gt; 0"/>
+			<includemacro name="PlaneOrientationMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PlaneOrientationSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PlaneOrientationSequence) &gt; 0"/>
+			<includemacro name="ReferencedImageMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ReferencedImageSequence) &gt; 0"/>
+			<includemacro name="DerivationImageMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/DerivationImageSequence) &gt; 0"/>
+			<includemacro name="CardiacSynchronizationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CardiacSynchronizationSequence) &gt; 0"/>
+			<includemacro name="FrameAnatomyMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameAnatomySequence) &gt; 0"/>
+			<includemacro name="PixelValueTransformationMacro"	type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelValueTransformationSequence) &gt; 0"/>
+			<includemacro name="FrameVOILUTMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/FrameVOILUTSequence) &gt; 0"/>
+			<includemacro name="RealWorldValueMappingMacro"	type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RealWorldValueMappingSequence) &gt; 0"/>
+			<includemacro name="ContrastBolusUsageMacro"		type="C" condition="count(/DicomObject/ContrastBolusAgentSequence) &gt; 0 and (count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/ContrastBolusUsageSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/ContrastBolusUsageSequence) &gt; 0)"/>
+			<includemacro name="RespiratorySynchronizationMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/RespiratorySynchronizationSequence) &gt; 0"/>
+			<includemacro name="MRImageFrameTypeMacro"		type="C" condition="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence) = 0 or count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence) &gt; 0"/>
+			<includemacro name="TemporalPositionMacro"		type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/TemporalPositionSequence) &gt; 0"/>
+			<includemacro name="UnassignedPerFrameConvertedAttributesMacro"	type="M"/>
+			<includemacro name="ImageFrameConversionSourceMacro"	type="M"/>
 		</sequence>
 	</definemodule>
 	
 	<definemodule name="MultiFrameFunctionalGroupsForMRImageSpectroscopyModule">
-		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="2"  vmmin="0" vmmax="1">
+		<sequence  name="SharedFunctionalGroupsSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
 			<includemacro name="PixelMeasuresMacro"			type="C" condition="count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) = 0 or count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/PixelMeasuresSequence) &gt; 0"/>
 			<verifyanywhere test="count(PixelMeasuresSequence) &gt; 0 and count(/DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/PixelMeasuresSequence) &gt; 0" status="Error" message="PixelMeasuresSequence cannot be in both Shared and PerFrame FunctionalGroupsSequence"/>
 			<verifyanywhere test="count(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/FrameContentSequence) &gt; 0" status="Error" message="FrameContentSequence cannot be in SharedFunctionalGroupsSequence"/>
@@ -1138,7 +1468,7 @@
 				and DimensionIndexPointer/value[@number=1] != 'XAXRFFrameCharacteristicsSequence' 
 			"/>
 			<attribute name="FunctionalGroupPrivateCreator"		vr="LO" type="1C" vmmin="1" vmmax="1" nocondition=""/>
-			<attribute name="DimensionOrganizationUID"		vr="UI" type="1C" vmmin="1" vmmax="1" condition="count(/DicomObject/DimensionOrganizationSequence/Item) &gt; 0"/>
+			<attribute name="DimensionOrganizationUID"		vr="UI" type="1" vmmin="1" vmmax="1"/>
 			<attribute name="DimensionDescriptionLabel"		vr="LO" type="3"  vmmin="1" vmmax="1"/>
 		</sequence>
 	</definemodule>
@@ -1299,6 +1629,8 @@
 				<definedterm value="ANGIO"/>
 				<definedterm value="CARDIAC"/>
 				<definedterm value="CARDIAC_GATED"/>
+				<definedterm value="CARDRESP_GATED"/>
+				<definedterm value="DYNAMIC"/>
 				<definedterm value="FLUOROSCOPY"/>
 				<definedterm value="LOCALIZER"/>
 				<definedterm value="MOTION"/>
@@ -1307,14 +1639,17 @@
 				<definedterm value="POST_CONTRAST"/>
 				<definedterm value="RESP_GATED"/>
 				<definedterm value="REST"/>
+				<definedterm value="STATIC"/>
 				<definedterm value="STRESS"/>
 				<definedterm value="VOLUME"/>
 				<definedterm value="NON_PARALLEL"/>
 				<definedterm value="PARALLEL"/>
+				<definedterm value="WHOLE_BODY"/>
 				<definedterm value="ANGIO_TIME"/>
 				<definedterm value="ASL"/>
 				<definedterm value="CINE"/>
 				<definedterm value="DIFFUSION"/>
+				<definedterm value="DIXON"/>
 				<definedterm value="FLOW_ENCODED"/>
 				<definedterm value="FLUID_ATTENUATED"/>
 				<definedterm value="FMRI"/>
@@ -1353,14 +1688,21 @@
 				<definedterm value="Z_SCORE"/>
 				<definedterm value="NONE"/>
 				<definedterm value="ADC"/>
-				<definedterm value="PERFUSION_ASL"/>
 				<definedterm value="DIFFUSION"/>
 				<definedterm value="DIFFUSION_ANISO"/>
 				<definedterm value="DIFFUSION_ATTNTD"/>
 				<definedterm value="DIFFUSION_ISO"/>
+				<definedterm value="FAT"/>
+				<definedterm value="FAT_FRACTION"/>
+				<definedterm value="FIELD_MAP"/>
+				<definedterm value="IN_PHASE"/>
 				<definedterm value="METABOLITE_MAP"/>
 				<definedterm value="NEI"/>
+				<definedterm value="OUT_OF_PHASE"/>
+				<definedterm value="PERFUSION_ASL"/>
 				<definedterm value="R_COEFFICIENT"/>
+				<definedterm value="R2_MAP"/>
+				<definedterm value="R2_STAR_MAP"/>
 				<definedterm value="RHO"/>
 				<definedterm value="SCM"/>
 				<definedterm value="SNR_MAP"/>
@@ -1370,6 +1712,8 @@
 				<definedterm value="TCS"/>
 				<definedterm value="TEMPERATURE"/>
 				<definedterm value="VELOCITY"/>
+				<definedterm value="WATER"/>
+				<definedterm value="WATER_FRACTION"/>
 				<definedterm value="MIXED"/>
 			</definedtermslist>
 			<verify test="ImageType/value[@number=1]='ORIGINAL' and ImageType/value[@number=4]!='NONE'" status="Error" message="value 4 must be NONE when value 1 is ORIGINAL"/>
@@ -1414,7 +1758,7 @@
 			<verify test="BitsStored/value != (HighBit/value + 1)" status="Error" message="Must be one less than BitsStored"/>
 		</attribute>
 		<attribute name="SpacingBetweenSlices"				vr="DS" type="3" vmmin="1" vmmax="1"/>
-		<attribute name="BurnedInAnnotation"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="BurnedInAnnotation"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="NO"/>
 			</enumeratedvalueslist>
@@ -1425,7 +1769,7 @@
 				<enumeratedvalue value="NO"/>
 			</enumeratedvalueslist>
 		</attribute>
-		<attribute name="LossyImageCompression"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="LossyImageCompression"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="00"/>
 				<enumeratedvalue value="01"/>
@@ -1586,8 +1930,9 @@
 	<definemodule name="SOPCommonModule">
 		<attribute name="SOPClassUID"					vr="UI" type="1" vmmin="1" vmmax="1"/>
 		<attribute name="SOPInstanceUID"				vr="UI" type="1" vmmin="1" vmmax="1"/>
-		<attribute name="SpecificCharacterSet"				vr="CS" type="1C" vmmin="1" vmmax="1" nocondition="">
+		<attribute name="SpecificCharacterSet"			vr="CS" type="3" vmmin="1" vmmax="n">	<!-- is really 1C, but if use nocondition, bitches about empty value 1 when value 2 present -->
 			<definedtermslist valueselector="1">
+				<definedterm value=""/>
 				<definedterm value="ISO_IR 100"/>
 				<definedterm value="ISO_IR 101"/>
 				<definedterm value="ISO_IR 109"/>
@@ -1611,9 +1956,20 @@
 				<definedterm value="ISO 2022 IR 148"/>
 				<definedterm value="ISO 2022 IR 13"/>
 				<definedterm value="ISO 2022 IR 166"/>
+			</definedtermslist>
+			<definedtermslist valueselector="2">
+				<definedterm value=""/>
 				<definedterm value="ISO 2022 IR 87"/>
 				<definedterm value="ISO 2022 IR 159"/>
 				<definedterm value="ISO 2022 IR 149"/>
+				<definedterm value="ISO 2022 IR 58"/>
+			</definedtermslist>
+			<definedtermslist valueselector="3">
+				<definedterm value=""/>
+				<definedterm value="ISO 2022 IR 87"/>
+				<definedterm value="ISO 2022 IR 159"/>
+				<definedterm value="ISO 2022 IR 149"/>
+				<definedterm value="ISO 2022 IR 58"/>
 			</definedtermslist>
 		</attribute>
 		<attribute name="InstanceCreationDate"				vr="DA" type="3"  vmmin="1" vmmax="1"/>
@@ -1677,6 +2033,12 @@
 				<enumeratedvalue value="REMOVED"/>
 			</enumeratedvalueslist>
 		</attribute>
+		<attribute name="InstanceOriginStatus"		vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="LOCAL"/>
+				<enumeratedvalue value="IMPORTED"/>
+			</enumeratedvalueslist>
+		</attribute>
 	</definemodule>
 
 	<definemacro name="DigitalSignaturesMacro">
@@ -1710,33 +2072,33 @@
 
 	<definemacro name="MRImageAndMRSpectroscopyInstanceMacro">
 		<attribute name="AcquisitionNumber"				vr="IS" type="3" vmmin="1" vmmax="1"/>
-		<attribute name="AcquisitionDateTime"				vr="DT" type="1C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T"/>
-		<attribute name="AcquisitionDuration"				vr="FD" type="1C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T">
+		<attribute name="AcquisitionDateTime"				vr="DT" type="1C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T"/>
+		<attribute name="AcquisitionDuration"				vr="FD" type="1C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<verify test="number(AcquisitionDuration/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
 		</attribute>
 		<sequence name="ReferencedRawDataSequence"			vr="SQ" type="3" vmmin="" vmmax="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedWaveformSequence"			vr="SQ" type="3" vmmin="" vmmax="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedImageEvidenceSequence"		vr="SQ" type="1C" vmmin="" vmmax="" condition="count(//ReferencedImageSequence) &gt; 0" mbpo="F">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="SourceImageEvidenceSequence"			vr="SQ" type="1C" vmmin="" vmmax="" condition="count(//SourceImageSequence) &gt; 0" mbpo="F">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedPresentationStateSequence"	vr="SQ" type="1C" vmmin="" vmmax="" nocondition="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
-		<attribute name="ContentQualification"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="ContentQualification"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="PRODUCT"/>
 				<enumeratedvalue value="RESEARCH"/>
 				<enumeratedvalue value="SERVICE"/>
 			</enumeratedvalueslist>
 		</attribute>
-		<attribute name="ResonantNucleus"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T">
+		<attribute name="ResonantNucleus"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="1H"/>
 				<definedterm value="3HE"/>
@@ -1748,7 +2110,7 @@
 				<definedterm value="129XE"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="KSpaceFiltering"				vr="CS" type="1C"  vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T">
+		<attribute name="KSpaceFiltering"				vr="CS" type="1C"  vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="COSINE"/>
 				<definedterm value="COSINE_SQUARED"/>
@@ -1763,15 +2125,15 @@
 				<definedterm value="NONE"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="MagneticFieldStrength"				vr="DS" type="1C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T"/>
-		<attribute name="ApplicableSafetyStandardAgency"		vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="MagneticFieldStrength"				vr="DS" type="1C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T"/>
+		<attribute name="ApplicableSafetyStandardAgency"	vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="IEC"/>
 				<definedterm value="FDA"/>
 				<definedterm value="MHW"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="ApplicableSafetyStandardDescription"		vr="LO" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="ApplicableSafetyStandardDescription"		vr="LO" type="3" vmmin="1" vmmax="1C" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T"/>
 		<attribute name="ImageComments"					vr="LT" type="3" vmmin="1" vmmax="1"/>
 	</definemacro>
 
@@ -1807,7 +2169,7 @@
 	</definemacro>
 
 	<definemacro name="MRImageDescriptionAtImageLevelMacro">
-		<attribute name="ComplexImageComponent"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="ComplexImageComponent"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="MAGNITUDE"/>
 				<definedterm value="PHASE"/>
@@ -1816,7 +2178,7 @@
 				<definedterm value="MIXED"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="AcquisitionContrast"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="AcquisitionContrast"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="DIFFUSION"/>
 				<definedterm value="FLOW_ENCODED"/>
@@ -1864,7 +2226,7 @@
 	</definemacro>
 	
 	<definemacro name="MRImageDescriptionAtFrameLevelMacro">
-		<attribute name="ComplexImageComponent"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="ComplexImageComponent"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="MAGNITUDE"/>
 				<definedterm value="PHASE"/>
@@ -1872,7 +2234,7 @@
 				<definedterm value="IMAGINARY"/>
 			</definedtermslist>
 		</attribute>
-		<attribute name="AcquisitionContrast"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="AcquisitionContrast"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4'" mbpo="T">
 			<definedtermslist valueselector="1">
 				<definedterm value="DIFFUSION"/>
 				<definedterm value="FLOW_ENCODED"/>
@@ -1962,16 +2324,57 @@
 		</attribute>
 	</definemacro>
 
+	<definemacro name="ImageSOPInstanceReferenceMacro">
+		<includemacro name="SOPInstanceReferenceMacro"/>
+		<attribute name="ReferencedFrameNumber"				vr="IS" type="1C" vmmin="1" vmmax="1" nocondition="">
+			<verify test="count(ReferencedSegmentNumber) &gt; 0" status="Error" message="ReferencedFrameNumber may not be present when ReferencedSegmentNumber is present"/>
+		</attribute>
+		<attribute name="ReferencedSegmentNumber"			vr="US" type="1C" vmmin="1" vmmax="1" nocondition="">
+			<verify test="count(ReferencedSegmentNumber) &gt; 0" status="Error" message="ReferencedSegmentNumber may not be present when ReferencedFrameNumber is present"/>
+		</attribute>
+	</definemacro>
+
 	<definemacro name="SOPInstanceReferenceMacro">
+		<attribute name="ReferencedSOPClassUID"		vr="UI" type="1" vmmin="1" vmmax="1"/>
+		<attribute name="ReferencedSOPInstanceUID"	vr="UI" type="1" vmmin="1" vmmax="1"/>
+	</definemacro>
+
+	<definemacro name="HierarchicalSOPInstanceReferenceMacro">
 		<attribute name="StudyInstanceUID"				vr="UI" type="1" vmmin="1" vmmax="1"/>
-		<sequence name="ReferencedSeriesSequence"			vr="SQ" type="1" vmmin="" vmmax="">
-			<attribute name="SeriesInstanceUID"			vr="UI" type="1" vmmin="1" vmmax="1"/>
-			<attribute name="RetrieveAETitle"			vr="AE" type="3" vmmin="1" vmmax="1"/>
-			<attribute name="StorageMediaFileSetID"			vr="SH" type="3" vmmin="1" vmmax="1"/>
-			<attribute name="StorageMediaFileSetUID"		vr="UI" type="3" vmmin="1" vmmax="1"/>
-			<sequence name="ReferencedSOPSequence"			vr="SQ" type="1" vmmin="" vmmax="">
-				<attribute name="ReferencedSOPClassUID"		vr="UI" type="1" vmmin="1" vmmax="1"/>
-				<attribute name="ReferencedSOPInstanceUID"	vr="UI" type="1" vmmin="1" vmmax="1"/>
+		<sequence name="ReferencedSeriesSequence"		vr="SQ" type="1" vmmin="1" vmmax="n">
+			<includemacro name="HierarchicalSeriesReferenceMacro"/>
+		</sequence>
+	</definemacro>
+
+	<definemacro name="HierarchicalSeriesReferenceMacro">
+		<attribute name="SeriesInstanceUID"							vr="UI" type="1" vmmin="1" vmmax="1"/>
+		<attribute name="RetrieveAETitle"							vr="AE" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="RetrieveLocationUID"						vr="UI" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="StorageMediaFileSetID"						vr="SH" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="StorageMediaFileSetUID"					vr="UI" type="3" vmmin="1" vmmax="1"/>
+		<sequence name="ReferencedSOPSequence"						vr="SQ" type="1" vmmin="" vmmax="">
+			<includemacro name="SOPInstanceReferenceMacro"/>
+			<sequence name="PurposeOfReferenceCodeSequence"			vr="SQ" type="3" vmmin="1" vmmax="n">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+			<sequence name="ReferencedDigitalSignaturesSequence"		vr="SQ" type="3" vmmin="1" vmmax="n">
+				<attribute name="DigitalSignatureUID"					vr="UI" type="1" vmmin="1" vmmax="1"/>
+				<attribute name="Signature"								vr="OB" type="1" vmmin="1" vmmax="1"/>
+				<sequence name="ReferencedSOPInstanceMACSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+					<attribute name="MACCalculationTransferSyntaxUID"	vr="UI" type="1" vmmin="1" vmmax="1"/>
+					<attribute name="MACAlgorithm"						vr="CS" type="1" vmmin="1" vmmax="1">
+						<definedtermslist valueselector="1">
+							<definedterm value="RIPEMD160"/>
+							<definedterm value="MD5"/>
+							<definedterm value="SHA1"/>
+							<definedterm value="SHA256"/>
+							<definedterm value="SHA384"/>
+							<definedterm value="SHA512"/>
+						</definedtermslist>
+					</attribute>
+					<attribute name="DataElementsSigned"				vr="AT" type="1" vmmin="1" vmmax="n"/>
+					<attribute name="MAC"								vr="OB" type="1" vmmin="1" vmmax="1"/>
+				</sequence>
 			</sequence>
 		</sequence>
 	</definemacro>
@@ -2208,14 +2611,49 @@
 		</sequence>
 	</definemacro>
 
+	<definemacro name="PatientGroupMacro">
+		<sequence name="SourcePatientGroupIdentificationSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+			<attribute name="PatientID"									vr="LO" type="2" vmmin="1" vmmax="1"/>
+			<includemacro name="IssuerOfPatientIDMacro"/>
+		</sequence>
+		<sequence name="GroupOfPatientsIdentificationSequence"			vr="SQ" type="3" vmmin="1" vmmax="n">
+			<attribute name="PatientID"									vr="LO" type="2" vmmin="1" vmmax="1"/>
+			<includemacro name="IssuerOfPatientIDMacro"/>
+			<attribute name="SubjectRelativePositionInImage"			vr="US" type="3" vmmin="1" vmmax="n"/>
+			<attribute name="PatientPosition"							vr="CS" type="3" vmmin="1" vmmax="1">
+				<definedtermslist valueselector="1">
+					<definedterm value="HFP"/>
+					<definedterm value="HFS"/>
+					<definedterm value="HFDR"/>
+					<definedterm value="HFDL"/>
+					<definedterm value="FFDR"/>
+					<definedterm value="FFDL"/>
+					<definedterm value="FFP"/>
+					<definedterm value="FFS"/>
+					<definedterm value="LFP"/>
+					<definedterm value="LFS"/>
+					<definedterm value="RFP"/>
+					<definedterm value="RFS"/>
+					<definedterm value="AFDR"/>
+					<definedterm value="AFDL"/>
+					<definedterm value="PFDR"/>
+					<definedterm value="PFDL"/>
+				</definedtermslist>
+			</attribute>
+		</sequence>
+	</definemacro>
+
 	<definemacro name="PixelMeasuresMacro">
 		<sequence name="PixelMeasuresSequence"				vr="SQ" type="1"  vmmin="1" vmmax="1">
-			<attribute name="PixelSpacing"				vr="DS" type="1C" vmmin="2" vmmax="2" condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME')" mbpo="T">
+			<attribute name="PixelSpacing"				vr="DS" type="1C" vmmin="2" vmmax="2" condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME') or (/DicomObject/SOPClassUID = '1.2.840.10008.5.1.4.1.1.66.4' and count(/DicomObject/FrameOfReferenceUID) &gt; 0)" mbpo="T">
 				<verify test="number(PixelSpacing/value[@number=1])=0 and //Rows/value &gt; 1" status="Error" message="first value of 0 is illegal when more than one Row"/>
 				<verify test="number(PixelSpacing/value[@number=2])=0 and //Columns/value &gt; 1" status="Error" message="second value of 0 is  illegal when more than one Column"/>
 			</attribute>
-			<attribute name="SliceThickness"			vr="DS" type="1C" vmmin="1" vmmax="1" condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED') or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and (../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED')) or (name(../../..) = 'SharedFunctionalGroupsSequence' and (/DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='SAMPLED'))" mbpo="T">
+			<attribute name="SliceThickness"			vr="DS" type="1C" vmmin="1" vmmax="1" condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED') or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and (../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED')) or (name(../../..) = 'SharedFunctionalGroupsSequence' and (/DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='SAMPLED')) or (/DicomObject/SOPClassUID = '1.2.840.10008.5.1.4.1.1.66.4' and count(/DicomObject/FrameOfReferenceUID) &gt; 0)"  mbpo="T">
 				<verify test="number(SliceThickness/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
+			</attribute>
+			<attribute name="SpacingBetweenSlices"		vr="DS" type="3" vmmin="1" vmmax="1">
+				<verify test="number(SpacingBetweenSlices/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
 			</attribute>
 		</sequence>
 	</definemacro>
@@ -2223,9 +2661,9 @@
 	<definemacro name="FrameContentMacro">
 		<sequence name="FrameContentSequence"				vr="SQ" type="1" vmmin="1" vmmax="1">
 			<attribute name="FrameAcquisitionNumber"		vr="US" type="3"  vmmin="1" vmmax="1"/>
-			<attribute name="FrameReferenceDateTime"		vr="DT" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')" mbpo="T"/>
-			<attribute name="FrameAcquisitionDateTime"		vr="DT" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')" mbpo="T"/>
-			<attribute name="FrameAcquisitionDuration"		vr="FD" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')" mbpo="T">
+			<attribute name="FrameReferenceDateTime"		vr="DT" type="1C" vmmin="1" vmmax="1" condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')) and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.128.1'" mbpo="T"/>
+			<attribute name="FrameAcquisitionDateTime"		vr="DT" type="1C" vmmin="1" vmmax="1" condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')) and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.128.1'" mbpo="T"/>
+			<attribute name="FrameAcquisitionDuration"		vr="FD" type="1C" vmmin="1" vmmax="1" condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')) and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.4.4' and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.128.1'" mbpo="T">
 				<verify test="number(FrameAcquisitionDuration/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
 			</attribute>
 			<attribute name="CardiacCyclePosition"			vr="CS" type="3"  vmmin="1" vmmax="1">
@@ -2260,14 +2698,16 @@
 	<definemacro name="PlanePositionMacro">
 		<sequence name="PlanePositionSequence"				vr="SQ" type="1"  vmmin="1" vmmax="1">
 			<attribute name="ImagePositionPatient"			vr="DS" type="1C" vmmin="3" vmmax="3" condition="((/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED') or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and (../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED')) or (name(../../..) = 'SharedFunctionalGroupsSequence' and (/DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='SAMPLED')))
-														     and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))" mbpo="T"/>
+														     and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))
+															  or (/DicomObject/SOPClassUID = '1.2.840.10008.5.1.4.1.1.66.4' and count(/DicomObject/FrameOfReferenceUID) &gt; 0)" mbpo="T"/>
 		</sequence>
 	</definemacro>
 
 	<definemacro name="PlaneOrientationMacro">
 		<sequence name="PlaneOrientationSequence"			vr="SQ" type="1"  vmmin="1" vmmax="1">
 			<attribute name="ImageOrientationPatient"		vr="DS" type="1C" vmmin="6" vmmax="6" condition="((/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED') or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and (../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='VOLUME' or ../../MRImageFrameTypeSequence/Item[@number=1]/VolumetricProperties/value[@number=1]='SAMPLED')) or (name(../../..) = 'SharedFunctionalGroupsSequence' and (/DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='VOLUME' or /DicomObject/PerFrameFunctionalGroupsSequence/Item/MRImageFrameTypeSequence/Item[*]/VolumetricProperties/value[@number=1]='SAMPLED')))
-														     and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))" mbpo="T"/>
+														     and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))
+															  or (/DicomObject/SOPClassUID = '1.2.840.10008.5.1.4.1.1.66.4' and count(/DicomObject/FrameOfReferenceUID) &gt; 0)" mbpo="T"/>
 		</sequence>
 	</definemacro>
 
@@ -2283,7 +2723,7 @@
 	</definemacro>
 
 	<definemacro name="DerivationImageMacro">
-		<sequence name="DerivationImageSequence"				vr="SQ" type="1" vmmin="1" vmmax="1">
+		<sequence name="DerivationImageSequence"				vr="SQ" type="2" vmmin="0" vmmax="n">
 			<attribute name="DerivationDescription"				vr="ST" type="3"  vmmin="1" vmmax="1"/>
 			<sequence  name="DerivationCodeSequence"			vr="SQ" type="1" vmmin="1" vmmax="1">
 				<includemacro name="CodeSequenceMacro"/>
@@ -2401,20 +2841,24 @@
 		</sequence>
 	</definemacro>
 	
+	<definemacro name="RealWorldValueMappingItemMacro">
+		<attribute name="RealWorldValueFirstValueMapped"		vr="XS" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="RealWorldValueLastValueMapped"			vr="XS" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="RealWorldValueIntercept"			vr="FD" type="1C" vmmin="1" vmmax="1" condition="count(RealWorldValueLUTData) = 0" mbpo="F"/>
+		<attribute name="RealWorldValueSlope"				vr="FD" type="1C" vmmin="1" vmmax="1" condition="count(RealWorldValueLUTData) = 0" mbpo="F">
+			<verify test="number(RealWorldValueSlope/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
+		</attribute>
+		<attribute name="RealWorldValueLUTData"				vr="FD" type="1C" vmmin="1" vmmax="n" condition="count(RealWorldValueIntercept) = 0" mbpo="F"/>
+		<attribute name="LUTExplanation"				vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="LUTLabel"					vr="SH" type="1"  vmmin="1" vmmax="1"/>
+		<sequence  name="MeasurementUnitsCodeSequence"			vr="SQ" type="1" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+	</definemacro>
+
 	<definemacro name="RealWorldValueMappingMacro">
 		<sequence name="RealWorldValueMappingSequence"				vr="SQ" type="1" vmmin="1" vmmax="1">
-			<attribute name="RealWorldValueFirstValueMapped"		vr="XS" type="1"  vmmin="1" vmmax="1"/>
-			<attribute name="RealWorldValueLastValueMapped"			vr="XS" type="1"  vmmin="1" vmmax="1"/>
-			<attribute name="RealWorldValueIntercept"			vr="FD" type="1C" vmmin="1" vmmax="1" condition="count(RealWorldValueLUTData) = 0" mbpo="F"/>
-			<attribute name="RealWorldValueSlope"				vr="FD" type="1C" vmmin="1" vmmax="1" condition="count(RealWorldValueLUTData) = 0" mbpo="F">
-				<verify test="number(RealWorldValueSlope/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
-			</attribute>
-			<attribute name="RealWorldValueLUTData"				vr="FD" type="1C" vmmin="1" vmmax="n" condition="count(RealWorldValueIntercept) = 0" mbpo="F"/>
-			<attribute name="LUTExplanation"				vr="LO" type="1"  vmmin="1" vmmax="1"/>
-			<attribute name="LUTLabel"					vr="SH" type="1"  vmmin="1" vmmax="1"/>
-			<sequence  name="MeasurementUnitsCodeSequence"			vr="SQ" type="1" vmmin="1" vmmax="1">
-				<includemacro name="CodeSequenceMacro"/>
-			</sequence>
+			<includemacro name="RealWorldValueMappingItemMacro"/>
 		</sequence>
 	</definemacro>
 
@@ -2515,6 +2959,8 @@
 					<definedterm value="ANGIO"/>
 					<definedterm value="CARDIAC"/>
 					<definedterm value="CARDIAC_GATED"/>
+					<definedterm value="CARDRESP_GATED"/>
+					<definedterm value="DYNAMIC"/>
 					<definedterm value="FLUOROSCOPY"/>
 					<definedterm value="LOCALIZER"/>
 					<definedterm value="MOTION"/>
@@ -2523,14 +2969,17 @@
 					<definedterm value="POST_CONTRAST"/>
 					<definedterm value="RESP_GATED"/>
 					<definedterm value="REST"/>
+					<definedterm value="STATIC"/>
 					<definedterm value="STRESS"/>
 					<definedterm value="VOLUME"/>
 					<definedterm value="NON_PARALLEL"/>
 					<definedterm value="PARALLEL"/>
+					<definedterm value="WHOLE_BODY"/>
 					<definedterm value="ANGIO_TIME"/>
 					<definedterm value="ASL"/>
 					<definedterm value="CINE"/>
 					<definedterm value="DIFFUSION"/>
+					<definedterm value="DIXON"/>
 					<definedterm value="FLOW_ENCODED"/>
 					<definedterm value="FLUID_ATTENUATED"/>
 					<definedterm value="FMRI"/>
@@ -2569,14 +3018,21 @@
 					<definedterm value="Z_SCORE"/>
 					<definedterm value="NONE"/>
 					<definedterm value="ADC"/>
-					<definedterm value="PERFUSION_ASL"/>
 					<definedterm value="DIFFUSION"/>
 					<definedterm value="DIFFUSION_ANISO"/>
 					<definedterm value="DIFFUSION_ATTNTD"/>
 					<definedterm value="DIFFUSION_ISO"/>
+					<definedterm value="FAT"/>
+					<definedterm value="FAT_FRACTION"/>
+					<definedterm value="FIELD_MAP"/>
+					<definedterm value="IN_PHASE"/>
 					<definedterm value="METABOLITE_MAP"/>
 					<definedterm value="NEI"/>
+					<definedterm value="OUT_OF_PHASE"/>
+					<definedterm value="PERFUSION_ASL"/>
 					<definedterm value="R_COEFFICIENT"/>
+					<definedterm value="R2_MAP"/>
+					<definedterm value="R2_STAR_MAP"/>
 					<definedterm value="RHO"/>
 					<definedterm value="SCM"/>
 					<definedterm value="SNR_MAP"/>
@@ -2586,6 +3042,8 @@
 					<definedterm value="TCS"/>
 					<definedterm value="TEMPERATURE"/>
 					<definedterm value="VELOCITY"/>
+					<definedterm value="WATER"/>
+					<definedterm value="WATER_FRACTION"/>
 				</definedtermslist>
 				<verify test="FrameType/value[@number=1]='ORIGINAL' and FrameType/value[@number=4]!='NONE'" status="Error" message="value 4 must be NONE when value 1 is ORIGINAL"/>
 				<verify test="FrameType/value[@number=1]='DERIVED' and FrameType/value[@number=4]='NONE'" status="Error" message="value 4 must not be NONE when value 1 is DERIVED"/>
@@ -2708,7 +3166,7 @@
 					<definedterm value="NONE"/>
 				</definedtermslist>
 			</attribute>
-			<attribute name="FlowCompensationDirection"			vr="CS" type="1C"  vmmin="1" vmmax="1" condition="(count(FlowCompensation) &gt; 0 and FlowCompensation/value[@number=1]!='NONE') and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))" mbpo="T">
+			<attribute name="FlowCompensationDirection"			vr="CS" type="1C"  vmmin="1" vmmax="1" condition="(count(FlowCompensation) &gt; 0 and FlowCompensation/value[@number=1]!='NONE') and (/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL'))" mbpo="F">
 				<verify test="FlowCompensation/value[@number=1]='NONE'" status="Error" message="May not be present unless FlowCompensation is other than NONE"/>
 				<enumeratedvalueslist valueselector="1">
 					<enumeratedvalue value="PHASE"/>
@@ -2841,7 +3299,7 @@
 	</definemacro>
 	
 	<definemacro name="MRReceiveCoilMacro">
-		<sequence name="MRReceiveCoilSequence"					vr="SQ" type="1"  vmmin="1" vmmax="1">
+		<sequence name="MRReceiveCoilSequence"					vr="SQ" type="1"  vmmin="1" vmmax="n">
 			<attribute name="ReceiveCoilName"				vr="SH" type="1C" vmmin="1" vmmax="1"	condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')
 																											or /DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRSpectroscopyFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRSpectroscopyFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRSpectroscopyFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')" mbpo="T"/>
 			<attribute name="ReceiveCoilManufacturerName"			vr="LO" type="2C" vmmin="1" vmmax="1"	condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/MRImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')
@@ -3345,8 +3803,7 @@
 			</enumeratedvalueslist>
 		</attribute>
 		<sequence name="ReferencedPerformedProcedureStepSequence"	vr="SQ" type="1C" vmmin="1" vmmax="1" nocondition="">
-			<attribute name="ReferencedSOPClassUID"			vr="UI" type="1"  vmmin="1" vmmax="1"/>
-			<attribute name="ReferencedSOPInstanceUID"		vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<includemacro name="SOPInstanceReferenceMacro"/>
 		</sequence>
 	</definemodule>
 	
@@ -3365,6 +3822,8 @@
 				<definedterm value="ANGIO"/>
 				<definedterm value="CARDIAC"/>
 				<definedterm value="CARDIAC_GATED"/>
+				<definedterm value="CARDRESP_GATED"/>
+				<definedterm value="DYNAMIC"/>
 				<definedterm value="FLUOROSCOPY"/>
 				<definedterm value="LOCALIZER"/>
 				<definedterm value="MOTION"/>
@@ -3373,11 +3832,15 @@
 				<definedterm value="POST_CONTRAST"/>
 				<definedterm value="RESP_GATED"/>
 				<definedterm value="REST"/>
+				<definedterm value="STATIC"/>
 				<definedterm value="STRESS"/>
 				<definedterm value="VOLUME"/>
 				<definedterm value="NON_PARALLEL"/>
 				<definedterm value="PARALLEL"/>
+				<definedterm value="WHOLE_BODY"/>
 				<definedterm value="ATTENUATION"/>
+				<definedterm value="CARDIAC_CTA"/>
+				<definedterm value="CARDIAC_CASCORE"/>
 				<definedterm value="REFERENCE"/>
 			</definedtermslist>
 			<definedtermslist valueselector="4">
@@ -3409,24 +3872,24 @@
 		</attribute>
 		<includemacro name="CommonCTMRImageDescriptionAtImageLevelMacro"/>
 		<attribute name="AcquisitionNumber"				vr="IS" type="3" vmmin="1" vmmax="1"/>
-		<attribute name="AcquisitionDateTime"				vr="DT" type="1C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T"/>
-		<attribute name="AcquisitionDuration"				vr="FD" type="2C" vmmin="1" vmmax="1" condition="ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED'" mbpo="T">
+		<attribute name="AcquisitionDateTime"				vr="DT" type="1C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2'" mbpo="T"/>
+		<attribute name="AcquisitionDuration"				vr="FD" type="2C" vmmin="1" vmmax="1" condition="(ImageType/value[@number=1]='ORIGINAL' or ImageType/value[@number=1]='MIXED') and /DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2'" mbpo="T">
 			<verify test="number(AcquisitionDuration/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
 		</attribute>
 		<sequence name="ReferencedRawDataSequence"			vr="SQ" type="3" vmmin="" vmmax="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedWaveformSequence"			vr="SQ" type="3" vmmin="" vmmax="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedImageEvidenceSequence"		vr="SQ" type="1C" vmmin="" vmmax="" condition="count(//ReferencedImageSequence) &gt; 0" mbpo="F">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="SourceImageEvidenceSequence"			vr="SQ" type="1C" vmmin="" vmmax="" condition="count(//SourceImageSequence) &gt; 0" mbpo="F">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<sequence name="ReferencedPresentationStateSequence"	vr="SQ" type="1C" vmmin="" vmmax="" nocondition="">
-			<includemacro name="SOPInstanceReferenceMacro"/>
+			<includemacro name="HierarchicalSOPInstanceReferenceMacro"/>
 		</sequence>
 		<attribute name="SamplesPerPixel"				vr="US" type="1" vmmin="1" vmmax="1">
 			<enumeratedvalueslist valueselector="1">
@@ -3459,15 +3922,15 @@
 			</enumeratedvalueslist>
 			<verify test="BitsStored/value != (HighBit/value + 1)" status="Error" message="Must be one less than BitsStored"/>
 		</attribute>
-		<attribute name="ContentQualification"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="ContentQualification"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="PRODUCT"/>
 				<enumeratedvalue value="RESEARCH"/>
 				<enumeratedvalue value="SERVICE"/>
 			</enumeratedvalueslist>
 		</attribute>
-		<attribute name="ImageComments"					vr="LT" type="3" vmmin="1" vmmax="1"/>
-		<attribute name="BurnedInAnnotation"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="ImageComments"						vr="LT" type="3"  vmmin="1" vmmax="1"/>
+		<attribute name="BurnedInAnnotation"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="NO"/>
 			</enumeratedvalueslist>
@@ -3478,7 +3941,7 @@
 				<enumeratedvalue value="NO"/>
 			</enumeratedvalueslist>
 		</attribute>
-		<attribute name="LossyImageCompression"				vr="CS" type="1" vmmin="1" vmmax="1">
+		<attribute name="LossyImageCompression"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="/DicomObject/SOPClassUID != '1.2.840.10008.5.1.4.1.1.2.2'" mbpo="T">
 			<enumeratedvalueslist valueselector="1">
 				<enumeratedvalue value="00"/>
 				<enumeratedvalue value="01"/>
@@ -3504,10 +3967,12 @@
 				<enumeratedvalueslist valueselector="2">
 					<enumeratedvalue value="PRIMARY"/>
 				</enumeratedvalueslist>
-				<definedtermslist valueselector="3">
+					<definedtermslist valueselector="3">
 					<definedterm value="ANGIO"/>
 					<definedterm value="CARDIAC"/>
 					<definedterm value="CARDIAC_GATED"/>
+					<definedterm value="CARDRESP_GATED"/>
+					<definedterm value="DYNAMIC"/>
 					<definedterm value="FLUOROSCOPY"/>
 					<definedterm value="LOCALIZER"/>
 					<definedterm value="MOTION"/>
@@ -3516,11 +3981,15 @@
 					<definedterm value="POST_CONTRAST"/>
 					<definedterm value="RESP_GATED"/>
 					<definedterm value="REST"/>
+					<definedterm value="STATIC"/>
 					<definedterm value="STRESS"/>
 					<definedterm value="VOLUME"/>
 					<definedterm value="NON_PARALLEL"/>
 					<definedterm value="PARALLEL"/>
+					<definedterm value="WHOLE_BODY"/>
 					<definedterm value="ATTENUATION"/>
+					<definedterm value="CARDIAC_CTA"/>
+					<definedterm value="CARDIAC_CASCORE"/>
 					<definedterm value="REFERENCE"/>
 				</definedtermslist>
 				<definedtermslist valueselector="4">
@@ -3733,7 +4202,7 @@
 			<attribute name="EstimatedDoseSaving"			vr="FD" type="2C" vmmin="1" vmmax="1"	condition="(/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')) and ExposureModulationType/value!='NONE'" mbpo="T">
 				<verify test="ExposureModulationType/value='NONE'" status="Error" message="should not be present if ExposureModulationType is NONE"/>
 			</attribute>
-			<attribute name="CTDIvol"				vr="FD" type="2" vmmin="1" vmmax="1">
+			<attribute name="CTDIvol"				vr="FD" type="2C" vmmin="1" vmmax="1"	condition="/DicomObject/SharedFunctionalGroupsSequence/Item[@number=1]/CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL' or (name(../../..) = 'PerFrameFunctionalGroupsSequence' and ../../CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL') or (name(../../..) = 'SharedFunctionalGroupsSequence' and /DicomObject/PerFrameFunctionalGroupsSequence/Item[*]/CTImageFrameTypeSequence/Item[@number=1]/FrameType/value[@number=1]='ORIGINAL')" mbpo="T">
 				<verify test="number(CTDIvol/value)=0" status="Warning" message="value of 0 is not illegal, but is unlikely to be correct"/>
 			</attribute>
 			<sequence  name="CTDIPhantomTypeCodeSequence"	vr="SQ" type="3"  vmmin="1" vmmax="1">
@@ -3849,7 +4318,12 @@
 		<attribute name="InstanceNumber"				vr="IS" type="1" vmmin="1" vmmax="1"/>
 		<attribute name="ContentDate"					vr="DA" type="1" vmmin="1" vmmax="1"/>
 		<attribute name="ContentTime"					vr="TM" type="1" vmmin="1" vmmax="1"/>
-		<attribute name="AcquisitionDateTime"				vr="DT" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="AcquisitionDateTime"			vr="DT" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="ContentLabel"					vr="CS" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="ContentDescription"			vr="LO" type="3" vmmin="1" vmmax="1"/>
+		<sequence  name="ConceptNameCodeSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
 		<attribute name="CreatorVersionUID"				vr="UI" type="1" vmmin="1" vmmax="1"/>
 		<sequence  name="ReferencedInstanceSequence"			vr="SQ" type="3"  vmmin="1" vmmax="n">
 			<attribute name="ReferencedSOPClassUID"			vr="UI" type="1"  vmmin="1" vmmax="1"/>
@@ -3868,16 +4342,393 @@
 				<includemacro name="CodeSequenceMacro"/>
 			</sequence>
 		</sequence>
-		<attribute name="SliceProgressionDirection"		vr="CS" type="3" vmmin="1" vmmax="1">
+	</definemacro>
+
+	<definemacro name="UnassignedSharedConvertedAttributesMacro">
+		<sequence name="UnassignedSharedConvertedAttributesSequence"	vr="SQ" type="1C"  vmmin="1" vmmax="1" nocondition="">
+		</sequence>
+	</definemacro>
+
+	<definemacro name="UnassignedPerFrameConvertedAttributesMacro">
+		<sequence name="UnassignedSharedConvertedAttributesSequence"	vr="SQ" type="1C"  vmmin="1" vmmax="1" nocondition="">
+		</sequence>
+	</definemacro>
+	
+	<definemacro name="ImageFrameConversionSourceMacro">
+		<sequence name="ConversionSourceAttributesSequence"	vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<includemacro name="ImageSOPInstanceReferenceMacro"/>
+		</sequence>
+	</definemacro>
+	
+	<definemacro name="SeriesAndInstanceReferenceMacro">
+		<sequence  name="ReferencedSeriesSequence"			vr="SQ" type="1" vmmin="1" vmmax="n">
+			<attribute name="SeriesInstanceUID"				vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<sequence  name="ReferencedInstanceSequence"	vr="SQ" type="1"  vmmin="1" vmmax="n">
+				<includemacro name="SOPInstanceReferenceMacro"/>
+			</sequence>
+		</sequence>
+	</definemacro>
+
+	<definemodule name="CommonInstanceReferenceModule">
+		<sequence  name="ReferencedSeriesSequence"			vr="SQ" type="1C" vmmin="1" vmmax="n" condition="count(//ReferencedSOPInstanceUID) &gt; 0 and count(StudiesContainingOtherReferencedInstancesSequence) = 0" mbpo="T">	<!-- standard does not say mbpo, but we need this since we do not know what ReferencedSOPInstanceUID reference -->
+			<attribute name="SeriesInstanceUID"				vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<sequence  name="ReferencedInstanceSequence"	vr="SQ" type="1"  vmmin="1" vmmax="n">
+				<includemacro name="SOPInstanceReferenceMacro"/>
+			</sequence>
+		</sequence>
+		<sequence  name="StudiesContainingOtherReferencedInstancesSequence"		vr="SQ" type="1C" vmmin="1" vmmax="n" condition="count(//ReferencedSOPInstanceUID) &gt; 0 and count(ReferencedSeriesSequence) = 0" mbpo="T">	<!-- standard does not say mbpo, but we need this since we do not know what ReferencedSOPInstanceUID reference -->
+			<attribute name="StudyInstanceUID"				vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<includemacro name="SeriesAndInstanceReferenceMacro"/>
+		</sequence>
+	</definemodule>
+
+	<definemodule name="FrameExtractionModule">
+		<sequence  name="FrameExtractionSequence"				vr="SQ" type="1" vmmin="1" vmmax="n">
+			<attribute name="MultiFrameSourceSOPInstanceUID"	vr="UI" type="1"  vmmin="1" vmmax="1"/>
+			<attribute name="SimpleFrameList"					vr="UL" type="1C"  vmmin="1" vmmax="1" condition="count(CalculatedFrameList) = 0 and count(TimeRange) = 0"/>
+			<attribute name="CalculatedFrameList"				vr="UL" type="1C"  vmmin="1" vmmax="1" condition="count(SimpleFrameList) = 0 and count(TimeRange) = 0"/>
+			<attribute name="TimeRange"							vr="FD" type="1C"  vmmin="1" vmmax="1" condition="count(SimpleFrameList) = 0 and count(CalculatedFrameList) = 0"/>
+		</sequence>
+	</definemodule>
+
+	<definemodule name="SpecimenModule">
+		<includemacro name="SpecimenMacro"/>
+	</definemodule>
+
+	<definemacro name="SpecimenMacro">
+		<attribute name="ContainerIdentifier"						vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<sequence name="IssuerOfTheContainerIdentifierSequence"		vr="SQ" type="2"  vmmin="0" vmmax="1">
+			<includemacro name="HL7v2HierarchicDesignatorMacro"/>
+		</sequence>
+        <sequence name="AlternateContainerIdentifierSequence"		vr="SQ" type="3"  vmmin="1" vmmax="1">
+			<attribute name="ContainerIdentifier"					vr="LO" type="1"  vmmin="1" vmmax="1"/>
+			<sequence name="IssuerOfTheContainerIdentifierSequence"	vr="SQ" type="2"  vmmin="0" vmmax="1">
+				<includemacro name="HL7v2HierarchicDesignatorMacro"/>
+			</sequence>
+		</sequence>
+		<sequence name="ContainerTypeCodeSequence"					vr="SQ" type="2"  vmmin="0" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<attribute name="ContainerDescription"						vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<sequence name="ContainerComponentSequence"					vr="SQ" type="3"  vmmin="1" vmmax="n">
+			<sequence name="ContainerComponentTypeCodeSequence"		vr="SQ" type="1"  vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+			<attribute name="Manufacturer"							vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ManufacturerModelName"					vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentID"					vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentLength"				vr="FD" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentWidth"				vr="FD" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentDiameter"			vr="FD" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentThickness"			vr="FD" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ContainerComponentMaterial"			vr="CS" type="3"  vmmin="1" vmmax="1">
+					<definedtermslist valueselector="1">
+					<definedterm value="GLASS"/>
+					<definedterm value="PLASTIC"/>
+					<definedterm value="METAL"/>
+				</definedtermslist>
+			</attribute>
+			<attribute name="ContainerComponentDescription"					vr="LO" type="3"  vmmin="1" vmmax="1"/>
+		</sequence>
+		<sequence name="SpecimenDescriptionSequence"						vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<attribute name="SpecimenIdentifier"							vr="LO" type="1"  vmmin="1" vmmax="1"/>
+			<sequence name="IssuerOfTheSpecimenIdentifierSequence"			vr="SQ" type="2"  vmmin="0" vmmax="1">
+				<includemacro name="HL7v2HierarchicDesignatorMacro"/>
+			</sequence>
+            <attribute name="SpecimenUID"									vr="UI" type="1"  vmmin="1" vmmax="1"/>
+            <sequence name="SpecimenTypeCodeSequence"						vr="SQ" type="3"  vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+			<attribute name="SpecimenShortDescription"						vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="SpecimenDetailedDescription"					vr="UT" type="3"  vmmin="1" vmmax="1"/>
+			<sequence name="SpecimenPreparationSequence"					vr="SQ" type="2"  vmmin="0" vmmax="n">
+				<sequence name="SpecimenPreparationStepContentItemSequence"	vr="SQ" type="1"  vmmin="1" vmmax="n">
+					<includemacro name="ContentItemMacro"/>
+				</sequence>
+			</sequence>
+			<includemacro name="PrimaryAnatomicStructureMacro"/>
+			<sequence name="SpecimenLocalizationContentItemSequence"		vr="SQ" type="1C"  vmmin="1" vmmax="n" nocondition="">
+				<includemacro name="ContentItemMacro"/>
+			</sequence>
+		</sequence>
+	</definemacro>
+
+	<definemodule name="DeviceModule">
+		<sequence name="DeviceSequence"								vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<includemacro name="CodeSequenceMacro"/>
+			<attribute name="Manufacturer"							vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="ManufacturerModelName"					vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceSerialNumber"					vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceID"								vr="LO" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceLength"							vr="DS" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceDiameter"						vr="DS" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceDiameterUnits"					vr="CS" type="1C" vmmin="1" vmmax="1" condition="count(DeviceDiameter) &gt; 0">
+					<definedtermslist valueselector="1">
+					<definedterm value="FR"/>
+					<definedterm value="GA"/>
+					<definedterm value="IN"/>
+					<definedterm value="MM"/>
+				</definedtermslist>
+			</attribute>
+			<attribute name="DeviceVolume"							vr="DS" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="InterMarkerDistance"					vr="DS" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="DeviceDescription"						vr="LO" type="3"  vmmin="1" vmmax="1"/>
+		</sequence>
+	</definemodule>
+	
+	<definemacro name="ContentIdentificationMacro">
+		<attribute name="InstanceNumber"							vr="IS" type="1" vmmin="1" vmmax="1"/>
+		<attribute name="ContentLabel"								vr="CS" type="1" vmmin="1" vmmax="1"/>
+		<attribute name="ContentDescription"						vr="LO" type="2" vmmin="1" vmmax="1"/>
+		<sequence  name="ConceptNameCodeSequence"					vr="SQ" type="3" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<sequence name="AlternateContentDescriptionSequence"		vr="SQ" type="3" vmmin="1" vmmax="n">
+			<attribute name="ContentDescription"					vr="LO" type="1" vmmin="1" vmmax="1"/>
+			<sequence name="LanguageCodeSequence"					vr="SQ" type="1" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+			<sequence  name="ConceptNameCodeSequence"				vr="SQ" type="3" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+		</sequence>
+		<attribute name="ContentCreatorName"						vr="PN" type="2" vmmin="1" vmmax="1"/>
+		<sequence name="ContentCreatorIdentificationCodeSequence"	vr="SQ" type="3" vmmin="1" vmmax="n">
+			<includemacro name="PersonIdentificationMacro"/>
+		</sequence>
+	</definemacro>
+	
+	<definemodule name="SegmentationSeriesModule">
+		<attribute name="Modality"									vr="CS" type="1"  vmmin="1" vmmax="1">
 			<enumeratedvalueslist valueselector="1">
-				<enumeratedvalue value="APEX_TO_BASE"/>
-				<enumeratedvalue value="BASE_TO_APEX"/>
-				<enumeratedvalue value="ANT_TO_INF"/>
-				<enumeratedvalue value="INF_TO_ANT"/>
-				<enumeratedvalue value="SEPTUM_TO_WALL"/>
-				<enumeratedvalue value="WALL_TO_SEPTUM"/>
+				<enumeratedvalue value="SEG"/>
 			</enumeratedvalueslist>
 		</attribute>
+		<attribute name="SeriesNumber"								vr="IS" type="1"  vmmin="1" vmmax="1"/>
+		<sequence name="ReferencedPerformedProcedureStepSequence"	vr="SQ" type="1C" vmmin="1" vmmax="1" nocondition="">
+			<includemacro name="SOPInstanceReferenceMacro"/>
+		</sequence>
+	</definemodule>
+	
+	<definemacro name="SegmentDescriptionMacro">
+		<attribute name="SegmentNumber"								vr="US" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="SegmentLabel"								vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="SegmentDescription"						vr="ST" type="3"  vmmin="1" vmmax="1"/>
+		<attribute name="SegmentAlgorithmType"						vr="CS" type="1"  vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="AUTOMATIC"/>
+				<enumeratedvalue value="SEMIAUTOMATIC"/>
+				<enumeratedvalue value="MANUAL"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<includemacro name="GeneralAnatomyOptionalMacro"/>
+		<sequence name="SegmentedPropertyCategoryCodeSequence"		vr="SQ" type="1" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<sequence name="SegmentedPropertyTypeCodeSequence"			vr="SQ" type="1" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+			<sequence name="SegmentedPropertyTypeModifierCodeSequence"	vr="SQ" type="3" vmmin="1" vmmax="n">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+		</sequence>
+	</definemacro>
+	
+	<definemacro name="AlgorithmIdentificationMacro">
+		<sequence name="AlgorithmFamilyCodeSequence"				vr="SQ" type="1" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<sequence name="AlgorithmNameCodeSequence"					vr="SQ" type="3" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<attribute name="AlgorithmName"								vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="AlgorithmVersion"							vr="LO" type="1"  vmmin="1" vmmax="1"/>
+		<attribute name="AlgorithmParameters"						vr="LT" type="3"  vmmin="1" vmmax="1"/>
+		<attribute name="AlgorithmSource"							vr="LO" type="3"  vmmin="1" vmmax="1"/>
+	</definemacro>
+	
+	<definemodule name="SegmentationImageModule">
+		<attribute name="ImageType"									vr="CS" type="1" vmmin="2" vmmax="2">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="DERIVED"/>
+			</enumeratedvalueslist>
+			<enumeratedvalueslist valueselector="2">
+				<enumeratedvalue value="PRIMARY"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="SamplesPerPixel"							vr="US" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="1"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="PhotometricInterpretation"					vr="CS" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="MONOCHROME2"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="PixelRepresentation"						vr="US" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="0"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="BitsAllocated"								vr="US" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="1"/>
+				<enumeratedvalue value="8"/>
+			</enumeratedvalueslist>
+			<verify test="SegmentationType/value  = 'BINARY' and BitsAllocated/value != 1" status="Error" message="Must be 1 when SegmentationType is BINARY"/>
+			<verify test="SegmentationType/value != 'BINARY' and BitsAllocated/value != 8" status="Error" message="Must be 8 when SegmentationType is not BINARY"/>
+		</attribute>
+		<attribute name="BitsStored"								vr="US" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="1"/>
+				<enumeratedvalue value="8"/>
+			</enumeratedvalueslist>
+			<verify test="SegmentationType/value  = 'BINARY' and BitsStored/value != 1" status="Error" message="Must be 1 when SegmentationType is BINARY"/>
+			<verify test="SegmentationType/value != 'BINARY' and BitsStored/value != 8" status="Error" message="Must be 8 when SegmentationType is not BINARY"/>
+		</attribute>
+		<attribute name="HighBit"									vr="US" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="0"/>
+				<enumeratedvalue value="7"/>
+			</enumeratedvalueslist>
+			<verify test="SegmentationType/value  = 'BINARY' and HighBit/value != 0" status="Error" message="Must be 0 when SegmentationType is BINARY"/>
+			<verify test="SegmentationType/value != 'BINARY' and HighBit/value != 7" status="Error" message="Must be 7 when SegmentationType is not BINARY"/>
+			<verify test="BitsStored/value != (HighBit/value + 1)" status="Error" message="Must be one less than BitsStored"/>
+		</attribute>
+		<attribute name="LossyImageCompression"						vr="CS" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="00"/>
+				<enumeratedvalue value="01"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="LossyImageCompressionRatio"				vr="DS" type="1C" vmmin="1" vmmax="n" condition="LossyImageCompression/value='01'"/>
+		<attribute name="LossyImageCompressionMethod"				vr="CS" type="1C" vmmin="1" vmmax="n" condition="LossyImageCompression/value='01'"/>
+		<attribute name="SegmentationType"							vr="CS" type="1" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="BINARY"/>
+				<enumeratedvalue value="FRACTIONAL"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="SegmentationFractionalType"				vr="CS" type="1C" vmmin="1" vmmax="1" condition="SegmentationType/value = 'FRACTIONAL'">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="PROBABILITY"/>
+				<enumeratedvalue value="OCCUPANCY"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="MaximumFractionalValue"					vr="US" type="1C" vmmin="1" vmmax="1" condition="SegmentationType/value = 'FRACTIONAL'"/>
+		<sequence name="SegmentSequence"							vr="SQ" type="1"  vmmin="1" vmmax="n">
+			<includemacro name="SegmentDescriptionMacro"/>
+			<attribute name="SegmentAlgorithmName"					vr="LO" type="1C"  vmmin="1" vmmax="1" condition="SegmentAlgorithmType/value != 'MANUAL'"/>
+			<sequence name="SegmentationAlgorithmIdentificationSequence"	vr="SQ" type="3"  vmmin="1" vmmax="1">
+				<includemacro name="AlgorithmIdentificationMacro"/>
+			</sequence>
+			<attribute name="RecommendedDisplayGrayscaleValue"		vr="US" type="3"  vmmin="1" vmmax="1"/>
+			<attribute name="RecommendedDisplayCIELabValue"			vr="US" type="3"  vmmin="3" vmmax="3"/>
+		</sequence>
+	</definemodule>
+	
+	<definemodule name="GeneralImageModule">
+		<attribute name="InstanceNumber"							vr="IS" type="2"  vmmin="1" vmmax="1"/>
+		<attribute name="PatientOrientation"						vr="CS" type="2C" vmmin="1" vmmax="1" condition="count(//ImagePositionPatient) = 0 or count(//ImageOrientationPatient) = 0" mbpo="T"/>
+		<attribute name="ContentDate"								vr="DA" type="2C" vmmin="1" vmmax="1" nocondition=""/>
+		<attribute name="ContentTime"								vr="TM" type="2C" vmmin="1" vmmax="1" nocondition=""/>
+		<attribute name="ImageType"									vr="CS" type="3" vmmin="1" vmmax="n">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="ORIGINAL"/>
+				<enumeratedvalue value="DERIVED"/>
+			</enumeratedvalueslist>
+			<enumeratedvalueslist valueselector="2">
+				<enumeratedvalue value="PRIMARY"/>
+				<enumeratedvalue value="SECONDARY"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="AcquisitionNumber"							vr="IS" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="AcquisitionDate"							vr="DA" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="AcquisitionTime"							vr="TM" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="AcquisitionDateTime"						vr="DT" type="3" vmmin="1" vmmax="1"/>
+		<sequence name="ReferencedImageSequence"					vr="SQ" type="3" vmmin="1" vmmax="n">
+			<includemacro name="ImageSOPInstanceReferenceMacro"/>
+			<sequence  name="PurposeOfReferenceCodeSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+		</sequence>
+		<attribute name="DerivationDescription"						vr="ST" type="3" vmmin="1" vmmax="1"/>
+		<sequence  name="DerivationCodeSequence"					vr="SQ" type="3" vmmin="1" vmmax="1">
+			<includemacro name="CodeSequenceMacro"/>
+		</sequence>
+		<sequence  name="SourceImageSequence"						vr="SQ" type="3"  vmmin="0" vmmax="n">
+			<includemacro name="ImageSOPInstanceReferenceMacro"/>
+			<sequence  name="PurposeOfReferenceCodeSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+			<attribute name="SpatialLocationsPreserved"				vr="CS" type="3" vmmin="1" vmmax="1">
+				<enumeratedvalueslist valueselector="1">
+					<enumeratedvalue value="YES"/>
+					<enumeratedvalue value="NO"/>
+					<enumeratedvalue value="REORIENTED_ONLY"/>
+				</enumeratedvalueslist>
+			</attribute>
+			<attribute name="PatientOrientation"					vr="CS" type="1C" vmmin="1" vmmax="1" condition="SpatialLocationsPreserved/value = 'REORIENTED_ONLY'" mbpo="T"/>
+		</sequence>
+		<sequence name="ReferencedInstanceSequence"					vr="SQ" type="3" vmmin="1" vmmax="n">
+			<includemacro name="SOPInstanceReferenceMacro"/>
+			<sequence  name="PurposeOfReferenceCodeSequence"		vr="SQ" type="3" vmmin="1" vmmax="1">
+				<includemacro name="CodeSequenceMacro"/>
+			</sequence>
+		</sequence>
+		<attribute name="ImagesInAcquisition"						vr="IS" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="ImageComments"								vr="LT" type="3" vmmin="1" vmmax="1"/>
+		<attribute name="QualityControlImage"						vr="CS" type="3" vmmin="1" vmmax="1" >
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="YES"/>
+				<enumeratedvalue value="NO"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="BurnedInAnnotation"						vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="YES"/>
+				<enumeratedvalue value="NO"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="RecognizableVisualFeatures"				vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="YES"/>
+				<enumeratedvalue value="NO"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="LossyImageCompression"						vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="00"/>
+				<enumeratedvalue value="01"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="LossyImageCompressionRatio"				vr="DS" type="3" vmmin="1" vmmax="n"/>
+		<attribute name="LossyImageCompressionMethod"				vr="CS" type="3" vmmin="1" vmmax="n"/>
+		<sequence name="IconImageSequence"							vr="SQ" type="3" vmmin="1" vmmax="n">
+			<includemacro name="ImagePixelMacro"/>
+		</sequence>
+		<attribute name="PresentationLUTShape"						vr="CS" type="3" vmmin="1" vmmax="1">
+			<enumeratedvalueslist valueselector="1">
+				<enumeratedvalue value="IDENTITY"/>
+				<enumeratedvalue value="INVERSE"/>
+			</enumeratedvalueslist>
+		</attribute>
+		<attribute name="IrradiationEventUID"						vr="UI" type="3" vmmin="1" vmmax="1"/>
+		<sequence name="RealWorldValueMappingSequence"				vr="SQ" type="3" vmmin="1" vmmax="1">
+			<includemacro name="RealWorldValueMappingItemMacro"/>
+		</sequence>
+	</definemodule>
+
+	<definemacro name="SegmentationMacro">
+		<sequence name="SegmentIdentificationSequence"				vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<attribute name="ReferencedSegmentNumber"				vr="US" type="1"  vmmin="1" vmmax="1"/>
+		</sequence>
+	</definemacro>
+
+	<definemacro name="TemporalPositionMacro">
+		<sequence name="TemporalPositionSequence"					vr="SQ" type="1"  vmmin="1" vmmax="1">
+			<attribute name="TemporalPositionTimeOffset"			vr="FD" type="1"  vmmin="1" vmmax="1"/>
+		</sequence>
 	</definemacro>
 
 </definitions>

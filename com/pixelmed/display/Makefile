@@ -55,14 +55,84 @@ OBJS =	TestApp.class \
 	SuperimposedDicomSegments.class \
 	SafeFileChooser.class \
 	SafeProgressBarUpdaterThread.class \
-	SafeCursorChanger.class
+	SafeCursorChanger.class \
+	TiledSourceImageSortOrderPanel.class
 
-all:	${OBJS}
+TRANSFORMEDPROPERTIES = \
+	DicomCleaner_cs.properties \
+	DicomCleaner_da.properties \
+	DicomCleaner_de.properties \
+	DicomCleaner_el.properties \
+	DicomCleaner_es.properties \
+	DicomCleaner_fi.properties \
+	DicomCleaner_fr.properties \
+	DicomCleaner_hu.properties \
+	DicomCleaner_it.properties \
+	DicomCleaner_ja.properties \
+	DicomCleaner_ko.properties \
+	DicomCleaner_nl.properties \
+	DicomCleaner_no.properties \
+	DicomCleaner_pl.properties \
+	DicomCleaner_pt.properties \
+	DicomCleaner_ro.properties \
+	DicomCleaner_ru.properties \
+	DicomCleaner_sv.properties \
+	DicomCleaner_tr.properties \
+	DicomCleaner_zh_CN.properties \
+	DicomImageBlackout_cs.properties \
+	DicomImageBlackout_da.properties \
+	DicomImageBlackout_de.properties \
+	DicomImageBlackout_el.properties \
+	DicomImageBlackout_es.properties \
+	DicomImageBlackout_fi.properties \
+	DicomImageBlackout_fr.properties \
+	DicomImageBlackout_hu.properties \
+	DicomImageBlackout_it.properties \
+	DicomImageBlackout_ja.properties \
+	DicomImageBlackout_ko.properties \
+	DicomImageBlackout_nl.properties \
+	DicomImageBlackout_no.properties \
+	DicomImageBlackout_pl.properties \
+	DicomImageBlackout_pt.properties \
+	DicomImageBlackout_ro.properties \
+	DicomImageBlackout_ru.properties \
+	DicomImageBlackout_sv.properties \
+	DicomImageBlackout_tr.properties \
+	DicomImageBlackout_zh_CN.properties \
+	SafeFileChooser_cs.properties \
+	SafeFileChooser_da.properties \
+	SafeFileChooser_el.properties \
+	SafeFileChooser_fi.properties \
+	SafeFileChooser_hu.properties \
+	SafeFileChooser_nl.properties \
+	SafeFileChooser_no.properties \
+	SafeFileChooser_pl.properties \
+	SafeFileChooser_pt.properties \
+	SafeFileChooser_ro.properties \
+	SafeFileChooser_ru.properties \
+	SafeFileChooser_tr.properties \
+	ApplicationFrame_cs.properties \
+	ApplicationFrame_da.properties \
+	ApplicationFrame_el.properties \
+	ApplicationFrame_fi.properties \
+	ApplicationFrame_hu.properties \
+	ApplicationFrame_nl.properties \
+	ApplicationFrame_no.properties \
+	ApplicationFrame_pl.properties \
+	ApplicationFrame_pt.properties \
+	ApplicationFrame_ro.properties \
+	ApplicationFrame_ru.properties \
+	ApplicationFrame_tr.properties
+
+all:	${OBJS} ${TRANSFORMEDPROPERTIES}
 
 include ${PATHTOROOT}/Makefile.common.mk
 
+# override javac command in Makefile.common.mk to add codec to classpath, until folded into main trunk :(
 .java.class:
-	javac ${JAVACOPTIONS} -classpath ${PATHTOROOT}:${DISPLAYADDITIONALJARS} -sourcepath ${PATHTOROOT} $<
+	export JAVAVERSIONTARGETJARFILE=`/usr/libexec/java_home -v ${JAVAVERSIONTARGET} | tail -1`/jre/lib/rt.jar; javac ${JAVACOPTIONS} \
+		-classpath ${PATHTOROOT}:${SLF4JCOMPILEADDITIONALJAR}:${DISPLAYADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} \
+		-sourcepath ${PATHTOROOT} $<
 
 TEST_512_16DCM = ${PATHTODCTOOLSUPPORT}/images/dicom/forjpeg2000/discimg/MR1
 TEST_512_16RAW = /tmp/crap.512.16.raw
@@ -85,7 +155,9 @@ TEST_RGB_DCM = /tmp/crap.rgb.dcm
 TEST_RGB_JPG = /tmp/crap.rgb.jpg
 
 clean:
+	(cd event; make clean)
 	rm -f *~ *.class core *.bak \
+		${TRANSFORMEDPROPERTIES} \
 		${TEST_512_8DCM} \
 		${TEST_512_16RAW} ${TEST_BIG_16RAW} ${TEST_512_8RAW} \
 		${PATHTODCTOOLSUPPORT}/images/dicom/sr/mytests/imgforsr \
@@ -180,24 +252,21 @@ testos2dir:	DicomBrowser.class \
 				${PATHTODCTOOLSUPPORT}/images/dicom/sr/osiris_work2/DICOMDIR
 	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}  com.pixelmed.display.DicomBrowser ${PATHTODCTOOLSUPPORT}/images/dicom/sr/osiris_work2/DICOMDIR
 
-#${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties:	${PATHTOROOT}/our.com.pixelmed.display.DicomImageViewer.properties
-#	cp ${PATHTOROOT}/our.com.pixelmed.display.DicomImageViewer.properties ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-
-testnemamfmr:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}  \
+testnemamfmr:	DicomImageViewer.class
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS}  \
 		com.pixelmed.display.DicomImageViewer ${PATHTOROOT}/../../nemamfmr/DISCIMG/DICOMDIR
 
 testnemamfmr.clean:
-	rm -rf ${PATHTOHOME}/.com.pixelmed.display.*
+	rm -rf $${HOME}/.com.pixelmed.display.*
 
-testnemamfct:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
-	java -Xms512m -Xmx1024m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}  \
+testnemamfct:	DicomImageViewer.class
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -Xms512m -Xmx1024m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS}  \
 		com.pixelmed.display.DicomImageViewer ${PATHTOROOT}/../../nemamfct/DISCIMG/DICOMDIR
 
 testnemamfct.clean:
-	rm -rf ${PATHTOHOME}/.com.pixelmed.display.*
+	rm -rf $${HOME}/.com.pixelmed.display.*
 
 testplotgraph:
 	rm -f ~/snap*.jpg; for i in 0 1 2 3 4 5 6 7; do echo "frame $$i"; java -classpath ${PATHTOROOT} com.pixelmed.display.PlotGraph ~/work/nemamfmr/srcimages/ucsfspectra/spectra/spectra/t2256_cor_sum.cmplx 512 12 12 $$i; mv ~/snap*.jpg frame_$$i.jpg; done
@@ -215,56 +284,74 @@ testspectrum.dcm:	Makefile
 	cat ${PATHTOROOT}/../../nemamfmr/srcimages/ucsfspectra/spectra/spectra/t2256_cor_sum.cmplx >> testspectrum.dcm
 	rm /tmp/crap.empty
 	
-testviewer:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images; fi
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} \
+testviewer:	DicomImageViewer.class
+	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images; fi
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
 		com.pixelmed.display.DicomImageViewer
 
-testviewerlimitedmemory:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images; fi
-	java -Xms128m -Xmx128m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} \
+testviewerdebugdisplaynoslf:	DicomImageViewer.class
+	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images; fi
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.WindowCenterAndWidth=debug -Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SourceImage=debug -Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SingleImagePanel=debug \
 		com.pixelmed.display.DicomImageViewer
 
-testviewerquaqua:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images; fi
-	java -Xms512m -Xmx512m -Dswing.defaultlaf=ch.randelshofer.quaqua.QuaquaLookAndFeel -Djava.library.path=${PATHTOADDITIONAL} -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PATHTOADDITIONAL}/quaqua.jar  \
+testviewerdebugdisplayslfsimple:	DicomImageViewer.class
+	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images; fi
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${SLF4JSIMPLEADDITIONALJAR}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.WindowCenterAndWidth=debug -Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SourceImage=debug -Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SingleImagePanel=debug \
 		com.pixelmed.display.DicomImageViewer
 
-testnemamfmrspectrum:	DicomImageViewer.class testspectrum.dcm #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}  \
+testviewerlimitedmemory:	DicomImageViewer.class
+	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images; fi
+	java -Xms128m -Xmx128m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
+		com.pixelmed.display.DicomImageViewer
+
+testviewerquaqua:	DicomImageViewer.class
+	if [ ! -L .com.pixelmed.display.DicomImageViewer.images ]; then mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images; fi
+	java -Xms512m -Xmx512m -Dswing.defaultlaf=ch.randelshofer.quaqua.QuaquaLookAndFeel -Djava.library.path=${PATHTOADDITIONAL} -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR}:${PATHTOADDITIONAL}/quaqua.jar ${XALANJAVAOPTS}  \
+		com.pixelmed.display.DicomImageViewer
+
+testnemamfmrspectrum:	DicomImageViewer.class testspectrum.dcm
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS}  \
 		com.pixelmed.display.DicomImageViewer testspectrum.dcm
 
-testcharsets:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
-	java -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}  \
-		com.pixelmed.display.DicomImageViewer ${PATHTOHOME}/Pictures/Medical/charsettests/DICOMDIR
+testcharsets:	DicomImageViewer.class
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
+		com.pixelmed.display.DicomImageViewer $${HOME}/Pictures/Medical/charsettests/DICOMDIR
 
-testnema97:	DicomImageViewer.class #${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.properties
-	mkdir -p ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
-	java -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}  \
-		com.pixelmed.display.DicomImageViewer ${PATHTOHOME}/Pictures/Medical/NEMA97CD/DICOMDIR
+testnema97:	DicomImageViewer.class
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} \
+		com.pixelmed.display.DicomImageViewer $${HOME}/Pictures/Medical/NEMA97CD/DICOMDIR
 
 testviewerontestimages:	
-	(cd ${PATHTOROOT}; for i in `cat ${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/testlist`; do echo "$$i"; java -Xms512m -Xmx512m -cp pixelmed.jar:${PATHTOADDITIONAL}/excalibur-bzip2-1.0.jar:${PATHTOADDITIONAL}/hsqldb.jar:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar:${PATHTOADDITIONAL}/jai_imageio.jar:${PATHTOADDITIONAL}/commons-codec-1.3.jar:${PATHTOADDITIONAL}/jmdns.jar com.pixelmed.display.DicomImageViewer "${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/$$i"; done)
+	(for i in `cat ${PATHTOROOT}/${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/testlist`; do echo "$$i"; java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} com.pixelmed.display.DicomImageViewer "${PATHTOROOT}/${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/$$i"; done)
 
-testvieweronallmfmrimages:	
-	(for i in ${PATHTOROOT}/../../nemamfmr/DISCIMG/IMAGES/*; do echo "$$i"; java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.DicomImageViewer "$$i"; done)
+testsingleimagepanelontestimages:
+	(for i in `cat ${PATHTOROOT}/${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/testlist`; do echo "$$i"; java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} com.pixelmed.display.SingleImagePanel "${PATHTOROOT}/${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/$$i"; done)
+
+testviewerontestimagesubset:
+	(for i in `cat /tmp/testlist`; do echo "$$i"; java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} com.pixelmed.display.DicomImageViewer "${PATHTOROOT}/${PATHTODCTOOLSUPPORTFROMROOT}/images/dicom/$$i"; done)
+
+testvieweronallmfmrimages:
+	(for i in ${PATHTOROOT}/../../nemamfmr/DISCIMG/IMAGES/*; do echo "$$i"; java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} com.pixelmed.display.DicomImageViewer "$$i"; done)
 
 testvieweronallmfctimages:	
-	(for i in ${PATHTOROOT}/../../nemamfct/DISCIMG/IMAGES/*; do echo "$$i"; java -Xms512m -Xmx1024m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.DicomImageViewer "$$i"; done)
+	(for i in ${PATHTOROOT}/../../nemamfct/DISCIMG/IMAGES/*; do echo "$$i"; java -Xms512m -Xmx1024m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS} com.pixelmed.display.DicomImageViewer "$$i"; done)
 	
 testconsumer8:	${TEST_512_8DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_8DCM} ${TEST_512_8JPG} jpeg 127.5 256 384 384 50 all 0
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_8DCM} ${TEST_512_8JPG} jpeg 127.5 256 384 384 50 all
 
 testconsumer8_subregion:	${TEST_512_8DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_8DCM} /tmp/crap.512.8.subregion.jpg jpeg 127.5 256 384 384 50 all 0 127 127 256 256
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_8DCM} /tmp/crap.512.8.subregion.jpg jpeg 127.5 256 384 384 50 all 127 127 256 256
 
 testconsumer16:	${TEST_512_16DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_16DCM} ${TEST_512_16JPG} jpeg 600 1600 384 384 50 all 0
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_512_16DCM} ${TEST_512_16JPG} jpeg 600 1600 384 384 50 all
 
 testconsumer16bmp:	${TEST_512_16DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
@@ -295,35 +382,38 @@ testconsumernegativewindow:	${TEST_512_16DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		"$${HOME}/work/dctool.support/images/dicom/rt/varian_portal_rtimage_negativewindow_tinyrescaleslope_curvedata.dcm" \
-		/tmp/crap.jpg jpeg 1.28 0.8 0 0 50 all 3
+		/tmp/crap.jpg jpeg 1.28 0.8 0 0 50 all
 
 testconsumermfoverridesharedwindow:	ConsumerFormatImageMaker.class
+	rm -rf /tmp/MultiframeForRendering
+	(cd /tmp; bzcat </Volumes/Toshiba5TEnc/Pictures/Medical/QIBA_CT_1B/QIBA_1B_RadPharm_RoundOne_MultiframeForRendering.tar.bz2 | tar -xvf - MultiframeForRendering/series103mf.dcm)
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
-		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/series103mf.dcm \
+		/tmp/MultiframeForRendering/series103mf.dcm \
 		/tmp/testconsumermfoverridesharedwindow.jpg \
-		jpeg 127.5 256 384 384 50 all 0
+		jpeg 127.5 256 384 384 50 all
+	rm -r /tmp/MultiframeForRendering
 
 testconsumermfoverrideperframewindow:	ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		$${HOME}/Pictures/Medical/EnhancedMultiframe/Philips_Multiframe_MR/IM_0022 \
 		/tmp/testconsumermfoverrideperframewindow.jpg \
-		jpeg 127.5 256 384 384 50 all 0
+		jpeg 127.5 256 384 384 50 all
 
 testconsumermfdefaultwindow:	ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		$${HOME}/Pictures/Medical/EnhancedMultiframe/Philips_Multiframe_MR/IM_0022 \
 		/tmp/testconsumermfdefaultwindow.jpg \
-		jpeg 0 0 384 384 50 all 0
+		jpeg 0 0 384 384 50 all
 
 testconsumermfdefaultwindowsizequalitynoannotations:	ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		$${HOME}/Pictures/Medical/EnhancedMultiframe/Philips_Multiframe_MR/IM_0022 \
 		/tmp/testconsumermfdefaultwindow.jpg \
-		jpeg 0 0 0 0 -1 none 0
+		jpeg 0 0 0 0 -1 none
 
 testconsumermfnoarguments:	ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
@@ -336,14 +426,35 @@ testconsumermfoneselectedframe:	ConsumerFormatImageMaker.class
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		$${HOME}/Pictures/Medical/EnhancedMultiframe/Philips_Multiframe_MR/IM_0022 \
 		/tmp/testconsumermfoneselectedframe.jpg \
-		jpeg 0 0 384 384 50 all_color 0 0 0 0 0 100 100
+		jpeg 0 0 384 384 50 all_color 0 0 0 0 100 100
 
 testconsumermftenselectedframes:	ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.ConsumerFormatImageMaker \
 		$${HOME}/Pictures/Medical/EnhancedMultiframe/Philips_Multiframe_MR/IM_0022 \
 		/tmp/testconsumermfoneselectedframe.jpg \
-		jpeg 0 0 384 384 50 all_color 0 0 0 0 0 100 110
+		jpeg 0 0 384 384 50 all_color 0 0 0 0 100 110
+
+testconsumerybrfull:	ConsumerFormatImageMaker.class
+	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.ConsumerFormatImageMaker \
+		$${HOME}/Pictures/Medical/Color/YBRFULLBYPLANE/ybrfullbyplanecleaned.dcm \
+		/tmp/testconsumerybrfull.jpg \
+		jpeg
+
+testconsumerybrfullwithwindow:	ConsumerFormatImageMaker.class
+	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.ConsumerFormatImageMaker \
+		$${HOME}/Pictures/Medical/Color/YBRFULLBYPLANE/ybrfullbyplanecleaned.dcm \
+		/tmp/testconsumerybrfullwithwindow.jpg \
+		jpeg 50 128
+
+testconsumerybrfull422:	ConsumerFormatImageMaker.class
+	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.ConsumerFormatImageMaker \
+		$${HOME}/Pictures/Medical/Color/YBR_FULL_422_Uncompressed/574C2EB2_cleaned \
+		/tmp/testconsumerybrfull422.jpg \
+		jpeg
 
 ${TEST_RGB_DCM}:
 	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.ImageToDicom \
@@ -353,25 +464,33 @@ ${TEST_RGB_DCM}:
 
 testconsumerrgb_subregion:	${TEST_RGB_DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 none 0 120 120 100 100
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 none 120 120 100 100
 
 testconsumerrgb_noannotationsatall:	${TEST_RGB_DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 none 0
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 none
 
 testconsumerrgb_nocolorannotations:	${TEST_RGB_DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 all 0
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 all
 
 testconsumerrgb_colorannotations:	${TEST_RGB_DCM} ConsumerFormatImageMaker.class
 	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
-		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 all_color 0
-		
+		com.pixelmed.display.ConsumerFormatImageMaker ${TEST_RGB_DCM} ${TEST_RGB_JPG} jpeg 0 0 0 0 50 all_color
+
+testconsumermfrlenoarguments:	ConsumerFormatImageMaker.class
+	cp "$${HOME}/Pictures/Medical/RLE/S3U_000E" /tmp/crap.dcm # MF 8 bit PALETTE COLOR
+	java -Xms512m -Xmx512m -Djava.awt.headless=true -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.ConsumerFormatImageMaker \
+		/tmp/crap.dcm \
+		/tmp/testconsumermfrledefaults.jpg
+
 testmammohome:
 	if [ ! -L testmammohome ] ; then if [ -d $${HOME}/Pictures/Medical/ihemammotests/IHETESTS ] ; then ln -s $${HOME}/Pictures/Medical/ihemammotests/IHETESTS testmammohome; elif [ -d /Volumes/SEAGATE4/IHEMammo ] ; then ln -s /Volumes/SEAGATE4/IHEMammo/server1.radiology.nmh.org/IHETESTS testmammohome; elif [ -d /Volumes/IHETESTS ] ; then ln -s /Volumes/IHETESTS testmammohome; elif [ -d /mnt/windows/h/IHEMammo ] ; then ln -s /mnt/windows/h/IHEMammo/server1.radiology.nmh.org/IHETESTS testmammohome; fi ; fi
 
 testmammo1:	MammoImageViewer.class testmammohome
 	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.MammoImageViewer=debug \
 		com.pixelmed.display.MammoImageViewer \
 		testmammohome/IMAGES/001001/CURLCC \
 		testmammohome/IMAGES/001001/CURLMLO \
@@ -520,10 +639,10 @@ testmammofuji:	MammoImageViewer.class testmammohome
 testmammohologic1:	MammoImageViewer.class testmammohome
 	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.MammoImageViewer \
-		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]//Series 001 [MG - ]/1.2.840.113681.2200408748.773.3252222433.61.1.dcm" \
-		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]//Series 002 [MG - ]/1.2.840.113681.2200408748.773.3252222433.65.1.dcm" \
-		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]//Series 004 [MG - ]/1.2.840.113681.2200408748.773.3252222433.59.1.dcm" \
-		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]//Series 005 [MG - ]/1.2.840.113681.2200408748.773.3252222433.63.1.dcm"
+		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]/Series 001 [MG - ]/1.2.840.113681.2200408748.773.3252222433.61.1.dcm" \
+		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]/Series 002 [MG - ]/1.2.840.113681.2200408748.773.3252222433.65.1.dcm" \
+		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]/Series 004 [MG - ]/1.2.840.113681.2200408748.773.3252222433.59.1.dcm" \
+		"testmammohome/../VendorSampleImages/Hologic/Hologic Lorad Lorad 4view 2004 0122 raw and processed [26221]/20040122 103234 [2]/Series 005 [MG - ]/1.2.840.113681.2200408748.773.3252222433.63.1.dcm"
 
 testmammohologic2:	MammoImageViewer.class testmammohome
 	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
@@ -597,6 +716,14 @@ testmammospacing:	MammoImageViewer.class
 	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
 		com.pixelmed.display.MammoImageViewer $${HOME}/Work/pixelspacingtestimages/DISCIMG/IMAGES/MGIMAGE
 
+testmammodbt:	MammoImageViewer.class
+	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.MammoImageViewer \
+		$${HOME}/Documents/Medical/stuff/medical.nema.org/Dicom/DataSets/WG15/BreastTomoImage/GE_BreastTomo_2014_07/GE-Breast_Tomo-Example-0.5mm-2014_07/p136/e148/s2433/i11428.MGDC.2 \
+		$${HOME}/Documents/Medical/stuff/medical.nema.org/Dicom/DataSets/WG15/BreastTomoImage/GE_BreastTomo_2014_07/GE-Breast_Tomo-Example-0.5mm-2014_07/p136/e148/s2434/i11430.MGDC.2 \
+		$${HOME}/Documents/Medical/stuff/medical.nema.org/Dicom/DataSets/WG15/BreastTomoImage/GE_BreastTomo_2014_07/GE-Breast_Tomo-Example-0.5mm-2014_07/p136/e148/s2435/i11432.MGDC.2 \
+		$${HOME}/Documents/Medical/stuff/medical.nema.org/Dicom/DataSets/WG15/BreastTomoImage/GE_BreastTomo_2014_07/GE-Breast_Tomo-Example-0.5mm-2014_07/p136/e148/s2436/i11434.MGDC.2
+
 testblackoutwithfiles:	DicomImageBlackout.class ${TEST_512_8DCM}
 	dcsmpte /tmp/testblackoutwithfiles1 -rows 512 -columns 512
 	dcsmpte /tmp/testblackoutwithfiles2 -bits 12 -rows 400 -columns 768
@@ -611,8 +738,60 @@ testblackoutwithfiles:	DicomImageBlackout.class ${TEST_512_8DCM}
 		/tmp/testblackoutwithfiles1
 	rm -f /tmp/testblackoutwithfiles1 /tmp/testblackoutwithfiles2 /tmp/testblackoutwithfiles3
 
+testblackoutwithlossyjpegfiles:	DicomImageBlackout.class
+	rm -f /tmp/crap.dcm
+	cp "$${HOME}/Pictures/Medical/LossyJPEGFragmented/test_n_fragments.dcm" /tmp/crap.dcm
+	dcfile /tmp/crap.dcm
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.display.DicomImageBlackout \
+		/tmp/crap.dcm
+	rm /tmp/crap.dcm
+
+testblackoutwithlossyjpegfilesblockredact:	DicomImageBlackout.class
+	rm -f /tmp/crap.dcm
+	cp "$${HOME}/Pictures/Medical/LossyJPEGFragmented/test_n_fragments.dcm" /tmp/crap.dcm
+	dcfile /tmp/crap.dcm
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}:${JPEGBLOCKREDACTIONJAR} com.pixelmed.display.DicomImageBlackout \
+		/tmp/crap.dcm
+	rm /tmp/crap.dcm
+
+testblackoutwithlosslessjpegfiles:	DicomImageBlackout.class
+	rm -f /tmp/crap.dcm
+	#cp "$${HOME}/Pictures/Medical/JPEGLossless/eightbitrgbsingleframe.dcm" /tmp/crap.dcm	# SF 8 bit RGB
+	#cp "$${HOME}/Pictures/Medical/JPEGLossless/BadWithPVRGCodecButOKWithOther/000caecb.dcm" /tmp/crap.dcm	# SF 12 bit MONOCHROME2
+	#cp "$${HOME}/Pictures/Medical/JPEGLossless/EightBitJIIOCodecProblem/seq0" /tmp/crap.dcm	# MF 8 bit MONOCHROME2
+	cp "$${HOME}/Pictures/Medical/JPEGLossless/ivus_thousandsofframes_losslessjpeg.dcm" /tmp/crap.dcm	# MF++ 8 bit MONOCHROME2
+	dcfile /tmp/crap.dcm
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomImageBlackout \
+		/tmp/crap.dcm
+	rm /tmp/crap.dcm
+
+testblackoutwithrlefiles:	DicomImageBlackout.class
+	rm -f /tmp/crap.dcm
+	#cp "$${HOME}/Pictures/Medical/RLE/CU7WJ28E" /tmp/crap.dcm	# MF 8 bit RGB
+	#cp "$${HOME}/Documents/Medical/stuff/medical.nema.org/MEDICAL/Dicom/DataSets/WG12/GE_VingMed/GEMS_IMG/2001_DEC/11/6M163410/2929J686" /tmp/crap.dcm	# MF 8 bit YBR_FULL
+	#cp "$${HOME}/Pictures/Medical/RLE/0020.DCM" /tmp/crap.dcm	# MF 8 bit PALETTE COLOR
+	#cp "$${HOME}/Pictures/Medical/RLE/view0002.dcm" /tmp/crap.dcm # SF 8 bit YBR_FULL
+	#cp "$${HOME}/Pictures/Medical/RLE/rleybrfull8_badoddsegmentoffset.dcm" /tmp/crap.dcm # SF 8 bit YBR_FULL
+	#cp "$${HOME}/Pictures/Medical/RLE/09DKNID3_anon_badoddsegmentoffsetin8bitrle.dcm" /tmp/crap.dcm # SF 8 bit YBR_FULL illegal odd offset
+	#cp "$${HOME}/Pictures/Medical/RLE/CX50_DemoImages_PedEcho/PC1X00/PC1XXX00" /tmp/crap.dcm # MF 8 bit PALETTE COLOR
+	#cp "$${HOME}/Pictures/Medical/RLE/US16BitsPaletteColorRLE.dcm" /tmp/crap.dcm # MF 16 bit PALETTE COLOR
+	cp "$${HOME}/Pictures/Medical/RLE/S3U_000E" /tmp/crap.dcm # MF 8 bit PALETTE COLOR
+	dcfile /tmp/crap.dcm
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}:${JPEGBLOCKREDACTIONJAR} com.pixelmed.display.DicomImageBlackout \
+		/tmp/crap.dcm
+	rm /tmp/crap.dcm
+
+testblackoutwithj2kfiles:	DicomImageBlackout.class
+	rm -f /tmp/crap.dcm
+	#cp "$${HOME}/Pictures/Medical/JPEG2000Various/FromDaveHarvey/anon/JPEG2000/SC-COL-RGB-24-bit.90" /tmp/crap.dcm
+	cp "$${HOME}/Pictures/Medical/JPEG2000Various/FromDaveHarvey/anon/JPEG2000/CT-MONO-16-bit-signed.91-real" /tmp/crap.dcm
+	dcfile /tmp/crap.dcm
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}:${JIIOADDITIONALJARS} com.pixelmed.display.DicomImageBlackout \
+		/tmp/crap.dcm
+	rm /tmp/crap.dcm
+
 testblackoutwithchooser:	DicomImageBlackout.class
-	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.display.DicomImageBlackout
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}:${JPEGBLOCKREDACTIONJAR} com.pixelmed.display.DicomImageBlackout
 
 testblackoutsamesizewindowclearingproblem:	DicomImageBlackout.class
 	cp $${HOME}/Work/imagesamples/COMPTESTS/DISCIMG/IMAGES/REF/RG1_UNC /tmp/crap1
@@ -702,52 +881,177 @@ testsinglepanel:	SingleImagePanel.class
 	rm /tmp/crap.dcm
 
 testcleaner:	DicomCleaner.class
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.DicomCleaner
+	java -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+# can also use -Duser.country=JP, then if no ja_JP suffix file falls back to using just _ja
+
+testcleanerczech:	DicomCleaner.class DicomCleaner_cs.properties DicomImageBlackout_cs.properties SafeFileChooser_cs.properties ApplicationFrame_cs.properties
+	java -Duser.language=cs -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerdannish:	DicomCleaner.class DicomCleaner_da.properties DicomImageBlackout_da.properties SafeFileChooser_da.properties ApplicationFrame_da.properties
+	java -Duser.language=da -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanergerman:	DicomCleaner.class DicomCleaner_de.properties DicomImageBlackout_de.properties
+	java -Duser.language=de -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanergreek:	DicomCleaner.class DicomCleaner_el.properties DicomImageBlackout_el.properties SafeFileChooser_el.properties ApplicationFrame_el.properties
+	java -Duser.language=el -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerspanish:	DicomCleaner.class DicomCleaner_es.properties DicomImageBlackout_es.properties
+	java -Duser.language=es -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerfinnish:	DicomCleaner.class DicomCleaner_fi.properties DicomImageBlackout_fi.properties SafeFileChooser_fi.properties ApplicationFrame_fi.properties
+	java -Duser.language=fi -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerfrench:	DicomCleaner.class DicomCleaner_fr.properties DicomImageBlackout_fr.properties
+	java -Duser.language=fr -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerhungarian:	DicomCleaner.class DicomCleaner_hu.properties DicomImageBlackout_hu.properties SafeFileChooser_hu.properties ApplicationFrame_hu.properties
+	java -Duser.language=hu -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleaneritalian:	DicomCleaner.class DicomCleaner_it.properties DicomImageBlackout_it.properties
+	java -Duser.language=it -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerjapanese:	DicomCleaner.class DicomCleaner_ja.properties DicomImageBlackout_ja.properties
+	java -Duser.language=ja -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerkorean:	DicomCleaner.class DicomCleaner_ko.properties DicomImageBlackout_ko.properties
+	java -Duser.language=ko -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerdutch:	DicomCleaner.class DicomCleaner_nl.properties DicomImageBlackout_nl.properties SafeFileChooser_nl.properties ApplicationFrame_nl.properties
+	java -Duser.language=nl -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanernorwegian:	DicomCleaner.class DicomCleaner_no.properties DicomImageBlackout_no.properties SafeFileChooser_no.properties ApplicationFrame_no.properties
+	java -Duser.language=no -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerpolish:	DicomCleaner.class DicomCleaner_pl.properties DicomImageBlackout_pl.properties SafeFileChooser_pl.properties ApplicationFrame_pl.properties
+	java -Duser.language=pl -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerportuguese:	DicomCleaner.class DicomCleaner_pt.properties DicomImageBlackout_pt.properties SafeFileChooser_pt.properties ApplicationFrame_pt.properties
+	java -Duser.language=pt -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerromanian:	DicomCleaner.class DicomCleaner_ro.properties DicomImageBlackout_ro.properties SafeFileChooser_ro.properties ApplicationFrame_ro.properties
+	java -Duser.language=ru -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerrussian:	DicomCleaner.class DicomCleaner_ru.properties DicomImageBlackout_ru.properties SafeFileChooser_ru.properties ApplicationFrame_ru.properties
+	java -Duser.language=ru -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerswedish:	DicomCleaner.class DicomCleaner_sv.properties DicomImageBlackout_sv.properties
+	java -Duser.language=sv -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerturkish:	DicomCleaner.class DicomCleaner_tr.properties DicomImageBlackout_tr.properties SafeFileChooser_tr.properties ApplicationFrame_tr.properties
+	java -Duser.language=tr -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleanerchinesesimplified:	DicomCleaner.class DicomCleaner_zh_CN.properties DicomImageBlackout_zh_CN.properties
+	java -Duser.language=zh_CN -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
+
+testcleaneralllocalizations: \
+	testcleanerczech \
+	testcleanerdannish \
+	testcleanergerman \
+	testcleanergreek \
+	testcleanerspanish \
+	testcleanerfinnish \
+	testcleanerfrench \
+	testcleanerhungarian \
+	testcleaneritalian \
+	testcleanerjapanese \
+	testcleanerkorean \
+	testcleanerdutch \
+	testcleanernorwegian \
+	testcleanerpolish \
+	testcleanerportuguese \
+	testcleanerromanian \
+	testcleanerrussian \
+	testcleanerswedish \
+	testcleanerturkish \
+	testcleanerchinesesimplified
+
+testcleanerwithoutjpegblockredaction:	DicomCleaner.class
+	java -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.DicomCleaner
 
 testcleanerlimitedmemory:	DicomCleaner.class
-	java -Xms256m -Xmx256m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.DicomCleaner
+	java -Xms256m -Xmx256m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.DicomCleaner
 
 testiconlistbrowser:	IconListBrowser.class IconDemographicAndTechniqueAnnotations.class
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.IconListBrowser \
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.IconListBrowser \
 		$${HOME}/Pictures/Medical/GoodCRDX/Deidentified/1001110011/2/1/1.dcm \
 		$${HOME}/Pictures/Medical/GoodCRDX/Deidentified/1000510005/2/35534/1.dcm \
 		$${HOME}/Pictures/Medical/GoodCRDX/Deidentified/1001110011/2/1/1.dcm \
 		$${HOME}/Pictures/Medical/GoodCRDX/Deidentified/1000510005/2/35534/1.dcm
 
 testsuperimposed:	SuperimposedImage.class SuperimposedDicomImage.class
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.SuperimposedDicomImage \
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomImage \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/series103mf.dcm \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/seg.dcm
 
 testsuperimposedjpeg:	SuperimposedImage.class SuperimposedDicomImage.class
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.SuperimposedDicomImage \
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomImage \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/series103mf.dcm \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/seg.dcm \
 		/tmp/testsuperimposed.jpg
 
 testsuperimposedoneseg:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.SuperimposedDicomSegments \
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/series103mf.dcm \
 		$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/MultiframeForRendering/seg.dcm
 
 testsuperimposedmultiseg2013_nac_hncma:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
-	(cd ../convert; make testlabelmapbrainatlas2013_nac_hncma)
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.SuperimposedDicomSegments \
+	(cd ../convert; make /tmp/grayscale2013_nac_hncma.dcm /tmp/seg2013_nac_hncma.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
 		/tmp/grayscale2013_nac_hncma.dcm \
 		/tmp/seg2013_nac_hncma.dcm
 
 testsuperimposedmultiseg2013_nac_hncma_jpeg:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
-	(cd ../convert; make testlabelmapbrainatlas2013_nac_hncma)
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} -Djava.awt.headless=true com.pixelmed.display.SuperimposedDicomSegments \
+	(cd ../convert; make /tmp/grayscale2013_nac_hncma.dcm /tmp/seg2013_nac_hncma.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} -Djava.awt.headless=true com.pixelmed.display.SuperimposedDicomSegments \
 		/tmp/grayscale2013_nac_hncma.dcm \
 		/tmp/seg2013_nac_hncma.dcm \
 		/tmp/testsuperimposed.jpg
 
+testsuperimposedmultiseg2017_nac_hncma:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	(cd ../convert; make /tmp/grayscale2017_nac_hncma.dcm /tmp/seg2017_nac_hncma.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		/tmp/grayscale2017_nac_hncma.dcm \
+		/tmp/seg2017_nac_hncma.dcm
+
 testsuperimposedmultiseg2008:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
-	(cd ../convert; make testlabelmapbrainatlas2008)
-	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS} com.pixelmed.display.SuperimposedDicomSegments \
+	(cd ../convert; make /tmp/grayscale2008.dcm /tmp/seg2008.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
 		/tmp/grayscale2008.dcm \
 		/tmp/seg2008.dcm
+
+# for this to work, need to relax tolerance value to 1.5mm in SuperimposedImage.java :(
+testsuperimposedprostate:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	(cd ../convert; make /tmp/grayscaleprostate.dcm /tmp/segprostate.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		/tmp/grayscaleprostate.dcm \
+		/tmp/segprostate.dcm
+		
+testsuperimposedpet:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	(cd ../dicom; make testpetforseg)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		/tmp/petforseg/* \
+		$${HOME}/Pictures/Medical/QIICRDICOMSampleData/Iowa-QIN/cerebellum.dcm
+
+# doesn't display at because seg not transverse (is sagittal) (001187) :(
+testsuperimposedkidneylesion:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	(cd ../convert; make /tmp/grayscalekidneylesion.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		/tmp/grayscalekidneylesion.dcm \
+		"$${HOME}/Pictures/Medical/TCIA/C4KC-KiTS/C4KC-KiTS/KiTS-00000/06-29-2003-threephaseabdomen-41748/300-Segmentation-01366/000000.dcm"
+
+# displays in wrong place (whether use corrected version of seg or not) - orientation is rotated to -> P\L (i.e, 0\1\0 1\0\0) rather than source image L\P 1\0\0 0\1\0 (001187) :(
+testsuperimposedbrainlesion:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	(cd ../convert; make /tmp/grayscalebrainlesion.dcm)
+	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		/tmp/grayscalebrainlesion.dcm \
+		"$${HOME}/Pictures/Medical/Segmentations/TCGA-06-0119/DSO/seg_7-AxFLAIR-thin__for__surgery-06923.dcm"
+	#"$${HOME}/Pictures/Medical/Segmentations/TCGA-06-0119/DSO/seg_corrected_7-AxFLAIR-thin__for__surgery-06923.dcm"
+
+testsuperimposedsegreadtime:	SuperimposedDicomSegments.class SuperimposedImage.class SuperimposedDicomImage.class SourceImageSubset.class
+	java -Xms2g -Xmx2g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} com.pixelmed.display.SuperimposedDicomSegments \
+		$${HOME}/Pictures/Medical/Segmentations/TotalBodySegmenter/ABD_LYMPH_008_SEG.dcm
 
 test_iccprofile_defaultcmm:	TestAppMultiFile.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.display.TestAppMultiFile \
@@ -762,5 +1066,23 @@ test_iccprofile_lcms:	TestAppMultiFile.class
 	java -Dsun.java2d.cmm="sun.java2d.cmm.lcms.LcmsServiceProvider" \
 		-cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.display.TestAppMultiFile \
 		$${HOME}/Pictures/Medical/ColorProfileTests/converted/IMAGES/[A-Z]*
+
+testdisplayrle:	SingleImagePanel.class
+	java -Xms1024m -Xmx1024m -cp ${PATHTOROOT}:${DISPLAYADDITIONALJARS}  \
+		com.pixelmed.display.SingleImagePanel \
+		"$${HOME}/Pictures/Medical/RLE/view0002.dcm"
+		#"$${HOME}/Pictures/Medical/RLE/0020.DCM"
+		#"$${HOME}/Pictures/Medical/RLE/US16BitsPaletteColorRLE.dcm"
+
+testviewertiled:	DicomImageViewer.class
+	mkdir -p $${HOME}/.com.pixelmed.display.DicomImageViewer.images
+	java -Xmx4g -cp ${PATHTOROOT}:${VIEWERADDITIONALJARS}:${PIXELMEDIMAGEIOJAR} ${XALANJAVAOPTS}  \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.TiledFramesIndex=debug \
+		com.pixelmed.display.DicomImageViewer \
+		"$${HOME}/Pictures/Medical/WSI/WG26Demo2017/AsOf20170923/wsiimages/Tulip^Chris [P-45214579]/20121212 000000 [T13 0121]/Series 003 [SM]/1.3.46.670589.45.1.1.219124696743444.1.4600.1388967452753.3.dcm"
+		#"$${HOME}/Pictures/Medical/NEMA/WG26/Hamamatsu/Human_15x15_20x.dcm"
+
+
+
 
 

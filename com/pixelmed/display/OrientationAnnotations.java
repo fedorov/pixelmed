@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -23,7 +23,7 @@ import com.pixelmed.dicom.GeometryOfVolumeFromAttributeList;
  */
 class OrientationAnnotations {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/OrientationAnnotations.java,v 1.2 2005/12/17 22:52:24 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/OrientationAnnotations.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
 	
 	/***/
 	private GeometryOfVolume imageGeometry;
@@ -31,6 +31,8 @@ class OrientationAnnotations {
 	private String rowOrientationFromPatientOrientation;
 	/***/
 	private String columnOrientationFromPatientOrientation;
+	/***/
+	private boolean quadruped;
 	
 	/**
 	 * @param	rowOrientation
@@ -40,6 +42,7 @@ class OrientationAnnotations {
 		rowOrientationFromPatientOrientation = rowOrientation;
 		columnOrientationFromPatientOrientation = columnOrientation;
 		imageGeometry = null;
+		quadruped = false;
 	}
 	
 	/**
@@ -69,6 +72,7 @@ class OrientationAnnotations {
 	 */
 	private void doCommonConstructorStuff(AttributeList list,GeometryOfVolume imageGeometry) {
 		this.imageGeometry=imageGeometry;
+		quadruped = Attribute.getSingleStringValueOrDefault(list,TagFromName.AnatomicalOrientationType,"BIPED").equals("QUADRUPED");
 		rowOrientationFromPatientOrientation="";
 		columnOrientationFromPatientOrientation="";
 		if (list != null) {
@@ -97,7 +101,7 @@ class OrientationAnnotations {
 	public final String getRowOrientation(int frame) {
 		String rowOrientation = null;
 		if (imageGeometry != null) {
-			rowOrientation = imageGeometry.getRowOrientation(frame);
+			rowOrientation = imageGeometry.getRowOrientation(frame,quadruped);
 		}
 		if (rowOrientation == null || rowOrientation.length() == 0) {
 			rowOrientation=rowOrientationFromPatientOrientation;
@@ -115,7 +119,7 @@ class OrientationAnnotations {
 	public final String getColumnOrientation(int frame) {
 		String columnOrientation = null;
 		if (imageGeometry != null) {
-			columnOrientation = imageGeometry.getColumnOrientation(frame);
+			columnOrientation = imageGeometry.getColumnOrientation(frame,quadruped);
 		}
 		if (columnOrientation == null || columnOrientation.length() == 0) {
 			columnOrientation=columnOrientationFromPatientOrientation;

@@ -1,6 +1,11 @@
-/* Copyright (c) 2004-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.utils.FloatFormatter;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -11,24 +16,24 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
-import com.pixelmed.utils.FileUtilities;
-import com.pixelmed.utils.FloatFormatter;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.AppletDisplayRequestHandler AppletDisplayRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link AppletDisplayRequestHandler AppletDisplayRequestHandler} creates a response to an HTTP request for
  * a page that displays all the images in a specified series.</p>
  *
  * @author	dclunie
  */
 class AppletDisplayRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/AppletDisplayRequestHandler.java,v 1.2 2011/04/04 14:47:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/AppletDisplayRequestHandler.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(AppletDisplayRequestHandler.class);
 	
 	private String appletDisplayTemplateFileName;
 
-	protected AppletDisplayRequestHandler(String stylesheetPath,String appletDisplayTemplateFileName,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	protected AppletDisplayRequestHandler(String stylesheetPath,String appletDisplayTemplateFileName) {
+		super(stylesheetPath);
 		this.appletDisplayTemplateFileName=appletDisplayTemplateFileName;
 	}
 	
@@ -40,7 +45,7 @@ class AppletDisplayRequestHandler extends RequestHandler {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 			values=null;
 		}
 		return values;
@@ -51,13 +56,16 @@ class AppletDisplayRequestHandler extends RequestHandler {
 			int returnValue = 0;
 			String si1 = (String)(((Map)o1).get("INSTANCENUMBER"));
 			String si2 = (String)(((Map)o2).get("INSTANCENUMBER"));
+			if (si1 == null) si1="";
+			if (si2 == null) si2="";
 			try {
-				int i1 = Integer.parseInt(si1);
-				int i2 = Integer.parseInt(si2);
+				int i1 = si1.length() > 0 ? Integer.parseInt(si1) : 0;
+				int i2 = si2.length() > 0 ? Integer.parseInt(si2) : 0;
 				returnValue = i1 - i2;
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
+				returnValue = si1.compareTo(si2);
 			}
 			return returnValue;
 		}
@@ -90,7 +98,7 @@ class AppletDisplayRequestHandler extends RequestHandler {
 			}
 						
 			String template = FileUtilities.readFile(fileStream);
-if (webServerDebugLevel > 2) System.err.println("AppletDisplayRequestHandler.generateResponseToGetRequest(): Template is "+template);
+			slf4jlogger.trace("generateResponseToGetRequest(): Template is\n{}",template);
 
 			// <PARAM NAME = "imgURL0" VALUE = "http://mars.elcom.nitech.ac.jp/dicom/data/mrangio.dcm">
 				
@@ -133,22 +141,22 @@ if (webServerDebugLevel > 2) System.err.println("AppletDisplayRequestHandler.gen
 						
 			String numberOfInstanceReplacement = Integer.toString(numberOfInstance);
 			//String numberOfInstanceReplacement = "1";
-if (webServerDebugLevel > 2) System.err.println("AppletDisplayRequestHandler.generateResponseToGetRequest(): numberOfInstanceReplacement is "+numberOfInstanceReplacement);
+			slf4jlogger.trace("generateResponseToGetRequest(): numberOfInstanceReplacement is {}",numberOfInstanceReplacement);
 			template = template.replaceFirst("####REPLACEMEWITHNUMBEROFIMAGEFILES####",numberOfInstanceReplacement);
 
 			String imageURLsReplacement = imageURLsReplacementStrbuf.toString();
 			//String imageURLsReplacement = "<PARAM NAME = \"imgURL0\" VALUE = \"http://mars.elcom.nitech.ac.jp/dicom/data/mrabdo.dcm\">";
-if (webServerDebugLevel > 2) System.err.println("AppletDisplayRequestHandler.generateResponseToGetRequest(): imageURLsReplacement is "+imageURLsReplacement);
+			slf4jlogger.trace("generateResponseToGetRequest(): imageURLsReplacement is {}",imageURLsReplacement);
 			template = template.replaceFirst("####REPLACEMEWITHLISTOFIMAGEURLSASPARAMETERS####",imageURLsReplacement);
 												
 			template = template.replaceAll("####REPLACEMEWITHROOTURL####",rootURL);
 												
-if (webServerDebugLevel > 2) System.err.println("AppletDisplayRequestHandler.generateResponseToGetRequest(): Response after replacement is "+template);
+			slf4jlogger.trace("generateResponseToGetRequest(): Response after replacement is\n{}",template);
 			sendHeaderAndBodyText(out,template,"imagedisplay.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("AppletDisplayRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

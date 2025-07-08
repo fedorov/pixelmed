@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -22,9 +22,13 @@ import java.security.NoSuchAlgorithmException;
 
 import java.util.UUID;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class DeviceParticipant {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/DeviceParticipant.java,v 1.6 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/DeviceParticipant.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DeviceParticipant.class);
 
 	protected String manufacturer;
 	protected String modelName;
@@ -102,15 +106,15 @@ public class DeviceParticipant {
 					}
 				}
 				catch (UnsupportedEncodingException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 					useDeviceSerialNumber = null;
 				}
 				catch (NoSuchAlgorithmException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 					useDeviceSerialNumber = null;
 				}
 				catch (DicomException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -146,7 +150,7 @@ public class DeviceParticipant {
 					// there is no top level attribute in the DICOM data set to add this back to the list as
 				}
 				catch (UnsupportedEncodingException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 					useUID = null;
 				}
 			}

@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.*; 
+import com.pixelmed.dicom.*;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -11,15 +14,11 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.dicom.*;
-
 /**
  * @author	dclunie
  */
 class TestAppMultiFile extends ApplicationFrame {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFile.java,v 1.1 2013/10/16 16:10:01 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFile.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	arg
@@ -30,7 +29,7 @@ class TestAppMultiFile extends ApplicationFrame {
 		int imagesPerRow=2;
 		int imagesPerCol=((arg.length-1)/imagesPerRow)+1;
 
-//System.err.println("imagesPerRow="+imagesPerRow);
+//System.err.println("imagesPerRow="+imagesPerRow);	// no need to use SLF4J since command line utility/test
 //System.err.println("imagesPerCol="+imagesPerCol);
 
 		JPanel multiPanel = new JPanel();
@@ -56,7 +55,7 @@ class TestAppMultiFile extends ApplicationFrame {
 				imagePanel[p]=ip;
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 			++y;
 			if (y >= imagesPerRow) {

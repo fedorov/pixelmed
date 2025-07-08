@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -14,7 +14,7 @@ import java.util.ListIterator;
  * @author	dclunie
  */
 public class HuffmanDecoder {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanDecoder.java,v 1.9 2004/02/22 19:54:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanDecoder.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
 
 	private int[] extractBitMask = { 0x80,0x40,0x20,0x10,0x08,0x04,0x02,0x01 };
 	
@@ -300,7 +300,7 @@ public class HuffmanDecoder {
 				63, 70, 74, 71, 79, 89, 96, 102, 108, 112, 114, 116, 116, 112, 110, 100, 87, 74, 59, 42, 28, 13, 5, -1, -8, -11, -13, -17
 				};
 			
-			System.out.println("Decoded (should be exact):");
+			System.out.println("Decoded (should be exact):");	// no need to use SLF4J since command line utility/test
 			HuffmanDecoder decoder = new HuffmanDecoder(test,2/*differenceDataUsed*/,1/*amplitudeValueMultiplier*/,19999,null);
 			try {
 				short[] decompressedData = decoder.decode(nSamples);
@@ -310,7 +310,7 @@ public class HuffmanDecoder {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 			
 			System.out.println("Multiplied (expect to see quantization error):");
@@ -323,7 +323,7 @@ public class HuffmanDecoder {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 	}

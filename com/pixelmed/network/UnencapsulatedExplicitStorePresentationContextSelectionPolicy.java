@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 import java.util.LinkedList;
 import java.util.ListIterator;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Accept only SOP Classes for storage of composite instances and verification SOP Classes
@@ -13,8 +16,9 @@ import java.util.ListIterator;
  * @author	dclunie
  */
 public class UnencapsulatedExplicitStorePresentationContextSelectionPolicy implements PresentationContextSelectionPolicy {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/UnencapsulatedExplicitStorePresentationContextSelectionPolicy.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/UnencapsulatedExplicitStorePresentationContextSelectionPolicy.java,v 1.3 2012/09/03 23:47:49 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(UnencapsulatedExplicitStorePresentationContextSelectionPolicy.class);
 	
 	protected AbstractSyntaxSelectionPolicy abstractSyntaxSelectionPolicy;
 	protected TransferSyntaxSelectionPolicy transferSyntaxSelectionPolicy;
@@ -25,26 +29,38 @@ public class UnencapsulatedExplicitStorePresentationContextSelectionPolicy imple
 	}
 	
 	/**
+	 * Accept or reject Presentation Contexts.
+	 *
+	 * Only SOP Classes for storage of composite instances and verification SOP Classes are accepted.
+	 *
+	 * @deprecated						SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #applyPresentationContextSelectionPolicy(LinkedList,int)} instead.
+	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects, each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
+	 * @param	associationNumber		for debugging messages
+	 * @param	debugLevel				ignored
+	 * @return							the java.util.LinkedList of {@link PresentationContext PresentationContext} objects, as supplied but with the result/reason field set to either "acceptance" or "abstract syntax not supported (provider rejection)" or "transfer syntaxes not supported (provider rejection)" or " no reason (provider rejection)"
+	 */
+	public LinkedList applyPresentationContextSelectionPolicy(LinkedList presentationContexts,int associationNumber,int debugLevel) {
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		return applyPresentationContextSelectionPolicy(presentationContexts,associationNumber);
+	}
+	
+	/**
 	 * Accept or reject Abstract Syntaxes (SOP Classes).
 	 *
 	 * Only SOP Classes for storage of composite instances and verification SOP Classes are accepted.
 	 *
-	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects,
-	 *			each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
-	 * @param	associationNumber	for debugging messages
-	 * @param	debugLevel
-	 * @return		the java.util.LinkedList of {@link PresentationContext PresentationContext} objects,
-	 *			as supplied but with the result/reason field set to either "acceptance" or
-	 *			"abstract syntax not supported (provider rejection)"
+	 * @param	presentationContexts	a java.util.LinkedList of {@link PresentationContext PresentationContext} objects, each of which contains an Abstract Syntax (SOP Class UID) with one or more Transfer Syntaxes
+	 * @param	associationNumber		for debugging messages
+	 * @return							the java.util.LinkedList of {@link PresentationContext PresentationContext} objects, as supplied but with the result/reason field set to either "acceptance" or "abstract syntax not supported (provider rejection)" or "transfer syntaxes not supported (provider rejection)" or " no reason (provider rejection)"
 	 */
-	public LinkedList applyPresentationContextSelectionPolicy(LinkedList presentationContexts,int associationNumber,int debugLevel) {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Presentation contexts requested:\n"+presentationContexts);
-		presentationContexts = abstractSyntaxSelectionPolicy.applyAbstractSyntaxSelectionPolicy(presentationContexts,associationNumber,debugLevel);				// must be called 1st
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Presentation contexts after applyAbstractSyntaxSelectionPolicy:\n"+presentationContexts);
-		presentationContexts = transferSyntaxSelectionPolicy.applyTransferSyntaxSelectionPolicy(presentationContexts,associationNumber,debugLevel);				// must be called 2nd
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Presentation contexts after applyTransferSyntaxSelectionPolicy:\n"+presentationContexts);
-		presentationContexts = transferSyntaxSelectionPolicy.applyExplicitTransferSyntaxPreferencePolicy(presentationContexts,associationNumber,debugLevel);	// must be called 3rd
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Presentation contexts after applyExplicitTransferSyntaxPreferencePolicy:\n"+presentationContexts);
+	public LinkedList applyPresentationContextSelectionPolicy(LinkedList presentationContexts,int associationNumber) {
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Presentation contexts requested:\n{}",associationNumber,presentationContexts.toString());
+		presentationContexts = abstractSyntaxSelectionPolicy.applyAbstractSyntaxSelectionPolicy(presentationContexts,associationNumber);				// must be called 1st
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Presentation contexts after applyAbstractSyntaxSelectionPolicy:\n{}",associationNumber,presentationContexts.toString());
+		presentationContexts = transferSyntaxSelectionPolicy.applyTransferSyntaxSelectionPolicy(presentationContexts,associationNumber);				// must be called 2nd
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Presentation contexts after applyTransferSyntaxSelectionPolicy:\n{}",associationNumber,presentationContexts.toString());
+		presentationContexts = transferSyntaxSelectionPolicy.applyExplicitTransferSyntaxPreferencePolicy(presentationContexts,associationNumber);	// must be called 3rd
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Presentation contexts after applyExplicitTransferSyntaxPreferencePolicy:\n{}",associationNumber,presentationContexts.toString());
 		return presentationContexts;
 	}
 }

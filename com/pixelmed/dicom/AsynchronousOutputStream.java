@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class AsynchronousOutputStream extends FilterOutputStream {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AsynchronousOutputStream.java,v 1.3 2013/09/09 15:58:02 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AsynchronousOutputStream.java,v 1.15 2025/01/29 10:58:06 dclunie Exp $";
 
 	private BlockingQueue<ByteArrayObject> q;
 	private Consumer c;
@@ -111,14 +111,14 @@ public class AsynchronousOutputStream extends FilterOutputStream {
      * @param      b     the data.
      * @param      off   the start offset in the data.
      * @param      len   the number of bytes to write.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
 	public void write(byte b[],int off,int len) throws IOException {
 		try {
 			q.put(new ByteArrayObject(b,0,b.length));
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
 	}
@@ -129,14 +129,14 @@ public class AsynchronousOutputStream extends FilterOutputStream {
      * Writes the specified <code>byte</code> to this output stream. 
      *
      * @param      b   the <code>byte</code>.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
     public void write(int b) throws IOException {
 		try {
 			q.put(new ByteArrayObject(b));
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
     }
@@ -145,14 +145,14 @@ public class AsynchronousOutputStream extends FilterOutputStream {
      * Writes <code>b.length</code> bytes to this output stream. 
      *
      * @param      b   the data to be written.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
     public void write(byte b[]) throws IOException {
 		try {
 			q.put(new ByteArrayObject(b));
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
     }
@@ -196,7 +196,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 						out.write(b,off,len);
 					}
 					catch (IOException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 						bad = true;
 						exception = e;
 						doneSignal.countDown();
@@ -208,7 +208,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 					out.flush();
 				}
 				catch (IOException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 					bad = true;
 					exception = e;
 					doneSignal.countDown();
@@ -219,7 +219,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 					out.close();
 				}
 				catch (IOException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 					bad = true;
 					exception = e;
 				}
@@ -252,7 +252,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
     /**
      * Flushes this output stream and forces any buffered output bytes to be written out to the stream. 
      *
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
 	public void flush()	throws IOException {
 //System.err.println("AsynchronousOutputStream.flush():");
@@ -260,7 +260,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 			q.put(new ByteArrayObject(true,false));
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
 		// do NOT block
@@ -269,7 +269,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
     /**
      * Closes this output stream and releases any system resources associated with the stream. 
      *
-     * @exception  IOException  if an I/O error occurs.
+     * @throws  IOException  if an I/O error occurs.
      */
 	public void close()	throws IOException {
 //System.err.println("AsynchronousOutputStream.close():");
@@ -277,7 +277,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 			q.put(new ByteArrayObject(false,true));
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
 //System.err.println("AsynchronousOutputStream.close(): about to block until all output is done");
@@ -285,7 +285,7 @@ public class AsynchronousOutputStream extends FilterOutputStream {
 			doneSignal.await();
 		}
 		catch (InterruptedException e) {
-//e.printStackTrace(System.err);
+//slf4jlogger.error("", e);;
 			throw new IOException (e);
 		}
 //System.err.println("AsynchronousOutputStream.close(): back from waiting for all output to be done");

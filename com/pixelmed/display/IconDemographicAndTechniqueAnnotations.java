@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -20,7 +20,7 @@ import com.pixelmed.dicom.TagFromName;
  */
 public class IconDemographicAndTechniqueAnnotations extends DemographicAndTechniqueAnnotations {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/IconDemographicAndTechniqueAnnotations.java,v 1.2 2009/04/05 23:20:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/IconDemographicAndTechniqueAnnotations.java,v 1.12 2025/01/29 10:58:07 dclunie Exp $";
 	
 	protected void initializeDefaultLayout() {
 		layout=new Vector();

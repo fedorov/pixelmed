@@ -1,17 +1,22 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.*;
 import java.util.*;
 
-/**encoded in composite instances within CodingSchemeIdentificationSequence.</p>
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
+/**
+ * <p>A class to encapsulate the attributes of an Item of CodingSchemeIdentificationSequence.</p>
  *
  * @author	dclunie
  */
 public class CodingSchemeIdentificationItem {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodingSchemeIdentificationItem.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodingSchemeIdentificationItem.java,v 1.1 2010/11/28 18:10:16 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CodingSchemeIdentificationItem.class);
 
 	protected String codingSchemeDesignator;
 	protected String codingSchemeRegistry;
@@ -43,13 +48,13 @@ public class CodingSchemeIdentificationItem {
 	public SequenceItem getAsSequenceItem() {
 		AttributeList list = new AttributeList();
 		try {
-		{ Attribute a = new ShortStringAttribute(TagFromName.CodingSchemeDesignator); a.addValue(codingSchemeDesignator); list.put(a); }
-		{ Attribute a = new LongStringAttribute(TagFromName.CodingSchemeRegistry); a.addValue(codingSchemeRegistry); list.put(a); }
-		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.CodingSchemeUID); a.addValue(codingSchemeUID); list.put(a); }
-		{ Attribute a = new ShortTextAttribute(TagFromName.CodingSchemeName); a.addValue(codingSchemeName); list.put(a); }
+			if (codingSchemeDesignator != null && codingSchemeDesignator.length() > 0) { Attribute a = new ShortStringAttribute(TagFromName.CodingSchemeDesignator); a.addValue(codingSchemeDesignator); list.put(a); }
+			if (codingSchemeRegistry != null && codingSchemeRegistry.length() > 0) { Attribute a = new LongStringAttribute(TagFromName.CodingSchemeRegistry); a.addValue(codingSchemeRegistry); list.put(a); }
+			if (codingSchemeUID != null && codingSchemeUID.length() > 0) { Attribute a = new UniqueIdentifierAttribute(TagFromName.CodingSchemeUID); a.addValue(codingSchemeUID); list.put(a); }
+			if (codingSchemeName != null && codingSchemeName.length() > 0) { Attribute a = new ShortTextAttribute(TagFromName.CodingSchemeName); a.addValue(codingSchemeName); list.put(a); }
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 		}
 		
 		SequenceItem item = new SequenceItem(list);

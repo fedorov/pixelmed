@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -16,8 +16,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import java.io.FileInputStream;
-//import java.io.PrintWriter;
-//import java.io.StringWriter;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -34,10 +32,12 @@ import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
 
 import java.util.Iterator; 
-import java.util.Properties; 
+import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.Set;
-//import java.util.StringTokenizer;
-//import java.util.TreeMap;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class provides user interface for network applications to configure and test properties related to DICOM network services.</p>
@@ -45,15 +45,25 @@ import java.util.Set;
  * @author	dclunie
  */
 public class NetworkApplicationConfigurationDialog {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationConfigurationDialog.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationConfigurationDialog.java,v 1.3 2011/02/21 17:27:35 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkApplicationConfigurationDialog.class);
 
+	protected static String resourceBundleName  = "com.pixelmed.network.NetworkApplicationConfigurationDialog";
+
+	protected ResourceBundle resourceBundle;
 	protected NetworkApplicationInformation networkApplicationInformation;
 	protected NetworkApplicationProperties networkApplicationProperties;
 	
 	protected JTextField calledAETitleField;
 	protected JTextField callingAETitleField;
 	protected JTextField listeningPortField;
+	protected JTextField acceptorMaximumLengthReceivedField;
+	protected JTextField acceptorSocketReceiveBufferSizeField;
+	protected JTextField acceptorSocketSendBufferSizeField;
+	protected JTextField initiatorMaximumLengthReceivedField;
+	protected JTextField initiatorSocketReceiveBufferSizeField;
+	protected JTextField initiatorSocketSendBufferSizeField;
 
 	Component componentToCenterDialogOver;
 	JDialog dialog;
@@ -86,7 +96,7 @@ public class NetworkApplicationConfigurationDialog {
 				infoFromProperties.add(localName,aed);
 //System.err.println("NetworkApplicationConfigurationDialog.AddRemoteAEActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception", e);
 			}
 		}
 	}
@@ -96,7 +106,7 @@ public class NetworkApplicationConfigurationDialog {
 			try {
 				NetworkApplicationInformation infoFromProperties = networkApplicationProperties.getNetworkApplicationInformation();
 //System.err.println("NetworkApplicationConfigurationDialog.EditRemoteAEActionListener(): infoFromProperties before = "+infoFromProperties);
-				String localName = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(componentToCenterDialogOver,infoFromProperties,"Select AE to edit","Edit");
+				String localName = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(componentToCenterDialogOver,infoFromProperties,resourceBundle.getString("selectNetworkTargetToEditLabelText"),resourceBundle.getString("editButtonLabelText"));
 				if (localName != null && localName.length() > 0) {
 					Set localNamesFromProperties = infoFromProperties.getListOfLocalNamesOfApplicationEntities();
 					ApplicationEntityMap aesFromProperties = infoFromProperties.getApplicationEntityMap();
@@ -113,7 +123,7 @@ public class NetworkApplicationConfigurationDialog {
 				}
 //System.err.println("NetworkApplicationConfigurationDialog.EditRemoteAEActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception", e);
 			}
 		}
 	}
@@ -123,13 +133,13 @@ public class NetworkApplicationConfigurationDialog {
 			try {
 				NetworkApplicationInformation infoFromProperties = networkApplicationProperties.getNetworkApplicationInformation();
 //System.err.println("NetworkApplicationConfigurationDialog.RemoveRemoteAEActionListener(): infoFromProperties before = "+infoFromProperties);
-				String localName = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(componentToCenterDialogOver,infoFromProperties,"Select AE to remove","Remove");
+				String localName = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(componentToCenterDialogOver,infoFromProperties,resourceBundle.getString("selectNetworkTargetToRemoveLabelText"),resourceBundle.getString("removeButtonLabelText"));
 				if (localName != null && localName.length() > 0) {
 					infoFromProperties.remove(localName);
 				}
 //System.err.println("NetworkApplicationConfigurationDialog.RemoveRemoteAEActionListener(): infoFromProperties after = "+infoFromProperties);
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception", e);
 			}
 		}
 	}
@@ -138,22 +148,24 @@ public class NetworkApplicationConfigurationDialog {
 		public void actionPerformed(ActionEvent event) {
 			boolean good = true;
 			// check and update properties for our listener ...
+			String calledAETitle = "";
 			{
-				String calledAETitle = calledAETitleField.getText();
+				calledAETitle = calledAETitleField.getText();
 				if (!ApplicationEntityConfigurationDialog.isValidAETitle(calledAETitle)) {
 					good=false;
 					calledAETitleField.setText("\\\\\\BAD\\\\\\");		// use backslash character here (which is illegal in AE's) to make sure this field is edited
 				}
 			}
+			String callingAETitle = "";
 			{
-				String callingAETitle = callingAETitleField.getText();
+				callingAETitle = callingAETitleField.getText();
 				if (!ApplicationEntityConfigurationDialog.isValidAETitle(callingAETitle)) {
 					good=false;
 					callingAETitleField.setText("\\\\\\BAD\\\\\\");		// use backslash character here (which is illegal in AE's) to make sure this field is edited
 				}
 			}
+			int listeningPort=0;
 			{
-				int listeningPort=0;
 				try {
 					listeningPort = Integer.parseInt(listeningPortField.getText());
 					if (listeningPort < 1024) {
@@ -166,10 +178,76 @@ public class NetworkApplicationConfigurationDialog {
 					listeningPortField.setText("\\\\\\BAD\\\\\\");
 				}
 			}
+			int acceptorMaximumLengthReceived=0;
+			{
+				try {
+					acceptorMaximumLengthReceived = Integer.parseInt(acceptorMaximumLengthReceivedField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					acceptorMaximumLengthReceivedField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
+			int acceptorSocketReceiveBufferSize=0;
+			{
+				try {
+					acceptorSocketReceiveBufferSize = Integer.parseInt(acceptorSocketReceiveBufferSizeField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					acceptorSocketReceiveBufferSizeField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
+			int acceptorSocketSendBufferSize=0;
+			{
+				try {
+					acceptorSocketSendBufferSize = Integer.parseInt(acceptorSocketSendBufferSizeField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					acceptorSocketSendBufferSizeField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
+			int initiatorMaximumLengthReceived=0;
+			{
+				try {
+					initiatorMaximumLengthReceived = Integer.parseInt(initiatorMaximumLengthReceivedField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					initiatorMaximumLengthReceivedField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
+			int initiatorSocketReceiveBufferSize=0;
+			{
+				try {
+					initiatorSocketReceiveBufferSize = Integer.parseInt(initiatorSocketReceiveBufferSizeField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					initiatorSocketReceiveBufferSizeField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
+			int initiatorSocketSendBufferSize=0;
+			{
+				try {
+					initiatorSocketSendBufferSize = Integer.parseInt(initiatorSocketSendBufferSizeField.getText());
+				}
+				catch (NumberFormatException e) {
+					good=false;
+					initiatorSocketSendBufferSizeField.setText("\\\\\\BAD\\\\\\");
+				}
+			}
 			if (good) {
-				networkApplicationProperties.setListeningPort(Integer.parseInt(listeningPortField.getText()));
-				networkApplicationProperties.setCalledAETitle(calledAETitleField.getText());
-				networkApplicationProperties.setCallingAETitle(callingAETitleField.getText());
+				networkApplicationProperties.setListeningPort(listeningPort);
+				networkApplicationProperties.setCalledAETitle(calledAETitle);
+				networkApplicationProperties.setCallingAETitle(callingAETitle);
+				networkApplicationProperties.setAcceptorMaximumLengthReceived(acceptorMaximumLengthReceived);
+				networkApplicationProperties.setAcceptorSocketReceiveBufferSize(acceptorSocketReceiveBufferSize);
+				networkApplicationProperties.setAcceptorSocketSendBufferSize(acceptorSocketSendBufferSize);
+				networkApplicationProperties.setInitiatorMaximumLengthReceived(initiatorMaximumLengthReceived);
+				networkApplicationProperties.setInitiatorSocketReceiveBufferSize(initiatorSocketReceiveBufferSize);
+				networkApplicationProperties.setInitiatorSocketSendBufferSize(initiatorSocketSendBufferSize);
 				
 				Cursor was = dialog.getCursor();
 				dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -182,7 +260,7 @@ public class NetworkApplicationConfigurationDialog {
 //System.err.println("networkApplicationInformation after = \n"+networkApplicationInformation);
 //System.err.println("networkApplicationProperties after = \n"+networkApplicationProperties);
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Ignoring exception", e);
 				}
 				dialog.setCursor(was);
 				dialog.dispose();
@@ -201,6 +279,8 @@ public class NetworkApplicationConfigurationDialog {
 	public NetworkApplicationConfigurationDialog(Component parent,NetworkApplicationInformation networkApplicationInformation,NetworkApplicationProperties networkApplicationProperties) throws DicomNetworkException {
 		this.networkApplicationInformation = networkApplicationInformation;
 		this.networkApplicationProperties = networkApplicationProperties;
+
+		resourceBundle = ResourceBundle.getBundle(resourceBundleName);
 		
 		componentToCenterDialogOver = parent;
 		
@@ -221,7 +301,7 @@ public class NetworkApplicationConfigurationDialog {
 		JPanel listenerPanel = new JPanel(new GridLayout(0,2));	// "Specifying the number of columns affects the layout only when the number of rows is set to zero."
 		listenerPanel.setBorder(panelBorder);
 		{
-			JLabel listenerHeaderJLabel = new JLabel("Our DICOM network properties:");
+			JLabel listenerHeaderJLabel = new JLabel(resourceBundle.getString("listenerHeaderLabelText")+":");
 			listenerPanel.add(listenerHeaderJLabel);
 			listenerPanel.add(new JLabel(""));
 		}
@@ -246,8 +326,8 @@ public class NetworkApplicationConfigurationDialog {
 			System.err.println(e);
 		}
 		{
-			JLabel callingAETitleJLabel = new JLabel("Calling AE Title: ",SwingConstants.RIGHT);
-			callingAETitleJLabel.setToolTipText("The AE Title we use for ourselves when calling (initiating an association to) another AE");
+			JLabel callingAETitleJLabel = new JLabel(resourceBundle.getString("callingAETitleLabelText")+": ",SwingConstants.RIGHT);
+			callingAETitleJLabel.setToolTipText(resourceBundle.getString("callingAETitleJLabelToolTipText"));
 			listenerPanel.add(callingAETitleJLabel);
 			callingAETitleField = new JTextField();
 			callingAETitleField.setText(networkApplicationProperties.getCallingAETitle());
@@ -260,8 +340,8 @@ public class NetworkApplicationConfigurationDialog {
 			});
 		}
 		{
-			JLabel calledAETitleJLabel = new JLabel("Called AE Title: ",SwingConstants.RIGHT);
-			calledAETitleJLabel.setToolTipText("The AE Title we expect to be called by (when accepting an association from) another AE; usually the same as the Calling AE Title");
+			JLabel calledAETitleJLabel = new JLabel(resourceBundle.getString("calledAETitleLabelText")+": ",SwingConstants.RIGHT);
+			calledAETitleJLabel.setToolTipText(resourceBundle.getString("calledAETitleJLabelToolTipText"));
 			listenerPanel.add(calledAETitleJLabel);
 			calledAETitleField = new JTextField();
 			calledAETitleField.setText(networkApplicationProperties.getCalledAETitle());
@@ -274,8 +354,8 @@ public class NetworkApplicationConfigurationDialog {
 			});
 		}
 		{
-			JLabel listeningPortJLabel = new JLabel("Listening port: ",SwingConstants.RIGHT);
-			listeningPortJLabel.setToolTipText("The port on which we listen for inbound connections from another AE");
+			JLabel listeningPortJLabel = new JLabel(resourceBundle.getString("listeningPortLabelText")+": ",SwingConstants.RIGHT);
+			listeningPortJLabel.setToolTipText(resourceBundle.getString("listeningPortJLabelToolTipText"));
 			listenerPanel.add(listeningPortJLabel);
 			listeningPortField = new JTextField();
 			listeningPortField.setText(Integer.toString(networkApplicationProperties.getListeningPort()));
@@ -287,36 +367,115 @@ public class NetworkApplicationConfigurationDialog {
 				}
 			});
 		}
-// * <p><code>Dicom.ListeningPort</code> - the port that an association acceptor will listen on for incoming connections</p>
-// * <p><code>Dicom.CalledAETitle</code> - what the AE expects to be called when accepting an association</p>
-// * <p><code>Dicom.CallingAETitle</code> - what the AE will call itself when initiating an association</p>
-// * <p><code>Dicom.PrimaryDeviceType</code> - what our own primary device type is</p>
-		
+		{
+			JLabel acceptorMaximumLengthReceivedJLabel = new JLabel(resourceBundle.getString("acceptorMaximumLengthReceivedLabelText")+": ",SwingConstants.RIGHT);
+			acceptorMaximumLengthReceivedJLabel.setToolTipText(resourceBundle.getString("acceptorMaximumLengthReceivedJLabelToolTipText"));
+			listenerPanel.add(acceptorMaximumLengthReceivedJLabel);
+			acceptorMaximumLengthReceivedField = new JTextField();
+			acceptorMaximumLengthReceivedField.setText(Integer.toString(networkApplicationProperties.getAcceptorMaximumLengthReceived()));
+        	listenerPanel.add(acceptorMaximumLengthReceivedField);
+			acceptorMaximumLengthReceivedField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
+		{
+			JLabel acceptorSocketReceiveBufferSizeJLabel = new JLabel(resourceBundle.getString("acceptorSocketReceiveBufferSizeLabelText")+": ",SwingConstants.RIGHT);
+			acceptorSocketReceiveBufferSizeJLabel.setToolTipText(resourceBundle.getString("acceptorSocketReceiveBufferSizeJLabelToolTipText"));
+			listenerPanel.add(acceptorSocketReceiveBufferSizeJLabel);
+			acceptorSocketReceiveBufferSizeField = new JTextField();
+			acceptorSocketReceiveBufferSizeField.setText(Integer.toString(networkApplicationProperties.getAcceptorSocketReceiveBufferSize()));
+        	listenerPanel.add(acceptorSocketReceiveBufferSizeField);
+			acceptorSocketReceiveBufferSizeField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
+		{
+			JLabel acceptorSocketSendBufferSizeJLabel = new JLabel(resourceBundle.getString("acceptorSocketSendBufferSizeLabelText")+": ",SwingConstants.RIGHT);
+			acceptorSocketSendBufferSizeJLabel.setToolTipText(resourceBundle.getString("acceptorSocketSendBufferSizeJLabelToolTipText"));
+			listenerPanel.add(acceptorSocketSendBufferSizeJLabel);
+			acceptorSocketSendBufferSizeField = new JTextField();
+			acceptorSocketSendBufferSizeField.setText(Integer.toString(networkApplicationProperties.getAcceptorSocketSendBufferSize()));
+        	listenerPanel.add(acceptorSocketSendBufferSizeField);
+			acceptorSocketSendBufferSizeField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
+		{
+			JLabel initiatorMaximumLengthReceivedJLabel = new JLabel(resourceBundle.getString("initiatorMaximumLengthReceivedLabelText")+": ",SwingConstants.RIGHT);
+			initiatorMaximumLengthReceivedJLabel.setToolTipText(resourceBundle.getString("initiatorMaximumLengthReceivedJLabelToolTipText"));
+			listenerPanel.add(initiatorMaximumLengthReceivedJLabel);
+			initiatorMaximumLengthReceivedField = new JTextField();
+			initiatorMaximumLengthReceivedField.setText(Integer.toString(networkApplicationProperties.getInitiatorMaximumLengthReceived()));
+        	listenerPanel.add(initiatorMaximumLengthReceivedField);
+			initiatorMaximumLengthReceivedField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
+		{
+			JLabel initiatorSocketReceiveBufferSizeJLabel = new JLabel(resourceBundle.getString("initiatorSocketReceiveBufferSizeLabelText")+": ",SwingConstants.RIGHT);
+			initiatorSocketReceiveBufferSizeJLabel.setToolTipText(resourceBundle.getString("initiatorSocketReceiveBufferSizeJLabelToolTipText"));
+			listenerPanel.add(initiatorSocketReceiveBufferSizeJLabel);
+			initiatorSocketReceiveBufferSizeField = new JTextField();
+			initiatorSocketReceiveBufferSizeField.setText(Integer.toString(networkApplicationProperties.getInitiatorSocketReceiveBufferSize()));
+        	listenerPanel.add(initiatorSocketReceiveBufferSizeField);
+			initiatorSocketReceiveBufferSizeField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
+		{
+			JLabel initiatorSocketSendBufferSizeJLabel = new JLabel(resourceBundle.getString("initiatorSocketSendBufferSizeLabelText")+": ",SwingConstants.RIGHT);
+			initiatorSocketSendBufferSizeJLabel.setToolTipText(resourceBundle.getString("initiatorSocketSendBufferSizeJLabelToolTipText"));
+			listenerPanel.add(initiatorSocketSendBufferSizeJLabel);
+			initiatorSocketSendBufferSizeField = new JTextField();
+			initiatorSocketSendBufferSizeField.setText(Integer.toString(networkApplicationProperties.getInitiatorSocketSendBufferSize()));
+        	listenerPanel.add(initiatorSocketSendBufferSizeField);
+			initiatorSocketSendBufferSizeField.addFocusListener(new java.awt.event.FocusAdapter() {
+				public void focusGained(java.awt.event.FocusEvent event) {
+					JTextComponent textComponent = (JTextComponent)(event.getSource());
+					textComponent.selectAll();
+				}
+			});
+		}
 		
 		JPanel remoteAEPanel = new JPanel();
 		{
 			remoteAEPanel.setBorder(panelBorder);
 			JPanel remoteHeaderPanel = new JPanel(new GridLayout(1,1));
 			{
-				remoteHeaderPanel.add(new JLabel("Remote AE DICOM network properties:"));
+				remoteHeaderPanel.add(new JLabel(resourceBundle.getString("remoteHeaderPanelLabelText")+":"));
 			}
 		
 			JPanel remoteButtonPanel = new JPanel();
 			{
 				remoteButtonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 
-				JButton addRemoteAEButton = new JButton("Add");
-				addRemoteAEButton.setToolTipText("Add an AE to the list of remote Application Entities");
+				JButton addRemoteAEButton = new JButton(resourceBundle.getString("addButtonLabelText"));
+				addRemoteAEButton.setToolTipText(resourceBundle.getString("addButtonToolTipText"));
 				remoteButtonPanel.add(addRemoteAEButton);
 				addRemoteAEButton.addActionListener(new AddRemoteAEActionListener());
 
-				JButton editRemoteAEButton = new JButton("Edit");
-				editRemoteAEButton.setToolTipText("Edit an AE in the list of remote Application Entities");
+				JButton editRemoteAEButton = new JButton(resourceBundle.getString("editButtonLabelText"));
+				editRemoteAEButton.setToolTipText(resourceBundle.getString("editButtonToolTipText"));
 				remoteButtonPanel.add(editRemoteAEButton);
 				editRemoteAEButton.addActionListener(new EditRemoteAEActionListener());
 		
-				JButton removeRemoteAEButton = new JButton("Remove");
-				removeRemoteAEButton.setToolTipText("Remove an AE from the list of remote Application Entities");
+				JButton removeRemoteAEButton = new JButton(resourceBundle.getString("removeButtonLabelText"));
+				removeRemoteAEButton.setToolTipText(resourceBundle.getString("removeButtonToolTipText"));
 				remoteButtonPanel.add(removeRemoteAEButton);
 				removeRemoteAEButton.addActionListener(new RemoveRemoteAEActionListener());
 			}
@@ -349,8 +508,8 @@ public class NetworkApplicationConfigurationDialog {
 			commonButtonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 			commonButtonPanel.setBorder(panelBorder);
 
-			JButton doneButton = new JButton("Done");
-			doneButton.setToolTipText("Finished edits, so reset application to use new configuration");
+			JButton doneButton = new JButton(resourceBundle.getString("doneButtonLabelText"));
+			doneButton.setToolTipText(resourceBundle.getString("doneButtonToolTipText"));
 			commonButtonPanel.add(doneButton);
 			doneButton.addActionListener(new DoneActionListener());
 		}
@@ -404,16 +563,16 @@ public class NetworkApplicationConfigurationDialog {
 			Properties properties = new Properties(/*defaultProperties*/);
 			properties.load(in);
 			in.close();
-System.err.println("properties="+properties);
+			System.err.println("properties="+properties);	// no need to use SLF4J since command line utility/test
 			NetworkApplicationProperties networkApplicationProperties = new NetworkApplicationProperties(properties);
 			NetworkApplicationInformation networkApplicationInformation = networkApplicationProperties.getNetworkApplicationInformation();
 //System.err.println("networkApplicationInformation before = "+networkApplicationInformation);
 			new NetworkApplicationConfigurationDialog(null,networkApplicationInformation,networkApplicationProperties);
 			properties = networkApplicationProperties.getProperties(properties);
-System.err.println("properties after="+properties);
+			System.err.println("properties after="+properties);	// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			System.err.println(e);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 

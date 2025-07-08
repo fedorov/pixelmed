@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class OtherDoubleAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherDoubleAttribute.java,v 1.1 2012/09/23 17:21:40 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherDoubleAttribute.java,v 1.14 2025/01/29 10:58:07 dclunie Exp $";
 
 	private double[] values;
 
@@ -38,8 +38,8 @@ public class OtherDoubleAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherDoubleAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -52,8 +52,8 @@ public class OtherDoubleAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherDoubleAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -63,8 +63,8 @@ public class OtherDoubleAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		values=null;
@@ -80,15 +80,15 @@ public class OtherDoubleAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		if (values != null && values.length > 0) {
 			o.writeDouble(values,values.length);
 			if (getVL() != values.length*8) {
-				throw new DicomException("Internal error - double array length ("+values.length*2+") not equal to expected VL("+getVL()+")");
+				throw new DicomException("Internal error - double array length ("+values.length*8+") not equal to expected VL("+getVL()+")");
 			}
 		}
 	}
@@ -103,7 +103,7 @@ public class OtherDoubleAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void setValues(double[] v) throws DicomException {
 		values=v;
@@ -112,7 +112,31 @@ public class OtherDoubleAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @param	v
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v,boolean big) throws DicomException {
+		int doubleLength = v.length/8;
+		double[] doubleValues = new double[doubleLength];
+		int j = 0;
+		for (int i=0; i<doubleLength; ++i) {
+			long v1 =  ((long)v[j++])&0xff;
+			long v2 =  ((long)v[j++])&0xff;
+			long v3 =  ((long)v[j++])&0xff;
+			long v4 =  ((long)v[j++])&0xff;
+			long v5 =  ((long)v[j++])&0xff;
+			long v6 =  ((long)v[j++])&0xff;
+			long v7 =  ((long)v[j++])&0xff;
+			long v8 =  ((long)v[j++])&0xff;
+			doubleValues[i] = Double.longBitsToDouble(big
+				? (((((((((((((v1 << 8) | v2) << 8) | v3) << 8) | v4) << 8) | v5) << 8) | v6) << 8) | v7) << 8) | v8
+				: (((((((((((((v8 << 8) | v7) << 8) | v6) << 8) | v5) << 8) | v4) << 8) | v3) << 8) | v2) << 8) | v1);
+		}
+		setValues(doubleValues);
+	}
+
+	/**
 	 */
 	public void removeValues() {
 		values=null;
@@ -121,9 +145,49 @@ public class OtherDoubleAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public double[] getDoubleValues() throws DicomException { return values; }
+
+	/**
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public byte[] getByteValues(boolean big) throws DicomException {
+		byte[] byteValues = null;
+		if (values != null) {
+			int doubleLength = values.length;
+			byteValues = new byte[doubleLength*8];
+			int j = 0;
+			if (big) {
+				for (int i=0; i<doubleLength; ++i) {
+					long v = Double.doubleToRawLongBits(values[i]);
+					byteValues[j++]=(byte)(v>>56);
+					byteValues[j++]=(byte)(v>>48);
+					byteValues[j++]=(byte)(v>>40);
+					byteValues[j++]=(byte)(v>>32);
+					byteValues[j++]=(byte)(v>>24);
+					byteValues[j++]=(byte)(v>>16);
+					byteValues[j++]=(byte)(v>>8);
+					byteValues[j++]=(byte)v;
+				}
+			}
+			else {
+				for (int i=0; i<doubleLength; ++i) {
+					long v = Double.doubleToRawLongBits(values[i]);
+					byteValues[j++]=(byte)v;
+					byteValues[j++]=(byte)(v>>8);
+					byteValues[j++]=(byte)(v>>16);
+					byteValues[j++]=(byte)(v>>24);
+					byteValues[j++]=(byte)(v>>32);
+					byteValues[j++]=(byte)(v>>40);
+					byteValues[j++]=(byte)(v>>48);
+					byteValues[j++]=(byte)(v>>56);
+				}
+			}
+		}
+		return byteValues;
+	}
 
 	/**
 	 * <p>Get the value representation of this attribute (OD).</p>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -43,6 +43,9 @@ import com.pixelmed.dicom.*;
 import com.pixelmed.geometry.*;
 import javax.vecmath.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>Implements a component that can display a single or multi-frame spectra in a
  * single panel, over an optional background image, with scrolling through frames
@@ -55,8 +58,9 @@ import javax.vecmath.*;
  * @author	dclunie
  */
 public class SpectraPanel extends PlotGraph implements MouseListener, MouseMotionListener {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SpectraPanel.java,v 1.36 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SpectraPanel.java,v 1.25 2007/04/03 13:11:08 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SpectraPanel.class);
 	
 	private float[][] srcSpectra;
 	private int nSrcSpectra;
@@ -215,14 +219,14 @@ public class SpectraPanel extends PlotGraph implements MouseListener, MouseMotio
 			if (currentSrcSpectrumIndex != newCurrentSrcSpectrumIndex
 			 || currentSrcSpectraSortOrder != newSrcSpectraSortOrder
 			 || !Arrays.equals(currentSrcSpectraSortOrder,newSrcSpectraSortOrder)) {
-System.err.println("SpectraPanel.OurFrameSortOrderChangeListener.changed(): new values");
+				slf4jlogger.info("OurFrameSortOrderChangeListener.changed(): new values");
 				currentSrcSpectrumIndex=newCurrentSrcSpectrumIndex;
 				currentSrcSpectraSortOrder=newSrcSpectraSortOrder;	// change even if null in event (request to go back to implicit order)
 				cachedBackgroundImage=null;				// since background image may be for different frame
 				repaint();
 			}
 			else {
-System.err.println("SpectraPanel.OurFrameSortOrderChangeListener.changed(): same values");
+				slf4jlogger.info("OurFrameSortOrderChangeListener.changed(): same values");
 			}
 		}
 	}

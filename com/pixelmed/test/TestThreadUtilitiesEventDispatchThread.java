@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -14,7 +14,12 @@ import javax.swing.JFrame;
 
 import junit.framework.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class TestThreadUtilitiesEventDispatchThread extends TestCase {
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(TestThreadUtilitiesEventDispatchThread.class);
 	
 	protected static final int    waitIntervalWhenSleeping = 10;	// in ms
 
@@ -102,7 +107,7 @@ public class TestThreadUtilitiesEventDispatchThread extends TestCase {
 			}
 		}
 		catch (InterruptedException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	

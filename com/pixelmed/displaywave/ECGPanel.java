@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.displaywave;
+
+import com.pixelmed.dicom.BinaryInputStream;
+import com.pixelmed.display.ApplicationFrame;
 
 import javax.swing.JComponent;
 import java.awt.BasicStroke;
@@ -21,9 +24,6 @@ import java.awt.image.ColorModel;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 
-import com.pixelmed.dicom.BinaryInputStream;
-import com.pixelmed.display.ApplicationFrame;
-
 /**
  * <p>Implements a component that can display an array of tiles, each of which
  * is a 2D graph of ECG values.</p>
@@ -31,9 +31,7 @@ import com.pixelmed.display.ApplicationFrame;
  * @author	dclunie
  */
 public class ECGPanel extends JComponent {
-
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/ECGPanel.java,v 1.14 2012/02/01 23:02:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/ECGPanel.java,v 1.25 2025/01/29 10:58:08 dclunie Exp $";
 	
 	/***/
 	private short[][] samples;
@@ -431,7 +429,7 @@ public class ECGPanel extends JComponent {
 			//app.takeSnapShot(app.getBounds());
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

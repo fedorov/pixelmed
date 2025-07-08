@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,9 +22,9 @@ import java.util.*;
  */
 public class SequenceAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SequenceAttribute.java,v 1.21 2013/09/09 15:09:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SequenceAttribute.java,v 1.38 2025/01/29 10:58:07 dclunie Exp $";
 
-	private LinkedList itemList;		// each member is a SequenceItem
+	private LinkedList<SequenceItem> itemList;		// each member is a SequenceItem
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -33,7 +33,7 @@ public class SequenceAttribute extends Attribute {
 	 */
 	public SequenceAttribute(AttributeTag t) {
 		super(t);
-		itemList=new LinkedList();
+		itemList=new LinkedList<SequenceItem>();
 		valueLength=0xffffffffl;	// for the benefit of writebase();
 	}
 
@@ -41,15 +41,15 @@ public class SequenceAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);			// valueLength should be 0xffffffff from constructor
 
-		Iterator i = iterator();
+		Iterator<SequenceItem> i = iterator();
 		while (i.hasNext()) {
-			SequenceItem item = (SequenceItem)i.next();
+			SequenceItem item = i.next();
 			item.write(o);
 		}
 		
@@ -63,9 +63,9 @@ public class SequenceAttribute extends Attribute {
 		StringBuffer str = new StringBuffer();
 		str.append(super.toString(dictionary));
 		str.append("\n%seq\n");
-		Iterator i = iterator();
+		Iterator<SequenceItem> i = iterator();
 		while (i.hasNext()) {
-			str.append(((SequenceItem)i.next()).toString(dictionary));
+			str.append(i.next().toString(dictionary));
 			str.append("\n");
 		}
 		str.append("%endseq");
@@ -73,12 +73,11 @@ public class SequenceAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
 	 */
 	public void removeValues() {
-		itemList=null;
-		valueMultiplicity=0;
-		valueLength=0;
+		itemList=new LinkedList<SequenceItem>();	// not null (001140)
+		valueMultiplicity=0;						// should already be zero; should not have changed changed since constructor
+		valueLength=0xffffffffl;					// for the benefit of writebase(); should not have changed since constructor
 	}
 
 	/**
@@ -114,7 +113,7 @@ public class SequenceAttribute extends Attribute {
 	 *
 	 * @return	a {@link java.util.Iterator Iterator} of items, each encoded as an {@link com.pixelmed.dicom.SequenceItem SequenceItem}
 	 */
-	public Iterator iterator() {
+	public Iterator<SequenceItem> iterator() {
 		return itemList.listIterator(0);
 	}
 
@@ -134,7 +133,16 @@ public class SequenceAttribute extends Attribute {
 	 * @return		a {@link com.pixelmed.dicom.SequenceItem SequenceItem}, null if no items or no such item
 	 */
 	public SequenceItem getItem(int index) {
-		return (itemList == null || index >= itemList.size()) ? null : (SequenceItem)itemList.get(index);
+		return (itemList == null || index >= itemList.size()) ? null : itemList.get(index);
+	}
+
+	/**
+	 * Remove an item from the sequence.
+	 *
+	 * @param	item
+	 */
+	public void remove(SequenceItem item) {
+		itemList.remove(item);
 	}
 
 	/**
@@ -143,6 +151,38 @@ public class SequenceAttribute extends Attribute {
 	 * @return	'S','Q' in ASCII as a two byte array; see {@link com.pixelmed.dicom.ValueRepresentation ValueRepresentation}
 	 */
 	public byte[] getVR() { return ValueRepresentation.SQ; }
+
+	/**
+	 * <p>Get the length of the entire attribute when encoded, accounting for the characteristics of the Transfer Syntax and the need for even-length padding.</p>
+	 *
+	 * @param	explicit			true if the Transfer Syntax to be used for encoding is explicit VR
+	 * @param	littleEndian		true if the Transfer Syntax to be used for encoding is little endian
+	 * @return	the length in bytes
+	 * @throws	DicomException		if the VL is too long to be written in Explicit VR Transfer Syntax
+	 * @deprecated	experimental - incomplete implementation
+	 */
+
+ 	// must EXACTLY mirror behavior of write()
+	public long getLengthOfEntireEncodedAttribute(boolean explicit,boolean littleEndian) throws DicomException {
+		long l = getLengthOfBaseOfEncodedAttribute(explicit,littleEndian);
+		// can assume VL is 0xffffffffl since we always write delimited not fixed length sequences
+		Iterator<SequenceItem> iti = iterator();
+		while (iti.hasNext()) {
+			l += 8;		// length of Item
+			SequenceItem it = iti.next();
+			AttributeList ilist = it.getAttributeList();
+			if (ilist != null) {
+				Iterator<Attribute> ili = ilist.values().iterator();
+				while (ili.hasNext()) {
+					Attribute a = ili.next();
+					l += a.getLengthOfEntireEncodedAttribute(explicit,littleEndian);
+				}
+			}
+			l += 8;		// length of Item Delimiter
+		}
+		l += 8;		// length of Sequence Delimiter
+		return l;
+	}
 
 	/**
 	 * <p>Extract the AttributeList of the first item from a sequence.</p>
@@ -155,9 +195,9 @@ public class SequenceAttribute extends Attribute {
 		if (sequenceAttribute != null) {
 			// assert sequenceAttribute.getNumberOfItems() >= 1
 			// assert sequenceAttribute.getNumberOfItems() == 1
-			Iterator sitems = sequenceAttribute.iterator();
+			Iterator<SequenceItem> sitems = sequenceAttribute.iterator();
 			if (sitems.hasNext()) {
-				SequenceItem sitem = (SequenceItem)sitems.next();
+				SequenceItem sitem = sitems.next();
 				if (sitem != null) {
 					slist = sitem.getAttributeList();
 				}
@@ -262,21 +302,97 @@ public class SequenceAttribute extends Attribute {
 		SequenceAttribute sequenceAttribute = (SequenceAttribute)list.get(sequenceTag);
 		return getNamedAttributeFromWithinSequenceWithSingleItem(sequenceAttribute,namedTag);
 	}
+
+	/**
+	 * <p>Extract the specified attribute from within the first item of the specified sequence from within a list of attributes.</p>
+	 *
+	 * @param	list		the list that contains the sequence (may not be null)
+	 * @param	sequenceTag	the tag of the sequence attribute that has one item
+	 * @param	namedTag	the tag of the attribute within the item of the sequence
+	 * @param	dflt		what to return if there is no such sequence attribute or it is empty or the attribute is not found
+	 * @return				the attribute if found else the dflt
+	 */
+	public static String getSingleStringValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(AttributeList list,AttributeTag sequenceTag,AttributeTag namedTag,String dflt) {
+		String value=dflt;
+		SequenceAttribute sequenceAttribute = (SequenceAttribute)list.get(sequenceTag);
+		Attribute a=getNamedAttributeFromWithinSequenceWithSingleItem(sequenceAttribute,namedTag);
+		if (a != null) {
+			value = a.getSingleStringValueOrDefault(dflt);
+		}
+		return value;
+	}
+
+	/**
+	 * <p>Extract the specified attribute from within the first item of the specified sequence from within a list of attributes.</p>
+	 *
+	 * @param	list		the list that contains the sequence (may not be null)
+	 * @param	sequenceTag	the tag of the sequence attribute that has one item
+	 * @param	namedTag	the tag of the attribute within the item of the sequence
+	 * @return				the attribute if found else empty string
+	 */
+	public static String getSingleStringValueOfNamedAttributeFromWithinSequenceWithSingleItemOrEmptyString(AttributeList list,AttributeTag sequenceTag,AttributeTag namedTag) {
+		return getSingleStringValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(list,sequenceTag,namedTag,"");
+	}
+	
+	/**
+	 * <p>Extract the specified attribute from within the first item of the specified sequence from within a list of attributes.</p>
+	 *
+	 * @param	list		the list that contains the sequence (may not be null)
+	 * @param	sequenceTag	the tag of the sequence attribute that has one item
+	 * @param	namedTag	the tag of the attribute within the item of the sequence
+	 * @param	dflt		what to return if there is no such sequence attribute or it is empty or the attribute is not found
+	 * @return				the attribute if found else the dflt
+	 */
+	public static double getSingleIntegerValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(AttributeList list,AttributeTag sequenceTag,AttributeTag namedTag,int dflt) {
+		int value=dflt;
+		SequenceAttribute sequenceAttribute = (SequenceAttribute)list.get(sequenceTag);
+		Attribute a=getNamedAttributeFromWithinSequenceWithSingleItem(sequenceAttribute,namedTag);
+		if (a != null) {
+			value = a.getSingleIntegerValueOrDefault(dflt);
+		}
+		return value;
+	}
+	
+	/**
+	 * <p>Extract the specified attribute from within the first item of the specified sequence from within a list of attributes.</p>
+	 *
+	 * @param	list		the list that contains the sequence (may not be null)
+	 * @param	sequenceTag	the tag of the sequence attribute that has one item
+	 * @param	namedTag	the tag of the attribute within the item of the sequence
+	 * @param	dflt		what to return if there is no such sequence attribute or it is empty or the attribute is not found
+	 * @return				the attribute if found else the dflt
+	 */
+	public static double getSingleDoubleValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(AttributeList list,AttributeTag sequenceTag,AttributeTag namedTag,double dflt) {
+		double value=dflt;
+		SequenceAttribute sequenceAttribute = (SequenceAttribute)list.get(sequenceTag);
+		Attribute a=getNamedAttributeFromWithinSequenceWithSingleItem(sequenceAttribute,namedTag);
+		if (a != null) {
+			value = a.getSingleDoubleValueOrDefault(dflt);
+		}
+		return value;
+	}
+
+	/**
+	 * <p>Extract the code meaning attribute value from within the first item of the specified code sequence from within a list of attributes.</p>
+	 *
+	 * @param	list		the list that contains the code sequence (may not be null)
+	 * @param	sequenceTag	the tag of the code sequence attribute that has one item
+	 * @param	dflt		what to return if there is no such sequence attribute or it is empty or has no code meaning attribute
+	 * @return				the code meaning if found else the dflt
+	 */
+	public static String getMeaningOfCodedSequenceAttributeOrDefault(AttributeList list,AttributeTag sequenceTag,String dflt) {
+		return getSingleStringValueOfNamedAttributeFromWithinSequenceWithSingleItemOrDefault(list,sequenceTag,TagFromName.CodeMeaning,dflt);
+	}
 	
 	/**
 	 * <p>Extract the code meaning attribute value from within the first item of the specified code sequence from within a list of attributes.</p>
 	 *
 	 * @param	list		the list that contains the code sequence (may not be null)
-	 * @param	tag			the tag of the code sequence attribute that has one item
-	 * @param	dflt		what to return if there is no such sequence attribute or it is empty or has no code meaning attribute
+	 * @param	sequenceTag	the tag of the code sequence attribute that has one item
+	 * @return				the code meaning if found else empty string
 	 */
-	public static String getMeaningOfCodedSequenceAttributeOrDefault(AttributeList list,AttributeTag tag,String dflt) {
-		String meaning=dflt;
-		Attribute a=getNamedAttributeFromWithinSequenceWithSingleItem(list,tag,TagFromName.CodeMeaning);
-		if (a != null) {
-			meaning = a.getSingleStringValueOrDefault(dflt);
-		}
-		return meaning;
+	public static String getMeaningOfCodedSequenceAttributeOrEmptyString(AttributeList list,AttributeTag sequenceTag) {
+		return getMeaningOfCodedSequenceAttributeOrDefault(list,sequenceTag,"");
 	}
 	
 	/**

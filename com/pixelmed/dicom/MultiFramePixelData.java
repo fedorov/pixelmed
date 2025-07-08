@@ -1,10 +1,10 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 public class MultiFramePixelData {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MultiFramePixelData.java,v 1.3 2013/02/17 17:49:26 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MultiFramePixelData.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
 	
 		private byte[]  bytePixelsForAllFrames;
 		private short[] wordPixelsForAllFrames;

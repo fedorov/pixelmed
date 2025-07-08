@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -15,7 +15,7 @@ import com.pixelmed.utils.ThreadUtilities;
 
 class StatusBarManager {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/StatusBarManager.java,v 1.6 2013/02/21 00:39:50 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/StatusBarManager.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
 
 	private OurStatusChangeListener ourStatusChangeListener;
 

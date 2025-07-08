@@ -1,10 +1,13 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.util.*;
 import java.text.SimpleDateFormat;
 import com.pixelmed.utils.FloatFormatter;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A transformation constructed from a DICOM attribute list that extracts
@@ -14,11 +17,10 @@ import com.pixelmed.utils.FloatFormatter;
  * @author	dclunie
  */
 public class SUVTransform {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SUVTransform.java,v 1.19 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SUVTransform.java,v 1.6 2012/09/28 22:05:50 dclunie Exp $";
-		
-
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SUVTransform.class);
+	
 	public static long deriveScanDateTimeFromHalfLifeAcquisitionDateTimeFrameReferenceTimeAndActualFrameDuration(AttributeList list) {
 		long scanDateTime = 0;
 		try {
@@ -46,8 +48,7 @@ public class SUVTransform {
 			}
 		}
 		catch (Exception e) {
-			System.err.println("Could not extract or parse values to compute scanDateTime from Half Life, Acquisition Date and Time, Frame Reference Time and Actual Frame Duration");
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Could not extract or parse values to compute scanDateTime from Half Life, Acquisition Date and Time, Frame Reference Time and Actual Frame Duration",e);
 		}
 //System.err.println("getScanDateTimeFromHalfLifeAcquisitionDateTimeFrameReferenceTimeAndActualFrameDuration(): return "+scanDateTime+" mS");
 		return scanDateTime;
@@ -110,6 +111,8 @@ public class SUVTransform {
 //System.err.println("have injected dose = "+aInjectedDose);
 							Attribute aHalfLife = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(list,TagFromName.RadiopharmaceuticalInformationSequence,TagFromName.RadionuclideHalfLife);
 //System.err.println("have half life = "+aHalfLife);
+							Attribute aStartDateTime = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(list,TagFromName.RadiopharmaceuticalInformationSequence,TagFromName.RadiopharmaceuticalStartDateTime);
+//System.err.println("have start datetime = "+aStartDateTime);
 							Attribute aStartTime = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(list,TagFromName.RadiopharmaceuticalInformationSequence,TagFromName.RadiopharmaceuticalStartTime);
 //System.err.println("have start time = "+aStartTime);
 
@@ -125,8 +128,7 @@ public class SUVTransform {
 								}
 							}
 							catch (Exception e) {
-								System.err.println("Could not extract or parse Series Date and Series Time");
-								e.printStackTrace(System.err);
+								slf4jlogger.error("Could not extract or parse Series Date and Series Time",e);
 							}
 //System.err.println("seriesDateTime = "+seriesDateTime+" mS "+DateTimeAttribute.getFormattedStringUTC(new java.util.Date(seriesDateTime)));
 							scanDateTime = seriesDateTime;
@@ -139,47 +141,56 @@ public class SUVTransform {
 								}
 							}
 							catch (Exception e) {
-								System.err.println("Could not extract or parse Acquisition Date and Acquisition Time");
-								e.printStackTrace(System.err);
+								slf4jlogger.error("Could not extract or parse Acquisition Date and Acquisition Time",e);
 							}
 //System.err.println("acquisitionDateTime = "+acquisitionDateTime+" mS "+DateTimeAttribute.getFormattedStringUTC(new java.util.Date(acquisitionDateTime)));
 //System.err.println("acquisitionDateTime offset from seriesDateTime = "+((acquisitionDateTime-seriesDateTime)/1000)+" secs");
 							if (scanDateTime == 0 || seriesDateTime > acquisitionDateTime) {
-System.err.println("have missing series date time, or it is after acquisition date time");
+								slf4jlogger.info("have missing series date time, or it is after acquisition date time");
 								// per GE docs, may have been updated during post-processing into new series
 								String privateCreator = Attribute.getSingleStringValueOrEmptyString(list,new AttributeTag(0x0009,0x0010)).trim();
 								String privateScanDateTime = Attribute.getSingleStringValueOrNull(list,new AttributeTag(0x0009,0x100d));
 								if (privateCreator.equals("GEMS_PETD_01") && privateScanDateTime != null) {
-System.err.println("use GE private scan date time");
+									slf4jlogger.info("use GE private scan date time");
 									try {
 										scanDateTime = DateTimeAttribute.getTimeInMilliSecondsSinceEpoch(privateScanDateTime);
 										sScanDate = privateScanDateTime.substring(0,8);
 									}
 									catch (Exception e) {
-										System.err.println("Could not extract or parse GE Private Scan Date and Time");
-										e.printStackTrace(System.err);
+										slf4jlogger.error("Could not extract or parse GE Private Scan Date and Time",e);
 									}
 								}
 								else {
 									long derivedScanDateTime = deriveScanDateTimeFromHalfLifeAcquisitionDateTimeFrameReferenceTimeAndActualFrameDuration(list);
 //System.err.println("derivedScanDateTime = "+derivedScanDateTime+" mS "+DateTimeAttribute.getFormattedStringUTC(new java.util.Date(derivedScanDateTime)));
 									if (derivedScanDateTime > 0) {
-System.err.println("use scan date time derived from HalfLife, AcquisitionDateTime, FrameReferenceTime and ActualFrameDuration");
+										slf4jlogger.info("use scan date time derived from HalfLife, AcquisitionDateTime, FrameReferenceTime and ActualFrameDuration");
 										scanDateTime = derivedScanDateTime;
 									}
 								}
 							}
 						
-							if (decayCorrection.equals("START") && aInjectedDose != null && aHalfLife != null && aStartTime != null && sScanDate != null && scanDateTime != 0 && weight != 0) {
+							if (decayCorrection.equals("START") && aInjectedDose != null && aHalfLife != null && (aStartTime != null || aStartDateTime != null) && sScanDate != null && scanDateTime != 0 && weight != 0) {
 //System.err.println("have all we need");
 								long startDateTime = 0;
 								try {
 									// extremely important that the timezone be handled, to mirror the use of getTimeInMilliSecondsSinceEpoch(AttributeList,AttributeTag,AttributeTag) for the other values
-									startDateTime = DateTimeAttribute.getTimeInMilliSecondsSinceEpoch(sScanDate + aStartTime.getSingleStringValueOrEmptyString() + Attribute.getSingleStringValueOrDefault(list,TagFromName.TimezoneOffsetFromUTC,"+0000"));
+									String sTimezoneOffsetFromUTC = Attribute.getSingleStringValueOrDefault(list,TagFromName.TimezoneOffsetFromUTC,"+0000");
+									String sStartDateTime = "";
+									if (aStartDateTime != null) {
+										sStartDateTime = aStartDateTime.getSingleStringValueOrEmptyString();
+										slf4jlogger.debug("use start date time from RadiopharmaceuticalStartDateTime");
+										if (sStartDateTime.length() > 0 && !sStartDateTime.contains("+") && !sStartDateTime.contains("-")) {
+											sStartDateTime =  sStartDateTime + sTimezoneOffsetFromUTC;
+										}
+									}
+									if (sStartDateTime.length() == 0) {
+										sStartDateTime = sScanDate + aStartTime.getSingleStringValueOrEmptyString() + sTimezoneOffsetFromUTC;
+									}
+									startDateTime = DateTimeAttribute.getTimeInMilliSecondsSinceEpoch(sStartDateTime);
 								}
 								catch (Exception e) {
-									System.err.println("Could not  parse combination of scan date and Radiopharmaceutical Start Time");
-									e.printStackTrace(System.err);
+									slf4jlogger.error("Could not parse Radiopharmaceutical Start DateTime, or combination of scan date and Radiopharmaceutical Start Time", e);
 								}
 //System.err.println("startDateTime = "+startDateTime+" mS "+DateTimeAttribute.getFormattedStringUTC(new java.util.Date(startDateTime)));
 								if (startDateTime != 0) {
@@ -222,14 +233,14 @@ System.err.println("use scan date time derived from HalfLife, AcquisitionDateTim
 						}
 						
 						// Formulas from summary at Sugawara et al, Radiology 1999 "http://radiology.rsna.org/content/213/2/521"
-						// Also nicely summarized at "https://crhpacs.chw.edu/help/measuring_tools-17.htm"
+						// Also nicely summarized at "https://crhpacs.chw.edu/help/measuring_tools-17.htm" ("https://crhpacs.chw.edu/help/")
 						
 						if (haveSUVbw && weight > 0 && height > 0) {
 							double scaleFactorWithoutPatientFactor = scaleFactorSUVbw / weight;
 //System.err.println("scaleFactorWithoutPatientFactor = "+scaleFactorWithoutPatientFactor);
 						
 							if (!haveSUVbsa) {
-								scaleFactorSUVbsa = scaleFactorWithoutPatientFactor * Math.pow(weight,0.425) * Math.pow(height,0.725) * 0.007184;
+								scaleFactorSUVbsa = scaleFactorWithoutPatientFactor * 10 * Math.pow(weight,0.425) * Math.pow(height,0.725) * 0.007184;	// NB. kg -> g * 1,000; m2 to cm2 -> 10,000 (000719)
 //System.err.println("scaleFactorSUVbsa = "+scaleFactorSUVbsa);
 								haveSUVbsa = true;
 								unitsSUVbsa = "cm2/ml";

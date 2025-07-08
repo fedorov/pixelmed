@@ -1,9 +1,8 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 import com.pixelmed.utils.ByteArray;
-import com.pixelmed.utils.HexDump;
 import com.pixelmed.dicom.TransferSyntax;
 
 import java.util.LinkedList;
@@ -20,25 +19,24 @@ import java.net.SocketAddress;
 
 import java.util.Arrays;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 public abstract class Association {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/Association.java,v 1.73 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/Association.java,v 1.56 2013/01/30 21:46:01 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(Association.class);
 	
-	/***/
-	private static int associationReleaseToTransportConnectionCloseTimeoutInMilliseconds = 5000;	// should be a property :(
-	/***/
-	private static int associationReleaseToTransportConnectionCloseCheckAlreadyClosedIntervalInMilliseconds = 10;	// should be a property :(
+	private static int associationReleaseRequestToNoResponseReceivedTimeoutInMilliseconds = 5000;	// ARTIM while waiting in a blocking read() ... should be a property :(
+	private static int associationReleaseToTransportConnectionCloseTimeoutInMilliseconds = 5000;	// ARTIM while waiting to close transport connection ... should be a property :(
 
 	/***/
 	private static int associationCounter = 0;
 	/***/
 	protected int associationNumber = associationCounter++;		// for use in distinguishing associations in debugging messages
-
-	/***/
-	protected int debugLevel;
 
 	/***/
 	protected String calledAETitle;
@@ -65,25 +63,41 @@ public abstract class Association {
 	 *
 	 * <p>Must be called before using the socket or the options won't set.</p>
 	 *
-	 * @param	socket				the socket whose options to set
+	 * @deprecated							SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #setSocketOptions(Socket,int,int,int)} instead.
+	 * @param	socket						the socket whose options to set
 	 * @param	ourMaximumLengthReceived	the maximum PDU length that we will offer to receive
 	 * @param	socketReceiveBufferSize		the TCP socket receive buffer size to set (if possible), 0 means leave at the default
 	 * @param	socketSendBufferSize		the TCP socket send buffer size to set (if possible), 0 means leave at the default
-	 * @param	debugLevel			0 for no debugging, > 0 for increasingly verbose debugging
-	 * @exception	IOException
+	 * @param	debugLevel					ignored
+	 * @throws	IOException
 	 */
-	protected void setSocketOptions(Socket socket,
-			int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize,int debugLevel) throws IOException {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getReceiveBufferSize() = "+socket.getReceiveBufferSize());
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getSendBufferSize() = "+socket.getSendBufferSize());
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getSoLinger() = "+socket.getSoLinger());
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getSoTimeout() = "+socket.getSoTimeout());
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getTcpNoDelay() = "+socket.getTcpNoDelay());
+	protected void setSocketOptions(Socket socket,int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize,int debugLevel) throws IOException {
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		setSocketOptions(socket,ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize);
+	}
+	
+	/**
+	 * <p>Set the socket options for either initiator or acceptor.</p>
+	 *
+	 * <p>Must be called before using the socket or the options won't set.</p>
+	 *
+	 * @param	socket						the socket whose options to set
+	 * @param	ourMaximumLengthReceived	the maximum PDU length that we will offer to receive
+	 * @param	socketReceiveBufferSize		the TCP socket receive buffer size to set (if possible), 0 means leave at the default
+	 * @param	socketSendBufferSize		the TCP socket send buffer size to set (if possible), 0 means leave at the default
+	 * @throws	IOException
+	 */
+	protected void setSocketOptions(Socket socket,int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize) throws IOException {
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): getReceiveBufferSize() = {}",associationNumber,socket.getReceiveBufferSize());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): getSendBufferSize() = {}",associationNumber,socket.getSendBufferSize());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): getSoLinger() = {}",associationNumber,socket.getSoLinger());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): getSoTimeout() = {}",associationNumber,socket.getSoTimeout());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): getTcpNoDelay() = {}",associationNumber,socket.getTcpNoDelay());
 
 		// Changing the Windows default of 8192 improves performance for
 		// sending from glacial to acceptable
 		// Linux and Mac send performance were both already acceptable
-		// this might have been less of a problem if not using a max pdu size of as high as 16384
+		// this might have been less of a problem if not using a max pdu size as high as 16384
 			
 		// We do not know yet what their max PDU size is, and once we do we can't change the
 		// socket options, so let's assume they can handle a lot to create really big buffers
@@ -91,15 +105,15 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 		// NB. allow to reduce size as well as increase it, to allow for performance tests ...
 			
 		if (socketReceiveBufferSize != 0 && socket.getReceiveBufferSize() != socketReceiveBufferSize) {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): asking to change receiveBufferSize to = "+socketReceiveBufferSize);
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): asking to change receiveBufferSize to = {}",associationNumber,socketReceiveBufferSize);
 			socket.setReceiveBufferSize(socketReceiveBufferSize);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): receiveBufferSize changed to = "+socket.getReceiveBufferSize());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): receiveBufferSize changed to = {}",associationNumber,socket.getReceiveBufferSize());
 		}
 			
 		if (socketSendBufferSize != 0 && socket.getSendBufferSize() != socketSendBufferSize) {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): asking to change sendBufferSize to = "+socketSendBufferSize);
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): asking to change sendBufferSize to = {}",associationNumber,socketSendBufferSize);
 			socket.setSendBufferSize(socketSendBufferSize);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): sendBufferSize changed to = "+socket.getSendBufferSize());
+			slf4jlogger.debug("Association[{}]: setSocketOptions(): sendBufferSize changed to = {}",associationNumber,socket.getSendBufferSize());
 		}
 			
 		// there is probably no point in downsizing the max PDU size offered,
@@ -109,12 +123,12 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 			
 		//if (socket.getReceiveBufferSize() < ourMaximumLengthReceived) {
 		//	ourMaximumLengthReceived = socket.getReceiveBufferSize();	// reduce the max PDU size offered to what will fit in socket receive buffer
-//if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): ourMaximumLengthReceived reduced to fit in receive buffer to = "+ourMaximumLengthReceived);
+		//	if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(("Association[{}]: setSocketOptions(): ourMaximumLengthReceived reduced to fit in receive buffer to = {}",associationNumber,ourMaximumLengthReceived);
 		//}
 
 		//if (!socket.getTcpNoDelay()) {			// don't know if turning this on (Nagle off) really helps or not
 		//	socket.setTcpNoDelay(true);
-//if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].setSocketOptions(): getTcpNoDelay() now = "+socket.getTcpNoDelay());
+		//	slf4jlogger.debug("Association[{}]: setSocketOptions(): getTcpNoDelay() now = {}",associationNumber,socket.getTcpNoDelay());
 		//}
 	}
 	
@@ -124,8 +138,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * @param	offset
 	 * @param	length
 	 * @param	what
-	 * @exception	IOException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomNetworkException
 	 */
 	protected static void readInsistently(InputStream in,byte[] b,int offset,int length,String what) throws DicomNetworkException, IOException {
 		while (length > 0) {
@@ -142,8 +156,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * @param	in
 	 * @param	startBuffer
 	 * @param	pduLength
-	 * @exception	IOException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomNetworkException
 	 */
 	protected static byte[] getRestOfPDU(InputStream in,byte[] startBuffer,int pduLength) throws DicomNetworkException, IOException {
 //System.err.println("Association["+associationNumber+"].getRestOfPDU(): startBuffer.length="+startBuffer.length+" pduLength="+pduLength);
@@ -159,8 +173,15 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	}
 
 	/***/
+	protected Association() {
+	}
+	
+	/**
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #Association()} instead.
+	 * @param	debugLevel	ignored
+	 */
 	protected Association(int debugLevel) {
-		this.debugLevel=debugLevel;
+		slf4jlogger.warn("Debug level supplied as argument to constructor ignored");
 	}
 
 	/**
@@ -168,75 +189,87 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * This is a confirmed service, so a normal return is the A-RELEASE confirmation primitive.
 	 *
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public void release() throws DicomNetworkException {
 												// State 6   - Data Transfer
 												//             A-RELEASE request primitive
 		try {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-RELEASE-RQ");
+			slf4jlogger.trace("Association[{}]: Us: A-RELEASE-RQ",associationNumber);
 			AReleasePDU ar = new AReleasePDU(0x05);					// AR-1      - Send A-RELEASE-RQ PDU
 			out.write(ar.getBytes());
 			out.flush();
-												// State 7   - Awaiting A-RELEASE-RP
-			byte[] startBuffer =  new byte[6];
-			//in.read(startBuffer,0,6);	// block for type and length of PDU
-			readInsistently(in,startBuffer,0,6,"type and length of PDU");
-			int pduType = startBuffer[0]&0xff;
-			int pduLength = ByteArray.bigEndianToUnsignedInt(startBuffer,2,4);
-
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them: PDU Type: 0x"+Integer.toHexString(pduType)+" (length 0x"+Integer.toHexString(pduLength)+")");
-
-			if (pduType == 0x06) {							//           - A-RELEASE-RP PDU
-				AReleasePDU arr = new AReleasePDU(getRestOfPDU(in,startBuffer,pduLength));
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them:\n"+arr);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();							// AR-3      - Issue A-RELEASE confirmation primitive and close transport connection
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: Transport connection is "+(socket.isClosed() ? "" : "not ")+"closed after close() request");
-				// fall through to normal return
-												// State 1   - Idle
-			}
-			// else if (pduType == 0x04) {}	// P-DATA PDU ... should issue P-DATA indication, then remain in State 7 ... i.e. continue to handle data if it comes
-			else if (pduType == 0x05) {						//           - A-RELEASE-RQ PDU ... release request collision
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them: A-RELEASE-RQ (collision)\n");
-												// AR-8      - we were the association requester, so go to State 9
-												// State 9   - 
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-RELEASE-RP");
-				AReleasePDU arr = new AReleasePDU(0x06);			// AR-9      - send a A-RELEASE-RP (wouldn;t if we were the association acceptor)
-				out.write(arr.getBytes());
-				out.flush();
-												// State 11  -
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();							// AR-3      - Issue A-RELEASE confirmation primitive and close transport connection
-				// fall through to normal return
-			}
-			else if (pduType == 0x07) {						//           - A-ABORT PDU
-				AAbortPDU aab = new AAbortPDU(getRestOfPDU(in,startBuffer,pduLength));
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them:\n"+aab);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();							// AA-3      - Close transport connection and indicate abort
-				throw new DicomNetworkException("A-ABORT indication - "+aab.getInfo());
-												// State 1   - Idle
-			}
-			else {									//           - Invalid or unrecognized PDU received
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Aborting");
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-ABORT");
-				AAbortPDU aab = new AAbortPDU(2,2);				// AA-8      - Send A-ABORT PDU (service provider source, unexpected PDU)
-				out.write(aab.getBytes());
-				out.flush();
-												//             issue an A-P-ABORT indication and start ARTIM
-				waitForARTIMBeforeTransportConnectionClose();			//             start ARTIM
-												// State 13  - Awaiting Transport connection close
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();
-				throw new DicomNetworkException("A-P-ABORT indication - "+aab.getInfo());
-												// State 1   - Idle
+			socket.setSoTimeout(associationReleaseRequestToNoResponseReceivedTimeoutInMilliseconds);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: setSoTimeout for ARTIM to {} ms",associationNumber,socket.getSoTimeout());
+			boolean stayInState7 = true;
+			while (stayInState7) {				// State 7   - Awaiting A-RELEASE-RP
+				stayInState7 = false;
+				
+				byte[] startBuffer =  new byte[6];
+				//in.read(startBuffer,0,6);	// block for type and length of PDU
+				readInsistently(in,startBuffer,0,6,"type and length of PDU");
+				int pduType = startBuffer[0]&0xff;
+				int pduLength = ByteArray.bigEndianToUnsignedInt(startBuffer,2,4);
+				
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Them: PDU Type: 0x{} (length 0x{})",associationNumber,Integer.toHexString(pduType),Integer.toHexString(pduLength));
+				
+				if (pduType == 0x06) {				//           - A-RELEASE-RP PDU
+					AReleasePDU arr = new AReleasePDU(getRestOfPDU(in,startBuffer,pduLength));
+					if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Them:\n{}",associationNumber,arr.toString());
+					slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+					// use shutdownOutput() not close() to send TCP FIN rather than RST per Igor Svistoun and "https://docs.oracle.com/javase/8/docs/technotes/guides/net/articles/connection_release.html" (001087)
+					socket.shutdownOutput();		// AR-3      - Issue A-RELEASE confirmation primitive and close transport connection (001087)
+					if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Us: Transport connection is {}closed after close() request",associationNumber,(socket.isClosed() ? "" : "not "));
+					// fall through to normal return
+					// State 1   - Idle
+				}
+				else if (pduType == 0x04) {			// P-DATA PDU ... should issue P-DATA indication, then remain in State 7 ... i.e. continue to handle data if it comes
+					slf4jlogger.trace("Association[{}]: Them: P-DATA PDU - ignoring and remaining in State 7",associationNumber);
+					// AR-7 - issue P-DATA indication (which we are not going to do)
+					stayInState7 = true;
+				}
+				else if (pduType == 0x05) {			//           - A-RELEASE-RQ PDU ... release request collision
+					slf4jlogger.trace("Association[{}]: Them: A-RELEASE-RQ (collision)",associationNumber);
+					// AR-8      - we were the association requester, so go to State 9
+					// State 9   -
+					slf4jlogger.trace("Association[{}]: Us: A-RELEASE-RP",associationNumber);
+					AReleasePDU arr = new AReleasePDU(0x06);			// AR-9      - send a A-RELEASE-RP (wouldn;t if we were the association acceptor)
+					out.write(arr.getBytes());
+					out.flush();
+					// State 11  -
+					slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+					socket.shutdownOutput();		// AR-3      - Issue A-RELEASE confirmation primitive and close transport connection (001087)
+					// fall through to normal return
+				}
+				else if (pduType == 0x07) {						//           - A-ABORT PDU
+					AAbortPDU aab = new AAbortPDU(getRestOfPDU(in,startBuffer,pduLength));
+					slf4jlogger.trace("Association[{}]: Them:\n{}",aab);
+					slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+					socket.shutdownOutput();							// AA-3      - Close transport connection and indicate abort (001087)
+					throw new DicomNetworkException("A-ABORT indication - "+aab.getInfo());
+					// State 1   - Idle
+				}
+				else {									//           - Invalid or unrecognized PDU received
+					slf4jlogger.trace("Association[{}]: Them: unrecognized PDU",associationNumber);
+					slf4jlogger.trace("Association[{}]: Aborting",associationNumber);
+					slf4jlogger.trace("Association[{}]: Us: A-ABORT",associationNumber);
+					AAbortPDU aab = new AAbortPDU(2,2);				// AA-8      - Send A-ABORT PDU (service provider source, unexpected PDU)
+					out.write(aab.getBytes());
+					out.flush();
+					//             issue an A-P-ABORT indication and start ARTIM
+					waitForARTIMBeforeTransportConnectionClose();			//             start ARTIM
+					// State 13  - Awaiting Transport connection close
+					slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+					socket.shutdownOutput();		// (001087)
+					throw new DicomNetworkException("A-P-ABORT indication - "+aab.getInfo());
+					// State 1   - Idle
+				}
 			}
 		}
 		catch (Exception e) {								//           - Transport connection closed (or other error)
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Transport connection closed (or other error)",e);
 			try {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
+				slf4jlogger.trace("Association[{}]: Us: close transport connection",associationNumber);
 				socket.close();							// Just in case not already closed
 			}
 			catch (IOException e2) {
@@ -253,24 +286,24 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * This is an unconfirmed service, so a normal return is expected.
 	 *
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public void abort() throws DicomNetworkException {
 												// State 6   - Data Transfer
 												//             A-ABORT request primitive
 		try {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-ABORT");
+			slf4jlogger.trace("Association[{}]: Us: A-ABORT",associationNumber);
 			AAbortPDU aab = new AAbortPDU(1,0);					// AA-1      - Send A-ABORT PDU (service user source, no reason)
 			out.write(aab.getBytes());
 			out.flush();
-			waitForARTIMBeforeTransportConnectionClose();				//             start ARTIM
+			waitForARTIMBeforeTransportConnectionClose();		//             start ARTIM
 												// State 13  - Awaiting Transport connection close
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
+			slf4jlogger.trace("Association[{}]: Us: close transport connection",associationNumber);
 			socket.close();
 												// State 1   - Idle
 		}
 		catch (Exception e) {								//           - Transport connection closed (or other error)
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Transport connection closed (or other error)",e);
 			try {
 				socket.close();							// Just in case not already closed
 			}
@@ -288,7 +321,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * @param	presentationContextID	included in the header of each PDU
 	 * @param	command			the command PDV payload, or null if none
 	 * @param	data			the data PDV payload, or null if none
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public void send(byte presentationContextID,byte[] command,byte[] data) throws DicomNetworkException {
 		// let's build a single command PDV and a single data PDV (if needed) in a single PDU
@@ -299,7 +332,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 		if (data != null) listOfPDVs.add(new PresentationDataValue(presentationContextID,data,false,true));		// data, last
 		try {
 			PDataPDU pdu = new PDataPDU(listOfPDVs);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"].send(): Us: P-DATA-TF=\n"+pdu);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: send(): Us: P-DATA-TF=\n{}",associationNumber,pdu.toString());
 			// should check size less than maximumLengthReceived (maximum PDU size receiver can handle) :(
 			byte[] bytes = pdu.getBytes();
 			if (bytes.length %2 != 0) {
@@ -322,10 +355,10 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * into PDUs.
 	 *
 	 * @param	presentationContextID	included in the header of each PDU
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AssociationOutputStream getAssociationOutputStream(byte presentationContextID) throws DicomNetworkException {
-		return new AssociationOutputStream(out,maximumLengthReceived,presentationContextID,debugLevel);
+		return new AssociationOutputStream(out,maximumLengthReceived,presentationContextID);
 	}
 
 	/**
@@ -333,7 +366,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * as it is received.
 	 *
 	 * @param	h	an implementation of the abstract class {@link ReceivedDataHandler ReceivedDataHandler}
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public void setReceivedDataHandler(ReceivedDataHandler h) throws DicomNetworkException {
 		receivedDataHandler=h;
@@ -349,15 +382,10 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 */
 	private synchronized void waitForARTIMBeforeTransportConnectionClose() throws java.lang.InterruptedException {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Waiting to close transport connection.");
-		for (int time=0; time < associationReleaseToTransportConnectionCloseTimeoutInMilliseconds; time+=associationReleaseToTransportConnectionCloseCheckAlreadyClosedIntervalInMilliseconds) {
-			if (!socket.isClosed()) {
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Other end closed transport connection during ARTIM.");
-				break;
-			}
-			wait(associationReleaseToTransportConnectionCloseCheckAlreadyClosedIntervalInMilliseconds);
-		}
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Closing transport connection.");
+		slf4jlogger.trace("Association[{}]: Waiting to close transport connection.",associationNumber);
+		// cannot detect other end closing - socket.isClosed() just checks when close() was called from our end :( (per Igor Svistoun) (001088)
+		wait(associationReleaseToTransportConnectionCloseTimeoutInMilliseconds);
+		slf4jlogger.trace("Association[{}]: Finished waiting before closing transport connection.",associationNumber);
 	}
 
 	/**
@@ -370,8 +398,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * @param	stopAfterLastFragmentOfCommand	stop after the last fragment of a command has been received
 	 * @param	stopAfterLastFragmentOfData	stop after the last fragment of data has been received
 	 * @param	stopAfterHandlerReportsDone	stop after data handler reports that it is done
-	 * @exception	DicomNetworkException		A-ABORT or A-P-ABORT indication
-	 * @exception	AReleaseException		A-RELEASE indication; transport connection is closed
+	 * @throws	DicomNetworkException		A-ABORT or A-P-ABORT indication
+	 * @throws	AReleaseException		A-RELEASE indication; transport connection is closed
 	 */
 	public void waitForPDataPDUs(int count,boolean stopAfterLastFragmentOfCommand,boolean stopAfterLastFragmentOfData,boolean stopAfterHandlerReportsDone) throws DicomNetworkException,AReleaseException {
 		while ((count == -1 || count-- > 0)) {						// -1 is flag to loop forever
@@ -383,54 +411,56 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 			int pduType = startBuffer[0]&0xff;
 			int pduLength = ByteArray.bigEndianToUnsignedInt(startBuffer,2,4);
 
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them: PDU Type: 0x"+Integer.toHexString(pduType)+" (length "+pduLength+" dec 0x"+Integer.toHexString(pduLength)+")");
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]:Them: PDU Type: 0x{} (length {} dec 0x{})",associationNumber,Integer.toHexString(pduType),pduLength,Integer.toHexString(pduLength));
 
 			if (pduType == 0x04) {							//           - P-DATA PDU
 				PDataPDU pdata = new PDataPDU(getRestOfPDU(in,startBuffer,pduLength));
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them:\n"+pdata);
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Them:\n{}",associationNumber,pdata.toString());
 				receivedDataHandler.sendPDataIndication(pdata,this);		// DT-2      - send P-DATA indication primitive
 												// State 6   - Data Transfer
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: stopAfterLastFragmentOfCommand="+stopAfterLastFragmentOfCommand);
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: pdata.containsLastCommandFragment()="+pdata.containsLastCommandFragment());
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: stopAfterLastFragmentOfData="+stopAfterLastFragmentOfData);
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: pdata.containsLastDataFragment()="+pdata.containsLastDataFragment());
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: stopAfterHandlerReportsDone="+stopAfterHandlerReportsDone);
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: receivedDataHandler.isDone()="+receivedDataHandler.isDone());
+				if (slf4jlogger.isTraceEnabled()) {
+					slf4jlogger.trace("Association[{}]: stopAfterLastFragmentOfCommand={}",associationNumber,stopAfterLastFragmentOfCommand);
+					slf4jlogger.trace("Association[{}]: pdata.containsLastCommandFragment()={}",associationNumber,pdata.containsLastCommandFragment());
+					slf4jlogger.trace("Association[{}]: stopAfterLastFragmentOfData={}",associationNumber,stopAfterLastFragmentOfData);
+					slf4jlogger.trace("Association[{}]: pdata.containsLastDataFragment()={}",associationNumber,pdata.containsLastDataFragment());
+					slf4jlogger.trace("Association[{}]: stopAfterHandlerReportsDone={}",associationNumber,stopAfterHandlerReportsDone);
+					slf4jlogger.trace("Association[{}]: receivedDataHandler.isDone()={}",associationNumber,receivedDataHandler.isDone());
+				}
 				if ((stopAfterLastFragmentOfCommand && pdata.containsLastCommandFragment())
 				 || (stopAfterLastFragmentOfData && pdata.containsLastDataFragment())
 				 || (stopAfterHandlerReportsDone && receivedDataHandler.isDone())
 				 ) {
-if (debugLevel > 3) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: waitForPDataPDUs is stopping");
+					slf4jlogger.trace("Association[{}]: waitForPDataPDUs is stopping",associationNumber);
 					break;
 				}
 			}
 			else if (pduType == 0x05) {						//           - A-RELEASE-RQ PDU
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them: A-RELEASE-RQ");
+				slf4jlogger.trace("Association[{}]: Them: A-RELEASE-RQ",associationNumber);
 												// AR-2      - Issue A-RELEASE indication primitive
 												// State 8   - Awaiting local A-RELEASE response primitive
 												//           - Assume local A-RELEASE response primitive
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-RELEASE-RP");
+				slf4jlogger.trace("Association[{}]: Us: A-RELEASE-RP",associationNumber);
 				AReleasePDU arr = new AReleasePDU(0x06);			// AR-4      - send a A-RELEASE-RP (and start ARTIM)
 				out.write(arr.getBytes());
 				out.flush();
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Awaiting Transport connection close");
+				slf4jlogger.trace("Association[{}]: Awaiting Transport connection close",associationNumber);
 												// State 13  - Awaiting Transport connection close
 				waitForARTIMBeforeTransportConnectionClose();
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();							// AR-4      - Issue A-RELEASE confirmation primitive and close transport connection
+				slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+				socket.shutdownOutput();							// AR-4      - Issue A-RELEASE confirmation primitive and close transport connection (001087)
 				throw new AReleaseException("A-RELEASE indication while waiting for P-DATA");
 			}
 			else if (pduType == 0x07) {						//           - A-ABORT PDU
 				AAbortPDU aab = new AAbortPDU(getRestOfPDU(in,startBuffer,pduLength));
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Them:\n"+aab);
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();							// AA-3      - Close transport connection and indicate abort
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Association[{}]: Them:\n{}",associationNumber,aab.toString());
+				slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+				socket.shutdownOutput();							// AA-3      - Close transport connection and indicate abort (001087)
 				throw new DicomNetworkException("A-ABORT indication - "+aab.getInfo());
 												// State 1   - Idle
 			}
 			else {									//           - Invalid or unrecognized PDU received
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Aborting");
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: A-ABORT");
+				slf4jlogger.trace("Association[{}]: Aborting",associationNumber);
+				slf4jlogger.trace("Association[{}]: Us: A-ABORT",associationNumber);
 
 				AAbortPDU aab = new AAbortPDU(2,2);				// AA-8      - Send A-ABORT PDU (service provider source, unexpected PDU)
 				out.write(aab.getBytes());
@@ -438,8 +468,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 												//             issue an A-P-ABORT indication and start ARTIM
 												// State 13  - Awaiting Transport connection close
 				waitForARTIMBeforeTransportConnectionClose();
-if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Association["+associationNumber+"]: Us: close transport connection");
-				socket.close();
+				slf4jlogger.trace("Association[{}]: Us: close outbound transport connection",associationNumber);
+				socket.shutdownOutput();		// (001087)
 				throw new DicomNetworkException("A-P-ABORT indication - "+aab.getInfo());
 												// State 1   - Idle
 			}
@@ -449,7 +479,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 			throw new AReleaseException(e.toString());				// State 1   - Idle
 		}
 		catch (Exception e) {								//           - Transport connection closed (or other error)
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Transport connection closed (or other error)",e);
 			try {
 				socket.close();							// Just in case not already closed
 			}
@@ -468,8 +498,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * The registered receivedDataHandler is sent a PDataIndication.
 	 *
-	 * @exception	DicomNetworkException		A-ABORT or A-P-ABORT indication
-	 * @exception	AReleaseException		A-RELEASE indication; transport connection is closed
+	 * @throws	DicomNetworkException		A-ABORT or A-P-ABORT indication
+	 * @throws	AReleaseException		A-RELEASE indication; transport connection is closed
 	 */
 	public void waitForOnePDataPDU() throws DicomNetworkException,AReleaseException {
 		waitForPDataPDUs(1,false,false,false);
@@ -480,8 +510,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * The registered receivedDataHandler is sent a PDataIndication.
 	 *
-	 * @exception	DicomNetworkException		A-ABORT or A-P-ABORT indication
-	 * @exception	AReleaseException		A-RELEASE indication; transport connection is closed
+	 * @throws	DicomNetworkException		A-ABORT or A-P-ABORT indication
+	 * @throws	AReleaseException		A-RELEASE indication; transport connection is closed
 	 */
 	public void waitForCommandPDataPDUs() throws DicomNetworkException,AReleaseException {
 		waitForPDataPDUs(-1,true,false,false);
@@ -492,8 +522,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * The registered receivedDataHandler is sent a PDataIndication.
 	 *
-	 * @exception	DicomNetworkException		A-ABORT or A-P-ABORT indication
-	 * @exception	AReleaseException		A-RELEASE indication; transport connection is closed
+	 * @throws	DicomNetworkException		A-ABORT or A-P-ABORT indication
+	 * @throws	AReleaseException		A-RELEASE indication; transport connection is closed
 	 */
 	public void waitForDataPDataPDUs() throws DicomNetworkException,AReleaseException {
 		waitForPDataPDUs(-1,false,true,false);
@@ -504,8 +534,8 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * The registered receivedDataHandler is sent a PDataIndication.
 	 *
-	 * @exception	DicomNetworkException		A-ABORT or A-P-ABORT indication
-	 * @exception	AReleaseException		A-RELEASE indication; transport connection is closed
+	 * @throws	DicomNetworkException		A-ABORT or A-P-ABORT indication
+	 * @throws	AReleaseException		A-RELEASE indication; transport connection is closed
 	 */
 	public void waitForPDataPDUsUntilHandlerReportsDone() throws DicomNetworkException,AReleaseException {
 		waitForPDataPDUs(-1,false,false,true);
@@ -518,7 +548,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * @param	abstractSyntaxUID	the SOP Class UID for which to find a suitable Presentation Context
 	 * @return				the Presentation Context ID of a suitable Presentation Context
-	 * @exception	DicomNetworkException	thrown if no suitable Presentation Context
+	 * @throws	DicomNetworkException	thrown if no suitable Presentation Context
 	 */
 	public byte getSuitablePresentationContextID(String abstractSyntaxUID) throws DicomNetworkException {
 		ListIterator i = null;
@@ -598,7 +628,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 * @param	abstractSyntaxUID	the SOP Class UID for which to find a suitable Presentation Context
 	 * @param	transferSyntaxUID	the Transfer Syntax UID for which to find a suitable Presentation Context
 	 * @return				the Presentation Context ID of a suitable Presentation Context
-	 * @exception	DicomNetworkException	thrown if no suitable Presentation Context
+	 * @throws	DicomNetworkException	thrown if no suitable Presentation Context
 	 */
 	public byte getSuitablePresentationContextID(String abstractSyntaxUID,String transferSyntaxUID) throws DicomNetworkException {
 		ListIterator i = presentationContexts.listIterator();
@@ -616,7 +646,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 	 *
 	 * @param	identifier		the Presentation Context ID
 	 * @return				the only or first Transfer Syntax UID
-	 * @exception	DicomNetworkException	thrown if no such Presentation Context or no Transfer Syntax for that Presentation Context (e.g. it was rejected)
+	 * @throws	DicomNetworkException	thrown if no such Presentation Context or no Transfer Syntax for that Presentation Context (e.g. it was rejected)
 	 */
 	public String getTransferSyntaxForPresentationContextID(byte identifier) throws DicomNetworkException {
 		ListIterator i = presentationContexts.listIterator();
@@ -684,9 +714,9 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 			//	System.err.println("getCipherSuitesToEnable() supported suite "+suites[i]);
 			//}
 			boolean useAES = Arrays.asList(suites).contains(cipherSuiteForAES);
-			System.err.println("getCipherSuitesToEnable() useAES "+useAES);
+			slf4jlogger.info("getCipherSuitesToEnable() useAES {}",useAES);
 			boolean use3DES = Arrays.asList(suites).contains(cipherSuiteFor3DES);
-			System.err.println("getCipherSuitesToEnable() use3DES "+use3DES);
+			slf4jlogger.info("getCipherSuitesToEnable() use3DES {}",use3DES);
 			if (useAES && !use3DES) {
 				String[] s = { cipherSuiteForAES };
 				enable = s;
@@ -712,7 +742,7 @@ if (debugLevel > 2) System.err.println(new java.util.Date().toString()+": Associ
 			//	System.err.println("getProtocolsToEnable() supported protocol "+protocols[i]);
 			//}
 			boolean useTLS = Arrays.asList(protocols).contains(protocolForTLS);
-			System.err.println("getProtocolsToEnable() useTLS "+useTLS);
+			slf4jlogger.info("getProtocolsToEnable() useTLS {}",useTLS);
 			if (useTLS) {
 				String[] s = { protocolForTLS };
 				enable = s;

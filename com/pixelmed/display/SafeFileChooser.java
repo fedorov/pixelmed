@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -9,20 +9,55 @@ import java.awt.HeadlessException;
 
 import java.io.File;
 
+import java.util.Enumeration;
+import java.util.ResourceBundle;
+
 import javax.swing.JFileChooser;
+import javax.swing.UIManager;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 public class SafeFileChooser {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SafeFileChooser.java,v 1.4 2013/02/21 00:06:44 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SafeFileChooser.java,v 1.15 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SafeFileChooser.class);
+
+	protected static String resourceBundleName  = "com.pixelmed.display.SafeFileChooser";
 	
-	JFileChooser chooser;
+	protected static ResourceBundle resourceBundle;
+	
+	protected static void localizeJFileChooser() {
+		if (resourceBundle == null) {
+			try {
+				resourceBundle = ResourceBundle.getBundle(resourceBundleName);
+				for (Enumeration<String> e = resourceBundle.getKeys(); e.hasMoreElements();) {
+					String key = e.nextElement();
+					if (key.startsWith("FileChooser.")) {
+						String value = resourceBundle.getString(key);
+						slf4jlogger.debug("localizeJFileChooser(): UIManager.put(\"{}\" , \"{}\")",key,value);
+						UIManager.put(key,value);
+					}
+				}
+			}
+			catch (Exception e) {
+				// ignore java.util.MissingResourceException: Can't find bundle for base name com.pixelmed.display.SafeFileChooser, locale en_US
+				slf4jlogger.warn("Missing resource bundle for localization {}",e.toString());
+			}
+		}
+	}
+	
+	protected JFileChooser chooser;
 	
 	public SafeFileChooser() {
 		ThreadUtilities.checkIsEventDispatchThreadElseException();
+		localizeJFileChooser();
 		chooser = new JFileChooser();
 	}
 	
 	public SafeFileChooser(String currentDirectoryPath) {
 		ThreadUtilities.checkIsEventDispatchThreadElseException();
+		localizeJFileChooser();
 		chooser = new JFileChooser(currentDirectoryPath);
 	}
 	

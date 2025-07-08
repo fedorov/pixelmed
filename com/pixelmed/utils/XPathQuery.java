@@ -1,9 +1,12 @@
-/* Copyright (c) 2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.utils.XPathQuery XPathQuery} class provides
+ * <p>The {@link XPathQuery XPathQuery} class provides
  * a command line utility for performing XPath queries against an XML file.</p>
  *
  * <p>For example, one can apply it to the XML representation of a DICOM object, as follows:</p>
@@ -17,8 +20,9 @@ package com.pixelmed.utils;
  * @author	dclunie
  */
 public class XPathQuery {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/XPathQuery.java,v 1.2 2008/01/17 22:06:28 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/XPathQuery.java,v 1.13 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(XPathQuery.class);
 	
 	public static String getNamedAttributeValueOfElementNode(org.w3c.dom.Node node,String attributeName) {
 		String value = null;
@@ -36,10 +40,10 @@ public class XPathQuery {
 	 */
 	public static void main(String arg[]) {
 		try {
-			System.err.println(javax.xml.xpath.XPathFactory.newInstance().newXPath().evaluate(arg[1],new org.xml.sax.InputSource(new java.io.FileInputStream(arg[0]))));
+			System.err.println(javax.xml.xpath.XPathFactory.newInstance().newXPath().evaluate(arg[1],new org.xml.sax.InputSource(new java.io.FileInputStream(arg[0]))));	// do not use SLF4J, since users may depend on this going to System.err as utility
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

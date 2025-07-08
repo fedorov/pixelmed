@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.dicom.TransferSyntax;
+import com.pixelmed.dicom.DicomStreamCopier;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,17 +27,19 @@ import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream; 
 
-import com.pixelmed.dicom.TransferSyntax;
-import com.pixelmed.dicom.DicomStreamCopier;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.WadoRequestHandler WadoRequestHandler} creates a response to an HHTP request for
+ * <p>The {@link WadoRequestHandler WadoRequestHandler} creates a response to an HHTP request for
  * a WADO request.</p>
  *
  * @author	dclunie
  */
 class WadoRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoRequestHandler.java,v 1.12 2012/10/05 16:01:58 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoRequestHandler.java,v 1.24 2025/01/29 10:58:10 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(WadoRequestHandler.class);
 
 	//private static final String convertedFormatNameForCodec = "png";
 	//private static final String convertedExtension = ".png";
@@ -76,8 +81,8 @@ class WadoRequestHandler extends RequestHandler {
 		return objectUID+"#"+Double.toString(windowCenter)+"#"+Double.toString(windowWidth)+"#"+Integer.toString(columns)+"#"+Integer.toString(rows)+"#"+Integer.toString(quality);
 	}
 
-	protected WadoRequestHandler(String stylesheetPath,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	protected WadoRequestHandler(String stylesheetPath) {
+		super(stylesheetPath);
 	}
 
 	protected void generateResponseToGetRequestForCacheWithoutSending(DatabaseInformationModel databaseInformationModel,WebRequest request,OutputStream out) throws IOException {
@@ -95,12 +100,12 @@ class WadoRequestHandler extends RequestHandler {
 			if (records != null && records.size() == 1) {
 				Map map = (Map)(records.get(0));
 				String filename = (String)(map.get(databaseInformationModel.getLocalFileNameColumnName(InformationEntity.INSTANCE)));
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): Found in database "+filename);
+				slf4jlogger.trace("generateResponseToGetRequest(): Found in database {}",filename);
 				File file = new File(filename);
 				if (file.exists() && file.isFile()) {		
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): File exists");
+					slf4jlogger.trace("generateResponseToGetRequest(): File exists");
 					if (wadoRequest.isContentTypeDicom()) {
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): is DICOM request");
+						slf4jlogger.trace("generateResponseToGetRequest(): is DICOM request");
 						// not paying any attention to requested Transfer Syntax; give them whatever we have
 						if (out != null) {
 							sendHeaderAndBodyOfFile(out,file,objectUID+".dcm","application/dicom");
@@ -116,9 +121,9 @@ if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResp
 						//sendHeaderAndBodyOfFile(out,convertedFile,objectUID+".dcm","application/dicom");
 					}
 					else {
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): is non-DICOM request");
+						slf4jlogger.trace("generateResponseToGetRequest(): is non-DICOM request");
 						String sopClassUID = (String)(map.get("SOPCLASSUID"));
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): SOP Class UID from database = "+sopClassUID);
+						slf4jlogger.trace("generateResponseToGetRequest(): SOP Class UID from database = {}",sopClassUID);
 						if (sopClassUID != null) {
 							if (SOPClass.isImageStorage(sopClassUID)) {
 								double windowWidth = wadoRequest.getWindowWidth();
@@ -132,20 +137,19 @@ if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResp
 								CachedFileEntry cacheEntry = getFromCacheOfConvertedFiles(cacheKey);
 								try {
 									if (cacheEntry == null) {
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): not in cache");
+										slf4jlogger.trace("generateResponseToGetRequest(): not in cache");
 										convertedFile = File.createTempFile("RequestTypeServer",convertedExtension);
 										convertedFile.deleteOnExit();
 										String convertedFileName = convertedFile.getAbsolutePath();
 										ConsumerFormatImageMaker.convertFileToEightBitImage(
 											filename,convertedFileName,convertedFormatNameForCodec,windowCenter,windowWidth,columns,rows,quality,
-											ConsumerFormatImageMaker.ALL_ANNOTATIONS+"_"+ConsumerFormatImageMaker.COLOR_ANNOTATIONS,
-											webServerDebugLevel);
+											ConsumerFormatImageMaker.ALL_ANNOTATIONS+"_"+ConsumerFormatImageMaker.COLOR_ANNOTATIONS);
 										conversionDate = new Date();
 										cacheEntry = new CachedFileEntry(convertedFileName,conversionDate);
 										addToCacheOfConvertedFiles(cacheKey,cacheEntry);
 									}
 									else {
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): in cache");
+										slf4jlogger.trace("generateResponseToGetRequest(): in cache");
 										convertedFile = new File(cacheEntry.filename);
 										conversionDate = cacheEntry.date;
 									}
@@ -160,11 +164,11 @@ if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResp
 									// else are just filling cache in advance of need to send the data
 								}
 								catch (Exception e) {
-									e.printStackTrace(System.err);
+									slf4jlogger.error("Cannot convert image in file {} to {} or send it",convertedFile,convertedFormatNameForCodec,e);
 									throw new Exception("Cannot convert image to "+convertedFormatNameForCodec+" or send it");
 								}
 								finally {
-if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): convertedFile = "+convertedFile.getAbsolutePath());
+									if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("generateResponseToGetRequest(): convertedFile = {}",convertedFile.getAbsolutePath());
 									//convertedFile.delete();	// don't delete, since caching
 								}
 							}
@@ -187,8 +191,8 @@ if (webServerDebugLevel > 1) System.err.println("WadoRequestHandler.generateResp
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("WadoRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

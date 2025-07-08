@@ -1,12 +1,6 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
-
-import java.awt.*; 
-import java.awt.event.*; 
-import java.util.*; 
-import javax.swing.*; 
-import javax.swing.event.*;
 
 import com.pixelmed.dicom.*;
 import com.pixelmed.event.ApplicationEventDispatcher;
@@ -15,15 +9,25 @@ import com.pixelmed.event.SelfRegisteringListener;
 import com.pixelmed.display.event.FrameSelectionChangeEvent; 
 import com.pixelmed.display.event.FrameSortOrderChangeEvent; 
 
+import java.awt.*; 
+import java.awt.event.*; 
+import java.util.*; 
+import javax.swing.*; 
+import javax.swing.event.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 abstract class SourceInstanceSortOrderPanel extends JPanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceInstanceSortOrderPanel.java,v 1.29 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceInstanceSortOrderPanel.java,v 1.13 2007/01/17 15:55:53 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceInstanceSortOrderPanel.class);
 
 	/***/
-	private EventContext typeOfPanelEventContext;
+	protected EventContext typeOfPanelEventContext;
 
 	// keep track of characteristics of currently selected instance we need to do the sort
 	
@@ -59,6 +63,9 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 
 	/***/
 	protected ChangeListener cineSliderChangeListener;
+
+	/***/
+	protected boolean active;
 
 	// our own methods ...
 	
@@ -163,7 +170,7 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 				map=null;
 			}
 //dump("before sort");
@@ -235,7 +242,7 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 //System.err.println("SourceInstanceSortOrderPanel.buildListOfDimensionsFromAttributeList(): listOfDimensionIndexNames="+listOfDimensionIndexNames);
 		return listOfDimensionIndexNames;
@@ -258,7 +265,13 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 	 * @param	value
 	 */
 	protected void updateCineSlider(int min,int max,int value) {
+		slf4jlogger.debug("updateCineSlider(): min = {}",min);
+		slf4jlogger.debug("updateCineSlider(): max = {}",max);
+		slf4jlogger.debug("updateCineSlider(): value = {}",value);
+		slf4jlogger.debug("updateCineSlider(): currentSliderMinimum = {}",currentSliderMinimum);
+		slf4jlogger.debug("updateCineSlider(): currentSliderMaximum = {}",currentSliderMaximum);
 		if (min != currentSliderMinimum || max != currentSliderMaximum) {
+			slf4jlogger.debug("updateCineSlider(): removing and rebuilding slider (if needed)");
 			cineSliderControlsPanel.removeAll();
 			if (max > min) {
 				cineSlider = new JSlider(min,max,value);	// don't leave to default, which is 50 and may be outside range
@@ -269,13 +282,14 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 				cineSlider.addChangeListener(cineSliderChangeListener);
 			}
 			else {
+				slf4jlogger.debug("updateCineSlider(): slider not needed");
 				cineSlider=null;	// else single frame so no slider
 			}
 			currentSliderMinimum=min;
 			currentSliderMaximum=max;
 		}
-		else {
-			if (cineSlider != null) cineSlider.setValue(value);
+		if (cineSlider != null && cineSlider.getValue() != value) {
+			cineSlider.setValue(value);
 		}
 	}
 
@@ -286,13 +300,13 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 	
 	// implement FrameSelectionChangeListener ...
 	
-	private OurFrameSelectionChangeListener ourFrameSelectionChangeListener;
+	protected OurFrameSelectionChangeListener ourFrameSelectionChangeListener;
 
-	class OurFrameSelectionChangeListener extends SelfRegisteringListener {
+	protected class OurFrameSelectionChangeListener extends SelfRegisteringListener {
 	
 		public OurFrameSelectionChangeListener(EventContext eventContext) {
 			super("com.pixelmed.display.event.FrameSelectionChangeEvent",eventContext);
-//System.err.println("SourceInstanceSortOrderPanel.OurFrameSelectionChangeListener():");
+			slf4jlogger.debug("SourceInstanceSortOrderPanel.OurFrameSelectionChangeListener():");
 		}
 		
 		/**
@@ -300,15 +314,18 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 		 */
 		public void changed(com.pixelmed.event.Event e) {
 			FrameSelectionChangeEvent fse = (FrameSelectionChangeEvent)e;
-//System.err.println("SourceInstanceSortOrderPanel.OurFrameSelectionChangeListener.changed(): event="+fse);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("SourceInstanceSortOrderPanel.OurFrameSelectionChangeListener.changed(): event={}"+fse.toString());
 			currentSrcInstanceIndex=fse.getIndex();
-			updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
+			slf4jlogger.debug("SourceInstanceSortOrderPanel.OurFrameSelectionChangeListener.changed(): currentSrcInstanceIndex = {}",currentSrcInstanceIndex);
+			if (currentSrcInstanceIndex != -1) {	// (001074)
+				updateCineSlider(1,nSrcInstances,currentSrcInstanceIndex+1);
+			}
 		}
 	}
 	
 	// implement FrameSortOrderChangeListener ...
 	
-	private OurFrameSortOrderChangeListener ourFrameSortOrderChangeListener;
+	protected OurFrameSortOrderChangeListener ourFrameSortOrderChangeListener;
 
 	class OurFrameSortOrderChangeListener extends SelfRegisteringListener {
 	
@@ -330,7 +347,7 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 	}
 	
 	/***/
-	private class CineSliderChangeListener implements ChangeListener {
+	protected class CineSliderChangeListener implements ChangeListener {
 		/**
 		 * @param	e
 		 */
@@ -340,7 +357,7 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 	}
 
 	/***/
-	private class SortActionListener implements ActionListener {
+	protected class SortActionListener implements ActionListener {
 		/**
 		 * @param	event
 		 */
@@ -355,15 +372,22 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 				// else either can't sort because no list or was implicit command - either way use null sort order
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new FrameSortOrderChangeEvent(typeOfPanelEventContext,useSortOrder,0));
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
+	}
+
+	/**
+	 * <p>Null argument constructor to allow sub-classes that do all their own construction.</p>
+	 */
+	protected SourceInstanceSortOrderPanel() {
 	}
 	
 	/**
 	 * @param	typeOfPanelEventContext
 	 */
 	public SourceInstanceSortOrderPanel(EventContext typeOfPanelEventContext) {
+		active = false;
 		
 		this.typeOfPanelEventContext=typeOfPanelEventContext;
 		ourFrameSelectionChangeListener = new OurFrameSelectionChangeListener(typeOfPanelEventContext);
@@ -409,5 +433,15 @@ abstract class SourceInstanceSortOrderPanel extends JPanel {
 		dimensionIndexPanel = new JPanel();
 		add(dimensionIndexPanel);
 	}
+
+	/**
+	 * @param	active	whether or not the panel will respond to events
+	 */
+	public void setActive(boolean active) { this.active = active; }
+
+	/**
+	 * @return	whether or not the panel will respond to events
+	 */
+	public boolean isActive() { return active; }
 }
 

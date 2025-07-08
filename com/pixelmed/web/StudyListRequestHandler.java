@@ -1,6 +1,9 @@
-/* Copyright (c) 2004-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,20 +13,22 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.StudyListRequestHandler StudyListRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link StudyListRequestHandler StudyListRequestHandler} creates a response to an HTTP request for
  * a list of studies for a specified patient.</p>
  *
  * @author	dclunie
  */
 class StudyListRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/StudyListRequestHandler.java,v 1.6 2011/04/04 14:47:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/StudyListRequestHandler.java,v 1.18 2025/01/29 10:58:10 dclunie Exp $";
 
-	protected StudyListRequestHandler(String stylesheetPath,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(StudyListRequestHandler.class);
+
+	protected StudyListRequestHandler(String stylesheetPath) {
+		super(stylesheetPath);
 	}
 
 	private class CompareDatabaseAttributesByStudyDate implements Comparator {
@@ -31,13 +36,16 @@ class StudyListRequestHandler extends RequestHandler {
 			int returnValue = 0;
 			String si1 = (String)(((Map)o1).get("STUDYDATE"));
 			String si2 = (String)(((Map)o2).get("STUDYDATE"));
+			if (si1 == null) si1="";
+			if (si2 == null) si2="";
 			try {
-				int i1 = Integer.parseInt(si1);
-				int i2 = Integer.parseInt(si2);
+				int i1 = si1.length() > 0 ? Integer.parseInt(si1) : 0;
+				int i2 = si2.length() > 0 ? Integer.parseInt(si2) : 0;
 				returnValue = i1 - i2;
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
+				returnValue = si1.compareTo(si2);
 			}
 			return returnValue;
 		}
@@ -118,8 +126,8 @@ class StudyListRequestHandler extends RequestHandler {
 			sendHeaderAndBodyText(out,responseBody,"studies.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("StudyListRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -13,7 +13,7 @@ import com.pixelmed.dicom.BinaryInputStream;
  * @author	dclunie
  */
 public class Section4 extends Section {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/Section4.java,v 1.8 2004/01/25 03:47:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/Section4.java,v 1.18 2025/01/29 10:58:09 dclunie Exp $";
 
 	/**
 	 * <p>Get a string name for this section.</p>

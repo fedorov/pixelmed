@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -43,12 +43,15 @@ public class TestColorConversions_SRGB_CIELabPCS extends TestCase {
 		{ 255,0,255 },
 		{ 255,255,255 },
 		{ 225,190,150 },
-		{ 200,200,200 }
+		{ 200,200,200 },
+		{ 128,174,128 },
+		{ 221,130,101 }
 	};
 	
 	public void TestColorConversions_SRGB_CIELabPCS_SpecificValues() throws Exception {
 		for (int[] rgb : testRGBValues) {
 			int[] lab = ColorUtilities.getIntegerScaledCIELabPCSFromSRGB(rgb);
+System.err.println("TestColorConversions_SRGB_CIELabPCS_SpecificValues(): RGB ("+rgb[0]+","+rgb[1]+","+rgb[2]+") = Lab ("+lab[0]+","+lab[1]+","+lab[2]+")");
 			int[] rgbRoundTrip = ColorUtilities.getSRGBFromIntegerScaledCIELabPCS(lab);
 			assertEquals("Checking round trip r",rgb[0],rgbRoundTrip[0]);
 			assertEquals("Checking round trip g",rgb[1],rgbRoundTrip[1]);

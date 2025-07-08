@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -29,7 +29,8 @@ public class TestStructuredReport_XMLRepresentation extends TestCase {
 		TestSuite suite = new TestSuite("TestStructuredReport_XMLRepresentation");
 		
 		suite.addTest(new TestStructuredReport_XMLRepresentation("testStructuredReport_XMLRepresentation_WithReferences"));
-		
+		suite.addTest(new TestStructuredReport_XMLRepresentation("testStructuredReport_XMLRepresentation_WithObservationDateTimeAndUID"));
+
 		return suite;
 	}
 	
@@ -139,6 +140,39 @@ public class TestStructuredReport_XMLRepresentation extends TestCase {
 		
 		AttributeList roundTripList = new XMLRepresentationOfStructuredReportObjectFactory().getAttributeList(srDocument);
 
+		assertEquals("Checking round trip AttributeList",list,roundTripList);
+	}
+	
+	public void testStructuredReport_XMLRepresentation_WithObservationDateTimeAndUID() throws Exception {
+		String dt1 = "20181021030405";
+		String uid1 = "1.2.3.4";
+		String dt2 = "20181021050607";
+		String uid2 = "2.3.4.5";
+
+		ContentItemFactory cif = new ContentItemFactory();
+		ContentItem root = cif.new ContainerContentItem(null/*no parent since root*/,null/*no relationshipType since root*/,
+														new CodedSequenceItem("111036","DCM","Mammography CAD Report"),true/*continuityOfContentIsSeparate*/,"DCMR","5000",
+														dt1,uid1);
+		ContentItem findingsSummary = cif.new CodeContentItem(root,"CONTAINS",new CodedSequenceItem("111017","DCM","CAD Processing and Findings Summary"),new CodedSequenceItem("111242","DCM","All algorithms succeeded; with findings"));
+		{
+			ContentItem individual = cif.new ContainerContentItem(findingsSummary,"CONTAINS",new CodedSequenceItem("111034","DCM","Individual Impression/Recommendation"),true/*continuityOfContentIsSeparate*/);
+			cif.new CodeContentItem(individual,"CONTAINS",new CodedSequenceItem("111056","DCM","Rendering Intent"),
+									new CodedSequenceItem("111150","DCM","Presentation Required: Rendering device is expected to present"),
+									dt2,uid2);
+		}
+		
+		StructuredReport sr = new StructuredReport(root);
+		AttributeList list = sr.getAttributeList();
+		list.putAll(getDefaultAttributeList());
+		
+//System.err.println(sr);
+		
+		Document srDocument = new XMLRepresentationOfStructuredReportObjectFactory().getDocument(list);
+		
+//System.err.println(XMLRepresentationOfDicomObjectFactory.toString(srDocument));
+		
+		AttributeList roundTripList = new XMLRepresentationOfStructuredReportObjectFactory().getAttributeList(srDocument);
+		
 		assertEquals("Checking round trip AttributeList",list,roundTripList);
 	}
 }

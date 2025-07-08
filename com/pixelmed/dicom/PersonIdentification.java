@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -12,7 +12,7 @@ import java.util.*;
  */
 public class PersonIdentification {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PersonIdentification.java,v 1.1 2008/05/23 16:51:00 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PersonIdentification.java,v 1.12 2025/01/29 10:58:07 dclunie Exp $";
 
 	protected AttributeList list;
 	
@@ -29,7 +29,7 @@ public class PersonIdentification {
 	 * <p>Non-standard attributes are discarded.</p>
 	 *
 	 * @param	list			the list of attributes that comprise the item
-	 * @throws	Dicomexception	if the list of attributes does not contain the required information
+	 * @throws	DicomException	if the list of attributes does not contain the required information
 	 */
 	public PersonIdentification(AttributeList list) throws DicomException {
 		personIdentificationCodeSequence = CodedSequenceItem.getArrayOfCodedSequenceItemsOrNull(list,TagFromName.PersonIdentificationCodeSequence);
@@ -50,7 +50,7 @@ public class PersonIdentification {
 	 * @param	institutionName
 	 * @param	institutionAddress
 	 * @param	institutionCodeSequence
-	 * @throws	Dicomexception	if the the required information is not present
+	 * @throws	DicomException	if the the required information is not present
 	 */
 	public PersonIdentification(CodedSequenceItem[] personIdentificationCodeSequence,String personAddress,String[] personTelephoneNumbers,
 			String institutionName,String institutionAddress,CodedSequenceItem institutionCodeSequence) throws DicomException {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
 public class SCPTree implements TreeModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPTree.java,v 1.2 2004/01/24 18:50:53 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPTree.java,v 1.13 2025/01/29 10:58:09 dclunie Exp $";
 
 	// Our nodes are all instances of SCPTreeRecord ...
 
@@ -99,7 +99,7 @@ public class SCPTree implements TreeModel {
 	 * <p>Construct an entire tree of attributes from an SCP-ECG instance.</p>
 	 *
 	 * @param	scpecg		an SCP-ECG instance
-	 * @exception	Exception
+	 * @throws	Exception
 	 */
 	public SCPTree(SCPECG scpecg) throws Exception {
 		if (scpecg != null) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -17,7 +17,7 @@ import com.pixelmed.dicom.DicomException;
  * @author	dclunie
  */
 public class IdentifierHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/IdentifierHandler.java,v 1.7 2005/07/28 13:56:57 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/IdentifierHandler.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * <p>Called when a response identifier has been received.</p>

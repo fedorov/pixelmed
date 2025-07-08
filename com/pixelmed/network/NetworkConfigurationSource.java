@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 import java.util.Timer;
 import java.util.TimerTask;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This abstract class provides a source of DICOM network parameters.</p>
@@ -11,15 +14,14 @@ import java.util.TimerTask;
  * @author	dclunie
  */
 abstract public class NetworkConfigurationSource {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationSource.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationSource.java,v 1.1 2005/10/25 19:49:39 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkConfigurationSource.class);
 	
 	protected static final int DefaultDumpInfoInterval = 10*1000;	// milliseconds
 	
 	protected static final int DefaultSourceRefreshInterval = 60*60*1000;	// milliseconds
 	
-	protected int debugLevel;
-
 	private final NetworkApplicationInformation networkApplicationInformation = new NetworkApplicationInformation();
 	
 	/**
@@ -83,10 +85,18 @@ abstract public class NetworkConfigurationSource {
 	/**
 	 * <p>Construct an instance capable of returning configuration information but do not start anything yet.</p>
 	 *
-	 * @param	debugLevel
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #NetworkConfigurationSource()} instead.
+	 * @param	debugLevel	ignored
 	 */
 	protected NetworkConfigurationSource(int debugLevel) {
-		this.debugLevel=debugLevel;
+		this();
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	/**
+	 * <p>Construct an instance capable of returning configuration information but do not start anything yet.</p>
+	 */
+	protected NetworkConfigurationSource() {
 	}
 	
 	/**

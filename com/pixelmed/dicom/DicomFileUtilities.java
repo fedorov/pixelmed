@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,7 +14,7 @@ import java.io.IOException;
  * @author	dclunie
  */
 public class DicomFileUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomFileUtilities.java,v 1.2 2008/03/04 12:23:33 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomFileUtilities.java,v 1.16 2025/01/29 10:58:06 dclunie Exp $";
 
 	private DicomFileUtilities() {}
 	
@@ -61,7 +61,7 @@ public class DicomFileUtilities {
 	 * <p>Will detect files with:</p>
 	 * <ul>
 	 * <li>PS 3.10 meta-header (even if in invalid big-endian transfer syntax and even if 1st meta information header attribute is not group length)</li>
-	 * <li>no meta-header but in little or big endian and explicit or implicit VR starting with a group 0x0008 attribute element <= 0x0018 (SOPInstanceUID)</li>
+	 * <li>no meta-header but in little or big endian and explicit or implicit VR starting with a group 0x0008 attribute element &lt;= 0x0018 (SOPInstanceUID)</li>
 	 * </ul>
 	 * <p>Will reject everything else, including files with:</p>
 	 * <ul>
@@ -91,7 +91,7 @@ public class DicomFileUtilities {
 			fi.close();
 			fi = null;
 
-			if (length >= 136 && new String(b,128,4).equals("DICM") && extractUnsigned16(b,132,false) == 0x0002 /*&& extractUnsigned16(b,134,false) == 0x0000*/) {	// do NOT insist on group length (bad example dicomvl.imagAAAa0005r.dc3)
+			if (length >= 136 && new String(b,128,4).equals("DICM") && (extractUnsigned16(b,132,false) == 0x0002 || extractUnsigned16(b,132,false) == 0x0000)) {	// do NOT insist on group length (bad example dicomvl.imagAAAa0005r.dc3); allow group 0x0000 command elements before meta information elements (001132)
 				success = true;
 			}
 			else if (length >= 136 && new String(b,128,4).equals("DICM") && extractUnsigned16(b,132,true) == 0x0002 /*&& extractUnsigned16(b,134,true) == 0x0000*/) {	// big endian metaheader is illegal but allow it (bad example dicomvl.fich1.dcm)
@@ -111,7 +111,7 @@ public class DicomFileUtilities {
 			) {
 				success = true;
 			}
-			// do not check for start with command group (e.g. acrnema/xpress/test.inf)
+			// do not check for start with command group (e.g. acrnema/xpress/test.inf) (001134)
 		}
 		catch (Exception e) {
 			success = false;
@@ -138,7 +138,7 @@ public class DicomFileUtilities {
 				System.err.println("File "+filename+" isDicomOrAcrNemaFile() = "+isDicomOrAcrNemaFile(filename));
 			}
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

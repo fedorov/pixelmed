@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to read a set of DICOM files and replace the Frame of Reference UIDs with a common value for the specified scope.</p>
@@ -40,8 +42,9 @@ import java.util.Map;
  * @author	dclunie
  */
 public class RemapFrameOfReferenceUIDs {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RemapFrameOfReferenceUIDs.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/RemapFrameOfReferenceUIDs.java,v 1.1 2012/11/18 10:26:53 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(RemapFrameOfReferenceUIDs.class);
 	
 	protected String ourAETitle = "OURAETITLE";
 
@@ -94,7 +97,7 @@ public class RemapFrameOfReferenceUIDs {
 				}
 				
 				if (!useFrameofReferenceUIDForScope.equals(existingFrameofReferenceUID)) {
-System.err.println("\""+mediaFileName+"\": replacing old FoRUID "+existingFrameofReferenceUID+" with common "+useFrameofReferenceUIDForScope+" for "+scope+" "+commonUID);
+					slf4jlogger.info("\"{}\": replacing old FoRUID {} with common {} for {} {}",mediaFileName,existingFrameofReferenceUID,useFrameofReferenceUIDForScope,scope,commonUID);
 					{ Attribute a = new UniqueIdentifierAttribute(TagFromName.FrameOfReferenceUID); a.addValue(useFrameofReferenceUIDForScope); list.put(a); }
 				}
 				
@@ -131,7 +134,8 @@ System.err.println("\""+mediaFileName+"\": replacing old FoRUID "+existingFrameo
 				}
 			}
 			catch (Exception e) {
-				logLn("Error: File "+mediaFileName+" exception "+e);
+				//logLn("Error: File "+mediaFileName+" exception "+e);
+				slf4jlogger.error("File {}",mediaFileName,e);
 			}
 		}
 	}
@@ -165,7 +169,7 @@ System.err.println("\""+mediaFileName+"\": replacing old FoRUID "+existingFrameo
 			new RemapFrameOfReferenceUIDs(arg[0],arg[1],arg[2]);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 			System.exit(0);
 		}
 	}

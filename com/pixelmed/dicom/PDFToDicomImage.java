@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -13,6 +13,9 @@ import java.awt.image.SampleModel;
 import com.pixelmed.utils.PdfDecoder;
 import com.pixelmed.utils.PdfException;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class for converting PDF files into a single or multi frame DICOM Secondary Capture image with one frame per page.</p>
  *
@@ -20,8 +23,9 @@ import com.pixelmed.utils.PdfException;
  */
 
 public class PDFToDicomImage {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PDFToDicomImage.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PDFToDicomImage.java,v 1.4 2009/01/10 13:00:35 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(PDFToDicomImage.class);
 
 	/**
 	 * <p>Read PDF file, and create a single or multi frame DICOM Secondary Capture image with one frame per page.</p>
@@ -34,7 +38,7 @@ public class PDFToDicomImage {
 	 * @param	seriesNumber
 	 * @param	instanceNumber
 	 * @param	requestedDpi
-	 * @exception			DicomException
+	 * @throws			DicomException
 	 */
 	public PDFToDicomImage(String inputFile,String outputFile,String patientName,String patientID,String studyID,String seriesNumber,String instanceNumber,int requestedDpi)
 			throws IOException, DicomException, PdfException, Exception {
@@ -193,7 +197,7 @@ public class PDFToDicomImage {
 			new PDFToDicomImage(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],Integer.parseInt(arg[7]));
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

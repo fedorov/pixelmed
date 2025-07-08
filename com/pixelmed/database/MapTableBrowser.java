@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -20,7 +20,7 @@ import java.io.*;
  */
 public class MapTableBrowser extends JTable {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MapTableBrowser.java,v 1.4 2003/05/11 17:50:29 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MapTableBrowser.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Build and display a graphical user interface view of an existing table model.</p>

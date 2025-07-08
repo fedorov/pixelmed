@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -22,21 +22,25 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class provides utilities to automatically configure DICOM network parameters.</p>
  *
  * @author	dclunie
  */
 public class NetworkConfigurationFromLDAP extends NetworkConfigurationSource {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationFromLDAP.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationFromLDAP.java,v 1.4 2008/09/24 18:54:53 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkConfigurationFromLDAP.class);
 	
 	private static final String defaultInitialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory";
 	
 	//private static final String defaultProviderURL = "ldap://localhost:389";
-	private static final String defaultProviderURL = "ldap://";	// uses search algorithm DNS then localhost to find LDAP server
-									// See "http://java.sun.com/j2se/1.5.0/docs/guide/jndi/jndi-ldap.html#URLs"
+	private static final String defaultProviderURL = "ldap:";	// uses search algorithm DNS then localhost to find LDAP server (001371)
+																// See "http://docs.oracle.com/javase/8/docs//technotes/guides/jndi/jndi-ldap.html#URLs"
+																// No "//" - see "http://docs.oracle.com/javase/8/docs/api/java/net/URI.html" (001371)
 	
 	private static final String defaultdevicesDN = "cn=Devices,cn=DICOM Configuration,o=pixelmed,c=us";
 	private static final String devicesRDN = "cn=Devices";
@@ -55,23 +59,23 @@ public class NetworkConfigurationFromLDAP extends NetworkConfigurationSource {
 	private String getDicomDevicesRootDistinguishedName(DirContext context) {
 		String dicomConfigurationDN = null;
 		try {
-if (debugLevel > 2) System.err.println("getDicomDevicesRootDistinguishedName: name of context = "+context.getNameInNamespace());
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("getDicomDevicesRootDistinguishedName: name of context = {}",context.getNameInNamespace());
 			SearchControls searchControls = new SearchControls();
 			searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			NamingEnumeration enumeration = context.search("","(cn=DICOM Configuration)",searchControls);
 			while (enumeration.hasMore()) {
 				SearchResult result = (SearchResult)(enumeration.next());
 				dicomConfigurationDN = result.getName();
-if (debugLevel > 1) System.err.println("getDicomDevicesRootDistinguishedName: found "+dicomConfigurationDN);
+				slf4jlogger.trace("getDicomDevicesRootDistinguishedName: found {}",dicomConfigurationDN);
 			}
 		}
 		catch (NamingException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Ignoring exception", e);
 		}
 		String devicesDN = null;
 		if (dicomConfigurationDN == null) {
 			devicesDN = defaultdevicesDN;
-if (debugLevel > 1) System.err.println("getDicomDevicesRootDistinguishedName: not found  - using default name = "+devicesDN);
+			slf4jlogger.trace("getDicomDevicesRootDistinguishedName: not found  - using default name = {}",devicesDN);
 		}
 		else {
 			devicesDN = devicesRDN + "," + dicomConfigurationDN;
@@ -135,7 +139,7 @@ if (debugLevel > 1) System.err.println("getDicomDevicesRootDistinguishedName: no
 				Attributes adev = ((SearchResult)(listOfDevices.next())).getAttributes();
 				BasicAttribute aDicomDeviceName = (BasicAttribute)adev.get("dicomDeviceName");
 				String vDicomDeviceName = aDicomDeviceName == null ? "" : aDicomDeviceName.get(0).toString();
-if (debugLevel > 1) System.err.println("dicomDeviceName: "+vDicomDeviceName);
+				slf4jlogger.trace("dicomDeviceName: {}",vDicomDeviceName);
 				if (aDicomDeviceName != null) {
 					Map mapOfDicomNetworkConnectionsForThisDevice = new HashMap();	// key is String, value is PresentationAddress
 					List listOfApplicationEntitiesForThisDevice = new ArrayList();	// value is ApplicationEntity
@@ -144,25 +148,25 @@ if (debugLevel > 1) System.err.println("dicomDeviceName: "+vDicomDeviceName);
 						Attributes adevchildren = ((SearchResult)(listOfDeviceChildren.next())).getAttributes();
 						BasicAttribute aObjectClass = (BasicAttribute)adevchildren.get("objectClass");
 						String vObjectClass = aObjectClass == null ? "" : aObjectClass.get(0).toString();
-if (debugLevel > 1) System.err.println("\tvObjectClass: "+vObjectClass);
+						slf4jlogger.trace("\tvObjectClass: {}",vObjectClass);
 						if (vObjectClass != null) {
 							if (vObjectClass.equals("dicomNetworkAE")) {
 								BasicAttribute aDicomAETitle = (BasicAttribute)adevchildren.get("dicomAETitle");
 								String vDicomAETitle = aDicomAETitle == null ? "" : aDicomAETitle.get(0).toString();
-if (debugLevel > 1) System.err.println("\t\tdicomAETitle: "+vDicomAETitle);
+								slf4jlogger.trace("\t\tdicomAETitle: {}",vDicomAETitle);
 								BasicAttribute aDicomNetworkConnectionReference = (BasicAttribute)adevchildren.get("dicomNetworkConnectionReference");
 								String vDicomNetworkConnectionReference = aDicomNetworkConnectionReference == null
 									? "" : aDicomNetworkConnectionReference.get(0).toString();
-if (debugLevel > 1) System.err.println("\t\tdicomNetworkConnectionReference: "+vDicomNetworkConnectionReference);
+								slf4jlogger.trace("\t\tdicomNetworkConnectionReference: {}",vDicomNetworkConnectionReference);
 								String dicomNetworkConnectionCommonNameValue = null;
 								if (vDicomNetworkConnectionReference != null) {
 									int firstDelimiter = vDicomNetworkConnectionReference.indexOf(",");
 									if (firstDelimiter >= 0) {
 										vDicomNetworkConnectionReference=vDicomNetworkConnectionReference.substring(0,firstDelimiter);
-if (debugLevel > 1) System.err.println("\t\tdicomNetworkConnectionReference first part: "+vDicomNetworkConnectionReference);
+										slf4jlogger.trace("\t\tdicomNetworkConnectionReference first part: {}",vDicomNetworkConnectionReference);
 									}
 									dicomNetworkConnectionCommonNameValue = vDicomNetworkConnectionReference.replaceFirst("[cC][nN]=","");
-if (debugLevel > 1) System.err.println("\t\tdicomNetworkConnectionCommonNameValue: "+dicomNetworkConnectionCommonNameValue);
+									slf4jlogger.trace("\t\tdicomNetworkConnectionCommonNameValue: {}",dicomNetworkConnectionCommonNameValue);
 								}
 								if (vDicomAETitle != null && vDicomAETitle.length() > 0
 								 && dicomNetworkConnectionCommonNameValue != null && dicomNetworkConnectionCommonNameValue.length() > 0) {
@@ -173,13 +177,13 @@ if (debugLevel > 1) System.err.println("\t\tdicomNetworkConnectionCommonNameValu
 							else if (vObjectClass.equals("dicomNetworkConnection")) {
 								BasicAttribute aCN = (BasicAttribute)adevchildren.get("cn");
 								String vCN = aCN == null ? "" : aCN.get(0).toString();
-if (debugLevel > 1) System.err.println("\t\tcn: "+vCN);
+								slf4jlogger.trace("\t\tcn: {}",vCN);
 								BasicAttribute aDicomHostname = (BasicAttribute)adevchildren.get("dicomHostname");
 								String vDicomHostname = aDicomHostname == null ? "" : aDicomHostname.get(0).toString();
-if (debugLevel > 1) System.err.println("\t\tdicomHostname: "+vDicomHostname);
+								slf4jlogger.trace("\t\tdicomHostname: {}",vDicomHostname);
 								BasicAttribute aDicomPort = (BasicAttribute)adevchildren.get("dicomPort");
 								String vDicomPort = aDicomPort == null ? "" : aDicomPort.get(0).toString();
-if (debugLevel > 1) System.err.println("\t\tdicomPort: "+vDicomPort);
+								slf4jlogger.trace("\t\tdicomPort: {}",vDicomPort);
 								if (vCN != null && vCN.length() > 0
 								 && vDicomHostname != null && vDicomHostname.length() > 0
 								 && vDicomPort != null && vDicomPort.length() > 0) {
@@ -198,22 +202,30 @@ if (debugLevel > 1) System.err.println("\t\tdicomPort: "+vDicomPort);
 					iaes = listOfApplicationEntitiesForThisDevice.iterator();
 					while (iaes.hasNext()) {
 						ApplicationEntity ae = (ApplicationEntity)(iaes.next());
-if (debugLevel > 1) System.err.println("\tApplicationEntity: "+ae);
+						slf4jlogger.trace("\tApplicationEntity: {}",ae);
 					}
 				}
 			}
 		}
 		catch (javax.naming.CommunicationException e) {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromLDAP.getNetworkConfiguration(): LDAP service not available (Could not contact server)");
-if (debugLevel > 2) e.printStackTrace(System.err);
+			slf4jlogger.debug("getNetworkConfiguration(): LDAP service not available (Could not contact server)", e);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Ignoring exception", e);
 		}
 	}
 
+	/**
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #NetworkConfigurationFromLDAP()} instead.
+	 * @param	debugLevel	ignored
+	 */
 	public NetworkConfigurationFromLDAP(int debugLevel) {
-		super(debugLevel);
+		this();
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	public NetworkConfigurationFromLDAP() {
+		super();
 	}
 	
 	/**
@@ -222,7 +234,7 @@ if (debugLevel > 2) e.printStackTrace(System.err);
 	 * @param	arg	none
 	 */
 	public static void main(String arg[]) {
-		NetworkConfigurationFromLDAP networkConfiguration = new NetworkConfigurationFromLDAP(99);
+		NetworkConfigurationFromLDAP networkConfiguration = new NetworkConfigurationFromLDAP();
 		//networkConfiguration.activateDiscovery(0);
 		networkConfiguration.activateDiscovery(5000);
 		//System.err.println(networkConfiguration.getNetworkApplicationInformation().toString());

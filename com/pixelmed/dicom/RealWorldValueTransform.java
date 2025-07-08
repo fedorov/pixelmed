@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,8 @@ import com.pixelmed.utils.FloatFormatter;
  * into real world values (e.g., Hounsfield Units, cm/s).</p>
  *
  * <p>Looks first for a per-frame functional group RealWorldValueMappingSequence
- * then looks in the shared functional groups, otherwise tries to find the
+ * then looks in the shared functional groups, then the top level of the dataset,
+ * as well as trying to find the
  * Rescale Slope and Intercept values in the top level of the dataset.</p>
  *
  * <p>Note that multiple transformations (for each frame) may be present and are
@@ -25,7 +26,32 @@ import com.pixelmed.utils.FloatFormatter;
 public class RealWorldValueTransform {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/RealWorldValueTransform.java,v 1.13 2012/09/20 10:25:27 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/RealWorldValueTransform.java,v 1.26 2025/01/29 10:58:07 dclunie Exp $";
+		
+	private static String getQuantityFromQuantityDefinitionSequence(AttributeList list) {
+		String quantity = null;
+		SequenceAttribute quantityDefinitionSequence = (SequenceAttribute)list.get(TagFromName.QuantityDefinitionSequence);
+		if (quantityDefinitionSequence != null) {
+			Iterator<SequenceItem> sitems = (Iterator<SequenceItem>)(quantityDefinitionSequence.iterator());
+			while (sitems.hasNext() && quantity == null) {
+				SequenceItem sitem = sitems.next();
+				if (sitem != null) {
+					AttributeList slist = sitem.getAttributeList();
+					CodedSequenceItem conceptName = CodedSequenceItem.getSingleCodedSequenceItemOrNull(slist,TagFromName.ConceptNameCodeSequence);
+					CodedSequenceItem conceptValue = CodedSequenceItem.getSingleCodedSequenceItemOrNull(slist,TagFromName.ConceptCodeSequence);
+					if (conceptName != null
+					 && "G-C1C6".equals(conceptName.getCodeValue())
+					 && "SRT".equals(conceptName.getCodingSchemeDesignator())
+					 && conceptValue != null) {
+						quantity = conceptValue.getCodeMeaning();
+//System.err.println("Have RWVM quantity "+quantity);
+					}
+				}
+			}
+		}
+		
+		return quantity;
+	}
 	
 	/***/
 	private class SingleRealWorldValueTransform {
@@ -38,19 +64,32 @@ public class RealWorldValueTransform {
 		double intercept;
 		/***/
 		String units;
+		/***/
+		String quantity;
 		
 		/**
 		 * @param	rwvmlist	RealWorldValueMappingSequence item attributes
 		 */
 		SingleRealWorldValueTransform(AttributeList rwvmlist) {
 			if (rwvmlist != null) {
-				rangeOfValues=new int[2];
-				rangeOfValues[0] = Attribute.getSingleIntegerValueOrDefault(rwvmlist,TagFromName.RealWorldValueFirstValueMapped,0);
-				rangeOfValues[1] = Attribute.getSingleIntegerValueOrDefault(rwvmlist,TagFromName.RealWorldValueLastValueMapped,0);
+				{
+					Attribute aRealWorldValueFirstValueMapped = rwvmlist.get(TagFromName.RealWorldValueFirstValueMapped);
+					Attribute aRealWorldValueLastValueMapped = rwvmlist.get(TagFromName.RealWorldValueLastValueMapped);
+					if (aRealWorldValueFirstValueMapped != null && aRealWorldValueLastValueMapped != null) {
+						rangeOfValues=new int[2];
+						rangeOfValues[0] = aRealWorldValueFirstValueMapped.getSingleIntegerValueOrDefault(0);
+						rangeOfValues[1] = aRealWorldValueLastValueMapped.getSingleIntegerValueOrDefault(0);
+					}
+					else {
+						// even if one but not the other is supplied
+						rangeOfValues=null;		// flag that no range is used
+					}
+				}
 					   slope = Attribute.getSingleDoubleValueOrDefault (rwvmlist,TagFromName.RealWorldValueSlope,0.0);
 				       intercept = Attribute.getSingleDoubleValueOrDefault (rwvmlist,TagFromName.RealWorldValueIntercept,0.0);
 				           units = SequenceAttribute.getMeaningOfCodedSequenceAttributeOrDefault(rwvmlist,TagFromName.MeasurementUnitsCodeSequence,"");
-//System.err.println("SingleRealWorldValueTransform: adding "+rangeOfValues[0]+","+rangeOfValues[1]+","+slope+","+intercept+" "+units);
+						quantity = getQuantityFromQuantityDefinitionSequence(rwvmlist);
+//System.err.println("SingleRealWorldValueTransform: adding "+rangeOfValues[0]+","+rangeOfValues[1]+","+slope+","+intercept+" "+units+" ("+quantity+")");
 			}
 		}
 	
@@ -86,10 +125,37 @@ public class RealWorldValueTransform {
 		boolean isIdentityAndUnitsUnspecified() {
 			return slope == 1 && intercept == 0 && (units == null || units.equals("US") || units.equals("??"));
 		}
+		
+		public String toString() {
+			StringBuffer buf = new StringBuffer();
+			buf.append("\t\t");
+			buf.append("slope=");
+			buf.append(slope);
+			buf.append(", intercept=");
+			buf.append(intercept);
+			buf.append(", units=");
+			buf.append(units);
+			buf.append(", quantity=");
+			buf.append(quantity);
+			buf.append(", range=");
+			if (rangeOfValues != null) {
+				buf.append("[");
+				buf.append(rangeOfValues[0]);
+				buf.append("..");
+				buf.append(rangeOfValues[1]);
+				buf.append("]");
+			}
+			else {
+				buf.append("ALL");
+			}
+			buf.append("\n");
+			return buf.toString();
+		}
+
 	}
 	
 	/***/
-	private class SingleRealWorldValueTransforms extends ArrayList {
+	private class SingleRealWorldValueTransforms extends ArrayList<SingleRealWorldValueTransform> {
 	}
 	
 	/***/
@@ -184,7 +250,24 @@ public class RealWorldValueTransform {
 					}
 				}
 
-				// check for "old-fashioned" Modality LUT style attributes
+				// check for RWV in top level dataset, such as for non-enhanced object (CP 1252)
+				
+				if (arrayOfTransforms == null && commonTransforms == null) {
+					SequenceAttribute aRealWorldValueMappingSequence = (SequenceAttribute)list.get(TagFromName.RealWorldValueMappingSequence);
+					if (aRealWorldValueMappingSequence != null && aRealWorldValueMappingSequence.getNumberOfItems() >= 1) {
+//System.err.println("RealWorldValueTransform: found RealWorldValueMappingSequence in top level dataset");
+						SingleRealWorldValueTransform transform = new SingleRealWorldValueTransform(list);
+						commonTransforms = new SingleRealWorldValueTransforms();
+						Iterator rwvmitems = aRealWorldValueMappingSequence.iterator();
+						while (rwvmitems.hasNext()) {
+							SequenceItem rwvmitem = (SequenceItem)rwvmitems.next();
+							AttributeList rwvmlist = rwvmitem.getAttributeList();
+							commonTransforms.add(new SingleRealWorldValueTransform(rwvmlist));
+						}
+					}
+				}
+
+				// check for "old-fashioned" Modality LUT style attributes in top level data set and treat as an additional transform if present
 			
 				{
 					Attribute aRescaleSlope = list.get(TagFromName.RescaleSlope);
@@ -202,9 +285,34 @@ public class RealWorldValueTransform {
 			
 		}
 		//catch (DicomException e) {
-		//	e.printStackTrace(System.err);
+		//	slf4jlogger.error("", e);;
 		//}
 	}
+	
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		buf.append("RealWorldValueTransforms:\n");
+		if (commonTransforms != null) {
+			buf.append("\tCommon:\n");
+			for (SingleRealWorldValueTransform transform : commonTransforms) {
+				buf.append(transform);
+			}
+		}
+		
+		if (arrayOfTransforms != null) {
+			for (int f=0; f<arrayOfTransforms.length; ++f) {
+				buf.append("\tPer-Frame for Frame[");
+				buf.append(f+1);
+				buf.append("]:\n");
+				for (SingleRealWorldValueTransform transform : arrayOfTransforms[f]) {
+					buf.append(transform);
+				}
+			}
+		}
+		
+		return buf.toString();
+	}
+	
 
         private final int precisionToDisplayDouble = 4;
         private final int maximumIntegerDigits = 8;
@@ -232,15 +340,23 @@ public class RealWorldValueTransform {
 		StringBuffer sbuf = new StringBuffer();
 		SingleRealWorldValueTransforms useTransform = (arrayOfTransforms == null) ? commonTransforms : arrayOfTransforms[frame];
 		if (useTransform != null) {
+//System.err.println("RealWorldValueTransform.toString("+frame+","+storedValue+"): have transforms");
 			Iterator i = useTransform.iterator();
 			while (i.hasNext()) {
 				SingleRealWorldValueTransform t = (SingleRealWorldValueTransform)i.next();
+//System.err.println("RealWorldValueTransform.toString("+frame+","+storedValue+"): using transform "+t);
 				if (t.rangeOfValues == null || (t.rangeOfValues[0] <= storedValue && storedValue <= t.rangeOfValues[1])) {
+//System.err.println("RealWorldValueTransform.toString("+frame+","+storedValue+"): in range so applying");
 					if (sbuf.length() > 0) sbuf.append(", ");
 					double value=storedValue*t.slope+t.intercept;
 					sbuf.append(FloatFormatter.toString(value,Locale.US));
 					sbuf.append(" ");
 					sbuf.append(t.units);
+					if (t.quantity != null && t.quantity.length() > 0) {
+						sbuf.append(" (");
+						sbuf.append(t.quantity);
+						sbuf.append(")");
+					}
 				}
 			}
 		}

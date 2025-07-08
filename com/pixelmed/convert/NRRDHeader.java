@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.convert;
 
@@ -15,9 +15,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
+/**
+ * <p>A class for extracting NRRD image input format headers.</p>
+ *
+ * @author	dclunie
+ */
 public class NRRDHeader {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/NRRDHeader.java,v 1.3 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/NRRDHeader.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NRRDHeader.class);
 	
 	public String magic;
 	
@@ -221,7 +230,7 @@ public class NRRDHeader {
 		while ((line=headerReader.readLine()) != null && line.length() > 0) {
 			if (line.startsWith("#")) {
 				String comment = line;
-System.err.println("Comment: \""+comment+"\"");
+				slf4jlogger.info("Comment: \"{}\"",comment);
 			}
 			else {
 				String[] split = line.split(": ",2);
@@ -229,7 +238,7 @@ System.err.println("Comment: \""+comment+"\"");
 					String field = split[0];
 					String description = split[1];
 					fields.put(field,description);
-System.err.println("Field: \""+field+"\" Description: \""+description+"\"");
+					slf4jlogger.info("Field: \"{}\" Description: \"{}\"",field,description);
 				}
 				else {
 					split = line.split(":=",2);
@@ -237,10 +246,10 @@ System.err.println("Field: \""+field+"\" Description: \""+description+"\"");
 						String key = split[0];
 						String value = split[1];
 						keys.put(key,value);
-System.err.println("Key: \""+key+"\" Value: \""+value+"\"");
+						slf4jlogger.info("Key: \"{}\" Value: \"{}\"",key,value);
 					}
 					else {
-System.err.println("Unrecognized pattern of NRRD header line # "+headerReader.getLineNumber()+": \""+line+"\"");
+						slf4jlogger.info("Unrecognized pattern of NRRD header line # {}: \"{}\"",headerReader.getLineNumber(),line);
 					}
 				}
 			}
@@ -273,7 +282,7 @@ System.err.println("Unrecognized pattern of NRRD header line # "+headerReader.ge
 				}
 			}
 			in.close();
-System.err.println("byte_offset_of_binary = "+byte_offset_of_binary);
+			slf4jlogger.info("byte_offset_of_binary = {}",byte_offset_of_binary);
 		}
 		
 	}
@@ -295,7 +304,7 @@ System.err.println("byte_offset_of_binary = "+byte_offset_of_binary);
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,7 +12,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class CStoreResponseCommandMessage implements CommandMessage {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CStoreResponseCommandMessage.java,v 1.7 2011/06/21 17:10:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CStoreResponseCommandMessage.java,v 1.18 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte bytes[];
 
@@ -26,8 +26,8 @@ public class CStoreResponseCommandMessage implements CommandMessage {
 	
 	/**
 	 * @param	list
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CStoreResponseCommandMessage(AttributeList list) throws DicomException, IOException {
 		           groupLength = Attribute.getSingleIntegerValueOrDefault(list,groupLengthTag,0xffff);
@@ -43,8 +43,8 @@ public class CStoreResponseCommandMessage implements CommandMessage {
 	 * @param	affectedSOPInstanceUID
 	 * @param	messageIDBeingRespondedTo
 	 * @param	status
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CStoreResponseCommandMessage(String affectedSOPClassUID,String affectedSOPInstanceUID,
 			int messageIDBeingRespondedTo,int status) throws DicomException, IOException {

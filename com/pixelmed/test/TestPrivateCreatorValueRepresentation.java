@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -39,6 +39,7 @@ public class TestPrivateCreatorValueRepresentation extends TestCase {
 	public void TestPrivateCreatorValueRepresentation_FromImplicitVR() throws Exception {
 		String creatorValue = "Test Creator";
 		File testFile = File.createTempFile("TestPrivateCreatorValueRepresentation_FromImplicitVR",".dcm");
+		testFile.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
 			{ Attribute a = new LongStringAttribute(new AttributeTag(0x0011,0x0010)); a.addValue(creatorValue); list.put(a); }
@@ -61,6 +62,7 @@ public class TestPrivateCreatorValueRepresentation extends TestCase {
 	public void TestPrivateCreatorValueRepresentation_FromExplicitVR() throws Exception {
 		String creatorValue = "Test Creator";
 		File testFile = File.createTempFile("TestPrivateCreatorValueRepresentation_FromExplicitVR",".dcm");
+		testFile.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
 			{ Attribute a = new LongStringAttribute(new AttributeTag(0x0011,0x0010)); a.addValue(creatorValue); list.put(a); }
@@ -94,6 +96,7 @@ public class TestPrivateCreatorValueRepresentation extends TestCase {
 		String creatorValue = "Test Creator";
 		//File testFile = File.createTempFile("TestPrivateCreatorValueRepresentation_FromExplicitUNVR",".dcm");
 		File testFile = new File("/tmp/holdforme");
+		testFile.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
 			{ Attribute a = new OurUnknownAttribute(new AttributeTag(0x0011,0x0010),creatorValue); list.put(a); }

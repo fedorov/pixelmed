@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,7 +12,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class CEchoRequestCommandMessage extends RequestCommandMessage {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CEchoRequestCommandMessage.java,v 1.9 2011/06/21 17:10:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CEchoRequestCommandMessage.java,v 1.20 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte bytes[];
 
@@ -24,8 +24,8 @@ public class CEchoRequestCommandMessage extends RequestCommandMessage {
 	
 	/**
 	 * @param	list
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CEchoRequestCommandMessage(AttributeList list) throws DicomException, IOException {
 		           groupLength = Attribute.getSingleIntegerValueOrDefault(list,groupLengthTag,0xffff);
@@ -35,8 +35,8 @@ public class CEchoRequestCommandMessage extends RequestCommandMessage {
 	}
 	
 	/**
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public CEchoRequestCommandMessage() throws DicomException, IOException {
 		

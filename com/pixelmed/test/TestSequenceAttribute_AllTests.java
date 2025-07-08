@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -12,6 +12,7 @@ public class TestSequenceAttribute_AllTests extends TestCase {
 		TestSuite suite = new TestSuite("All JUnit Tests");
 		suite.addTest(TestSequenceAttributeDelimitedString.suite());
 		suite.addTest(TestSequenceAttributeStringsWithinItems.suite());
+		suite.addTest(TestSequenceAttributeModifiedOriginalAttributes.suite());
 		return suite;
 	}
 	

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -10,13 +10,11 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-//import java.beans.PropertyChangeEvent;
-//import java.beans.PropertyChangeListener;
+import java.util.ResourceBundle;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-//import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -32,8 +30,11 @@ import javax.swing.text.JTextComponent;
  * @author	dclunie
  */
 public class ApplicationEntityConfigurationDialog extends ApplicationEntity {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntityConfigurationDialog.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ApplicationEntityConfigurationDialog.java,v 1.5 2012/06/12 13:13:17 dclunie Exp $";
+	protected static String resourceBundleName  = "com.pixelmed.network.ApplicationEntityConfigurationDialog";
+
+	protected ResourceBundle resourceBundle;
 
 	protected String localName;
 	
@@ -173,6 +174,9 @@ public class ApplicationEntityConfigurationDialog extends ApplicationEntity {
 	}
 
 	protected void doCommonConstructorStuff(Component parent) {
+
+		resourceBundle = ResourceBundle.getBundle(resourceBundleName);
+
 		final JDialog dialog = new JDialog();		// final so that button action listeners can get access to it to dispose of it
 		//dialog.setSize(width,height);
 		//dialog.setTitle(titleMessage);
@@ -223,26 +227,26 @@ public class ApplicationEntityConfigurationDialog extends ApplicationEntity {
 		labelsAndFieldsPanel.setBorder(panelBorder);
 		{
 			{
-				JLabel localNameJLabel = new JLabel("Local name: ",SwingConstants.RIGHT);
-				localNameJLabel.setToolTipText("The name by which we refer to this remote AE (which can be different from its AE Title)");
+				JLabel localNameJLabel = new JLabel(resourceBundle.getString("localNameLabelText")+": ",SwingConstants.RIGHT);
+				localNameJLabel.setToolTipText(resourceBundle.getString("localNameToolTipText"));
 				labelsAndFieldsPanel.add(localNameJLabel);
 				labelsAndFieldsPanel.add(localNameField);
 			}
 			{
-				JLabel dicomAETitleJLabel = new JLabel("AE Title: ",SwingConstants.RIGHT);
-				dicomAETitleJLabel.setToolTipText("The Called AE Title of the remote AE (the AE Title that it expects to be called as)");
+				JLabel dicomAETitleJLabel = new JLabel(resourceBundle.getString("dicomAETitleLabelText")+": ",SwingConstants.RIGHT);
+				dicomAETitleJLabel.setToolTipText(resourceBundle.getString("dicomAETitleToolTipText"));
 				labelsAndFieldsPanel.add(dicomAETitleJLabel);
 				labelsAndFieldsPanel.add(dicomAETitleField);
 			}
 			{
-				JLabel hostnameJLabel = new JLabel("Hostname or IP address: ",SwingConstants.RIGHT);
-				hostnameJLabel.setToolTipText("The remote host name within the current domain, or fully qualified hostname or the IPV4 address of the remote AE");
+				JLabel hostnameJLabel = new JLabel(resourceBundle.getString("hostnameLabelText")+": ",SwingConstants.RIGHT);
+				hostnameJLabel.setToolTipText(resourceBundle.getString("hostnameToolTipText"));
 				labelsAndFieldsPanel.add(hostnameJLabel);
 				labelsAndFieldsPanel.add(hostnameField);
 			}
 			{
-				JLabel portJLabel = new JLabel("Port: ",SwingConstants.RIGHT);
-				portJLabel.setToolTipText("The port on the remote host to connect to (the port that the remote AE listens for inbound connections from another AE)");
+				JLabel portJLabel = new JLabel(resourceBundle.getString("portLabelText")+": ",SwingConstants.RIGHT);
+				portJLabel.setToolTipText(resourceBundle.getString("portToolTipText"));
 				labelsAndFieldsPanel.add(portJLabel);
 				labelsAndFieldsPanel.add(portField);
 			}
@@ -303,14 +307,14 @@ public class ApplicationEntityConfigurationDialog extends ApplicationEntity {
 		try {
 			if (arg.length == 0) {
 				ApplicationEntity ae = new ApplicationEntityConfigurationDialog();
-System.err.println("ApplicationEntityConfigurationDialog.main(): result of dialog "+ae);
+				System.err.println("ApplicationEntityConfigurationDialog.main(): result of dialog "+ae);	// no need to use SLF4J since command line utility/test
 			}
 			else {
 				throw new Exception("Argument list must be empty");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

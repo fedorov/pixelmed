@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,9 +14,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class ImageLibrary {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageLibrary.java,v 1.3 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageLibrary.java,v 1.24 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageLibrary.class);
 	
 	public static class ImageLibraryEntry {
 	
@@ -64,6 +68,16 @@ public class ImageLibrary {
 			this.hierarchicalImageReference = hierarchicalImageReference;
 		}
 
+		/**
+		 * <p>Get a new ImageContentItem made from this ImageLibraryEntry to use in an SR tree.</p>
+		 *
+		 * <p>Has side effect of adding the fragment to the parent if the parent is not null.</p>
+		 *
+		 * @param cif				the ContentItemFactory to use
+		 * @param parent			the parent content item (usually the Image Library CONTAINER content item)
+		 * @return					the new ImageContentItem
+		 * @throws DicomException	if error in DICOM encoding
+		 */
 		public ContentItem getImageContentItem(ContentItemFactory cif,ContentItem parent) throws DicomException {
 			ContentItem image = cif.new ImageContentItem(parent,"CONTAINS",null/*conceptName*/,
 				hierarchicalImageReference.getSOPClassUID(),hierarchicalImageReference.getSOPInstanceUID(),
@@ -167,6 +181,14 @@ public class ImageLibrary {
 		return aReferencedSeriesSequence;
 	}
 	
+	/**
+	 * <p>Build a hierarchical evidence sequence for the current Image Library content.</p>
+	 *
+	 * <p>This contains the Study and Series Instance UIDs and is required for most SR IODs.</p>
+	 *
+	 * @return					a CurrentRequestedProcedureEvidenceSequence listing all the referenced instances
+	 * @throws DicomException	if error in DICOM encoding
+	 */
 	public SequenceAttribute getHierarchicalEvidenceSequence() throws DicomException {
 		// the following are modified from com.pixelmed.apps.AddHierarchicalEvidenceSequenceToStructuredReports; should refactor :(
 		Map<String,Set<String>> mapOfStudyInstanceUIDToSetOfSeriesInstanceUID = new HashMap<String,Set<String>>();
@@ -236,6 +258,14 @@ public class ImageLibrary {
 		return aCurrentRequestedProcedureEvidenceSequence;
 	}
 	
+	/**
+	 * <p>Find the Image Library contained within an SR content tree.</p>
+	 *
+	 * <p>The Image Library is identified by the ("111028","DCM","Image Library") concept name for the content item.</p>
+	 *
+	 * @param	node	the content item to being the search at (e.g., the root node)
+	 * @return			the content item that is the Image Library CONTAINER
+	 */
 	public static ContentItem findImageLibraryContainer(ContentItem node) {
 		ContentItem found = null;
 		if (node != null) {
@@ -253,9 +283,20 @@ public class ImageLibrary {
 		return found;
 	}
 	
+	/**
+	 * <p>Construct an empty Image Library.</p>
+	 */
 	public ImageLibrary() {
 	}
 	
+	/**
+	 * <p>Construct an Image Library by extracting it from an existing DICOM SR instance.</p>
+	 *
+	 * <p>Searches the content tree for the Image Library CONTAINER content item.</p>
+	 *
+	 * @param	list			the attributes comprising the DICOM SR instance containing the Image Library
+	 * @throws	DicomException	if error in DICOM encoding
+	 */
 	public ImageLibrary(AttributeList list) throws DicomException {
 		StructuredReport sr = new StructuredReport(list);
 		ContentItem imageLibraryContainer = findImageLibraryContainer((ContentItem)(sr.getRoot()));
@@ -267,6 +308,12 @@ public class ImageLibrary {
 		}
 	}
 		
+	/**
+	 * <p>Construct an Image Library by extracting it from an existing DICOM SR instance.</p>
+	 *
+	 * @param	imageLibraryContainer	the content item that is the Image Library CONTAINER
+	 * @param	list	the attributes comprising the DICOM SR instance containing the Image Library
+	 */
 	public ImageLibrary(ContentItem imageLibraryContainer,AttributeList list) {
 		constructImageLibrary(imageLibraryContainer,list);
 	}
@@ -307,6 +354,12 @@ public class ImageLibrary {
 		return hierarchicalSOPInstanceReferencesIndexedBySOPInstanceUID;
 	}
 
+	/**
+	 * <p>Construct an Image Library by extracting it from an existing DICOM SR instance.</p>
+	 *
+	 * @param	imageLibraryContainer	the content item that is the Image Library CONTAINER
+	 * @param	list	the attributes comprising the DICOM SR instance containing the Image Library
+	 */
 	protected void constructImageLibrary(ContentItem imageLibraryContainer,AttributeList list) {
 		Map<String,HierarchicalSOPInstanceReference> hierarchicalSOPInstanceReferencesIndexedBySOPInstanceUID = getHierarchicalSOPInstanceReferencesIndexedBySOPInstanceUID(list);
 		if (imageLibraryContainer != null) {
@@ -323,14 +376,23 @@ public class ImageLibrary {
 		}
 	}
 
-	public ContentItem getStructuredReportFragment(ContentItem root) throws DicomException {
+	/**
+	 * <p>Get the Image Library as an SR fragment.</p>
+	 *
+	 * <p>Has side effect of adding the fragment to the parent if the parent is not null.</p>
+	 *
+	 * @param	parent			the parent CONTAINER content item (usually the root content item)
+	 * @return					a new ContainerContentItem with ImageContentItem children
+	 * @throws	DicomException	if error in DICOM encoding
+	 */
+	public ContentItem getStructuredReportFragment(ContentItem parent) throws DicomException {
 		ContentItem contentItemFragment;
 		{
 			ContentItemFactory cif = new ContentItemFactory();
-			contentItemFragment = cif.new ContainerContentItem(root,(root == null ? null : "CONTAINS"),new CodedSequenceItem("111028","DCM","Image Library"),true/*continuityOfContentIsSeparate*/);
+			contentItemFragment = cif.new ContainerContentItem(parent,(parent == null ? null : "CONTAINS"),new CodedSequenceItem("111028","DCM","Image Library"),true/*continuityOfContentIsSeparate*/);
 			
 			for (ImageLibraryEntry entry : entriesIndexedBySOPInstanceUID.values()) {
-				ContentItem image = entry.getImageContentItem(cif,contentItemFragment);
+				/*ContentItem image = */entry.getImageContentItem(cif,contentItemFragment);
 			}
 		}
 		return contentItemFragment;
@@ -377,6 +439,25 @@ public class ImageLibrary {
 			{ Attribute a = new TimeAttribute(TagFromName.ContentTime         ); a.addValue(currentTime); list.put(a); }
 			{ Attribute a = new DateAttribute(TagFromName.InstanceCreationDate); a.addValue(currentDate); list.put(a); }
 			{ Attribute a = new TimeAttribute(TagFromName.InstanceCreationTime); a.addValue(currentTime); list.put(a); }
+
+			{
+				java.util.TimeZone currentTz = java.util.TimeZone.getDefault();
+				String currentTzInDICOMFormat = DateTimeAttribute.getTimeZone(currentTz,currentDateTime);	// use this rather than DateTimeAttribute.getCurrentTimeZone() because already have currentDateTime and currentTz
+				String timezoneOffsetFromUTC = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TimezoneOffsetFromUTC);
+				if (timezoneOffsetFromUTC.length() > 0) {
+					if (!currentTzInDICOMFormat.equals(timezoneOffsetFromUTC)) {	// easier to compare DICOM strings than figure out offsets vs. raw offsets etc. from java.util.TimeZone
+						// different timezone now than in images :(
+						// need to fix up any existing dates and times :(
+						slf4jlogger.info("getAttributeList(): Warning - TimezoneOffsetFromUTC from images {} is different from current timezone {} - removing and not adding current",timezoneOffsetFromUTC,currentTzInDICOMFormat);
+						list.remove(TagFromName.TimezoneOffsetFromUTC);
+					}
+					// else good to go ... already in list and already correct (same for source images and our new instance)
+				}
+				else  {
+//System.err.println("IndexedLabelMapToSegmentation(): adding TimezoneOffsetFromUTC "+currentTzInDICOMFormat);
+					{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue(currentTzInDICOMFormat); list.put(a); }
+				}
+			}
 			
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.InstanceCreatorUID); a.addValue(VersionAndConstants.instanceCreatorUID); list.put(a); }
 			
@@ -399,6 +480,14 @@ public class ImageLibrary {
 
 		{ Attribute a = new LongStringAttribute(TagFromName.Manufacturer); a.addValue("PixelMed"); list.put(a); }
 
+		addContributingEquipmentSequence(list);
+		
+		list.insertSuitableSpecificCharacterSetForAllStringValues();
+		
+		return list;
+	}
+	
+	protected void addContributingEquipmentSequence(AttributeList list) throws DicomException {
 		ClinicalTrialsAttributes.addContributingEquipmentSequence(list,
 			true,																						// replace existing
 			new CodedSequenceItem("250100","99PMP","Creation of Image Library SR"),						// PurposeOfReference :(
@@ -412,16 +501,17 @@ public class ImageLibrary {
 			VersionAndConstants.getBuildDate(),															// Software Version(s)
 			"Creation of Image Library SR"																// ContributionDescription
 		);
-		list.insertSuitableSpecificCharacterSetForAllStringValues();
-		
-		return list;
 	}
 		
 	public void write(String filename) throws DicomException, IOException {
+		write(new File(filename));
+	}
+		
+	public void write(File file) throws DicomException, IOException {
 		AttributeList list = getAttributeList();
 		list.removeMetaInformationHeaderAttributes();
 		FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,"OURAETITLE");
-        list.write(filename);
+		list.write(file,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
 		
 		// test round trip
 		//{
@@ -430,12 +520,29 @@ public class ImageLibrary {
 		//}
 	}
 	
+	/**
+	 * <p>Extract the Image Library from a DICOM SR instance.</p>
+	 *
+	 * @param	filename		the DICOM SR instance containing the Image Library
+	 * @return					an instance of the ImageLibrary class representing the Image Library content encoded in the DICOM SR file
+	 * @throws	DicomException	if error in DICOM encoding
+	 * @throws	IOException		if error reading the file
+	 */
 	public static ImageLibrary read(String filename) throws DicomException, IOException {
 		AttributeList list = new AttributeList();
 		list.read(filename);
 		return new ImageLibrary(list);
 	}
 						
+	/**
+	 * <p>Create and add an SR Image Library entry derived from a DICOM image instance.</p>
+	 *
+	 * <p>Requires that a SOP Instance UID be present in the supplied image instance, to be used to index the entries.</p>
+	 *
+	 * @param	list			the list of attributes of the image instance
+	 * @throws	DicomException	if error in DICOM encoding
+	 * @return					the new ImageLibraryEntry added to this ImageLibrary, or null if no SOP Instance UID is present in the supplied image instance
+	 */
 	public ImageLibraryEntry addImage(AttributeList list) throws DicomException {
 		ImageLibraryEntry entry = null;
 		String sopInstanceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPInstanceUID);
@@ -446,6 +553,15 @@ public class ImageLibrary {
 		return entry;
 	}
 	
+	/**
+	 * <p>Create an SR Image Library from a bunch of DICOM image instances.</p>
+	 *
+	 * <p>Adds a new series (instance UID) to the existing study (instance UID).</p>
+	 *
+	 * @param	files			the filenames and/or folder names of files containing the input image files
+	 * @throws	DicomException	if error in DICOM encoding
+	 * @throws	IOException		if error reading a file
+	 */
 	public ImageLibrary(Set<File> files) throws IOException, DicomException {
 		for (File f : files) {
 			if (DicomFileUtilities.isDicomOrAcrNemaFile(f)) {
@@ -454,22 +570,26 @@ public class ImageLibrary {
 				try {
 					list.read(f);
 					String sopClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
-					if (list.get(TagFromName.PixelData) != null) {
+					if (list.isImage()) {
 						addImage(list);
 						if (compositeInstanceContext == null) {
-							compositeInstanceContext = new CompositeInstanceContext(list);
+							compositeInstanceContext = new CompositeInstanceContext(list,true/*forSR*/);
 							// ReferencedPerformedProcedureStepSequence will be removed from cic by removeSeries(), so put it back if present
 							AttributeList cicList = compositeInstanceContext.getAttributeList();
 							Attribute aReferencedPerformedProcedureStepSequence = cicList.get(TagFromName.ReferencedPerformedProcedureStepSequence);
+							Attribute aTimezoneOffsetFromUTC = cicList.get(TagFromName.TimezoneOffsetFromUTC);	// this is instance level, so will otherwise be removed
 							compositeInstanceContext.removeAllButPatientAndStudy();
 							if (aReferencedPerformedProcedureStepSequence != null) {
 								cicList.put(aReferencedPerformedProcedureStepSequence);
+							}
+							if (aTimezoneOffsetFromUTC != null) {
+								cicList.put(aTimezoneOffsetFromUTC);
 							}
 						}
 					}
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("While reading file \"{}\"",f,e);	// do NOT call f.getCanonicalPath(), since may throw Exception !
 				}
 			}
 		}
@@ -497,13 +617,13 @@ public class ImageLibrary {
 			library.write(outputPath);
 			
 			// test round trip
-			{
-				ImageLibrary roundTrip = read(outputPath);
-System.err.println("RoundTrip =\n"+roundTrip);
-			}
+			//{
+			//	ImageLibrary roundTrip = read(outputPath);
+			//	System.err.println("RoundTrip =\n"+roundTrip);
+			//}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 import com.pixelmed.dicom.TransferSyntax;
@@ -10,6 +10,9 @@ import com.pixelmed.dicom.TagFromName;
 
 import java.util.LinkedList;
 import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements the SCU role of the Verification SOP Class.</p>
@@ -26,27 +29,32 @@ try {
     new VerificationSOPClassSCU("theirhost","104","ECHOSCP","ECHOSCU",0);
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
  * @author	dclunie
  */
 public class VerificationSOPClassSCU extends SOPClass {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/VerificationSOPClassSCU.java,v 1.31 2025/01/29 10:58:09 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/VerificationSOPClassSCU.java,v 1.19 2013/04/27 01:23:50 dclunie Exp $";
-
-	/***/
-	private int debugLevel;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(VerificationSOPClassSCU.class);
 
 	/***/
 	protected class CEchoResponseHandler extends CompositeResponseHandler {
 		/**
-		 * @param	debugLevel
+		 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #CEchoResponseHandler()} instead.
+		 * @param	debugLevel	ignored
 		 */
 		CEchoResponseHandler(int debugLevel) {
-			super(debugLevel);
+			this();
+			slf4jlogger.warn("CEchoResponseHandler(): Debug level supplied as constructor argument ignored");
+		}
+		
+		/**
+		 */
+		CEchoResponseHandler() {
+			super();
 		}
 		/**
 		 * @param	list
@@ -68,21 +76,65 @@ public class VerificationSOPClassSCU extends SOPClass {
 	/**
 	 * <p>Establish an association to the specified AE, perform verification (send a C-ECHO request), and release the association.</p>
 	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #VerificationSOPClassSCU(String,int,String,String,boolean)} instead.
+	 * @param	hostname		their hostname or IP address
+	 * @param	port			their port
+	 * @param	calledAETitle	their AE Title
+	 * @param	callingAETitle	our AE Title
+	 * @param	secureTransport
+	 * @param	debugLevel		ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public VerificationSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,boolean secureTransport,
+			int debugLevel) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,secureTransport);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Establish an association to the specified AE, perform verification (send a C-ECHO request), and release the association.</p>
+	 *
 	 * @param	hostname		their hostname or IP address
 	 * @param	port			their port
 	 * @param	calledAETitle		their AE Title
 	 * @param	callingAETitle		our AE Title
 	 * @param	secureTransport
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
-	public VerificationSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,boolean secureTransport,
-			int debugLevel) throws DicomNetworkException, DicomException, IOException {
-		this(hostname,port,calledAETitle,callingAETitle,secureTransport,null,null,debugLevel);
+	public VerificationSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,boolean secureTransport
+			) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,secureTransport,null,null);
 	}
 
+	/**
+	 * <p>Establish an association to the specified AE, perform verification (send a C-ECHO request), and release the association.</p>
+	 *
+	 * <p>Successful connection, association negotiation and C-ECHO command succsess status is indicated by the lack of an exception.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #VerificationSOPClassSCU(String,int,String,String,boolean,String,String)} instead.
+	 * @param	hostname		their hostname or IP address
+	 * @param	port			their port
+	 * @param	calledAETitle	their AE Title
+	 * @param	callingAETitle	our AE Title
+	 * @param	secureTransport
+	 * @param	username		may be null if no user identity
+	 * @param	password		may be null if no user identity or no password required
+	 * @param	debugLevel		ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException	if the connection is refused, the association reqeust is reject, or the C-ECHO command reports other than a success status
+	 */
+	public VerificationSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,boolean secureTransport,
+			String username,String password,
+			int debugLevel) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,secureTransport,username,password);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
 	/**
 	 * <p>Establish an association to the specified AE, perform verification (send a C-ECHO request), and release the association.</p>
 	 *
@@ -95,17 +147,13 @@ public class VerificationSOPClassSCU extends SOPClass {
 	 * @param	secureTransport
 	 * @param	username		may be null if no user identity
 	 * @param	password		may be null if no user identity or no password required
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException	if the connection is refused, the association reqeust is reject, or the C-ECHO command reports other than a success status
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException	if the connection is refused, the association reqeust is reject, or the C-ECHO command reports other than a success status
 	 */
 	public VerificationSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,boolean secureTransport,
-			String username,String password,
-			int debugLevel) throws DicomNetworkException, DicomException, IOException {
-
-		this.debugLevel=debugLevel;
-		
+			String username,String password
+			) throws DicomNetworkException, DicomException, IOException {
 		LinkedList presentationContexts = new LinkedList();
 		{
 			LinkedList tslist = new LinkedList();
@@ -116,20 +164,20 @@ public class VerificationSOPClassSCU extends SOPClass {
 		presentationContexts.add(new PresentationContext((byte)0x03,SOPClass.Verification,TransferSyntax.ImplicitVRLittleEndian));
 		presentationContexts.add(new PresentationContext((byte)0x05,SOPClass.Verification,TransferSyntax.ExplicitVRLittleEndian));
 
-		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,secureTransport,username,password,debugLevel);
-if (debugLevel > 1) System.err.println(association);
+		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,secureTransport,username,password);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace(association.toString());
 		// Decide which presentation context we are going to use ...
 		byte usePresentationContextID = association.getSuitablePresentationContextID(SOPClass.Verification);
 		//int usePresentationContextID = association.getSuitablePresentationContextID(SOPClass.Verification,TransferSyntax.Default);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Using context ID "+usePresentationContextID);
+		slf4jlogger.trace("Using context ID {}",usePresentationContextID);
 		byte cEchoRequestCommandMessage[] = new CEchoRequestCommandMessage().getBytes();
-		CEchoResponseHandler responseHandler = new CEchoResponseHandler(debugLevel);
+		CEchoResponseHandler responseHandler = new CEchoResponseHandler();
 		association.setReceivedDataHandler(responseHandler);
 		association.send(usePresentationContextID,cEchoRequestCommandMessage,null);
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": VerificationSOPClass: waiting for one PDU");
+		slf4jlogger.trace("waiting for one PDU");
 		try {
 			association.waitForCommandPDataPDUs();
-if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": VerificationSOPClass: got PDU, now releasing association");
+			slf4jlogger.trace("got PDU, now releasing association");
 			// State 6
 			association.release();
 		}
@@ -153,12 +201,12 @@ if (debugLevel > 1) System.err.println(new java.util.Date().toString()+": Verifi
 		String password = arg.length >= 7 ? arg[6] : null;
 		VerificationSOPClassSCU v = null;
 		try {
-			v = new VerificationSOPClassSCU(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],secure,username,password,2/*debugLevel*/);
+			v = new VerificationSOPClassSCU(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],secure,username,password);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
-		System.err.println("VerificationSOPClass: was "+(v == null ? "not " : "")+"successful");
+		System.err.println("VerificationSOPClass: was "+(v == null ? "not " : "")+"successful");	// no need to use SLF4J since command line utility/test
 	}
 }
 

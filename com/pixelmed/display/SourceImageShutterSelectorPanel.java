@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -12,12 +12,16 @@ import com.pixelmed.display.event.ApplyShutterChangeEvent;
 import com.pixelmed.event.ApplicationEventDispatcher; 
 import com.pixelmed.event.EventContext;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 class SourceImageShutterSelectorPanel extends JPanel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageShutterSelectorPanel.java,v 1.12 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImageShutterSelectorPanel.java,v 1.1 2011/09/02 20:40:06 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceImageShutterSelectorPanel.class);
 
 	/***/
 	private EventContext eventContext;
@@ -54,7 +58,7 @@ class SourceImageShutterSelectorPanel extends JPanel {
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(
 				new ApplyShutterChangeEvent(eventContext,applyShutter));
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	

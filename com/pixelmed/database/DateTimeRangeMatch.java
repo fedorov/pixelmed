@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class DateTimeRangeMatch {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DateTimeRangeMatch.java,v 1.2 2005/07/30 13:02:03 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DateTimeRangeMatch.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
 
 	private static final String earliestPossibleSQLDate = "19000101";
 	private static final String latestPossibleSQLDate = "20990101";
@@ -314,11 +314,11 @@ public class DateTimeRangeMatch {
 			addToMatchClause(b,"STUDY","STUDYDATE",TagFromName.StudyDate,list,alreadyUsed);
 			addToMatchClause(b,"STUDY","STUDYTIME",TagFromName.StudyTime,list,alreadyUsed);
 			
-			System.err.println(b.toString());
+			System.err.println(b.toString());	// no need to use SLF4J since command line utility/test
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -336,7 +336,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -354,7 +354,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -372,7 +372,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -388,7 +388,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -404,7 +404,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -420,7 +420,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -436,7 +436,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -452,7 +452,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -468,7 +468,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -484,7 +484,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -500,7 +500,7 @@ public class DateTimeRangeMatch {
 			System.err.println(list);
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

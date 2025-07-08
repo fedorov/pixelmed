@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -15,6 +15,9 @@ import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>The {@link com.pixelmed.database.DicomDatabaseInformationModel DicomDatabaseInformationModel} class
  * is an abstract class that specializes {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}
@@ -27,8 +30,9 @@ import java.text.SimpleDateFormat;
  * @author	dclunie
  */
 public abstract class DicomDatabaseInformationModel extends DatabaseInformationModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseInformationModel.java,v 1.43 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseInformationModel.java,v 1.27 2013/02/09 17:33:59 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomDatabaseInformationModel.class);
 
 	private static final long SQL_INTEGER_MINIMUM = java.lang.Integer.MIN_VALUE;		// the hsqldb INTEGER type is allegedly a Java int
 	private static final long SQL_INTEGER_MAXIMUM = java.lang.Integer.MAX_VALUE;
@@ -43,7 +47,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	databaseFileName
 	 * @param	rootInformationEntity
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DicomDatabaseInformationModel(String databaseFileName,InformationEntity rootInformationEntity,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,rootInformationEntity,dictionary);
@@ -54,7 +58,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	rootInformationEntity
 	 * @param	dictionary
 	 * @param	databaseRootName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DicomDatabaseInformationModel(String databaseFileName,InformationEntity rootInformationEntity,DicomDictionary dictionary,String databaseRootName) throws DicomException {
 		super(databaseFileName,rootInformationEntity,dictionary,databaseRootName);
@@ -64,7 +68,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	databaseFileName
 	 * @param	rootInformationEntity
 	 * @param	dictionary
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DicomDatabaseInformationModel(String databaseFileName,String databaseServerName,InformationEntity rootInformationEntity,DicomDictionary dictionary) throws DicomException {
 		super(databaseFileName,databaseServerName,rootInformationEntity,dictionary);
@@ -75,7 +79,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	rootInformationEntity
 	 * @param	dictionary
 	 * @param	databaseRootName
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public DicomDatabaseInformationModel(String databaseFileName,String databaseServerName,InformationEntity rootInformationEntity,DicomDictionary dictionary,String databaseRootName) throws DicomException {
 		super(databaseFileName,databaseServerName,rootInformationEntity,dictionary,databaseRootName);
@@ -111,7 +115,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which a select statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithPersonNameSearchColumnsForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 		TreeSet whatHasBeenAdded = new TreeSet();
@@ -152,7 +156,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which a select statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithPersonNameSearchValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 		TreeSet whatHasBeenAdded = new TreeSet();
@@ -206,7 +210,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithAttributeNamesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 		TreeSet whatHasBeenAdded = new TreeSet();
@@ -284,13 +288,13 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 *
 	 * <p>At the INSTANCE level, the file reference type is left empty since unknown.</p>
 	 *
-	 * @deprecated use  {@link #extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer,AttributeList,InformationEntity,String,String) extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity()} instead
+	 * @deprecated use  {@link com.pixelmed.database.DicomDatabaseInformationModel#extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer,AttributeList,InformationEntity,String,String) extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity()} instead
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
 	 * @param	fileName	the local filename, which may be non-null for <code>INSTANCE</code> level insertions
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie,String fileName) throws DicomException {
 		extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(b,list,ie,fileName,""/*fileReferenceType*/);
@@ -313,13 +317,19 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
 	 * @param	fileName	the local filename, which may be non-null for <code>INSTANCE</code> level insertions
 	 * @param	fileReferenceType	"C" for copied (i.e., delete on purge), "R" for referenced (i.e., do not delete on purge)
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie,String fileName,String fileReferenceType) throws DicomException {
 		TreeSet whatHasBeenAdded = new TreeSet();
 		if (ie == InformationEntity.INSTANCE) {
 			b.append(",\'");
-			b.append(fileName);
+			{
+				// characters that need escaping may occur in file names, e.g., French names with apostrophes (001001)
+				String escapedFileName = new String(fileName.trim());	// take care not to replace characters in original string, but in copy
+				// only need to escape internal single-quote, which is the value string literal delimeter, NOT percent and underscore wildcard characters, since this is not a LIKE
+				escapedFileName = escapedFileName.replace("\'","\'\'");
+				b.append(escapedFileName);
+			}
 			b.append("\'");
 			whatHasBeenAdded.add(localFileName);						// the name not the value
 			b.append(",\'");
@@ -340,10 +350,13 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 				 && !whatHasBeenAdded.contains(columnName)) {								// do not add same attribute twice to same table
 					b.append(",");
 					String value = getQuotedEscapedSingleStringValueOrNull(a);
-					if (ValueRepresentation.isPersonNameVR(vr) && value != null && value.contains("^")) {
-//System.err.println("DicomDatabaseInformationModel.extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(): "+columnName+" value was "+value);
-						value = value.replaceFirst("\\^+\'","\'");		// Trailing empty components are of no significance so should be treated as absent so that will match whether present or not
-//System.err.println("DicomDatabaseInformationModel.extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(): "+columnName+" value now "+value);
+					if (ValueRepresentation.isPersonNameVR(vr)) {
+//System.err.println("DicomDatabaseInformationModel.extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(): PN: "+columnName+" value was "+value);
+						if (value != null && value.contains("^")) {
+//System.err.println("DicomDatabaseInformationModel.extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(): PN: "+columnName+" value was "+value);
+							value = value.replaceFirst("\\^+\'","\'");		// Trailing empty components are of no significance so should be treated as absent so that will match whether present or not
+//System.err.println("DicomDatabaseInformationModel.extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(): PN: "+columnName+" value now "+value);
+						}
 					}
 					b.append(value);
 					whatHasBeenAdded.add(columnName);
@@ -396,7 +409,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithDerivedAttributeNamesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 		if (ie == InformationEntity.STUDY) {
@@ -539,9 +552,11 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 //System.err.println("DicomDatabaseInformationModel.getDateFromDicomDateAndTime(date,time,timezone): truncated reassembled dateTime="+dateTime);
 			}
 //System.err.println("DicomDatabaseInformationModel.getDateFromDicomDateAndTime(dateTime): formatString="+formatString);
-			DateFormat formatter = new SimpleDateFormat(formatString);
-			formatter.setLenient(false);	// This is important, othwerwise bad date like "99999999" will parse OK, return ridiculous value, and SQL insert statements will fail later (000679)
-			value = formatter.parse(dateTime,new ParsePosition(0));
+			if (formatString != null && formatString.length() > 0) {	// (001119)
+				DateFormat formatter = new SimpleDateFormat(formatString);
+				formatter.setLenient(false);	// This is important, othwerwise bad date like "99999999" will parse OK, return ridiculous value, and SQL insert statements will fail later (000679)
+				value = formatter.parse(dateTime,new ParsePosition(0));
+			}
 		}
 		return value;
 	}
@@ -572,7 +587,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected void extendInsertStatementStringWithDerivedAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException {
 		String vTimezoneOffsetFromUTC = Attribute.getSingleStringValueOrNull(list,TagFromName.TimezoneOffsetFromUTC);
@@ -694,23 +709,24 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 		return Long.toString(new java.util.Date().getTime()) + Long.toString((long)(Math.random()*100000000));
 	}
 
-        /**
+	/**
 	 * <p>Make a quoted string value suitable for using in a SQL statement from a (possibly null or empty) string.</p>
 	 *
-	 * <p>No attenpt at escaping specially characters is made ... this is assumed already done.</p>
+	 * <p>No attempt at escaping specially characters is made ... this is assumed already done.</p>
 	 *
-         * @param	value	the string, which may be null or zero length
-	 * @return		the quoted string value of the attribute, or the (unquoted) string NULL if the value is null or zero length
-         * @exception		DicomException
-         */
+	 * <p>Leading or trailing whitespace is trimmed.</p>
+	 *
+	 * @param	value	the string, which may be null or zero length
+	 * @return			the quoted string value of the attribute, or the (unquoted) string NULL if the value is null or zero length
+	 */
 	public static String getQuotedValueOrNULL(String value) {
 		StringBuffer b = new StringBuffer();
-		if (value == null || value.length() == 0) {
+		if (value == null || value.trim().length() == 0) {
 			b.append("NULL");
 		}
 		else {
 			b.append("\'");
-			b.append(value);
+			b.append(value.trim());
 			b.append("\'");
 		}
 		return b.toString();
@@ -725,7 +741,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 *
 	 * @param	a	the DICOM attribute, which may be null, zero length or multi-valued
 	 * @return		the quoted string value of the attribute, or the (unquoted) string NULL if attribute is absent, has no value or is zero length
-	 * @exception		DicomException
+	 * @throws		DicomException
 	 */
 	public static String getQuotedEscapedSingleStringValueOrNull(Attribute a) throws DicomException {
 		return getQuotedSingleStringValueOrNull(a,true/*escapeSpecialCharacters*/);
@@ -740,7 +756,7 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 *
 	 * @param	a									the DICOM attribute, which may be null, zero length or multi-valued
 	 * @return		the quoted string value of the attribute, or the (unquoted) string NULL if attribute is absent, has no value or is zero length
-	 * @exception		DicomException
+	 * @throws		DicomException
 	 */
 	public static String getQuotedUnescapedSingleStringValueOrNull(Attribute a) throws DicomException {
 		return getQuotedSingleStringValueOrNull(a,false/*escapeSpecialCharacters*/);
@@ -753,14 +769,16 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	 *
 	 * <p>Multiple values are collapsed and separated by the usual DICOM backslash delimiter character (which doesn't bother SQL).</p>
 	 *
-	 * @param	a									the DICOM attribute, which may be null, zero length or multi-valued
+	 * <p>Leading or trailing whitespace in each value is trimmed.</p>
+	 *
+	 * @param	a							the DICOM attribute, which may be null, zero length or multi-valued
 	 * @param	escapeSpecialCharacters		whether or not to escape special characters (currently only single quote)
-	 * @return		the quoted string value of the attribute, or the (unquoted) string NULL if attribute is absent, has no value or is zero length
-	 * @exception		DicomException
+	 * @return								the quoted string value of the attribute, or the (unquoted) string NULL if attribute is absent, has no value or is zero length
+	 * @throws							DicomException
 	 */
 	public static String getQuotedSingleStringValueOrNull(Attribute a,boolean escapeSpecialCharacters) throws DicomException {
 		StringBuffer b = new StringBuffer();
-		if (a == null) {
+		if (a == null) {		// do not need to check for zero length equivalent to null, since will fix at end, and need to handle whitespace trimmed values the same as empty values anyway
 			b.append("NULL");
 		}
 		else {
@@ -827,6 +845,10 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 			}
 		}
 		String str = b.toString();
+		if (str.equals("\'\'")) {
+//System.err.println("DicomDatabaseInformationModel.getQuotedSingleStringValueOrNull(): replacing empty quoted trimmed value with NULL");
+			str = "NULL";
+		}
 //System.err.println("DicomDatabaseInformationModel.getQuotedSingleStringValueOrNull(): returning "+str);
 		return str;
 	}
@@ -834,23 +856,46 @@ public abstract class DicomDatabaseInformationModel extends DatabaseInformationM
 	/**
 	 * <p>Get a factory to manufacture a query response generator capable of performing a query and returning the results.</p>
 	 *
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
+	 * @return			the response generator factory
+	 */
+	public QueryResponseGeneratorFactory getQueryResponseGeneratorFactory() {
+//System.err.println("DicomDatabaseInformationModel.getQueryResponseGenerator():");
+		return new DicomDatabaseQueryResponseGeneratorFactory(this);
+	}
+
+	/**
+	 * <p>Get a factory to manufacture a query response generator capable of performing a query and returning the results.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getQueryResponseGeneratorFactory()} instead.
+	 * @param	debugLevel		ignored
 	 * @return			the response generator factory
 	 */
 	public QueryResponseGeneratorFactory getQueryResponseGeneratorFactory(int debugLevel) {
-//System.err.println("DicomDatabaseInformationModel.getQueryResponseGenerator():");
-		return new DicomDatabaseQueryResponseGeneratorFactory(this,debugLevel);
+		slf4jlogger.warn("getQueryResponseGeneratorFactory(): Debug level supplied as argument ignored");
+		return getQueryResponseGeneratorFactory();
 	}
 	
 	/**
 	 * <p>Get a factory to manufacture a retrieve response generator capable of performing a retrieve and returning the results.</p>
 	 *
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
+	 * @return					the response generator factory
+	 */
+	public RetrieveResponseGeneratorFactory getRetrieveResponseGeneratorFactory() {
+//System.err.println("DicomDatabaseInformationModel.getRetrieveResponseGenerator():");
+		return new DicomDatabaseRetrieveResponseGeneratorFactory(this);
+	}
+	
+	/**
+	 * <p>Get a factory to manufacture a retrieve response generator capable of performing a retrieve and returning the results.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getRetrieveResponseGeneratorFactory()} instead.
+	 * @param	debugLevel		ignored
 	 * @return					the response generator factory
 	 */
 	public RetrieveResponseGeneratorFactory getRetrieveResponseGeneratorFactory(int debugLevel) {
 //System.err.println("DicomDatabaseInformationModel.getRetrieveResponseGenerator():");
-		return new DicomDatabaseRetrieveResponseGeneratorFactory(this,debugLevel);
+		slf4jlogger.warn("getRetrieveResponseGeneratorFactory(): Debug level supplied as argument ignored");
+		return getRetrieveResponseGeneratorFactory();
 	}
 
 }

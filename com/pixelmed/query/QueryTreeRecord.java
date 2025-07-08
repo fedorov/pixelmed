@@ -1,14 +1,6 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Vector;
-import javax.swing.tree.TreeNode;
-import java.io.IOException;
 
 import com.pixelmed.dicom.Attribute;
 import com.pixelmed.dicom.AttributeList;
@@ -20,6 +12,17 @@ import com.pixelmed.network.DicomNetworkException;
 import com.pixelmed.network.IdentifierHandler;
 
 import com.pixelmed.utils.StringUtilities;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Vector;
+import javax.swing.tree.TreeNode;
+import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Instances of the {@link com.pixelmed.query.QueryTreeRecord QueryTreeRecord} class represent
@@ -34,12 +37,12 @@ import com.pixelmed.utils.StringUtilities;
  * @author	dclunie
  */
 public class QueryTreeRecord implements Comparable, TreeNode {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeRecord.java,v 1.24 2025/01/29 10:58:09 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeRecord.java,v 1.12 2008/06/30 15:11:12 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryTreeRecord.class);
 
 	protected QueryInformationModel q;
 	protected AttributeList filter;
-	protected int debugLevel;
 
 	protected QueryTreeRecord parent;
 	protected List children;
@@ -130,9 +133,9 @@ public class QueryTreeRecord implements Comparable, TreeNode {
 	 * @return		the child <code>TreeNode</code> at the specified index
 	 */
 	public TreeNode getChildAt(int index) {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildAt(): "+index);
+		slf4jlogger.trace("getChildAt(): {}",index);
 		populateChildrenIfRequired();
-if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildAt(): back from populateChildrenIfRequired(), childrenPopulated="+childrenPopulated+", numberOfChildren="+numberOfChildren);
+		slf4jlogger.trace("getChildAt(): back from populateChildrenIfRequired(), childrenPopulated={}, numberOfChildren={}",childrenPopulated,numberOfChildren);
 		TreeNode node = index < getChildCount() ? (TreeNode)(children.get(index)) : null;
 		if (node == null) {
 			 System.err.println("QueryTreeRecord.getChildAt(): there is no such child as "+index+", probably because query failed to return any children at "+getQueryLevelToPopulateChildren()+" level - javax.swing.tree.TreePath.pathByAddingChild will now throw a NullPointerException");
@@ -147,12 +150,12 @@ if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildAt(): back from 
 	 * @return		the index of the child, or -1 if not present
 	 */
 	public int getIndex(TreeNode child) {
-if (debugLevel > 1) System.err.println("getIndexOfChild: looking for "+child);
+		slf4jlogger.trace("getIndexOfChild: looking for {}",child);
 		populateChildrenIfRequired();
 		int n=getChildCount();
 		for (int i=0; i<n; ++i) {
 			if (children.get(i).equals(child)) {	// expensive comparison ? :(
-if (debugLevel > 1) System.err.println("getIndexOfChild: found "+child);
+				slf4jlogger.trace("getIndexOfChild: found {}",child);
 				return i;
 			}
 		}
@@ -174,15 +177,15 @@ if (debugLevel > 1) System.err.println("getIndexOfChild: found "+child);
 	 * @return	true if the receiver is a leaf
 	 */
 	public boolean isLeaf() {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.populateChildrenIfRequired(): isLeaf()");
+		slf4jlogger.trace("populateChildrenIfRequired(): isLeaf()");
 		int count = getChildCount();	// don't call more than once, since has side effects
 		boolean leaf = count == 0;
-if (debugLevel > 1) System.err.println("QueryTreeRecord.populateChildrenIfRequired(): isLeaf() returns "+leaf+" because getChildCount() is "+count);
+		slf4jlogger.trace("populateChildrenIfRequired(): isLeaf() returns {} because getChildCount() is {}",leaf,count);
 		return getChildCount() == 0;
 	}
 	
 	protected void populateChildrenIfRequired() {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.populateChildrenIfRequired(): childrenPopulated="+childrenPopulated);
+		slf4jlogger.trace("populateChildrenIfRequired(): childrenPopulated={}",childrenPopulated);
 		if (!childrenPopulated) {
 			populateChildren();
 			childrenPopulated = true;
@@ -196,10 +199,10 @@ if (debugLevel > 1) System.err.println("QueryTreeRecord.populateChildrenIfRequir
 	 * @return	the number of children, 0 if none
 	 */
 	public int getChildCount() {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildCount(): when called numberOfChildren="+numberOfChildren);
+		slf4jlogger.trace("getChildCount(): when called numberOfChildren={}",numberOfChildren);
 		if (numberOfChildren == -1) {
 			populateChildrenIfRequired();
-if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildCount(): after populateChildrenIfRequired() numberOfChildren="+numberOfChildren);
+			slf4jlogger.trace("getChildCount(): after populateChildrenIfRequired() numberOfChildren={}",numberOfChildren);
 		}
 		return numberOfChildren;
 	}
@@ -210,7 +213,7 @@ if (debugLevel > 1) System.err.println("QueryTreeRecord.getChildCount(): after p
 	 * @return	the children of this node
 	 */
 	public Enumeration children() {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.children(): "+ (children == null ? "null" : "not null"));
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("children(): {}null",(children == null ? "" : "not "));
 		populateChildrenIfRequired();
 		return children == null ? null : new Vector(children).elements();
 	}
@@ -238,15 +241,14 @@ if (debugLevel > 1) System.err.println("QueryTreeRecord.children(): "+ (children
 		 * @param	responseIdentifier
 		 */
 		public void doSomethingWithIdentifier(AttributeList responseIdentifier) throws DicomException {
-if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren.doSomethingWithIdentifier():");
-if (debugLevel > 0) System.err.print(responseIdentifier);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("populateChildren.doSomethingWithIdentifier():\n{}",responseIdentifier);
 			String value = q.getStringValueForTreeFromResponseIdentifier(ie,responseIdentifier);
 			Attribute uniqueKey = responseIdentifier.get(uniqueKeyTagFromThisLevel);
 			if (uniqueKey == null || uniqueKey.getVL() == 0) {
-				throw new DicomException("Invalid query response for "+ie+" without unique key value in "+uniqueKeyTagFromThisLevel+" from "+q);
+				throw new DicomException("Invalid query response for "+ie+" without unique key value in "+uniqueKeyTagFromThisLevel+" from "+q+" (\""+value+"\")");
 			}
 			else {
-				QueryTreeRecord node = new QueryTreeRecord(q,filter,parentNode,value,ie,uniqueKey,responseIdentifier,debugLevel);
+				QueryTreeRecord node = new QueryTreeRecord(q,filter,parentNode,value,ie,uniqueKey,responseIdentifier);
 				addChild(node);
 			}
 		}
@@ -257,24 +259,24 @@ if (debugLevel > 0) System.err.print(responseIdentifier);
 	}
 	
 	protected void populateChildren() {
-if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren() for "+this);
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("populateChildren() for {}",this);
 		InformationEntity queryLevel = getQueryLevelToPopulateChildren();
 		if (queryLevel != null) {
-if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren(): queryLevel="+queryLevel);
+			slf4jlogger.debug("populateChildren(): queryLevel={}",queryLevel);
 			AttributeTag uniqueKeyTagFromThisLevel = q.getUniqueKeyForInformationEntity(queryLevel);
-if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren(): uniqueKeyTagFromThisLevel="+uniqueKeyTagFromThisLevel);
+			slf4jlogger.debug("populateChildren(): uniqueKeyTagFromThisLevel={}",uniqueKeyTagFromThisLevel);
 			OurResponseIdentifierHandler ourResponseIdentifierHandler = new OurResponseIdentifierHandler(this,queryLevel,uniqueKeyTagFromThisLevel);
 			try {
 				q.performQuery(filter,uniqueKeys,queryLevel,ourResponseIdentifierHandler);
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			catch (DicomNetworkException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -282,17 +284,35 @@ if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren(): uniq
 	/**
 	 * <p>Make a new node in a tree.</p>
 	 *
-	 * @param	q					the query information model to build the tree from
-	 * @param	filter					the query request identifier as a list of DICOM attributes
-	 * @param	parent					the parent of this node
-	 * @param	value					a string value which is used primarily to sort siblings into lexicographic order
-	 * @param	ie					the entity in the DICOM information model that the constructed node is an instance of
-	 * @param	uniqueKey				the DICOM attribute which is the unique key at the level of this record
+	 * @deprecated									SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #QueryTreeRecord(QueryInformationModel,AttributeList,QueryTreeRecord,String,InformationEntity,Attribute,AttributeList)} instead.
+	 * @param	q									the query information model to build the tree from
+	 * @param	filter								the query request identifier as a list of DICOM attributes
+	 * @param	parent								the parent of this node
+	 * @param	value								a string value which is used primarily to sort siblings into lexicographic order
+	 * @param	ie									the entity in the DICOM information model that the constructed node is an instance of
+	 * @param	uniqueKey							the DICOM attribute which is the unique key at the level of this record
 	 * @param	allAttributesReturnedInIdentifier	a list of all the DICOM attributes from the query response for this level of a query
-	 * @param	debugLevel				0 is no debugging (silent), > 0 more verbose levels of debugging
+	 * @param	debugLevel							unused
 	 */
 	public QueryTreeRecord(QueryInformationModel q,AttributeList filter,QueryTreeRecord parent,String value,InformationEntity ie,
 			Attribute uniqueKey,AttributeList allAttributesReturnedInIdentifier,int debugLevel) {
+		this(q,filter,parent,value,ie,uniqueKey,allAttributesReturnedInIdentifier);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Make a new node in a tree.</p>
+	 *
+	 * @param	q									the query information model to build the tree from
+	 * @param	filter								the query request identifier as a list of DICOM attributes
+	 * @param	parent								the parent of this node
+	 * @param	value								a string value which is used primarily to sort siblings into lexicographic order
+	 * @param	ie									the entity in the DICOM information model that the constructed node is an instance of
+	 * @param	uniqueKey							the DICOM attribute which is the unique key at the level of this record
+	 * @param	allAttributesReturnedInIdentifier	a list of all the DICOM attributes from the query response for this level of a query
+	 */
+	public QueryTreeRecord(QueryInformationModel q,AttributeList filter,QueryTreeRecord parent,String value,InformationEntity ie,
+			Attribute uniqueKey,AttributeList allAttributesReturnedInIdentifier) {
 		this.q=q;
 		this.filter=filter;
 		this.parent=parent;
@@ -300,7 +320,6 @@ if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren(): uniq
 		this.ie=ie;
 		this.uniqueKey=uniqueKey;
 		this.allAttributesReturnedInIdentifier=allAttributesReturnedInIdentifier;
-		this.debugLevel=debugLevel;
 		childrenPopulated = false;
 		{
 			numberOfChildren = -1;
@@ -335,7 +354,7 @@ if (debugLevel > 0) System.err.println("QueryTreeRecord.populateChildren(): uniq
 	 * @param	child	the child node to be added
 	 */
 	public void addChild(QueryTreeRecord child) {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.addChild(): child="+child);
+		slf4jlogger.trace("addChild(): child={}",child);
 		if (children == null) {
 			children=new ArrayList();
 		}
@@ -353,10 +372,10 @@ if (debugLevel > 1) System.err.println("QueryTreeRecord.addChild(): child="+chil
 	 * node's parent's sorted collection of children.</p>
 	 *
 	 * @param	sibling		the sibling node to be added
-	 * @exception	DicomException	thrown if this node has no parent
+	 * @throws	DicomException	thrown if this node has no parent
 	 */
 	public void addSibling(QueryTreeRecord sibling) throws DicomException {
-if (debugLevel > 1) System.err.println("QueryTreeRecord.addSibling(): sibling="+sibling);
+		slf4jlogger.trace("addSibling(): sibling={}",sibling);
 		if (parent == null) {
 			throw new DicomException("Internal error - root node with sibling");
 		}

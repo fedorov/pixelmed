@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -14,7 +14,7 @@ import com.pixelmed.utils.StringUtilities;
  */
 public class CodedConcept extends Concept {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CodedConcept.java,v 1.4 2013/01/02 00:35:14 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CodedConcept.java,v 1.16 2025/01/29 10:58:05 dclunie Exp $";
 	
 	protected String conceptIdentifier;					// the scheme-specific concept identifier, e.g., for SNOMED-CT, the SNOMED Concept Identifier
 	protected String codingSchemeDesignator;			// e.g., "SRT"
@@ -23,10 +23,23 @@ public class CodedConcept extends Concept {
 	protected String codeValue;
 	protected String codeMeaning;
 	
-	protected String codeStringEquivalent;
+	protected String codeStringEquivalent;				// may be null
 	
 	protected String[] synonynms;						// may be null or empty
 	
+	/**
+	 * <p>Create a coded concept.</p>
+	 *
+	 * @param	conceptUniqueIdentifier			the unique identifier of the concept, usually a UMLS CUI; required to be unique within the scope of comparisons using {@link #equals(Object) equals(Object)}
+	 * @param	conceptIdentifier				the scheme-specific concept identifier, e.g., for SNOMED-CT, the SNOMED Concept Identifier
+	 * @param	codingSchemeDesignator			the DICOM PS3.16 Section 8 coding scheme used as the DICOM Coding Scheme Designator, e.g., "SRT", "DCM", "LN", or a private coding scheme
+	 * @param	legacyCodingSchemeDesignator	a legacy (alternative) coding scheme, e.g.  "SNM3" if what is used in DICOM context groups instead of "SRT"; null if none required (i.e., treat the same as codingSchemeDesignator)
+	 * @param	codingSchemeVersion				the version of the coding scheme in which this code is defined, if necessary; null if none required
+	 * @param	codeValue						the code used as the DICOM Code Value (e.g., the SNOMED-RT style code rather than the SNOMED-CT style Concept Identifier)
+	 * @param	codeMeaning						the text used as the DICOM Code Meaning
+	 * @param	codeStringEquivalent			the text value used for a DICOM Code String VR equivalent attribute (e.g., for Body Part Examined instead of in Anatomic Region Sequence); may be null
+	 * @param	synonynms						alternative code meanings, including abbreviations or different languages; may be null or empty
+	 */
 	public CodedConcept(String conceptUniqueIdentifier,String conceptIdentifier,String codingSchemeDesignator,String legacyCodingSchemeDesignator,String codingSchemeVersion,String codeValue,String codeMeaning,String codeStringEquivalent,String[] synonynms) {
 		super(conceptUniqueIdentifier);
 		this.conceptIdentifier=conceptIdentifier;
@@ -96,7 +109,7 @@ public class CodedConcept extends Concept {
 	public String toString() {
 		StringBuffer buf = new StringBuffer();
 		buf.append(super.toString());
-		buf.append("\tcconcept identifier: ");
+		buf.append("\tconcept identifier: ");
 		buf.append(conceptIdentifier);
 		buf.append("\tcode: ");
 		buf.append(getCodeAsString());

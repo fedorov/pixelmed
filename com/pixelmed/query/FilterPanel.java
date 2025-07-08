@@ -1,6 +1,8 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
+
+import com.pixelmed.dicom.*;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -15,7 +17,8 @@ import javax.swing.text.Document;
 import javax.swing.tree.*;
 import javax.swing.border.*;
 
-import com.pixelmed.dicom.*;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link com.pixelmed.query.FilterPanel FilterPanel} class provides a graphical user
@@ -48,8 +51,9 @@ import com.pixelmed.dicom.*;
  * @author	dclunie
  */
 public class FilterPanel extends JPanel {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/FilterPanel.java,v 1.9 2007/01/17 23:13:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/FilterPanel.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FilterPanel.class);
 	
 	/***/
 	private GridBagLayout layout;
@@ -90,7 +94,7 @@ public class FilterPanel extends JPanel {
 								text = document.getText(0,document.getLength());
 							}
 							catch (BadLocationException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 					}

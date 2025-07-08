@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -6,15 +6,18 @@ import java.util.*;
 
 import java.awt.geom.Point2D;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A set of display shutter parameters constructed from the attributes of the DICOM Display Shutter Module.</p>
  *
  * @author	dclunie
  */
 public class DisplayShutter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DisplayShutter.java,v 1.14 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DisplayShutter.java,v 1.2 2010/01/31 11:59:06 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DisplayShutter.class);
 	
 	protected boolean hasCircularShutter;
 	protected int centerOfCircularShutterY;		// row (1st value)
@@ -34,7 +37,7 @@ public class DisplayShutter {
 	/**
 	 * Extract the display shutter paramaters from a list of attributes
 	 *
-	 * @param	list
+	 * @param	list	list of attributes
 	 */
 	public DisplayShutter(AttributeList list) {
 		String[] shutterShapes = Attribute.getStringValues(list,TagFromName.ShutterShape);
@@ -63,7 +66,7 @@ public class DisplayShutter {
 						verticesOfPolygonalShutter = Attribute.getIntegerValues(list,TagFromName.VerticesOfThePolygonalShutter);
 					}
 					else {
-System.err.println("DisplayShutter.DisplayShutter(): unrecognized shutter shape - "+shape+" - ignored");
+						slf4jlogger.warn("DisplayShutter(): unrecognized shutter shape - {} - ignored",shape);
 					}
 				}
 			}

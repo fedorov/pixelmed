@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,7 +17,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class AttributeListFunctionalGroupsTableModelAllFrames extends AttributeListFunctionalGroupsTableModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListFunctionalGroupsTableModelAllFrames.java,v 1.7 2005/01/21 19:17:26 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListFunctionalGroupsTableModelAllFrames.java,v 1.17 2025/01/29 10:58:06 dclunie Exp $";
 
 	// Methods specific to AttributeListTableModel ...
 		

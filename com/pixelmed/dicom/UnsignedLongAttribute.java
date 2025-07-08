@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,7 +21,7 @@ import java.text.NumberFormat;
  */
 public class UnsignedLongAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnsignedLongAttribute.java,v 1.18 2009/12/16 21:56:38 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnsignedLongAttribute.java,v 1.31 2025/01/29 10:58:07 dclunie Exp $";
 
 	short[] cachedShortCopy;
 	int[] values;
@@ -55,8 +55,8 @@ public class UnsignedLongAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UnsignedLongAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -69,8 +69,8 @@ public class UnsignedLongAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public UnsignedLongAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -80,14 +80,13 @@ public class UnsignedLongAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		flushCachedCopies();
 		if (vl%bytesPerValue != 0) {
-			i.skipInsistently(vl);
-			throw new DicomException("incorrect value length ("+vl+" dec) for VR "+getVRAsString()+" - skipping value length bytes to get to next data element");
+			throw new DicomException("incorrect value length ("+vl+" dec) for VR "+getVRAsString()+" - caller will need to skip value length bytes to get to next data element");
 		}
 		else {
 			int vm=(int)(vl/bytesPerValue);
@@ -98,8 +97,8 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
@@ -136,7 +135,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	format		the format to use for each numerical or decimal value
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public String[] getStringValues(NumberFormat format) throws DicomException {
 		String sv[] = null;
@@ -151,7 +150,7 @@ public class UnsignedLongAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public short[] getShortValues() throws DicomException {
 		if (cachedShortCopy == null) cachedShortCopy=ArrayCopyUtilities.copyUnsignedIntToShortArray(values);
@@ -159,14 +158,14 @@ public class UnsignedLongAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public int[] getIntegerValues() throws DicomException {
 		return values;
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public long[] getLongValues() throws DicomException {
 		if (cachedLongCopy == null) cachedLongCopy=ArrayCopyUtilities.copyUnsignedIntToLongArray(values);
@@ -174,7 +173,7 @@ public class UnsignedLongAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public float[] getFloatValues() throws DicomException {
 		if (cachedFloatCopy == null) cachedFloatCopy=ArrayCopyUtilities.copyUnsignedIntToFloatArray(values);
@@ -182,7 +181,7 @@ public class UnsignedLongAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public double[] getDoubleValues() throws DicomException {
 		if (cachedDoubleCopy == null) cachedDoubleCopy=ArrayCopyUtilities.copyUnsignedIntToDoubleArray(values);
@@ -191,7 +190,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(short v) throws DicomException {
 		addValue((int)v);		// should we sign extend or not ? :(
@@ -199,7 +198,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(int v) throws DicomException {
 		flushCachedCopies();
@@ -210,7 +209,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(long v) throws DicomException {
 		addValue((int)v);
@@ -218,7 +217,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(float v) throws DicomException {
 		addValue((int)v);
@@ -226,7 +225,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(double v) throws DicomException {
 		addValue((int)v);
@@ -234,7 +233,7 @@ public class UnsignedLongAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void addValue(String v) throws DicomException {
 		int intValue = 0;
@@ -246,9 +245,19 @@ public class UnsignedLongAttribute extends Attribute {
 		}
 		addValue(intValue);
 	}
+
+	/**
+	 * @param	v
+	 * @throws	DicomException
+	 */
+	public void setValues(int[] v) throws DicomException {
+		values=v;
+		valueMultiplicity=v.length;
+		valueLength=v.length*4;
+		flushCachedCopies();
+	}
 	
 	/**
-	 * @exception	DicomException
 	 */
 	public void removeValues() {
 		flushCachedCopies();

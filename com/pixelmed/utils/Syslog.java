@@ -17,7 +17,7 @@ import java.util.*;
 
 public class Syslog {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/Syslog.java,v 1.7 2012/02/01 23:02:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/Syslog.java,v 1.8 2016/02/04 09:00:06 dclunie Exp $";
 
 	// Mimic constants from Unix syslog.h
 
@@ -134,11 +134,11 @@ public class Syslog {
 	 */
 	public static void main(String arg[]) {
 		try {
-			Syslog logger = new Syslog("localhost");
-			logger.send(logger.getFacilityByName("local6"),logger.getPriorityByName("notice"),"deidentify: dclunie - hello again more");
+			Syslog syslogger = new Syslog("localhost");
+			syslogger.send(syslogger.getFacilityByName("local6"),syslogger.getPriorityByName("notice"),"deidentify: dclunie - hello again more");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);		// do NOT use SLF4J here ... just confuses things
 		}
 	}
 }

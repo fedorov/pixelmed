@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -12,6 +12,9 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*; 
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 //import com.pixelmed.display.event.*; 
 
 /**
@@ -22,9 +25,35 @@ import javax.swing.event.*;
  * 
  * @author	dclunie
  */
-public class ApplicationFrame extends JFrame { 
+public class ApplicationFrame extends JFrame {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ApplicationFrame.java,v 1.47 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ApplicationFrame.java,v 1.30 2013/04/28 18:10:21 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ApplicationFrame.class);
+
+	protected static String resourceBundleName  = "com.pixelmed.display.ApplicationFrame";
+	
+	protected static ResourceBundle resourceBundle;
+	
+	protected static void localizeJOptionPane() {
+		if (resourceBundle == null) {
+			try {
+				resourceBundle = ResourceBundle.getBundle(resourceBundleName);
+				for (Enumeration<String> e = resourceBundle.getKeys(); e.hasMoreElements();) {
+					String key = e.nextElement();
+					if (key.startsWith("OptionPane.")) {
+						String value = resourceBundle.getString(key);
+						slf4jlogger.debug("localizeJOptionPane(): UIManager.put(\"{}\" , \"{}\")",key,value);
+						UIManager.put(key,value);
+					}
+				}
+			}
+			catch (Exception e) {
+				// ignore java.util.MissingResourceException: Can't find bundle for base name com.pixelmed.display.ApplicationFrame, locale en_US
+				slf4jlogger.warn("Missing resource bundle for localization {}",e.toString());
+			}
+		}
+	}
+	
 	
 	/**
 	 * <p>Get the release string for this application.</p>
@@ -74,7 +103,12 @@ public class ApplicationFrame extends JFrame {
 	 * <p>Store the properties from the current properties file.</p>
 	 */
 	protected void loadProperties() {
-		applicationProperties = new Properties(/*defaultProperties*/);
+		applicationProperties = new Properties(/*defaultProperties*/) {
+			// keep them sorted alphabetically, per http://stackoverflow.com/questions/17011108/how-can-i-write-java-properties-in-a-defined-order
+			public synchronized Enumeration<Object> keys() {
+				return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+			}
+		};
 		if (applicationPropertyFileName != null) {
 			String whereFrom = makePathToFileInUsersHomeDirectory(applicationPropertyFileName);
 			try {
@@ -93,7 +127,7 @@ public class ApplicationFrame extends JFrame {
 	 * <p>Store the current properties in the current properties file.</p>
 	 *
 	 * @param	comment		the description to store as the header of the properties file
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	protected void storeProperties(String comment) throws IOException {
 		if (applicationPropertyFileName == null) {
@@ -153,6 +187,117 @@ public class ApplicationFrame extends JFrame {
 		return getPropertyInsistently(applicationProperties,key);
 	} 
 
+	/**
+	 * <p>Get the value of a property from the specified property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to he specified property list if not already present.</p>
+	 *
+	 * @param	properties		the property list to search
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	static public String getPropertyOrDefaultAndAddIt(Properties properties,String key,String defaultValue) {
+		String propertyValue = defaultValue;
+		{
+			String propertyStringValue = properties.getProperty(key);
+			if (propertyStringValue == null) {
+				properties.setProperty(key,propertyValue);
+			}
+			else {
+				propertyValue=propertyStringValue;
+			}
+		}
+		return propertyValue;
+	}
+
+	/**
+	 * <p>Get the value of a property from this application's property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to this application's property list if not already present.</p>
+	 *
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	public String getPropertyOrDefaultAndAddIt(String key,String defaultValue) {
+		return getPropertyOrDefaultAndAddIt(applicationProperties,key,defaultValue);
+	}
+
+	/**
+	 * <p>Get the value of a boolean property from the specified property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to he specified property list if not already present.</p>
+	 *
+	 * @param	properties		the property list to search
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	static public boolean getBooleanPropertyOrDefaultAndAddIt(Properties properties,String key,boolean defaultValue) {
+		boolean propertyValue = defaultValue;
+		{
+			String propertyStringValue = properties.getProperty(key);
+			if (propertyStringValue == null) {
+				properties.setProperty(key,Boolean.toString(propertyValue));
+			}
+			else {
+				propertyValue=Boolean.parseBoolean(propertyStringValue);
+			}
+		}
+		return propertyValue;
+	}
+
+	/**
+	 * <p>Get the value of a boolean property from this application's property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to this application's property list if not already present.</p>
+	 *
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	public boolean getBooleanPropertyOrDefaultAndAddIt(String key,boolean defaultValue) {
+		return getBooleanPropertyOrDefaultAndAddIt(applicationProperties,key,defaultValue);
+	}
+
+	/**
+	 * <p>Get the value of an integer property from the specified property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to he specified property list if not already present.</p>
+	 *
+	 * @param	properties		the property list to search
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	static public int getIntegerPropertyOrDefaultAndAddIt(Properties properties,String key,int defaultValue) {
+		int propertyValue = defaultValue;
+		{
+			String propertyStringValue = properties.getProperty(key);
+			if (propertyStringValue == null) {
+				properties.setProperty(key,Integer.toString(propertyValue));
+			}
+			else {
+				try {
+					propertyValue=Integer.parseInt(propertyStringValue);
+				}
+				catch (NumberFormatException e) {
+					slf4jlogger.error("", e);
+					// leave as default value
+				}
+			}
+		}
+		return propertyValue;
+	}
+
+	/**
+	 * <p>Get the value of an integer property from this application's property list or a default, adding it.</p>
+	 *
+	 * <p>Adds the default property to this application's property list if not already present.</p>
+	 *
+	 * @param	key				the property name
+	 * @param	defaultValue	the value to use if absent
+	 */
+	public int getIntegerPropertyOrDefaultAndAddIt(String key,int defaultValue) {
+		return getIntegerPropertyOrDefaultAndAddIt(applicationProperties,key,defaultValue);
+	}
+	
 	/**
 	 * <p>Store a JPEG snapshot of the specified window in the user's home directory.</p>
 	 *
@@ -296,7 +441,7 @@ public class ApplicationFrame extends JFrame {
 	 * <p>Invoked by {@link com.pixelmed.display.ApplicationFrame#createGUI() createGUI()}.</p>
 	 */
 	public static void setInternationalizedFontsForGUI() {
-//System.err.println("ApplicationFrame.setInternationalizedFontsForGUI()");
+		slf4jlogger.debug("ApplicationFrame.setInternationalizedFontsForGUI()");
 
 		Font font = new Font("Arial Unicode MS",Font.PLAIN,12);
 		if (font == null || !font.getFamily().equals("Arial Unicode MS")) {
@@ -309,7 +454,7 @@ public class ApplicationFrame extends JFrame {
 			System.err.println("Warning: couldn't set internationalized font: non-Latin values may not display properly");
 		}
 		else {
-//System.err.println("Using internationalized font "+font);
+			slf4jlogger.debug("Using internationalized font {}",font);
 			UIManager.put("Tree.font",font);
 			UIManager.put("Table.font",font);
 			//UIManager.put("Label.font",font);
@@ -324,7 +469,7 @@ public class ApplicationFrame extends JFrame {
 	 */
 	public static void setBackgroundForGUI() {
 		String laf = UIManager.getLookAndFeel().getClass().getName();
-//System.err.println("setBackgroundForGUI(): L&F is "+laf);
+		slf4jlogger.debug("setBackgroundForGUI(): L&F is {}",laf);
 		if (UIManager.getLookAndFeel().getClass().getName().equals("com.apple.laf.AquaLookAndFeel")) {
 			// we want the darker gray than is the default
 			// note that the JFrame.setBackground(Color.lightGray) that we used to use does not reliably propagate
@@ -343,12 +488,12 @@ public class ApplicationFrame extends JFrame {
 		try {
 			String osName = System.getProperty("os.name");
 			if (osName != null && osName.toLowerCase(java.util.Locale.US).startsWith("windows")) {	// see "http://lopica.sourceforge.net/os.html" for list of values
-//System.err.println("ApplicationFrame.setPreferredLookAndFeelForPlatform(): detected Windows - using Windows LAF");
+				slf4jlogger.debug("ApplicationFrame.setPreferredLookAndFeelForPlatform(): detected Windows - using Windows LAF");
 				UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 		}
 	}
 	
@@ -362,8 +507,9 @@ public class ApplicationFrame extends JFrame {
 	 * override the methods that it calls.</p>
 	 */
 	protected void createGUI() {
-//System.err.println("ApplicationFrame.createGUI()");
+		slf4jlogger.debug("ApplicationFrame.createGUI()");
 		setPreferredLookAndFeelForPlatform();
+		localizeJOptionPane();
 		setBackgroundForGUI();
 		setInternationalizedFontsForGUI();
 	} 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -17,7 +17,7 @@ import java.util.HashSet;		// for main() testing for uniqueness
 
 public class UUIDBasedOID {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/UUIDBasedOID.java,v 1.4 2012/04/04 22:52:29 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/UUIDBasedOID.java,v 1.18 2025/01/29 10:58:09 dclunie Exp $";
 
 	protected static final String OID_PREFIX = "2.25";	// {joint-iso-itu-t uuid(25) <uuid-single-integer-value>}
 	protected static final String OID_PREFIX_REMOVAL_REGEX = "^"+OID_PREFIX+".";
@@ -77,7 +77,7 @@ public class UUIDBasedOID {
 	/**
 	 * <p>Construct an OID from an existing string representation of an OID.</p>
 	 *
-	 * @param		oid	a String of dotted numeric values in OID form {joint-iso-itu-t uuid(25) <uuid-single-integer-value>} 
+	 * @param		oid	a String of dotted numeric values in OID form {joint-iso-itu-t uuid(25) &lt;uuid-single-integer-value&gt;}
 	 */
 	public UUIDBasedOID(String oid) throws IllegalArgumentException, NumberFormatException {
 		this.oid = oid;
@@ -101,10 +101,10 @@ public class UUIDBasedOID {
 	/**
 	 * <p>Extract the UUID from a UUID-based OID.</p>
 	 *
-	 * @param		oid							a String of dotted numeric values in OID form {joint-iso-itu-t uuid(25) <uuid-single-integer-value>} 
+	 * @param		oid							a String of dotted numeric values in OID form {joint-iso-itu-t uuid(25) &lt;uuid-single-integer-value&gt;}
 	 * @return									the UUID
-	 * @exception	IllegalArgumentException	if the OID is not in the {joint-iso-itu-t uuid(25)} arc
-	 * @exception	NumberFormatException		if the OID does not contain a uuid-single-integer-value
+	 * @throws	IllegalArgumentException	if the OID is not in the {joint-iso-itu-t uuid(25)} arc
+	 * @throws	NumberFormatException		if the OID does not contain a uuid-single-integer-value
 	 */
 	public static UUID parseUUIDFromOID(String oid) throws IllegalArgumentException, NumberFormatException {
 		if (oid == null || ! oid.startsWith(OID_PREFIX)) {
@@ -119,7 +119,7 @@ public class UUIDBasedOID {
 	 *
 	 * @param		decimalString				single integer value decimal string representation 
 	 * @return									the UUID
-	 * @exception	NumberFormatException		if the OID does not contain a uuid-single-integer-value
+	 * @throws	NumberFormatException		if the OID does not contain a uuid-single-integer-value
 	 */
 	public static UUID parseUUIDFromDecimalString(String decimalString) throws NumberFormatException {
 		BigInteger decimalValue = new BigInteger(decimalString);
@@ -154,7 +154,7 @@ public class UUIDBasedOID {
 	 *
 	 * @param		hexString					canonical hex string form of a UUID 
 	 * @return									the OID
-	 * @exception	IllegalArgumentException	if name does not conform to the string representation
+	 * @throws	IllegalArgumentException	if name does not conform to the string representation
 	 */
 	public static String createOIDFromUUIDCanonicalHexString(String hexString) throws IllegalArgumentException {
 		UUID uuid = UUID.fromString(hexString);
@@ -165,6 +165,27 @@ public class UUIDBasedOID {
 		BigInteger bigValueOfLeastSignificantBits = makeBigIntegerFromUnsignedLong(leastSignificantBits);
 		decimalValue = decimalValue.or(bigValueOfLeastSignificantBits);	// not add() ... do not want to introduce question of signedness of long
 		return OID_PREFIX+"."+decimalValue.toString();
+	}
+	
+	/**
+	 * <p>Convert OIDs to UUIDs and UUIDs to OIDs or create a new one.</p>
+	 *
+	 * @param		args	a list of OIDs or UUIDs or empty if a new OID is to be created
+	 */
+	public static void main(String[] args) {
+		if (args.length == 0) {
+			System.err.println(new UUIDBasedOID().getOID());
+		}
+		else {
+			for (String arg : args) {
+				if (arg.startsWith("2.25")) {
+					System.err.println(arg+" = "+new UUIDBasedOID(arg).getUUID());
+				}
+				else {
+					System.err.println(UUIDBasedOID.createOIDFromUUIDCanonicalHexString(arg)+" = "+arg);
+				}
+			}
+		}
 	}
 }
 

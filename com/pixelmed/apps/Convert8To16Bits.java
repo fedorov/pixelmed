@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -10,14 +10,18 @@ import java.awt.*;
 import java.awt.color.*; 
 import java.awt.image.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class of methods to convert 8 to 16 bit gray scale images.</p>
  *
  * @author	dclunie
  */
 public class Convert8To16Bits {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/Convert8To16Bits.java,v 1.1 2013/04/09 21:53:14 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/Convert8To16Bits.java,v 1.13 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(Convert8To16Bits.class);
 
 	/**
 	 * <p>Read a DICOM 8 bit grayscale image input format file and change the bit depth.</p>
@@ -72,7 +76,7 @@ public class Convert8To16Bits {
 		// fetching of bytes from PixelData is copied from SourceImage class ...
 		byte srcSamples[] = null;
 		{
-			Attribute a = list.get(TagFromName.PixelData);
+			Attribute a = list.getPixelData();
 			if (ValueRepresentation.isOtherByteVR(a.getVR())) {
 				srcSamples = a.getByteValues();
 			}
@@ -140,7 +144,7 @@ public class Convert8To16Bits {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

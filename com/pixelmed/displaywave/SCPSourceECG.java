@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.displaywave;
 
@@ -17,7 +17,7 @@ import com.pixelmed.dicom.ArrayCopyUtilities;
 public class SCPSourceECG extends SourceECG {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/SCPSourceECG.java,v 1.7 2004/01/25 03:47:19 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/SCPSourceECG.java,v 1.18 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 */
@@ -127,7 +127,7 @@ public class SCPSourceECG extends SourceECG {
 	 *
 	 * @param	i					the input stream
 	 * @param	deriveAdditionalLeads			if true, compute extra unipolar leads when necessary (i.e. make 12 from 8)
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public SCPSourceECG(BinaryInputStream i,boolean deriveAdditionalLeads) throws IOException {
 		super();
@@ -141,7 +141,7 @@ public class SCPSourceECG extends SourceECG {
 	 *
 	 * @param	scpecg					the input stream
 	 * @param	deriveAdditionalLeads			if true, compute extra unipolar leads when necessary (i.e. make 12 from 8)
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public SCPSourceECG(SCPECG scpecg,boolean deriveAdditionalLeads) throws IOException {
 		super();

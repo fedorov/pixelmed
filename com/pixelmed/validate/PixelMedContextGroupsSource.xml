@@ -1,6 +1,8 @@
 <!-- Not used in validator at present; just place to keep track of private PMP code assignments (mostly obsolete) -->
 
-<definecontextgroups>
+<!-- 99PMP has the Coding Scheme UID "1.3.6.1.4.1.5962.98.1" - see com.pixelmed.dicom.VersionAndConstants-->
+
+<definecontextgroups xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.pixelmed.com/schemas/contextgroups.xsd">
 
 	<definecontextgroup cid="PMP_1" name="PixelMedPublishingSRBookFirstEditionCodes" extensible="T" version="20001022">
 		<contextgroupcode csd="99PMP" cv="209001" cm="Finding"/>
@@ -200,7 +202,7 @@
 		<contextgroupcode csd="99PMPMRMF" cv="000013" cm="Unsharp mask"/>
 	</definecontextgroup>
 
-	<definecontextgroup cid="PMP_3" name="PixelMedPublishingDeidentificationMethod" extensible="T" version="20110123">
+	<definecontextgroup cid="PMP_3" name="PixelMedPublishingDeidentificationMethod" extensible="T" version="20180929">
 		<contextgroupcode csd="99PMP" cv="210001" cm="Remap UIDs"/>
 		<contextgroupcode csd="99PMP" cv="210002" cm="Retain all private elements"/>
 		<contextgroupcode csd="99PMP" cv="210003" cm="Remove all descriptors except Series Description"/>
@@ -208,8 +210,11 @@
 		<contextgroupcode csd="99PMP" cv="210005" cm="Retain all descriptors unchanged"/>
 		<contextgroupcode csd="99PMP" cv="210006" cm="Retain institution identity"/>
 		<contextgroupcode csd="99PMP" cv="210007" cm="Remove UIDs"/>
-		<contextgroupcode csd="99PMP" cv="210008" cm="Remove all descriptors except Series Description & Protocol Name"/>
+		<contextgroupcode csd="99PMP" cv="210008" cm="Remove all descriptors except Series Description &amp; Protocol Name"/>
 		<contextgroupcode csd="99PMP" cv="210009" cm="Remove all descriptors except Protocol Name"/>
+		<contextgroupcode csd="99PMP" cv="210010" cm="Remove all structured content"/>
+		<contextgroupcode csd="99PMP" cv="210011" cm="Retain all structured content unchanged"/>
+		<contextgroupcode csd="99PMP" cv="210012" cm="Patient ages > 89 years set to 90"/>
 	</definecontextgroup>
 
 	<definecontextgroup cid="PMP_4" name="PixelMedTemporaryRadiationDoseSR" extensible="T" version="20110716">
@@ -261,7 +266,218 @@
 		<contextgroupcode csd="99PMP" cv="250102" cm="Creation of Segmentation Outlines SR"/>
 		<contextgroupcode csd="99PMP" cv="250103" cm="Segmentation Outlines"/>
 		<contextgroupcode csd="99PMP" cv="250104" cm="Number of Frames In Referenced Image"/>
+		<contextgroupcode csd="99PMP" cv="250105" cm="Creation of KOS"/>
+		<contextgroupcode csd="99PMP" cv="250106" cm="Creation of IOCM KOS"/>
 	</definecontextgroup>
+
+	<definecontextgroup cid="PMP_11" name="PixelMedQIICR" extensible="T" version="20141211">
+		<contextgroupcode csd="99PMP" cv="250110" cm="Ktrans"/>	<!-- CP 1391 dd2d60 -->
+		<contextgroupcode csd="99PMP" cv="250111" cm="Standard Tofts Model"/>	<!-- CP 1391 dd2d71 -->
+		<contextgroupcode csd="99PMP" cv="250112" cm="Extended Tofts Model"/>	<!-- CP 1391 dd2d72 -->
+		<contextgroupcode csd="99PMP" cv="250113" cm="kep"/>	<!-- CP 1391 dd2d61 -->
+		<contextgroupcode csd="99PMP" cv="250114" cm="ve"/>	<!-- CP 1391 dd2d62 -->
+		<contextgroupcode csd="99PMP" cv="250115" cm="IAUC"/>	<!-- CP 1391 dd2d63 -->
+		<contextgroupcode csd="99PMP" cv="250116" cm="IAUC60"/>	<!-- CP 1391 dd2d64 -->
+		<contextgroupcode csd="99PMP" cv="250117" cm="IAUC90"/>	<!-- CP 1391 dd2d65 -->
+		
+		<contextgroupcode csd="99PMP" cv="250121" cm="Standardized Uptake Value"/>	<!-- CP 1392 dd7dd1 -->
+		<contextgroupcode csd="99PMP" cv="250122" cm="SUVbw"/>	<!-- CP 1392 dd7dd2 -->
+		<contextgroupcode csd="99PMP" cv="250123" cm="SUWlbm"/>	<!-- CP 1392 dd7dd3 -->
+		<contextgroupcode csd="99PMP" cv="250124" cm="SUWbsa"/>	<!-- CP 1392 dd7dd4 -->
+		<contextgroupcode csd="99PMP" cv="250125" cm="SUWibw"/>	<!-- CP 1392 dd7dd5 -->
+		<contextgroupcode csd="99PMP" cv="250132" cm="SUV body weight calculation method"/>	<!-- CP 1392 dd7d22 -->
+		<contextgroupcode csd="99PMP" cv="250133" cm="SUV lean body mass calculation method"/>	<!-- CP 1392 dd7d23 -->
+		<contextgroupcode csd="99PMP" cv="250134" cm="SUV body surface area calculation method"/>	<!-- CP 1392 dd7d24 -->
+		<contextgroupcode csd="99PMP" cv="250135" cm="SUV ideal body weight calculation method"/>	<!-- CP 1392 dd7d25 -->
+		<contextgroupcode csd="99PMP" cv="250136" cm="Peak Value Within ROI"/>	<!-- CP 1386 dd1501 -->
+		<contextgroupcode csd="99PMP" cv="250137" cm="25th Percentile Value"/>
+		<contextgroupcode csd="99PMP" cv="250138" cm="75th Percentile Value"/>
+		<contextgroupcode csd="99PMP" cv="250139" cm="Upper Adjacent Value"/>
+		<contextgroupcode csd="99PMP" cv="250140" cm="Percent Within First Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250141" cm="Percent Within Second Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250142" cm="Percent Within Third Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250143" cm="Percent Within Fourth Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250144" cm="Total Lesion Glycolysis (TLG)"/>	<!-- CP 1386 dd1520 -->
+		<contextgroupcode csd="99PMP" cv="250145" cm="Glycolysis Within First Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250146" cm="Glycolysis Within Second Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250147" cm="Glycolysis Within Third Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250148" cm="Glycolysis Within Fourth Quartile"/>
+		<contextgroupcode csd="99PMP" cv="250149" cm="Standardized Added Metabolic Activity (SAM)"/>	<!-- CP 1386 dd1530 -->
+		<contextgroupcode csd="99PMP" cv="250150" cm="Standardized Added Metabolic Activity (SAM) Background"/>	<!-- CP 1386 dd1531 -->
+		<contextgroupcode csd="99PMP" cv="250151" cm="Lesion to Background SUV Ratio"/>	<!-- CP 1386 dd1630 -->
+		<contextgroupcode csd="99PMP" cv="250152" cm="Background for Lesion to Background SUV Ratio"/>	<!-- CP 1386 dd1631 -->
+
+		<contextgroupcode csd="99PMP" cv="250153" cm="Metabolic Volume"/>	<!-- CP 1386 dd1502 -->
+		<contextgroupcode csd="99PMP" cv="250154" cm="Glycolysis"/>	<!-- CP 1386 dd1521 -->
+		<contextgroupcode csd="99PMP" cv="250155" cm="Total Lesion Proliferation"/>	<!-- CP 1386 dd1522 -->
+		<contextgroupcode csd="99PMP" cv="250156" cm="Proliferative Activity"/>	<!-- CP 1386 dd1523 -->
+
+		<contextgroupcode csd="99PMP" cv="250157" cm="Source images resampled to precision of segmentation"/>	<!-- E.g., for PET to which segmentation derived from CT is used -->
+
+		<contextgroupcode csd="99PMP" cv="250160" cm="Fractal Dimension"/>	<!-- CP 1386 dd1701 -->
+		<contextgroupcode csd="99PMP" cv="250161" cm="Skewness"/>	<!-- CP 1386 dd1710 -->
+		<contextgroupcode csd="99PMP" cv="250162" cm="Kurtosis"/>	<!-- CP 1386 dd1711 -->
+		<contextgroupcode csd="99PMP" cv="250163" cm="Entropy of GLCM"/>	<!-- CP 1386 dd1712 -->
+		<contextgroupcode csd="99PMP" cv="250164" cm="Energy of GLCM"/>	<!-- CP 1386 dd1713 -->
+		<contextgroupcode csd="99PMP" cv="250165" cm="Homogeneity of GLCM"/>	<!-- CP 1386 dd1714 -->
+		<contextgroupcode csd="99PMP" cv="250166" cm="Contrast of GLCM"/>	<!-- CP 1386 dd1715 -->
+		<contextgroupcode csd="99PMP" cv="250167" cm="Dissimilarity of GLCM"/>	<!-- CP 1386 dd1716 -->
+		<contextgroupcode csd="99PMP" cv="250168" cm="ASM of GLCM"/>	<!-- CP 1386 dd1717 -->
+		<contextgroupcode csd="99PMP" cv="250169" cm="Correlation of GLCM"/>	<!-- CP 1386 dd1718 -->
+		<contextgroupcode csd="99PMP" cv="250170" cm="Gray Level Co-occurrence Matrix (GLCM)"/>	<!-- CP 1386 dd1719 -->
+		
+		<contextgroupcode csd="99PMP" cv="250200" cm="Measurements"/>	<!-- CP 1386 dd1d91 -->
+		<contextgroupcode csd="99PMP" cv="250201" cm="Real World Value Map used for measurement"/>	<!-- CP 1388 dd3001 -->
+		<contextgroupcode csd="99PMP" cv="250202" cm="Image Library Group"/>	<!-- CP 1389 dd4d01 -->
+		
+		<contextgroupcode csd="99PMP" cv="250210" cm="Imaging Measurement Report"/>	<!-- CP 1386 dd1dd1 -->
+		<contextgroupcode csd="99PMP" cv="250211" cm="Oncology Measurement Report"/>	<!-- CP 1386 dd1dd2 -->
+		<contextgroupcode csd="99PMP" cv="250212" cm="Dynamic Contrast MR Measurement Report"/>	<!-- CP 1386 dd1dd3 -->
+		<contextgroupcode csd="99PMP" cv="250213" cm="PET Measurement Report"/>	<!-- CP 1386 dd1dd4 -->
+
+		<contextgroupcode csd="99PMP" cv="250230" cm="Imaging Measurements"/>	<!-- CP 1386 dd1d91 -->
+		<contextgroupcode csd="99PMP" cv="250232" cm="Derived Imaging Measurements"/>	<!-- CP 1386 dd1d92 -->
+
+		<contextgroupcode csd="99PMP" cv="250240" cm="Sum of segmented voxel volumes"/>	<!-- CP 1386 dd1301 -->
+
+		<contextgroupcode csd="99PMP" cv="250250" cm="Model-free concentration-time quantitification"/>	<!-- CP 1391 dd2d73 -->
+		<contextgroupcode csd="99PMP" cv="250251" cm="First Pass Leakage Profile (FPLP)"/>	<!-- CP 1391 dd2d74 -->
+		<contextgroupcode csd="99PMP" cv="250252" cm="T1 by Multiple Flip Angles"/>	<!-- CP 1391 dd2d81 -->
+		<contextgroupcode csd="99PMP" cv="250253" cm="T1 by Inversion Recovery"/>	<!-- CP 1391 dd2d82 -->
+		
+		<contextgroupcode csd="99PMP" cv="250260" cm="Perfusion analysis by Stable Xenon CT technique"/>	<!-- CP 1391 dd2d40 -->
+		<contextgroupcode csd="99PMP" cv="250261" cm="Perfusion analysis by IV Iodinated Contrast CT technique"/>	<!-- CP 1391 dd2d41 -->
+		<contextgroupcode csd="99PMP" cv="250262" cm="Perfusion analysis by Arterial Spin Labeling MR technique"/>	<!-- CP 1391 dd2d42 -->
+		<contextgroupcode csd="99PMP" cv="250263" cm="Perfusion analysis by Susceptibility MR technique"/>	<!-- CP 1391 dd2d43 -->
+		
+		<contextgroupcode csd="99PMP" cv="250270" cm="Least Mean Square (LMS) deconvolution"/>	<!-- CP 1391 dd2d51 -->
+		<contextgroupcode csd="99PMP" cv="250271" cm="Singular Value Decomposition (SVD) deconvolution"/>	<!-- CP 1391 dd2d52 -->
+		
+		<contextgroupcode csd="99PMP" cv="250280" cm="Regional Blood Flow"/>	<!-- CP 1391 dd6d01 -->
+		<contextgroupcode csd="99PMP" cv="250281" cm="Regional Blood Volume"/>	<!-- CP 1391 dd6d02 -->
+		
+		<contextgroupcode csd="99PMP" cv="250290" cm="Acquisition Date"/>	<!-- CP 1389 dd4d10 -->
+		<contextgroupcode csd="99PMP" cv="250291" cm="Acquisition Time"/>	<!-- CP 1389 dd4d11 -->
+		<contextgroupcode csd="99PMP" cv="250292" cm="PET Radionuclide Incubation Time"/>	<!-- CP 1389 dd4d12 -->
+		
+		<contextgroupcode csd="99PMP" cv="300001" cm="Resection of primary tumor"/>						<!-- For Iowa clinical data - question -->
+		<contextgroupcode csd="99PMP" cv="300002" cm="Radiation dose per fraction"/>					<!-- For Iowa clinical data - numeric concept -->
+		<contextgroupcode csd="99PMP" cv="300003" cm="Non-Spaniard"/>									<!-- For Iowa clinical data - ethnic group concept -->
+		<contextgroupcode csd="99PMP" cv="300004" cm="Surgical margin close to tumor"/>					<!-- For Iowa clinical data - tumor margin status value -->
+		<contextgroupcode csd="99PMP" cv="300005" cm="Level I - Submental and submandibular lymph node group"/>	<!-- For Iowa clinical data - cervical lymph node group value -->
+		<contextgroupcode csd="99PMP" cv="300006" cm="Cervical lymph node outside level I through V"/>	<!-- For Iowa clinical data - cervical lymph node group value -->
+		<contextgroupcode csd="99PMP" cv="300007" cm="Human papilloma virus in tumor status"/>			<!-- For Iowa clinical data  -->
+		<contextgroupcode csd="99PMP" cv="300008" cm="Human papilloma virus detected"/>					<!-- For Iowa clinical data  -->
+		<contextgroupcode csd="99PMP" cv="300009" cm="Human papilloma virus not detected"/>				<!-- For Iowa clinical data  -->
+		<contextgroupcode csd="99PMP" cv="300010" cm="Local disease and distant metastases"/>			<!-- For Iowa clinical data - follow up status -->
+		<contextgroupcode csd="99PMP" cv="300011" cm="Post-radiotherapy treatment"/>					<!-- For Iowa clinical data - outcome -->
+		<contextgroupcode csd="99PMP" cv="300012" cm="Date of 2nd primary"/>							<!-- For Iowa clinical data - outcome -->
+		<contextgroupcode csd="99PMP" cv="300013" cm="Location of first recurrence"/>					<!-- For Iowa clinical data - outcome -->
+		<contextgroupcode csd="99PMP" cv="300014" cm="Local and regional"/>								<!-- For Iowa clinical data - outcome - location of first recurrence -->
+		<contextgroupcode csd="99PMP" cv="300015" cm="Pathology of original tumor"/>					<!-- For Iowa clinical data -->
+		<contextgroupcode csd="99PMP" cv="300016" cm="Pathology of recurrent tumor"/>					<!-- For Iowa clinical data -->
+	</definecontextgroup>
+	
+	<definecontextgroup cid="PMP_12" name="PixelMedWG30" extensible="T" version="20160506">
+		<contextgroupcode csd="99PMP" cv="310001" cm="Magnetization Transfer Ratio"/>					<!-- For Mayo sample data - anticipate CP 1498 -->
+		<contextgroupcode csd="99PMP" cv="310002" cm="ILCR"/>											<!-- For Mayo sample data - International Laboratory Code Registry - anticipate CP 1478 -->
+		<contextgroupcode csd="99PMP" cv="310003" cm="Panitumumab ^89^Zr"/>								<!-- For Frederick sample data - anticipate CP 1494 -->
+		<contextgroupcode csd="99PMP" cv="310004" cm="Strain description"/>								<!-- For CTIIP Integrative query UC Davis transplants -->
+		<contextgroupcode csd="99PMP" cv="310005" cm="Nomenclature"/>									<!-- For CTIIP Integrative query UC Davis transplants -->
+		<contextgroupcode csd="99PMP" cv="310006" cm="Strain"/>											<!-- For CTIIP Integrative query UC Davis transplants -->
+		<contextgroupcode csd="99PMP" cv="310007" cm="Transgene"/>										<!-- For CTIIP Integrative query UC Davis transplants -->
+		<contextgroupcode csd="99PMP" cv="310008" cm="Transgene description"/>							<!-- For CTIIP Integrative query UC Davis transplants -->
+	</definecontextgroup>
+	
+	<definecontextgroup cid="PMP_13" name="PixelMedProstate" extensible="T" version="20160224">
+		<contextgroupcode csd="99PMP" cv="311001" cm="Subdivision of transitional zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311002" cm="Left side of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311003" cm="Right side of transition zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311004" cm="Right side of apical part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311005" cm="Left side of apical part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311006" cm="Anterior part of right side of apical part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311007" cm="Posterior part of right side of apical part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311008" cm="Anterior part of left side of apical part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311009" cm="Posterior part of left side of apical part of transition zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311014" cm="Right side of basal part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311015" cm="Left side of basal part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311016" cm="Anterior part of right side of basal part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311017" cm="Posterior part of right side of basal part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311018" cm="Anterior part of left side of basal part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311019" cm="Posterior part of left side of basal part of transition zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311024" cm="Right side of middle part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311025" cm="Left side of middle part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311026" cm="Anterior part of right side of middle part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311027" cm="Posterior part of right side of middle part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311028" cm="Anterior part of left side of middle part of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311029" cm="Posterior part of left side of middle part of transition zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311031" cm="Subdivision of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311032" cm="Left side of transition zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311033" cm="Right side of transition zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311034" cm="Right side of basal part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311035" cm="Left side of basal part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311036" cm="Anterior part of right side of basal part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311037" cm="Posterolateral part of right side of basal part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311038" cm="Anterior part of left side of basal part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311039" cm="Posterolateral part of left side of basal part of peripheral zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311040" cm="Lateral part of right side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311041" cm="Posteromedial part of right side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311042" cm="Lateral part of left side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311043" cm="Posteromedial part of left side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311044" cm="Right side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311045" cm="Left side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311046" cm="Anterior part of right side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311047" cm="Posterolateral part of right side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311048" cm="Anterior part of left side of middle part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311049" cm="Posterolateral part of left side of middle part of peripheral zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311051" cm="Posteromedial part of right side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311053" cm="Posteromedial part of left side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311054" cm="Right side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311055" cm="Left side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311056" cm="Anterior part of right side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311057" cm="Posterolateral part of right side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311058" cm="Anterior part of left side of apical part of peripheral zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311059" cm="Posterolateral part of left side of apical part of peripheral zone of prostate"/>
+
+		<contextgroupcode csd="99PMP" cv="311062" cm="Left side of central zone of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311063" cm="Right side of central zone of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311071" cm="Left part of basal part of anterior fibromuscular stroma of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311072" cm="Right part of basal part of anterior fibromuscular stroma of prostate"/>
+
+		<contextgroupcode csd="99PMP" cv="311073" cm="Left part of middle part of anterior fibromuscular stroma of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311074" cm="Right part of middle part of anterior fibromuscular stroma of prostate"/>
+		
+		<contextgroupcode csd="99PMP" cv="311075" cm="Left part of apical part of anterior fibromuscular stroma of prostate"/>
+		<contextgroupcode csd="99PMP" cv="311076" cm="Right part of apical part of anterior fibromuscular stroma of prostate"/>
+		
+		
+	</definecontextgroup>
+    
+    <definecontextgroup cid="PMP_14" name="PixelMedBreastMR" extensible="T" version="20170516">
+        <contextgroupcode csd="99PMP" cv="312001" cm="Signal Enhancement Ratio"/>
+    </definecontextgroup>
+    
+    <definecontextgroup cid="PMP_15" name="PixelMedBreastPathology" extensible="T" version="20190126">
+        <contextgroupcode csd="99PMP" cv="312101" cm="Mixed mucinous and ductal carcinoma"/>
+        <contextgroupcode csd="99PMP" cv="312102" cm="Mixed mucinous and adenocarcinoma"/>
+        <contextgroupcode csd="99PMP" cv="312103" cm="Mixed mucinous and ductal carcinoma in situ"/>
+        <contextgroupcode csd="99PMP" cm="312104" cv="Infiltrating duct carcinoma with Paget's disease of nipple" />
+    </definecontextgroup>
+	
+    <definecontextgroup cid="PMP_16" name="PixelMedBreastMR" extensible="T" version="20220409">
+        <contextgroupcode csd="99PMP" cv="313001" cm="Subcycle"/>
+    </definecontextgroup>
+
+    <!-- 313nnn are defined in CP 1674 -->
+
 
 	<!-- See also "Anonymous" context groups in com/pixelmed/validate/DicomContextGroupsSource.xml specific to PixelMed Toolkit to handle parameterization of templates with single codes -->
 

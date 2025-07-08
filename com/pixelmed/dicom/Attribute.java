@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link com.pixelmed.dicom.Attribute Attribute} class is an abstract class that contains the core
@@ -18,8 +21,9 @@ import java.text.NumberFormat;
  * @author	dclunie
  */
 abstract public class Attribute {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/Attribute.java,v 1.47 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/Attribute.java,v 1.27 2013/09/09 15:58:03 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(Attribute.class);
 
 	private AttributeTag tag;
 
@@ -96,12 +100,89 @@ abstract public class Attribute {
 	public long getPaddedVL()	{ return valueLength; }		// Needs to be overridden esp. in String attributes
 
 	/**
+	 * <p>Get the number of bytes encoded for the value of this attribute.</p>
+	 *
+	 * <p>Accounts for delimited Sequence and Encapsulated Pixel Data OB attributes.</p>
+	 *
+	 * @return	number of bytes encoded
+	 */
+	public long getLengthOfEncodedValue()	{ return getPaddedVL(); }		// Needs to be overridden in Sequence and Encapsulated Pixel Data OB attributes
+
+	/**
+	 * <p>Get the length of the entire attribute when encoded, accounting for the characteristics of the Transfer Syntax and the need for even-length padding.</p>
+	 *
+	 * @param	explicit			true if the Transfer Syntax to be used for encoding is explicit VR
+	 * @param	littleEndian		true if the Transfer Syntax to be used for encoding is little endian
+	 * @return	the length in bytes
+	 * @throws	DicomException		if the VL is too long to be written in Explicit VR Transfer Syntax
+	 * @deprecated	experimental - incomplete implementation
+	 */
+
+ 	// must EXACTLY mirror behavior of write()
+	public long getLengthOfEntireEncodedAttribute(boolean explicit,boolean littleEndian) throws DicomException {
+		long l = getLengthOfBaseOfEncodedAttribute(explicit,littleEndian);
+		long vlToWrite = getLengthOfEncodedValue();
+		if (vlToWrite != 0xffffffffl) {
+			l += vlToWrite;
+		}
+		else {
+			String className = this.getClass().toString();
+			throw new DicomException("Not yet implemented for "+className+"- calculation of encoded length of attribute to be written");
+		}
+		return l;
+	}
+
+	/**
+	 * <p>Get the length of the base attribute when encoded, accounting for the characteristics of the Transfer Syntax and the need for even-length padding.</p>
+	 *
+	 * @param	explicit			true if the Transfer Syntax to be used for encoding is explicit VR
+	 * @param	littleEndian		true if the Transfer Syntax to be used for encoding is little endian
+	 * @return	the length in bytes
+	 * @throws	DicomException		if the VL is too long to be written in Explicit VR Transfer Syntax
+	 * @deprecated	experimental - incomplete implementation
+	 */
+
+	// must EXACTLY mirror behavior of writeBase()
+	public long getLengthOfBaseOfEncodedAttribute(boolean explicit,boolean littleEndian) throws DicomException {
+		long l = 4;  // grpup + element
+		long vlToWrite = getPaddedVL();
+		if (explicit) {
+			byte[] vr = getVR();
+			boolean tooBigForShortValueLengthVR = vlToWrite > AttributeList.maximumShortVRValueLength;
+			if (ValueRepresentation.isShortValueLengthVR(vr)
+			 && tooBigForShortValueLengthVR
+			 && (littleEndian || ValueRepresentation.getWordLengthOfValueAffectedByEndianness(vr) == 1)	// have not implemented a means to force child classes to swap endianness during write() :(
+			) {
+				// we are screwed ... cannot write in specified VR without truncation ... use CP 1066 UN VR instead
+				//slf4jlogger.warn("Using UN rather than {} because VL ({} dec, 0x{}) is too long to fit in 16 bits for {}",ValueRepresentation.getAsString(vr),vlToWrite,Long.toHexString(vlToWrite),tag);
+				vr = ValueRepresentation.UN;
+			}
+			l+=2;	// VR
+			if (ValueRepresentation.isShortValueLengthVR(vr)) {
+				if (!tooBigForShortValueLengthVR) {
+					l+=2;
+				}
+				else {
+					throw new DicomException("VL ("+vlToWrite+" dec, 0x"+Long.toHexString(vlToWrite)+") for "+tag+" is too long to write in 16 bits for Explicit VR");
+				}
+			}
+			else {
+				l+=6;		// 2 reserved bytes + 32 bit VL
+			}
+		}
+		else {
+			l+=6;			// 32 bit VL
+		}
+		return l;
+	}
+	
+	/**
 	 * <p>Get the values of this attribute as strings, the way they were originally inserted or read.</p>
 	 *
 	 * @return			the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public String[] getOriginalStringValues()    throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public String[] getOriginalStringValues()    throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as strings.</p>
@@ -109,7 +190,7 @@ abstract public class Attribute {
 	 * <p>The strings may have been cleaned up into a canonical form, such as to remove padding.</p>
 	 *
 	 * @return			the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
 	public String[] getStringValues()            throws DicomException { return getStringValues((NumberFormat)null); }
 
@@ -120,71 +201,80 @@ abstract public class Attribute {
 	 *
 	 * @param	format		the format to use for each numerical or decimal value
 	 * @return			the values as an array of {@link java.lang.String String}
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public String[] getStringValues(NumberFormat format)            throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public String[] getStringValues(NumberFormat format)            throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
-	 * <p>Get the values of this attribute as a byte array.</p>
+	 * <p>Get the values of this attribute as a byte array, if the values are byte order insensitive.</p>
 	 *
-	 * @return			the values as an array of bytes
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @return					the values as an array of bytes
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public byte[]   getByteValues()              throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public byte[]   getByteValues()              throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
+
+	/**
+	 * <p>Get the values of this attribute as a byte array, accounting for byte ordering of values that are larger than one byte.</p>
+	 *
+	 * @param	big				whether or not to intepret the values larger than bytes as big endian or not
+	 * @return					the values as an array of bytes
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 */
+	public byte[]   getByteValues(boolean big)              throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as a short array.</p>
 	 *
 	 * @return			the values as an array of short
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public short[]  getShortValues()             throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public short[]  getShortValues()             throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as an int array.</p>
 	 *
 	 * @return			the values as an array of int
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public int[]    getIntegerValues()           throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public int[]    getIntegerValues()           throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as a long array.</p>
 	 *
 	 * @return			the values as an array of long
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public long[]   getLongValues()              throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public long[]   getLongValues()              throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as a float array.</p>
 	 *
 	 * @return			the values as an array of float
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public float[]  getFloatValues()             throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public float[]  getFloatValues()             throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Get the values of this attribute as a double array.</p>
 	 *
 	 * @return			the values as an array of double
-	 * @exception	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
+	 * @throws	DicomException	thrown if values are not available (such as not supported for this concrete attribute class)
 	 */
-	public double[] getDoubleValues()            throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public double[] getDoubleValues()            throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Add a(nother) {@link java.lang.String String} value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(String v) throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(String v) throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single {@link java.lang.String String} value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(String v) throws DicomException {
 		removeValues();
@@ -195,15 +285,15 @@ abstract public class Attribute {
 	 * Add a(nother) byte value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(byte v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(byte v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single byte value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(byte v) throws DicomException {
 		removeValues();
@@ -214,15 +304,15 @@ abstract public class Attribute {
 	 * Add a(nother) short value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(short v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(short v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single short value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(short v) throws DicomException {
 		removeValues();
@@ -233,15 +323,15 @@ abstract public class Attribute {
 	 * Add a(nother) int value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(int v)    throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(int v)    throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single int value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(int v) throws DicomException {
 		removeValues();
@@ -252,15 +342,15 @@ abstract public class Attribute {
 	 * Add a(nother) long value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(long v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(long v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single long value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(long v) throws DicomException {
 		removeValues();
@@ -271,15 +361,15 @@ abstract public class Attribute {
 	 * Add a(nother) float value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(float v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(float v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single float value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(float v) throws DicomException {
 		removeValues();
@@ -290,15 +380,15 @@ abstract public class Attribute {
 	 * Add a(nother) double value after any existing values of this attribute.
 	 *
 	 * @param	v		value to add
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
-	public void addValue(double v) throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void addValue(double v) throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Set a single double value after any existing values of this attribute.
 	 *
 	 * @param	v		value to set
-	 * @exception	DicomException	thrown if value of this type is not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if value of this type is not valid for this concrete attribute class
 	 */
 	public void setValue(double v) throws DicomException {
 		removeValues();
@@ -309,38 +399,63 @@ abstract public class Attribute {
 	 * Replace any existing values with the supplied array of byte.
 	 *
 	 * @param	v		the array of new values
-	 * @exception	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
 	 */
-	public void setValues(byte[] v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void setValues(byte[] v)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
+
+	/**
+	 * Replace any existing values with the supplied array of byte, accounting for byte ordering of values that are larger than one byte.
+	 *
+	 * @param	v				the array of new values
+	 * @param	big				whether or not to intepret the values larger than bytes as big endian or not
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 */
+	public void setValues(byte[] v,boolean big)   throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Replace any existing values with the supplied array of short.
 	 *
 	 * @param	v		the array of new values
-	 * @exception	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
 	 */
-	public void setValues(short[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void setValues(short[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
+
+	/**
+	 * Replace any existing values with the supplied array of int.
+	 *
+	 * @param	v		the array of new values
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 */
+	public void setValues(int[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
+
+	/**
+	 * Replace any existing values with the supplied array of long.
+	 *
+	 * @param	v		the array of new values
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 */
+	public void setValues(long[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Replace any existing values with the supplied array of float.
 	 *
 	 * @param	v		the array of new values
-	 * @exception	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
 	 */
-	public void setValues(float[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void setValues(float[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * Replace any existing values with the supplied array of double.
 	 *
 	 * @param	v		the array of new values
-	 * @exception	DicomException	thrown if values of this type are not valid for this concrete attribute class
+	 * @throws	DicomException	thrown if values of this type are not valid for this concrete attribute class
 	 */
-	public void setValues(double[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag); }
+	public void setValues(double[] v)  throws DicomException { throw new DicomException("internal error - wrong value type for attribute "+tag+" "+getClass().getName()); }
 
 	/**
 	 * <p>Remove any existing values, making the attribute empty (zero length).</p>
 	 *
-	 * @exception	DicomException	thrown if not supported for concrete attribute class
+	 * @throws	DicomException	thrown if not supported for concrete attribute class
 	 */
 	public abstract void removeValues() throws DicomException;
 
@@ -349,27 +464,47 @@ abstract public class Attribute {
 	 *
 	 * <p>Writes the tag, VR (if explicit in the output stream) and the value length in the appropriate form.</p>
 	 *
+	 * <p>Implements the CP 1066 proposal to handle values too long to fit in Explicit VR by writing a UN rather than the actual VR.</p>
+	 *
 	 * <p>Called by a concrete base class prior to writing the values themselves.</p>
 	 *
 	 * @param		o			the output stream
-	 * @exception	IOException		if an I/O error occurs
+	 * @throws	DicomException	if the VL is too long to be written in the Transfer Syntax of the DicomOutputStream (Explicit VR)
+	 * @throws	IOException		if an I/O error occurs
 	 */
-	protected void writeBase(DicomOutputStream o) throws IOException {
+
+	// must EXACTLY mirror behavior of getLengthOfBaseOfEncodedAttribute()
+	protected void writeBase(DicomOutputStream o) throws DicomException, IOException {
 		o.writeUnsigned16(getGroup());
 		o.writeUnsigned16(getElement());
+		long vlToWrite = getPaddedVL();
 		if (o.isExplicitVR()) {
 			byte[] vr = getVR();
+			boolean tooBigForShortValueLengthVR = vlToWrite > AttributeList.maximumShortVRValueLength;
+			if (ValueRepresentation.isShortValueLengthVR(vr)
+			 && tooBigForShortValueLengthVR
+			 && (o.isLittleEndian() || ValueRepresentation.getWordLengthOfValueAffectedByEndianness(vr) == 1)	// have not implemented a means to force child classes to swap endianness during write() :(
+			) {
+				// we are screwed ... cannot write in specified VR without truncation ... use CP 1066 UN VR instead
+				slf4jlogger.warn("Using UN rather than {} because VL ({} dec, 0x{}) is too long to fit in 16 bits for {}",ValueRepresentation.getAsString(vr),vlToWrite,Long.toHexString(vlToWrite),tag);
+				vr = ValueRepresentation.UN;
+			}
 			o.write(vr,0,2);
 			if (ValueRepresentation.isShortValueLengthVR(vr)) {
-				o.writeUnsigned16((int)getPaddedVL());
+				if (!tooBigForShortValueLengthVR) {
+					o.writeUnsigned16((int)vlToWrite);
+				}
+				else {
+					throw new DicomException("VL ("+vlToWrite+" dec, 0x"+Long.toHexString(vlToWrite)+") for "+tag+" is too long to write in 16 bits for Explicit VR");
+				}
 			}
 			else {
 				o.writeUnsigned16(0);		// reserved bytes
-				o.writeUnsigned32(getPaddedVL());
+				o.writeUnsigned32(vlToWrite);
 			}
 		}
 		else {
-			o.writeUnsigned32(getPaddedVL());
+			o.writeUnsigned32(vlToWrite);
 		}
 	}
 	
@@ -377,10 +512,33 @@ abstract public class Attribute {
 	 * <p>Write the entire attribute (including values) to the output stream.</p>
 	 *
 	 * @param		o				the output stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if error in DICOM encoding
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	abstract public void write(DicomOutputStream o) throws DicomException, IOException;
+
+	/**
+	 * Do the values of this attribute comply with standard VR requirements?
+	 *
+	 * E.g., Are only valid characters are present (for string and text attributes) and length is within limits?
+	 *
+	 * @return                      true if valid, false if invalid or validation not supported for the attribute type
+	 * @throws	DicomException	if error in DICOM value extraction
+	 */
+	public boolean isValid() throws DicomException { return false; }
+
+	/**
+	 * Repair any existing values of this attribute to make them comply with standard VR requirements.
+	 *
+	 * E.g., truncate them if they are too long.
+	 *
+	 * N.B., Not all types of attribute support repair.
+	 *
+	 * @return                      true if successfully repaired or was already valid
+	 * @throws	DicomException	if error in DICOM value extraction
+	 */
+	public boolean repairValues() throws DicomException { return isValid(); }
+	
 
 	/**
 	 * <p>Dump the contents of the attribute as a human-readable string.</p>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,7 +18,7 @@ import com.pixelmed.display.*;	// for ApplicationFrame for main() test
  */
 public class AttributeListTableBrowser extends JTable {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListTableBrowser.java,v 1.11 2007/12/19 22:44:14 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeListTableBrowser.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
 
 	/**
 	 * <p>Build and display a graphical user interface view of a table model.</p>
@@ -53,7 +53,7 @@ public class AttributeListTableBrowser extends JTable {
 	 * @param	includeList	the list of attributes to include
 	 * @param	excludeList	the list of attributes to exclude
 	 */
-	public AttributeListTableBrowser(AttributeList list,HashSet includeList,HashSet excludeList) {
+	public AttributeListTableBrowser(AttributeList list,HashSet<AttributeTag> includeList,HashSet<AttributeTag> excludeList) {
 		super();
 		setModel(new AttributeListTableModel(list,includeList,excludeList));
 		setColumnWidths();
@@ -86,7 +86,7 @@ public class AttributeListTableBrowser extends JTable {
 	 *
 	 * <p>Displays a table built from the attributes in the file named on the command line.</p>
 	 *
-	 * @param	arg
+	 * @param	arg	DICOM filename
 	 */
 	public static void main(String arg[]) {
 		AttributeList list = new AttributeList();
@@ -94,7 +94,7 @@ public class AttributeListTableBrowser extends JTable {
 			list.read(arg[0]);
 		} catch (Exception e) {
 			System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 		
@@ -104,7 +104,7 @@ public class AttributeListTableBrowser extends JTable {
 		//JTable table = new AttributeListTableBrowser(new AttributeListTableModel(list));
 		JTable table;
 		{
-			HashSet theList = new HashSet();
+			HashSet<AttributeTag> theList = new HashSet<AttributeTag>();
 			theList.add(TagFromName.FileMetaInformationGroupLength);
 			theList.add(TagFromName.ImplementationVersionName);
 			theList.add(TagFromName.SourceApplicationEntityTitle);

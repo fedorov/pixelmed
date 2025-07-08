@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -18,7 +18,6 @@ import java.util.Properties;
  * <p><code>WebServer.ListeningPort</code> - the port that an association acceptor will listen on for incoming http connections</p>
  * <p><code>WebServer.RootURL</code> - the root of the URL by which this host is accessible (e.g., http://www.hostname.com:7091/)</p>
  * <p><code>WebServer.StylesheetPath</code></p>
- * <p><code>WebServer.DebugLevel</code> - for no debugging (silent), > 0 for more verbose levels of debugging</p>
  * <p><code>WebServer.InstanceNameForServiceAdvertising</code> - the name to use to advertise the service using DNS-SD (Bonjour)</p>
  * <p><code>WebServer.NumberOfWorkers</code> - the number of connection thread workers</p>
  *
@@ -26,7 +25,7 @@ import java.util.Properties;
  */
 public class WebServerApplicationProperties {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebServerApplicationProperties.java,v 1.6 2012/07/31 15:35:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebServerApplicationProperties.java,v 1.18 2025/01/29 10:58:10 dclunie Exp $";
 	
 	private static final String defaultRootURL = "";
 	private static final String defaultStylesheetPath = "stylesheet.css";
@@ -37,7 +36,6 @@ public class WebServerApplicationProperties {
 	private static final String propertyName_StylesheetPath = "WebServer.StylesheetPath";
 	private static final String propertyName_ListeningPort = "WebServer.ListeningPort";
 	private static final String propertyName_RequestTypeToUseForInstances = "WebServer.RequestTypeToUseForInstances";
-	private static final String propertyName_WebServerDebugLevel = "WebServer.DebugLevel";
 	private static final String propertyName_InstanceNameForServiceAdvertising = "WebServer.InstanceNameForServiceAdvertising";
 	private static final String propertyName_NumberOfWorkers = "WebServer.NumberOfWorkers";
 	
@@ -45,7 +43,6 @@ public class WebServerApplicationProperties {
 	private String stylesheetPath;
 	private String requestTypeToUseForInstances;
 	private int port;
-	private int webServerDebugLevel;
 	private String instanceName;
 	private int numberOfWorkers;
 
@@ -57,7 +54,6 @@ public class WebServerApplicationProperties {
 		stylesheetPath = defaultStylesheetPath;
 		requestTypeToUseForInstances = defaultRequestTypeToUseForInstances;
 		port = NetworkDefaultValues.DefaultWADOPort;
-		webServerDebugLevel = 0;
 		instanceName = NetworkDefaultValues.getDefaultDNSServiceInstanceName(port);
 	}
 
@@ -80,7 +76,6 @@ public class WebServerApplicationProperties {
 			requestTypeToUseForInstances = defaultRequestTypeToUseForInstances;
 		}
 		port = Integer.valueOf(properties.getProperty(propertyName_ListeningPort,Integer.toString(NetworkDefaultValues.DefaultWADOPort))).intValue();
-		webServerDebugLevel = Integer.valueOf(properties.getProperty(propertyName_WebServerDebugLevel,"0")).intValue();
 		instanceName=properties.getProperty(propertyName_InstanceNameForServiceAdvertising);
 		if (instanceName == null) {
 			instanceName = NetworkDefaultValues.getDefaultDNSServiceInstanceName(port);
@@ -115,13 +110,6 @@ public class WebServerApplicationProperties {
 	 * @return	the listening port
 	 */
 	public int getListeningPort() { return port; }
-	
-	/**
-	 * <p>Return the web server debug level.</p>
-	 *
-	 * @return	the web server debug level
-	 */
-	public int getWebServerDebugLevel() { return webServerDebugLevel; }
 	
 	/**
 	 * <p>Return the instance name for service sdvertising.</p>

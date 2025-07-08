@@ -1,6 +1,8 @@
-/* Copyright (c) 2004-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -9,49 +11,52 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.PathRequestHandler PathRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link PathRequestHandler PathRequestHandler} creates a response to an HTTP request for
  * a named path to a file.</p>
  *
  * @author	dclunie
  */
 class PathRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/PathRequestHandler.java,v 1.8 2012/02/01 23:02:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/PathRequestHandler.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(PathRequestHandler.class);
 	
-	private static final String faviconPath = "favicon.ico";
+	private static final String faviconPath = "favicon.ico";	// https://en.wikipedia.org/wiki/Favicon
 	private static final String actualIndexPath = "index.html";
 
-	protected PathRequestHandler(String stylesheetPath,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	protected PathRequestHandler(String stylesheetPath) {
+		super(stylesheetPath);
 	}
 
 	protected void generateResponseToGetRequest(DatabaseInformationModel databaseInformationModel,String rootURL,String requestURI,WebRequest request,String requestType,OutputStream out) throws IOException {
 		try {
 			// assert (requestType == null);
 			String requestPath = request.getPath();
-if (webServerDebugLevel > 0) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Was asked for requestPath "+requestPath);
+			slf4jlogger.debug("generateResponseToGetRequest(): Was asked for requestPath {}",requestPath);
 			if (requestPath == null) {
 				throw new Exception("No such path - path is null - =\""+requestPath+"\"");
 			}
 			if (requestPath.equals("/") || requestPath.toLowerCase(java.util.Locale.US).equals("/index.html") || requestPath.toLowerCase(java.util.Locale.US).equals("/index.htm")) {
-if (webServerDebugLevel > 1) System.err.println("PathRequestHandler.generateResponseToGetRequest(): root path");
+				slf4jlogger.debug("generateResponseToGetRequest(): root path");
 				requestPath="/"+actualIndexPath;
 			}
 			if (requestPath.equals("/"+stylesheetPath) || requestPath.equals("/"+faviconPath) || requestPath.equals("/"+actualIndexPath) || requestPath.startsWith("/dicomviewer")) {
-if (webServerDebugLevel > 1) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Was asked for file "+requestPath);
+				slf4jlogger.debug("generateResponseToGetRequest(): Was asked for file {}",requestPath);
 				String baseNameOfRequestedFile = new File(requestPath).getName();
 				if (requestPath.startsWith("/dicomviewer")) {
 					baseNameOfRequestedFile = "dicomviewer/" + baseNameOfRequestedFile;
 				}
-if (webServerDebugLevel > 1) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Trying to find amongst resources "+baseNameOfRequestedFile);
+				slf4jlogger.debug("generateResponseToGetRequest(): Trying to find amongst resources {}",baseNameOfRequestedFile);
 				String tryRequestedFile = "/"+baseNameOfRequestedFile;
-if (webServerDebugLevel > 2) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Looking for "+tryRequestedFile);
+				slf4jlogger.debug("generateResponseToGetRequest(): Looking for {}",tryRequestedFile);
 				InputStream fileStream = PathRequestHandler.class.getResourceAsStream(tryRequestedFile);
 				if (fileStream == null) {
 					tryRequestedFile = "/com/pixelmed/web/"+baseNameOfRequestedFile;
-if (webServerDebugLevel > 2) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Failed; so look instead for "+tryRequestedFile);
+					slf4jlogger.debug("generateResponseToGetRequest(): Failed; so look instead for {}",tryRequestedFile);
 					fileStream = PathRequestHandler.class.getResourceAsStream(tryRequestedFile);
 					if (fileStream == null) {
 						throw new Exception("No such resource as "+requestPath);
@@ -74,7 +79,7 @@ if (webServerDebugLevel > 2) System.err.println("PathRequestHandler.generateResp
 				else {
 					contentType = "application/octet-stream";
 				}
-if (webServerDebugLevel > 1) System.err.println("PathRequestHandler.generateResponseToGetRequest(): contentType "+contentType);
+				slf4jlogger.debug("generateResponseToGetRequest(): contentType {}",contentType);
 
 				if (isText) {
 					// read the whole thing into a string so that we can know its length for Content-Length; blech :(
@@ -83,7 +88,7 @@ if (webServerDebugLevel > 1) System.err.println("PathRequestHandler.generateResp
 					char[] buffer = new char[1024];
 					int count;
 					while ((count=reader.read(buffer,0,1024)) > 0) {
-if (webServerDebugLevel > 2) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Read "+count+" chars");
+						slf4jlogger.debug("generateResponseToGetRequest(): Read {} chars",count);
 						strbuf.append(buffer,0,count);
 					}
 					sendHeaderAndBodyText(out,strbuf.toString(),baseNameOfRequestedFile,contentType);
@@ -97,8 +102,8 @@ if (webServerDebugLevel > 2) System.err.println("PathRequestHandler.generateResp
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("PathRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

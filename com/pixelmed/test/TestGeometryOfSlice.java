@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -24,7 +24,16 @@ public class TestGeometryOfSlice extends TestCase {
 		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_3D2DConversions1"));
 		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_3D2DConversions2"));
 		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_3D2DConversions3"));
+
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Transverse_FromBelow_RowTowardsLeft_ColTowardsBack"));
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Transverse_FromAbove_RowTowardsRight_ColTowardsBack_OriginalEMIScanner"));
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Transverse_FromAbove_RowTowardsLeft_ColTowardsFront_Neurosurgery"));
+
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Coronal_FromFront_RowTowardsLeft_ColTowardsFeet"));
 		
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Sagittal_FromLeftSide_RowTowardsBack_ColTowardsFeet"));
+		suite.addTest(new TestGeometryOfSlice("TestGeometryOfSlice_NormalDirection_Sagittal_FromRightSide_RowTowardsFront_ColTowardsFeet"));
+
 		return suite;
 	}
 	
@@ -36,6 +45,28 @@ public class TestGeometryOfSlice extends TestCase {
 	
 	protected boolean epsilonEquals(double value1,double value2,double epsilon) {
 		return Math.abs(value1-value2) < epsilon;
+	}
+
+	protected boolean epsilonEquals(double[] value1,double[] value2,double epsilon) {
+		boolean areEqual = true;
+		if (value1 == null) {
+			areEqual = false;
+		}
+		else if (value2 == null) {
+			areEqual = false;
+		}
+		else if (value1.length != value2.length) {
+			areEqual = false;
+		}
+		else {
+			for (int i=0; i<value1.length; ++i) {
+				if (!epsilonEquals(value1[i],value2[i],epsilon)) {
+					areEqual = false;
+					break;
+				}
+			}
+		}
+		return areEqual;
 	}
 
 	protected void check3D2DConversion(GeometryOfSlice geometry,double column,double row,double expectX,double expectY,double expectZ) {
@@ -101,4 +132,114 @@ public class TestGeometryOfSlice extends TestCase {
 		check3D2DConversion(geometry,511.5d,511.5d,204.4d,204.4d,0.0d);
 		check3D2DConversion(geometry,512d,  512d,  204.6d,204.6d,0.0d);
 	}
+	
+	// DICOM coordinate system is right handed (http://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.2.html)
+	// Nice visulaization of cross-product and righ-handedness at https://physics.nfshost.com/textbook/01-Vectors/05-Cross.php
+	// Normal should increase in the direction away from the viewer
+	// (001277)
+
+	public void TestGeometryOfSlice_NormalDirection_Transverse_FromBelow_RowTowardsLeft_ColTowardsBack() throws Exception {
+		double[] rowArray          = { 1, 0, 0 };
+		double[] columnArray       = { 0, 1, 0 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { 0, 0, 1 };		// Towards head
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+	
+	
+	public void TestGeometryOfSlice_NormalDirection_Transverse_FromAbove_RowTowardsRight_ColTowardsBack_OriginalEMIScanner() throws Exception {
+		double[] rowArray          = { -1, 0, 0 };
+		double[] columnArray       = { 0, 1, 0 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { 0, 0, -1 };		// Towards feet
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+	
+
+	public void TestGeometryOfSlice_NormalDirection_Transverse_FromAbove_RowTowardsLeft_ColTowardsFront_Neurosurgery() throws Exception {
+		double[] rowArray          = { 1, 0, 0 };
+		double[] columnArray       = { 0, -1, 0 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { 0, 0, -1 };		// Towards feet
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+
+	public void TestGeometryOfSlice_NormalDirection_Coronal_FromFront_RowTowardsLeft_ColTowardsFeet() throws Exception {
+		double[] rowArray          = { 1, 0, 0 };
+		double[] columnArray       = { 0, 0, -1 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { 0, 1, 0 };		// Towards back
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+
+	public void TestGeometryOfSlice_NormalDirection_Sagittal_FromLeftSide_RowTowardsBack_ColTowardsFeet() throws Exception {
+		double[] rowArray          = { 0, 1, 0 };
+		double[] columnArray       = { 0, 0, -1 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { -1, 0, 0 };	// Towards right
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+
+	public void TestGeometryOfSlice_NormalDirection_Sagittal_FromRightSide_RowTowardsFront_ColTowardsFeet() throws Exception {
+		double[] rowArray          = { 0, -1, 0 };
+		double[] columnArray       = { 0, 0, -1 };
+		
+		double[] tlhcArray         = { 0, 0, 0 };		// don't care
+		double[] voxelSpacingArray = { 1, 1, 1 };		// don't care
+		double   sliceThickness    =   1;				// don't care
+		double[] dimensions        = { 512, 512, 1 };	// don't care
+		
+		GeometryOfSlice geometry = new GeometryOfSlice(rowArray,columnArray,tlhcArray,voxelSpacingArray,sliceThickness,dimensions);
+
+		double[] expectedNormalArray = { 1, 0, 0 };		// Towards left
+		double[] actualNormalArray = geometry.getNormalArray();
+
+		assertTrue("Normal not as expected",epsilonEquals(expectedNormalArray,actualNormalArray,0.0001d));
+	}
+
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,15 +12,15 @@ import java.io.*;
  * @author	dclunie
  */
 class IdentifierMessage {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/IdentifierMessage.java,v 1.6 2009/08/14 12:37:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/IdentifierMessage.java,v 1.17 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte bytes[];
 
 	/**
 	 * @param	list
 	 * @param	transferSyntaxUID
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public IdentifierMessage(AttributeList list,String transferSyntaxUID) throws DicomException, IOException {
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();

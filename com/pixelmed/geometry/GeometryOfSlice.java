@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
@@ -16,7 +16,7 @@ import javax.vecmath.*;
  */
 public class GeometryOfSlice {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/GeometryOfSlice.java,v 1.19 2013/10/16 15:49:53 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/GeometryOfSlice.java,v 1.33 2025/01/29 10:58:08 dclunie Exp $";
 
 	/***/
 	protected double[] rowArray;
@@ -55,7 +55,7 @@ public class GeometryOfSlice {
 		normal.normalize();
 		normalArray=new double[3];
 		normal.get(normalArray);
-		normalArray[2]=normalArray[2]*-1;
+		normalArray[2]=normalArray[2];	// (001277)
 		normal=new Vector3d(normalArray);
 	}
 
@@ -346,7 +346,8 @@ public class GeometryOfSlice {
 	 * from the origin of
 	 * the coordinate space (0,0,0).</p>
 	 *
-	 * @return	the distance of the point from the origin along the normal axis
+	 * @param	point	the point
+	 * @return			the distance of the point from the origin along the normal axis
 	 */
 	public final double getDistanceAlongNormalFromOrigin(Point3d point) {
 		Vector3d fromOrigin=new Vector3d(point);
@@ -374,9 +375,31 @@ public class GeometryOfSlice {
 	 * 
 	 * <p>Slice thickness is not considered, only floating point rounding precision tolerance is permitted.</p>
 	 *
-	 * @return	true if within the plane of the image
+	 * @param	point	the point
+	 * @return			true if within the plane of the image
 	 */
 	public final boolean isPointInSlicePlane(Point3d point) {
+		double distancePoint = getDistanceAlongNormalFromOrigin(point);
+		double distanceTLHC  = getDistanceAlongNormalFromOrigin();
+		double delta = Math.abs(distancePoint-distanceTLHC);
+		boolean inplane = delta < .001;
+//System.err.println("GeometryOfSlice.isPointInSlicePlane(): distancePoint = "+distancePoint);
+//System.err.println("GeometryOfSlice.isPointInSlicePlane(): distanceTLHC = "+distanceTLHC);
+//System.err.println("GeometryOfSlice.isPointInSlicePlane(): delta = "+delta);
+//System.err.println("GeometryOfSlice.isPointInSlicePlane(): inplane = "+inplane);
+		return inplane;
+	}
+	
+	/**
+	 * <p>Is an arbitrary point in the DICOM 3D coordinate space within the plane of the image.</p>
+	 * 
+	 * <p>Slice thickness is not considered, only floating point rounding precision tolerance is permitted.</p>
+	 *
+	 * @param	location	the point
+	 * @return				true if within the plane of the image
+	 */
+	public final boolean isPointInSlicePlane(double[] location) {
+		Point3d point = new Point3d(location);
 		double distancePoint = getDistanceAlongNormalFromOrigin(point);
 		double distanceTLHC  = getDistanceAlongNormalFromOrigin();
 		double delta = Math.abs(distancePoint-distanceTLHC);
@@ -393,7 +416,7 @@ public class GeometryOfSlice {
 	 *
 	 * @param	slice1	the geometry of one slice
 	 * @param	slice2	the geometry of the other slice
-	 * @return		true if slices are parallel
+	 * @return			true if slices are parallel
 	 */
 	public static final boolean areSlicesParallel(GeometryOfSlice slice1,GeometryOfSlice slice2) {
 		boolean parallel = false;
@@ -470,15 +493,20 @@ public class GeometryOfSlice {
 	/**
 	 * <p>Get the letter representation of the orientation of a vector.</p>
 	 *
-	 * @return	a string rendering of the orientation, L or R, A or P, H or F,
-	 *		more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 * <p>For bipeds, L or R, A or P, H or F.</p>
+	 *
+	 * <p>For quadrupeds, Le or Rt, V or D, Cr or Cd (with lower case; use toUpperCase() to produce valid CodeString for PatientOrientation).</p>
+	 *
+	 * @param	orientation	the orientation
+	 * @param	quadruped	true if subject is a quadruped rather than a biped
+	 * @return				a string rendering of the orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
 	 */
-	public static final String getOrientation(double orientation[]) {
+	public static final String getOrientation(double orientation[],boolean quadruped) {
 		StringBuffer strbuf = new StringBuffer();
 		if (orientation != null && orientation.length == 3) {
-			char orientationX = orientation[0] < 0 ? 'R' : 'L';
-			char orientationY = orientation[1] < 0 ? 'A' : 'P';
-			char orientationZ = orientation[2] < 0 ? 'F' : 'H';
+			String orientationX = orientation[0] < 0 ? (quadruped ? "Rt" : "R") : (quadruped ? "Le" : "L");
+			String orientationY = orientation[1] < 0 ? (quadruped ? "V" : "A") : (quadruped ? "D" : "P");
+			String orientationZ = orientation[2] < 0 ? (quadruped ? "Cd" : "F") : (quadruped ? "Cr" : "H");
 			
 			double absX = Math.abs(orientation[0]);
 			double absY = Math.abs(orientation[1]);
@@ -500,24 +528,65 @@ public class GeometryOfSlice {
 		}
 		return strbuf.toString();
 	}
-
+	/**
+	 * <p>Get the letter representation of the orientation of a vector.</p>
+	 *
+	 * <p>Assumes a biped rather than a quadruped, so returns L or R, A or P, H or F.</p>
+	 *
+	 * @param	orientation	the orientation
+	 * @return				a string rendering of the orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 */
+	public static final String getOrientation(double orientation[]) {
+		return getOrientation(orientation,false/*quadruped*/);
+	}
+	
 	/**
 	 * <p>Get the letter representation of the orientation of the rows of this slice.</p>
 	 *
-	 * @return	a string rendering of the row orientation, L or R, A or P, H or F,
-	 *		more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 * <p>For bipeds, L or R, A or P, H or F.</p>
+	 *
+	 * <p>For quadrupeds, Le or Rt, V or D, Cr or Cd (with lower case; use toUpperCase() to produce valid CodeString for PatientOrientation).</p>
+	 *
+	 * @param	quadruped	true if subject is a quadruped rather than a biped
+	 * @return				a string rendering of the row orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
 	 */
-	public final String getRowOrientation() {
-		return getOrientation(rowArray);
+	public final String getRowOrientation(boolean quadruped) {
+		return getOrientation(rowArray,quadruped);
 	}
 
 	/**
 	 * <p>Get the letter representation of the orientation of the columns of this slice.</p>
 	 *
-	 * @return	a string rendering of the column orientation, L or R, A or P, H or F,
-	 *		more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 * <p>For bipeds, L or R, A or P, H or F.</p>
+	 *
+	 * <p>For quadrupeds, Le or Rt, V or D, Cr or Cd (with lower case; use toUpperCase() to produce valid CodeString for PatientOrientation).</p>
+	 *
+	 * @param	quadruped	true if subject is a quadruped rather than a biped
+	 * @return				a string rendering of the column orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 */
+	public final String getColumnOrientation(boolean quadruped) {
+		return getOrientation(columnArray,quadruped);
+	}
+
+	/**
+	 * <p>Get the letter representation of the orientation of the rows of this slice.</p>
+	 *
+	 * <p>Assumes a biped rather than a quadruped, so returns L or R, A or P, H or F.</p>
+	 *
+	 * @return				a string rendering of the row orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 */
+	public final String getRowOrientation() {
+		return getRowOrientation(false/*quadruped*/);
+	}
+
+	/**
+	 * <p>Get the letter representation of the orientation of the columns of this slice.</p>
+	 *
+	 * <p>Assumes a biped rather than a quadruped, so returns L or R, A or P, H or F.</p>
+	 *
+	 * @return				a string rendering of the column orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
 	 */
 	public final String getColumnOrientation() {
-		return getOrientation(columnArray);
+		return getColumnOrientation(false/*quadruped*/);
 	}
 }

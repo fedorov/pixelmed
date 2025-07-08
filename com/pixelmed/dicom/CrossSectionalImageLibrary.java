@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,9 +18,13 @@ import java.util.Set;
 
 import javax.vecmath.Tuple3d;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class CrossSectionalImageLibrary extends ImageLibrary {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CrossSectionalImageLibrary.java,v 1.6 2013/09/09 15:19:21 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CrossSectionalImageLibrary.java,v 1.17 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageLibrary.class);
 	
 	public static class CrossSectionalImageLibraryEntry extends ImageLibrary.ImageLibraryEntry {
 	
@@ -197,7 +201,15 @@ public class CrossSectionalImageLibrary extends ImageLibrary {
 		return new CrossSectionalImageLibraryEntry(list);
 	}
 		
-	
+	public String getSOPClassUID(String sopInstanceUID) {
+		String value = null;
+		CrossSectionalImageLibraryEntry entry = (CrossSectionalImageLibraryEntry)(entriesIndexedBySOPInstanceUID.get(sopInstanceUID));
+		if (entry != null && entry.hierarchicalImageReference != null) {
+			value = entry.hierarchicalImageReference.sopClassUID;
+		}
+		return value;
+	}
+		
 	public String getFrameOfReferenceUID(String sopInstanceUID) {
 		String value = null;
 		CrossSectionalImageLibraryEntry entry = (CrossSectionalImageLibraryEntry)(entriesIndexedBySOPInstanceUID.get(sopInstanceUID));
@@ -332,13 +344,13 @@ public class CrossSectionalImageLibrary extends ImageLibrary {
 			library.write(outputPath);
 			
 			// test round trip
-			{
-				CrossSectionalImageLibrary roundTrip = read(outputPath);
-System.err.println("RoundTrip =\n"+roundTrip);
-			}
+			//{
+			//	CrossSectionalImageLibrary roundTrip = read(outputPath);
+			//	System.err.println("RoundTrip =\n"+roundTrip);
+			//}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -48,6 +48,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 	protected void tearDown() {
 	}
 	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+
 	public void TestCTIrradiationEventDataFromImages_SeriesNumber_OneAcquisitionTime() throws Exception {
 
 		double pitchFactor = 1;
@@ -72,8 +74,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		testFile1.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactor); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvp); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactor); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvp); list.put(a); }
 			{ Attribute a = new IntegerStringAttribute   (TagFromName.SeriesNumber);      a.addValue(seriesNumber); list.put(a); }
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTime); list.put(a); }
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.StudyInstanceUID);  a.addValue(studyInstanceUID); list.put(a); }
@@ -93,8 +95,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		testFile2.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactor); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvp); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactor); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvp); list.put(a); }
 			{ Attribute a = new IntegerStringAttribute   (TagFromName.SeriesNumber);      a.addValue(seriesNumber); list.put(a); }
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTime); list.put(a); }
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.StudyInstanceUID);  a.addValue(studyInstanceUID); list.put(a); }
@@ -183,8 +185,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 			{ Attribute a = new DecimalStringAttribute   (TagFromName.ImageOrientationPatient); a.addValue(1d); a.addValue(0d); a.addValue(0d); a.addValue(0d); a.addValue(1d); a.addValue(0d); list.put(a); }
 
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTimeA); list.put(a); }
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactorA); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvpA); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactorA); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvpA); list.put(a); }
 			{ Attribute a = new LongStringAttribute      (TagFromName.ProtocolName);      a.addValue(protocolNameA); list.put(a); }
 
 			list.write(testFile1,TransferSyntax.ExplicitVRLittleEndian,false/*no meta header*/,true/*buffered*/);
@@ -206,8 +208,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 			{ Attribute a = new DecimalStringAttribute   (TagFromName.ImageOrientationPatient); a.addValue(1d); a.addValue(0d); a.addValue(0d); a.addValue(0d); a.addValue(1d); a.addValue(0d); list.put(a); }
 
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTimeA); list.put(a); }
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactorA); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvpA); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactorA); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvpA); list.put(a); }
 			{ Attribute a = new LongStringAttribute      (TagFromName.ProtocolName);      a.addValue(protocolNameA); list.put(a); }
 
 			list.write(testFile2,TransferSyntax.ExplicitVRLittleEndian,false/*no meta header*/,true/*buffered*/);
@@ -229,8 +231,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 			{ Attribute a = new DecimalStringAttribute   (TagFromName.ImageOrientationPatient); a.addValue(1d); a.addValue(0d); a.addValue(0d); a.addValue(0d); a.addValue(1d); a.addValue(0d); list.put(a); }
 
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTimeB); list.put(a); }
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactorB); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvpB); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactorB); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvpB); list.put(a); }
 			{ Attribute a = new LongStringAttribute      (TagFromName.ProtocolName);      a.addValue(protocolNameB); list.put(a); }
 
 			list.write(testFile3,TransferSyntax.ExplicitVRLittleEndian,false/*no meta header*/,true/*buffered*/);
@@ -252,8 +254,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 			{ Attribute a = new DecimalStringAttribute   (TagFromName.ImageOrientationPatient); a.addValue(1d); a.addValue(0d); a.addValue(0d); a.addValue(0d); a.addValue(1d); a.addValue(0d); list.put(a); }
 
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTimeB); list.put(a); }
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactorB); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvpB); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactorB); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvpB); list.put(a); }
 			{ Attribute a = new LongStringAttribute      (TagFromName.ProtocolName);      a.addValue(protocolNameB); list.put(a); }
 
 			list.write(testFile4,TransferSyntax.ExplicitVRLittleEndian,false/*no meta header*/,true/*buffered*/);
@@ -309,8 +311,8 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		testFile.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
-			{ Attribute a = new FloatDoubleAttribute     (TagFromName.SpiralPitchFactor); a.addValue(pitchFactor); list.put(a); }
-			{ Attribute a = new DecimalStringAttribute   (TagFromName.KVP);               a.addValue(kvp); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute     (dictionary.getTagFromName("SpiralPitchFactor")); a.addValue(pitchFactor); list.put(a); }
+			{ Attribute a = new DecimalStringAttribute   (dictionary.getTagFromName("KVP"));               a.addValue(kvp); list.put(a); }
 			{ Attribute a = new IntegerStringAttribute   (TagFromName.SeriesNumber);      a.addValue(seriesNumber); list.put(a); }
 			{ Attribute a = new IntegerStringAttribute   (TagFromName.AcquisitionNumber); a.addValue(acquisitionNumber); list.put(a); }
 			{ Attribute a = new TimeAttribute            (TagFromName.AcquisitionTime);   a.addValue(acquisitionTime); list.put(a); }
@@ -377,7 +379,7 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		testFile.deleteOnExit();
 		{
 			AttributeList list = new AttributeList();
-			{ Attribute a = new FloatDoubleAttribute(TagFromName.SpiralPitchFactor);        a.addValue(pitchFactor); list.put(a); }
+			{ Attribute a = new FloatDoubleAttribute(dictionary.getTagFromName("SpiralPitchFactor"));        a.addValue(pitchFactor); list.put(a); }
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.IrradiationEventUID); a.addValue(irradiationEventUID); list.put(a); }
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SOPInstanceUID);      a.addValue(sopInstanceUID); list.put(a); }			// otherwise DicomFileUtilities.isDicomOrAcrNemaFile() used in CTIrradiationEventDataFromImages will not recognize in IVRLE TS
 			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SOPClassUID);         a.addValue(SOPClass.CTImageStorage); list.put(a); }	// otherwise will be ignored by CTIrradiationEventDataFromImages();

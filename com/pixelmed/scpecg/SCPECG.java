@@ -1,6 +1,10 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
+
+import com.pixelmed.dicom.BinaryInputStream;
+import com.pixelmed.dicom.BinaryOutputStream;
+import com.pixelmed.display.ApplicationFrame;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,10 +18,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.swing.JScrollPane;
-
-import com.pixelmed.dicom.BinaryInputStream;
-import com.pixelmed.dicom.BinaryOutputStream;
-import com.pixelmed.display.ApplicationFrame;
 
 /**
  * <p>A class to encapsulate an entire SCP-ECG object.</p>
@@ -42,7 +42,7 @@ try {
 	o.close();
 }
 catch (Exception e) {
-	e.printStackTrace(System.err);
+	slf4jlogger.error("",e);
 }
  * </pre>
  * <p>One might want to dump the entire contents of the instance as a string, as follows:</p>
@@ -64,7 +64,7 @@ af.setVisible(true);
  * @author	dclunie
  */
 public class SCPECG {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPECG.java,v 1.22 2007/12/19 22:44:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/SCPECG.java,v 1.33 2025/01/29 10:58:09 dclunie Exp $";
 	
 	private class ReferenceBeatSubtractionZone {
 		private int numberOfReferenceBeatSubtractionZones;
@@ -259,7 +259,7 @@ public class SCPECG {
 //System.err.println("Decoder status after all samples done "+decoder.toString());
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 	}
@@ -309,7 +309,7 @@ public class SCPECG {
 				decompressedReferenceBeatData[lead] = decoder.decode((int)(numberOfSamples));
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			}
 		}
 	}
@@ -583,7 +583,7 @@ public class SCPECG {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

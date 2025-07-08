@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -7,14 +7,18 @@ import com.pixelmed.geometry.*;
 
 import java.util.SortedSet;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to extract and describe the spatial geometry of an entire volume of contiguous cross-sectional image slices, given a list of DICOM attributes.</p>
  *
  * @author	dclunie
  */
 public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/GeometryOfVolumeFromAttributeList.java,v 1.27 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/GeometryOfVolumeFromAttributeList.java,v 1.14 2013/10/16 16:08:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(GeometryOfVolumeFromAttributeList.class);
 
 	/**
 	 * <p>Construct the geometry from the Per-frame and Shared Functional Group Sequences
@@ -23,9 +27,10 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 	 *
 	 * @param	list			the list of DICOM attributes
 	 * @param	subsetOfFrames	the subset of frames to include or null if entire set
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public GeometryOfVolumeFromAttributeList(AttributeList list,int[] subsetOfFrames) throws DicomException {
-//System.err.println("GeometryOfVolumeFromAttributeList:");
+		slf4jlogger.debug("GeometryOfVolumeFromAttributeList():");
 		frames=null;
 		isVolume=false;
 		
@@ -37,15 +42,15 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 		int numberOfFrames = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.NumberOfFrames,1);
 		int subsetNumberOfFrames = subsetOfFrames == null ? numberOfFrames : subsetOfFrames.length;
 		if (numberOfFrames == 1 && sharedFunctionalGroupsSequence == null && perFrameFunctionalGroupsSequence == null && list.containsKey(TagFromName.ImagePositionPatient)) {
-//System.err.println("GeometryOfVolumeFromAttributeList: single frame with no functional groups and ImagePositionPatient");
+			slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): single frame with no functional groups and ImagePositionPatient");
 			// possibly old-fashioned single frame DICOM image
 			GeometryOfSlice frame = null;
 			try {
 				frame = new GeometryOfSliceFromAttributeList(list);
 			}
 			catch (Exception e) {
-				// don't print exception, because it is legitimate for (some or all) images to be missing this information
-				//e.printStackTrace(System.err);
+				// don't print exception unless debugging, because it is legitimate for (some or all) images to be missing this information
+				slf4jlogger.debug("", e);
 				frame=null;
 			}
 			if (frame != null) {
@@ -54,7 +59,7 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 			}
 		}
 		else if (subsetNumberOfFrames > 0 && sharedFunctionalGroupsSequence != null && perFrameFunctionalGroupsSequence != null) {
-//System.err.println("GeometryOfVolumeFromAttributeList: multi frame with functional groups");
+			slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): multi frame with functional groups");
 			SequenceAttribute sharedPlaneOrientationSequence = (SequenceAttribute)(SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(
 					sharedFunctionalGroupsSequence,TagFromName.PlaneOrientationSequence));
 			SequenceAttribute sharedPlanePositionSequence = (SequenceAttribute)(SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(
@@ -74,7 +79,7 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 				if (usePlaneOrientationSequence != null) {
 					aImageOrientationPatient = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(
 						usePlaneOrientationSequence,TagFromName.ImageOrientationPatient);
-//System.err.println("GeometryOfVolumeFromAttributeList: "+aImageOrientationPatient);
+					slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): aImageOrientationPatient = {}",aImageOrientationPatient);
 				}
 				
 				Attribute aImagePositionPatient = null;
@@ -86,7 +91,7 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 				if (usePlanePositionSequence != null) {
 					aImagePositionPatient = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(
 						usePlanePositionSequence,TagFromName.ImagePositionPatient);
-//System.err.println("GeometryOfVolumeFromAttributeList: "+aImagePositionPatient);
+					slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): aImagePositionPatient = {}",aImagePositionPatient);
 				}
 				
 				Attribute aPixelSpacing = null;
@@ -101,8 +106,8 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 						usePixelMeasuresSequence,TagFromName.PixelSpacing);
 					aSliceThickness = SequenceAttribute.getNamedAttributeFromWithinSequenceWithSingleItem(
 						usePixelMeasuresSequence,TagFromName.SliceThickness);
-//System.err.println("GeometryOfVolumeFromAttributeList: "+aPixelSpacing);
-//System.err.println("GeometryOfVolumeFromAttributeList: "+aSliceThickness);
+					slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): aPixelSpacing = {}",aPixelSpacing);
+					slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): aSliceThickness = {}",aSliceThickness);
 				}
 
 				if (aImagePositionPatient != null && aPixelSpacing != null && aImageOrientationPatient != null) {
@@ -133,6 +138,9 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 				}
 			}
 		}
+		else {
+			slf4jlogger.debug("GeometryOfVolumeFromAttributeList(): no information");
+		}
 		checkAndSetVolumeSampledRegularlyAlongFrameDimension();
 	}
 	
@@ -141,7 +149,8 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 	 * of a multi-frame object, or from the Image Plane Module and related attributes,
 	 * if there is only a single frame of a non-multi-frame object.</p>
 	 *
-	 * @param	list	the list of DICOM attributes
+	 * @param	list			the list of DICOM attributes
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public GeometryOfVolumeFromAttributeList(AttributeList list) throws DicomException {
 		this(list,null);
@@ -154,7 +163,7 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 	 * @return		a double array of six values, or null if not present or not shared
 	 */
 	public static double[] getImageOrientationPatientFromAttributeList(AttributeList list) {
-//System.err.println("GeometryOfVolumeFromAttributeList.getImageOrientationPatientFromAttributeList():");
+		slf4jlogger.debug("GeometryOfVolumeFromAttributeList.getImageOrientationPatientFromAttributeList():");
 		double[] vImageOrientationPatient = null;
 		try {
 			Attribute aImageOrientationPatient = null;
@@ -172,13 +181,13 @@ public class GeometryOfVolumeFromAttributeList extends GeometryOfVolume {
 						sharedPlaneOrientationSequence,TagFromName.ImageOrientationPatient);
 				}
 			}
-//System.err.println("GeometryOfVolumeFromAttributeList.getImageOrientationPatientFromAttributeList(): "+aImageOrientationPatient);
+			slf4jlogger.debug("GeometryOfVolumeFromAttributeList.getImageOrientationPatientFromAttributeList(): aImageOrientationPatient = {}",aImageOrientationPatient);
 			if (aImageOrientationPatient != null) {
 				vImageOrientationPatient = aImageOrientationPatient.getDoubleValues();
 			}
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 		}
 		return vImageOrientationPatient;
 	}

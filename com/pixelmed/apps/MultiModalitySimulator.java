@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -21,6 +21,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class implements a multi-modality simulator that takes a database of
  * existing studies to provide a source of sample images and DICOM attributes, and
@@ -30,34 +33,47 @@ import java.util.Set;
  * <p>For example:</p>
  * <pre>
 try {
-    new MultiModalitySimulator("theirhost","11112","STORESCP","STORESCU","/tmp/testfile.dcm","1.2.840.10008.5.1.4.1.1.7","1.3.6.1.4.1.5962.1.1.0.0.0.1064923879.2077.3232235877",0,0);
+    new MultiModalitySimulator("theirhost",11112,"STORESCP","STORESCU","database");
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
  * <p>From the command line:</p>
  * <pre>
-java -cp pixelmed.jar:lib/additional/commons-codec-1.3.jar:lib/additional/excalibur-bzip2-1.0.jar com.pixelmed.network.MultiModalitySimulator theirhost 11112 STORESCP STORESCU -  0 0
+java -cp pixelmed.jar:lib/additional/commons-codec-1.3.jar:lib/additional/commons-compress-1.12.jar com.pixelmed.network.MultiModalitySimulator theirhost 11112 STORESCP database
  * </pre>
  *
+ * <p>The database is a persistent (disk) instance of the {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel},
+ * such as might be created by the {@link com.pixelmed.database.RebuildDatabaseFromInstanceFiles RebuildDatabaseFromInstanceFiles} class
+ * from a set of files, or have been created by an application storing received images in such a databaase.</p>
+ *
+ * <p>The Calling AE Title used to send the images for each simulated modality is the modality string value, e.g. "CT" for images with a DICOM Atttibute Modality (0008,0060) of "CT".</p>
+ *
+ * <p>The list of modalities simulated is currently limited to CT, MR, DX, CR, US, NM, XA, MG, SR, PR if present in the supplied database. This can be changed in a subclass by overriding the protected variable {@link #modalities modalities},
+ * as can the corresponding protected variable {@link #sleepIntervalForModalityInMinutes sleepIntervalForModalityInMinutes}, which needs to contain a matching number of entries.</p>
+ *
+ * <p>A relatively short and contrived list of patient names is used by default, and can be overridden in a subclass by changing {@link #patientNames patientNames}.</p>
  *
  * @author	dclunie
  */
 public class MultiModalitySimulator {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MultiModalitySimulator.java,v 1.18 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MultiModalitySimulator.java,v 1.3 2011/04/04 14:47:13 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MultiModalitySimulator.class);
 	
-	protected static String[] modalities                     = { "CT", "MR", "DX", "CR", "US", "NM", "XA" };
-	protected static int[] sleepIntervalForModalityInMinutes = {  1,    8,    1,    1,    4,    15,   30 };
+	protected static String[] modalities                     = { "CT", "MR", "DX", "CR", "US", "NM", "XA", "MG", "SR", "PR" };
+	protected static int[] sleepIntervalForModalityInMinutes = {  1,    8,    1,    1,    4,    15,   30,   1,    1,    1 };
 	protected Map<String,Integer> sleepIntervalForModality = new HashMap<String,Integer>();
 	{
 		for (int i=0; i<modalities.length; ++i) {
 			sleepIntervalForModality.put(modalities[i],new Integer(sleepIntervalForModalityInMinutes[i]));
 		}
 	}
-	protected int getSleepIntervalForModalityInMilliseconds(String modality) { return sleepIntervalForModality.get(modality).intValue() * 60 * 1000; }
+	protected int defaultSleepIntervalMultiplier = 60 * 1000;	// milliseconds in one minute
+	protected int sleepIntervalMultiplier;
+	protected int getSleepIntervalForModalityInMilliseconds(String modality) { return sleepIntervalForModality.get(modality).intValue() * sleepIntervalMultiplier; }
 
 	protected static long accessionNumberCounter =  System.currentTimeMillis();
 	
@@ -329,8 +345,6 @@ public class MultiModalitySimulator {
 		"Machiavelli"
 	};
 	
-	protected int debugLevel;
-	
 	protected String seriesLocalParentReferenceColumnName;
 	protected String localFileNameColumnName;
 	protected String modalityColumnName;
@@ -346,33 +360,33 @@ public class MultiModalitySimulator {
 
 	protected class OurMultipleInstanceTransferStatusHandler extends MultipleInstanceTransferStatusHandlerWithFileName {
 		public void updateStatus(int nRemaining,int nCompleted,int nFailed,int nWarning,String sopInstanceUID,String fileName,boolean success) {
-if (debugLevel > 2) System.err.println("Remaining "+nRemaining+", completed "+nCompleted+", failed "+nFailed+", warning "+nWarning);
+			slf4jlogger.trace("Remaining {}, completed {}, failed {}, warning {}",nRemaining,nCompleted,nFailed,nWarning);
 			if (success) {
-if (debugLevel > 1) System.err.println("Sent "+fileName);
+				slf4jlogger.trace("Sent {}",fileName);
 			}
 			else {
-				 System.err.println("Failed to send "+fileName);
+				 slf4jlogger.info("Failed to send {}",fileName);
 			}
 		}
 	}
 
 	protected void findFilesToSend(InformationEntity ie,String localPrimaryKeyValue,List<String> dicomFiles) throws DicomException {
-if (debugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findFilesToSend(): checking "+ie+" "+localPrimaryKeyValue);
+		slf4jlogger.trace("findFilesToSend(): checking {} {}",ie,localPrimaryKeyValue);
 		if (ie == InformationEntity.INSTANCE) {
 			Map<String,String> record = databaseInformationModel.findAllAttributeValuesForSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue);
 			localFileNameColumnName = databaseInformationModel.getLocalFileNameColumnName(InformationEntity.INSTANCE);
 			String fileName = record.get(localFileNameColumnName);
 			dicomFiles.add(fileName);
-if (debugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findFilesToSend(): added file = "+fileName);
+			slf4jlogger.trace("findFilesToSend(): added file = {}",fileName);
 		}
 		else {
 			InformationEntity childIE = databaseInformationModel.getChildTypeForParent(ie);
-if (debugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findFilesToSend(): childIE is "+childIE);
+			slf4jlogger.trace("findFilesToSend(): childIE is {}",childIE);
 			List<Map<String,String>> returnedRecords = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(childIE,localPrimaryKeyValue);
 			// if necessary, iterate for next lower down type of child IE (e.g. we may be skipping over concatenation from series to instance)
 			while (childIE != null && returnedRecords == null || returnedRecords.size() == 0) {
 				childIE = databaseInformationModel.getChildTypeForParent(childIE);
-if (debugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findFilesToSend(): empty so descending to next childIE "+childIE);
+				slf4jlogger.trace("findFilesToSend(): empty so descending to next childIE {}",childIE);
 				returnedRecords = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(childIE,localPrimaryKeyValue);
 			}
 			if (returnedRecords != null) {
@@ -385,7 +399,7 @@ if (debugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRe
 	}
 	
 	protected SetOfDicomFiles generateSyntheticStudyFromOriginal(List<String> originalDicomFileNames,String modality,String aeTitleForMetaInformation,String patientName,String patientID,String studyID,String accessionNumber) throws DicomException, IOException {
-if (debugLevel > 0) System.err.println("MultiModalitySimulator.generateSyntheticStudyFromOriginal(): generating modality="+modality+" patientName="+patientName+" patientID="+patientID+" studyID="+studyID+" accessionNumber="+accessionNumber);
+			slf4jlogger.debug("generateSyntheticStudyFromOriginal(): generating modality={} patientName={} patientID={} studyID={} accessionNumber={}",modality,patientName,patientID,studyID,accessionNumber);
 	
 		ClinicalTrialsAttributes.flushMapOfUIDs();	// very important ... necessary to prevent same UIDs being reallocated if original study is reused more than once, as it may be
 		
@@ -393,7 +407,7 @@ if (debugLevel > 0) System.err.println("MultiModalitySimulator.generateSynthetic
 		if (originalDicomFileNames != null) {
 			for (String originalDicomFileName : originalDicomFileNames) {
 				if (originalDicomFileName != null) {
-if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSyntheticStudyFromOriginal(): doing file "+originalDicomFileName);
+					slf4jlogger.trace("generateSyntheticStudyFromOriginal(): doing file {}",originalDicomFileName);
 					File file = new File(originalDicomFileName);
 					DicomInputStream i = new DicomInputStream(file);
 					AttributeList list = new AttributeList();
@@ -440,16 +454,17 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSynthetic
 						java.util.Date currentDateTime = new java.util.Date();
 						String currentDate = new java.text.SimpleDateFormat("yyyyMMdd").format(currentDateTime);
 						String currentTime = new java.text.SimpleDateFormat("HHmmss.SSS").format(currentDateTime);
-						{ Attribute a = new DateAttribute(TagFromName.StudyDate);            a.addValue(currentDate); list.put(a); }
-						{ Attribute a = new TimeAttribute(TagFromName.StudyTime);            a.addValue(currentTime); list.put(a); }
-						{ Attribute a = new DateAttribute(TagFromName.SeriesDate);           a.addValue(currentDate); list.put(a); }
-						{ Attribute a = new TimeAttribute(TagFromName.SeriesTime);           a.addValue(currentTime); list.put(a); }
-						{ Attribute a = new DateAttribute(TagFromName.ContentDate);          a.addValue(currentDate); list.put(a); }
-						{ Attribute a = new TimeAttribute(TagFromName.ContentTime);          a.addValue(currentTime); list.put(a); }
-						{ Attribute a = new DateAttribute(TagFromName.AcquisitionDate);      a.addValue(currentDate); list.put(a); }
-						{ Attribute a = new TimeAttribute(TagFromName.AcquisitionTime);      a.addValue(currentTime); list.put(a); }
-						{ Attribute a = new DateAttribute(TagFromName.InstanceCreationDate); a.addValue(currentDate); list.put(a); }
-						{ Attribute a = new TimeAttribute(TagFromName.InstanceCreationTime); a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new DateAttribute(TagFromName.StudyDate);						a.addValue(currentDate); list.put(a); }
+						{ Attribute a = new TimeAttribute(TagFromName.StudyTime);						a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new DateAttribute(TagFromName.SeriesDate);						a.addValue(currentDate); list.put(a); }
+						{ Attribute a = new TimeAttribute(TagFromName.SeriesTime);						a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new DateAttribute(TagFromName.ContentDate);						a.addValue(currentDate); list.put(a); }
+						{ Attribute a = new TimeAttribute(TagFromName.ContentTime);						a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new DateAttribute(TagFromName.AcquisitionDate);					a.addValue(currentDate); list.put(a); }
+						{ Attribute a = new TimeAttribute(TagFromName.AcquisitionTime);					a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new DateAttribute(TagFromName.InstanceCreationDate);			a.addValue(currentDate); list.put(a); }
+						{ Attribute a = new TimeAttribute(TagFromName.InstanceCreationTime);			a.addValue(currentTime); list.put(a); }
+						{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC);	a.addValue(DateTimeAttribute.getTimeZone(java.util.TimeZone.getDefault(),currentDateTime)); list.put(a); }
 					}
 					{ Attribute a = new UniqueIdentifierAttribute(TagFromName.InstanceCreatorUID); a.addValue(VersionAndConstants.instanceCreatorUID); list.put(a); }
 
@@ -466,7 +481,7 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSynthetic
 						Attribute.getSingleStringValueOrNull(list,TagFromName.SOPClassUID),
 						Attribute.getSingleStringValueOrNull(list,TagFromName.SOPInstanceUID),
 						Attribute.getSingleStringValueOrNull(list,TagFromName.TransferSyntaxUID));
-if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSyntheticStudyFromOriginal(): synthetic file "+syntheticFileName);
+						slf4jlogger.trace("generateSyntheticStudyFromOriginal(): synthetic file {}",syntheticFileName);
 				}
 			}
 		}
@@ -480,7 +495,7 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSynthetic
 			String fileName = dicomFile.getFileName();
 			if (!new File(fileName).delete()) {
 				// Do not throw exception at this point, since want to keep trying to delete the rest in the set
-				System.err.println("Failed to delete file "+fileName);
+				slf4jlogger.error("Failed to delete file {}",fileName);
 			}
 		}
 	}
@@ -507,9 +522,9 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.generateSynthetic
 				boolean interrupted = false;
 				while (!interrupted) {
 					int studySelected = (int)(Math.random() * numberOfStudiesMinusOne);
-if (debugLevel > 1) System.err.println("MultiModalitySimulator.SpecificModalitySimulator(): Selected "+modality+" "+studySelected);
+					slf4jlogger.trace("SpecificModalitySimulator(): Selected {} {}",modality,studySelected);
 					String localPrimaryKeyOfSelectedStudy = localPrimaryKeysOfAllStudiesOfThisModality[studySelected];
-if (debugLevel > 1) System.err.println("MultiModalitySimulator.SpecificModalitySimulator(): Selected "+modality+" "+studySelected+" "+localPrimaryKeyOfSelectedStudy);
+					slf4jlogger.trace("SpecificModalitySimulator(): Selected {} {} {}",modality,studySelected,localPrimaryKeyOfSelectedStudy);
 					List<String> originalFileNames = new ArrayList<String>();
 					try {
 						findFilesToSend(InformationEntity.STUDY,localPrimaryKeyOfSelectedStudy,originalFileNames);
@@ -526,19 +541,18 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.SpecificModalityS
 							modality/*callingAETitle*/,
 							syntheticDicomFiles,
 							0/*compressionLevel*/,
-							new OurMultipleInstanceTransferStatusHandler(),
-							0/*debugLevel*/);
+							new OurMultipleInstanceTransferStatusHandler());
 						deleteFiles(syntheticDicomFiles);
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 					try {
 						Thread.currentThread().sleep(sleepInterval);
 					}
 					catch (InterruptedException e) {
 						// shouldn't happen
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 						interrupted = true;
 					}
 				}
@@ -546,12 +560,21 @@ if (debugLevel > 1) System.err.println("MultiModalitySimulator.SpecificModalityS
 		}
 	}
 
-	public MultiModalitySimulator(String hostname,int port,String calledAETitle,String databaseFileName,int debugLevel) throws DicomException {
+	/**
+	 * <p>Simulate modalities sending to the specified AE.</p>
+	 *
+	 * @param	hostname				their hostname
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title,
+	 * @param	databaseFileName		the source database file name
+	 * @param	sleepIntervalMultiplier	ms to sleep for one minute
+	 */
+	public MultiModalitySimulator(String hostname,int port,String calledAETitle,String databaseFileName,String sleepIntervalMultiplier) throws DicomException {
 		this.hostname = hostname;
 		this.port = port;
 		this.calledAETitle = calledAETitle;
-		this.debugLevel = debugLevel;
-if (debugLevel > 0) System.err.println("MultiModalitySimulator(): Opening database ...");
+		this.sleepIntervalMultiplier = sleepIntervalMultiplier == null || sleepIntervalMultiplier.length() == 0 ? defaultSleepIntervalMultiplier : Integer.parseInt(sleepIntervalMultiplier);
+		slf4jlogger.debug("Opening database ...");
 		databaseInformationModel = new PatientStudySeriesConcatenationInstanceModel(databaseFileName);
 		
 		seriesLocalParentReferenceColumnName = databaseInformationModel.getLocalParentReferenceColumnName(InformationEntity.SERIES);
@@ -561,7 +584,7 @@ if (debugLevel > 0) System.err.println("MultiModalitySimulator(): Opening databa
 		//sopInstanceUIDColumnName             = databaseInformationModel.getDatabaseColumnNameFromDicomTag(TagFromName.SOPInstanceUID);
 		//transferSyntaxUIDColumnName          = databaseInformationModel.getDatabaseColumnNameFromDicomTag(TagFromName.TransferSyntaxUID);
 		
-if (debugLevel > 0) System.err.println("MultiModalitySimulator(): Building indexes of modality studies from database ...");
+		slf4jlogger.debug("Building indexes of modality studies from database ...");
 		Map<String,Set<String>> localPrimaryKeysOfStudiesByModality = new HashMap<String,Set<String>>();
 		for (String modality : modalities) {
 			Set<String> localPrimaryKeysOfAllStudiesOfThisModality = new HashSet<String>();
@@ -574,14 +597,14 @@ if (debugLevel > 0) System.err.println("MultiModalitySimulator(): Building index
 				}
 			}
 		}
-if (debugLevel > 0) System.err.println("MultiModalitySimulator(): ready to begin simulation ...");
+		slf4jlogger.debug("ready to begin simulation ...");
 		for (String modality : modalities) {
 			Set<String> localPrimaryKeysOfAllStudiesOfThisModality = localPrimaryKeysOfStudiesByModality.get(modality);
 			if (localPrimaryKeysOfAllStudiesOfThisModality != null && localPrimaryKeysOfAllStudiesOfThisModality.size() > 0) {
 				new Thread(new SpecificModalitySimulator(modality,localPrimaryKeysOfAllStudiesOfThisModality)).start();
 			}
 			else {
-if (debugLevel > 0) System.err.println("MultiModalitySimulator(): no "+modality+" studies");
+				slf4jlogger.debug("no {} studies",modality);
 			}
 		}
 	}
@@ -589,9 +612,35 @@ if (debugLevel > 0) System.err.println("MultiModalitySimulator(): no "+modality+
 	/**
 	 * <p>Simulate modalities sending to the specified AE.</p>
 	 *
-	 * @param	arg	array of five strings - their hostname, their port, their AE Title,
-	 *			the source database name,
-	 *			and the debugging level
+	 * @param	hostname				their hostname
+	 * @param	port					their port
+	 * @param	calledAETitle			their AE Title,
+	 * @param	databaseFileName		the source database file name
+	 */
+	public MultiModalitySimulator(String hostname,int port,String calledAETitle,String databaseFileName) throws DicomException {
+		this(hostname,port,calledAETitle,databaseFileName,null/*sleepIntervalMultiplier*/);
+	}
+
+	/**
+	 * <p>Simulate modalities sending to the specified AE.</p>
+	 *
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #MultiModalitySimulator(String,int,String,String)} instead.
+	 * @param	hostname			their hostname
+	 * @param	port				their port
+	 * @param	calledAETitle		their AE Title,
+	 * @param	databaseFileName	the source database file name
+	 * @param	debugLevel			ignored
+	 */
+	public MultiModalitySimulator(String hostname,int port,String calledAETitle,String databaseFileName,int debugLevel) throws DicomException {
+		this(hostname,port,calledAETitle,databaseFileName);
+		slf4jlogger.warn("Debug level supplied in constructor ignored");
+	}
+	
+	/**
+	 * <p>Simulate modalities sending to the specified AE.</p>
+	 *
+	 * @param	arg	array of four strings - their hostname, their port, their AE Title,
+	 *			the source database name, and optionally a sleep interval multiplier (in ms, defaults to ms in one minute)
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -599,22 +648,24 @@ if (debugLevel > 0) System.err.println("MultiModalitySimulator(): no "+modality+
 			int theirPort = -1;
 			String theirAETitle = null;
 			String databaseFileName = null;
-			int debugLevel = 0;
+			String sleepIntervalMultiplier = null;
 	
-			if (arg.length == 5) {
+			if (arg.length == 4 || arg.length == 5) {
 				theirHost=arg[0];
 				theirPort=Integer.parseInt(arg[1]);
 				theirAETitle=arg[2];
 				databaseFileName=arg[3];
-				debugLevel=Integer.parseInt(arg[4]);
+				if (arg.length == 5) {
+					sleepIntervalMultiplier = arg[4];
+				}
 			}
 			else {
-				throw new Exception("Argument list must be 5 values");
+				throw new Exception("Argument list must be 4 or 5 values");
 			}
-			new MultiModalitySimulator(theirHost,theirPort,theirAETitle,databaseFileName,debugLevel);
+			new MultiModalitySimulator(theirHost,theirPort,theirAETitle,databaseFileName,sleepIntervalMultiplier);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be used as a background service
 			System.exit(0);
 		}
 	}

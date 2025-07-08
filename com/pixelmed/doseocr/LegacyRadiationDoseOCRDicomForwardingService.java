@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.doseocr;
 
@@ -34,6 +34,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to wait for incoming dose screen images, perform OCR to create Radiation Dose SRs and send RDSRs to a pre-configured DICOM destination.</p>
  *
@@ -42,14 +45,12 @@ import java.util.Map;
  * @author	dclunie
  */
 public class LegacyRadiationDoseOCRDicomForwardingService {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/LegacyRadiationDoseOCRDicomForwardingService.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/LegacyRadiationDoseOCRDicomForwardingService.java,v 1.4 2011/12/26 17:03:51 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(LegacyRadiationDoseOCRDicomForwardingService.class);
 	
 	protected static long TIMEOUT_BEFORE_PROCESSING_SERIES_MS = 10*60*1000l;// 10 minutes
 	protected static long TIMEOUT_BEFORE_CHECKING_FOR_WORK_MS = 10*1000l;	// 10 secs
-	
-	protected int debugLevel;
-	protected int networkDebugLevel;
 	
 	protected String theirHost;
 	protected int theirPort;
@@ -75,7 +76,7 @@ public class LegacyRadiationDoseOCRDicomForwardingService {
 		
 		boolean isReadyToProcess() {
 			long timeSinceLast = System.currentTimeMillis() - lastReceivedTime;
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.Series.isReadyToProcess(): System.currentTimeMillis() - lastReceivedTime = "+timeSinceLast);
+			slf4jlogger.debug("Series.isReadyToProcess(): System.currentTimeMillis() - lastReceivedTime = {}",timeSinceLast);
 			return (numberWanted > 0 && numberWanted == fileNames.size())
 			    || (timeSinceLast > TIMEOUT_BEFORE_PROCESSING_SERIES_MS);
 		}
@@ -89,10 +90,10 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 		}
 	
 		synchronized void addFile(String seriesInstanceUID,String receivedFileName,long receivedTime,int numberOfSeriesRelatedInstances) {
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.SeriesQueue.addFile(): SeriesInstanceUID "+seriesInstanceUID);
+			slf4jlogger.debug("SeriesQueue.addFile(): SeriesInstanceUID {}",seriesInstanceUID);
 			Series series = queuedMultiPageInstancesIndexedBySeriesInstanceUID.get(seriesInstanceUID);
 			if (series == null) {
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.SeriesQueue.addFile(): SeriesInstanceUID "+seriesInstanceUID+" first instance");
+				slf4jlogger.debug("SeriesQueue.addFile(): SeriesInstanceUID {} first instance",seriesInstanceUID);
 				series = new Series(seriesInstanceUID,numberOfSeriesRelatedInstances);
 				queuedMultiPageInstancesIndexedBySeriesInstanceUID.put(seriesInstanceUID,series);
 			}
@@ -104,10 +105,10 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 			while (true) {
 				for (String seriesInstanceUID : queuedMultiPageInstancesIndexedBySeriesInstanceUID.keySet()) {	// may be empty
 					Series series = queuedMultiPageInstancesIndexedBySeriesInstanceUID.get(seriesInstanceUID);
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.SeriesQueue.getWork(): checking series is ready "+seriesInstanceUID);
+					slf4jlogger.debug("SeriesQueue.getWork(): checking series is ready {}",seriesInstanceUID);
 					if (series != null && series.isReadyToProcess()) {
 						queuedMultiPageInstancesIndexedBySeriesInstanceUID.remove(seriesInstanceUID);
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.SeriesQueue.getWork(): series is ready "+seriesInstanceUID);
+						slf4jlogger.debug("SeriesQueue.getWork(): series is ready {}",seriesInstanceUID);
 						return series;
 					}
 				}
@@ -128,10 +129,10 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 				while (true) {
 					// Retrieve some work; block if the queue is empty
 					Series series = seriesQueue.getWork();
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.SeriesProcessor.run(): SeriesInstanceUID "+series.seriesInstanceUID+" is ready");
-					OCR ocr = new OCR(series.fileNames,0/*debugLevel*/);
+					slf4jlogger.debug("SeriesProcessor.run(): SeriesInstanceUID {} is ready",series.seriesInstanceUID);
+					OCR ocr = new OCR(series.fileNames);
 //System.err.print(ocr);
-					CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,debugLevel,null/*eventDataFromImages*/,true/*buildSR*/);
+					CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,null/*eventDataFromImages*/,true/*buildSR*/);
 					if (ctDose != null) {
 						sendSRFile(ctDose);
 					}
@@ -142,7 +143,7 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 							}
 						}
 						catch (Exception e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("While deleting file {}",f,e);
 						}
 					}
 				}
@@ -150,7 +151,7 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 			catch (InterruptedException e) {
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -161,16 +162,15 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 			String ctDoseSRFileName = ctDoseSRFile.getCanonicalPath();
 			try {
 				AttributeList ctDoseList = ctDose.getAttributeList();
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.sendSRFile(): adding our own newly created SR file = "+ctDoseSRFileName);
+				slf4jlogger.debug("sendSRFile(): adding our own newly created SR file = {}",ctDoseSRFileName);
 				ctDose.write(ctDoseSRFileName,ourAETitle,this.getClass().getCanonicalName());	// has side effect of updating list returned by ctDose.getAttributeList(); uncool :(
 				new StorageSOPClassSCU(theirHost,theirPort,theirAETitle,ourAETitle,ctDoseSRFileName,
 					Attribute.getSingleStringValueOrNull(ctDoseList,TagFromName.SOPClassUID),
 					Attribute.getSingleStringValueOrNull(ctDoseList,TagFromName.SOPInstanceUID),
-					0/*compressionLevel*/,
-					networkDebugLevel);
+					0/*compressionLevel*/);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While sending file {}",ctDoseSRFileName,e);
 			}
 			if (ctDoseSRFile != null) {
 				try {
@@ -179,12 +179,12 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 					}
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("", e);;
 				}
 			}
 		}
 		catch (IOException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 
@@ -198,7 +198,7 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 		
 		public void run() {
 			try {
-if (debugLevel > 1) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.ReceivedFileProcessor.run(): receivedFileName = "+receivedFileName);
+				slf4jlogger.trace("ReceivedFileProcessor.run(): receivedFileName = {}",receivedFileName);
 				long receivedTime = System.currentTimeMillis();
 				FileInputStream fis = new FileInputStream(receivedFileName);
 				DicomInputStream i = new DicomInputStream(new BufferedInputStream(fis));
@@ -210,15 +210,15 @@ if (debugLevel > 1) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 				{
 					CTDose ctDose = null;
 					if (OCR.isDoseScreenInstance(list)) {
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.ReceivedFileProcessor.run(): isDoseScreenInstance");
+						slf4jlogger.debug("ReceivedFileProcessor.run(): isDoseScreenInstance");
 						int numberOfSeriesRelatedInstances = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.NumberOfSeriesRelatedInstances,-1);
 						if (numberOfSeriesRelatedInstances == 1) {
-							OCR ocr = new OCR(list,0/*debugLevel*/);
+							OCR ocr = new OCR(list);
 //System.err.print(ocr);
-							ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,debugLevel,null/*eventDataFromImages*/,true/*buildSR*/);
+							ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,null/*eventDataFromImages*/,true/*buildSR*/);
 						}
 						else {
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.ReceivedFileProcessor.run(): numberOfSeriesRelatedInstances = "+numberOfSeriesRelatedInstances);
+							slf4jlogger.debug("ReceivedFileProcessor.run(): numberOfSeriesRelatedInstances = {}",numberOfSeriesRelatedInstances);
 							String seriesInstanceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SeriesInstanceUID);
 							if (seriesInstanceUID.length() > 0) {
 								seriesQueue.addFile(seriesInstanceUID,receivedFileName,receivedTime,numberOfSeriesRelatedInstances);
@@ -227,8 +227,8 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 						}
 					}
 					else if (ExposureDoseSequence.isPhilipsDoseScreenInstance(list)) {
-if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingService.ReceivedFileProcessor.run(): isPhilipsDoseScreenInstance");
-						ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,debugLevel,null/*eventDataFromImages*/,true/*buildSR*/);
+						slf4jlogger.debug("ReceivedFileProcessor.run(): isPhilipsDoseScreenInstance");
+						ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,null/*eventDataFromImages*/,true/*buildSR*/);
 					}
 					if (ctDose != null) {
 						sendSRFile(ctDose);
@@ -236,7 +236,7 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			if (receivedFileName != null) {
 				try {
@@ -245,7 +245,7 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 					}
 				}
 				catch  (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -259,69 +259,84 @@ if (debugLevel > 0) System.err.println("LegacyRadiationDoseOCRDicomForwardingSer
 		 * @param	dicomFileName
 		 * @param	transferSyntax
 		 * @param	callingAETitle
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String dicomFileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
 			if (dicomFileName != null) {
-if (debugLevel > 0) System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+transferSyntax);
+					slf4jlogger.debug("Received: {} from {} in {}",dicomFileName,callingAETitle,transferSyntax);
 				try {
 					new Thread(new ReceivedFileProcessor(dicomFileName)).start();		// on separate thread, else will block and the C-STORE response will be delayed
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to process {} received from {} in {}",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
 		}
 	}
-	
+
 	/**
 	 * <p>Wait for incoming dose screen images, perform OCR to create Radiation Dose SRs and send RDSRs to specified DICOM destination.</p>
 	 *
-	 * @param	ourPort
-	 * @param	ourAETitle
-	 * @param	theirHost
-	 * @param	theirPort
-	 * @param	theirAETitle
-	 * @param	savedImagesFolder
-	 * @param	debugLevel
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #LegacyRadiationDoseOCRDicomForwardingService(int,String,String,int,String,File)} instead.
+	 * @param	ourPort				our port
+	 * @param	ourAETitle			our AE Title
+	 * @param	theirHost			their host name or IP address
+	 * @param	theirPort			their port
+	 * @param	theirAETitle		their AE title
+	 * @param	savedImagesFolder	the folder in which to save the received images
+	 * @param	debugLevel			ignored
 	 */
 	public LegacyRadiationDoseOCRDicomForwardingService(int ourPort,String ourAETitle,String theirHost,int theirPort,String theirAETitle,File savedImagesFolder,int debugLevel) throws IOException {
-		this(ourPort,ourAETitle,theirHost,theirPort,theirAETitle,savedImagesFolder,debugLevel,debugLevel);
+		this(ourPort,ourAETitle,theirHost,theirPort,theirAETitle,savedImagesFolder);
+		slf4jlogger.warn("Debug level supplied as argument ignored");
 	}
 	
 	/**
 	 * <p>Wait for incoming dose screen images, perform OCR to create Radiation Dose SRs and send RDSRs to specified DICOM destination.</p>
 	 *
-	 * @param	ourPort
-	 * @param	ourAETitle
-	 * @param	theirHost
-	 * @param	theirPort
-	 * @param	theirAETitle
-	 * @param	savedImagesFolder
-	 * @param	debugLevel
-	 * @param	networkDebugLevel
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #LegacyRadiationDoseOCRDicomForwardingService(int,String,String,int,String,File)} instead.
+	 * @param	ourPort				our port
+	 * @param	ourAETitle			our AE Title
+	 * @param	theirHost			their host name or IP address
+	 * @param	theirPort			their port
+	 * @param	theirAETitle		their AE title
+	 * @param	savedImagesFolder	the folder in which to save the received images
+	 * @param	debugLevel			ignored
+	 * @param	networkDebugLevel	ignored
 	 */
 	public LegacyRadiationDoseOCRDicomForwardingService(int ourPort,String ourAETitle,String theirHost,int theirPort,String theirAETitle,File savedImagesFolder,int debugLevel,int networkDebugLevel) throws IOException {
+		this(ourPort,ourAETitle,theirHost,theirPort,theirAETitle,savedImagesFolder);
+		slf4jlogger.warn("Debug levels supplied as arguments ignored");
+	}
+	
+	/**
+	 * <p>Wait for incoming dose screen images, perform OCR to create Radiation Dose SRs and send RDSRs to specified DICOM destination.</p>
+	 *
+	 * @param	ourPort				our port
+	 * @param	ourAETitle			our AE Title
+	 * @param	theirHost			their host name or IP address
+	 * @param	theirPort			their port
+	 * @param	theirAETitle		their AE title
+	 * @param	savedImagesFolder	the folder in which to save the received images
+	 */
+	public LegacyRadiationDoseOCRDicomForwardingService(int ourPort,String ourAETitle,String theirHost,int theirPort,String theirAETitle,File savedImagesFolder) throws IOException {
 		this.ourAETitle        = ourAETitle;
 		this.theirHost         = theirHost;
 		this.theirPort         = theirPort;
 		this.theirAETitle      = theirAETitle;
-		this.debugLevel        = debugLevel;
-		this.networkDebugLevel = networkDebugLevel;
 		// Start up DICOM association listener in background for receiving images  ...
-if (debugLevel > 1) System.err.println("Starting up DICOM association listener ...");
-		new Thread(new StorageSOPClassSCPDispatcher(ourPort,ourAETitle,savedImagesFolder,new OurReceivedObjectHandler(),networkDebugLevel)).start();
+		slf4jlogger.trace("Starting up DICOM association listener ...");
+		new Thread(new StorageSOPClassSCPDispatcher(ourPort,ourAETitle,savedImagesFolder,new OurReceivedObjectHandler())).start();
 		new Thread(new SeriesProcessor()).start();
 	}
 
 	/**
 	 * <p>Wait for incoming dose screen images, perform OCR to create Radiation Dose SRs and send RDSRs to specified DICOM destination.</p>
 	 *
-	 * @param	arg	array of six or strings - our port, our AE Title, their hostname, their port, their AE Title,
-	 *			and the debugging level and optionally a network debugging level (if absent defaults to the master debugging level)
+	 * @param	arg	array of five strings - our port, our AE Title, their hostname, their port, their AE Title
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -330,25 +345,21 @@ if (debugLevel > 1) System.err.println("Starting up DICOM association listener .
 			String theirHost;
 			int theirPort;
 			String theirAETitle;
-			int debugLevel;
-			int networkDebugLevel;
-			if (arg.length >= 6) {
+			if (arg.length == 5) {
 				        ourPort=Integer.parseInt(arg[0]);
 				    ourAETitle=arg[1];
 				     theirHost=arg[2];
 				     theirPort=Integer.parseInt(arg[3]);
 				  theirAETitle=arg[4];
-				    debugLevel=Integer.parseInt(arg[5]);
-			 networkDebugLevel=arg.length >= 7 ? Integer.parseInt(arg[6]) : debugLevel;
 			}
 			else {
-				throw new Exception("Argument list must be 6 or 7 values");
+				throw new Exception("Argument list must be 5 values");
 			}
 			File savedImagesFolder = new File(System.getProperty("java.io.tmpdir"));
-			new LegacyRadiationDoseOCRDicomForwardingService(ourPort,ourAETitle,theirHost,theirPort,theirAETitle,savedImagesFolder,debugLevel,networkDebugLevel);
+			new LegacyRadiationDoseOCRDicomForwardingService(ourPort,ourAETitle,theirHost,theirPort,theirAETitle,savedImagesFolder);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);;
 			System.exit(0);
 		}
 	}

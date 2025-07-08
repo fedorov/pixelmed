@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -10,14 +10,18 @@ import java.awt.*;
 import java.awt.color.*; 
 import java.awt.image.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class of static methods to convert non-RGB (e.g., YBR_FULL) to RGB true color images.</p>
  *
  * @author	dclunie
  */
 public class ConvertNonRGBToRGB {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertNonRGBToRGB.java,v 1.4 2013/04/09 20:52:41 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/ConvertNonRGBToRGB.java,v 1.16 2025/01/29 10:58:05 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ConvertNonRGBToRGB.class);
 
 	/**
 	 * <p>Read a DICOM color image input format file and change the photometric interpretation of the the encoded pixel data to RGB.</p>
@@ -66,7 +70,7 @@ public class ConvertNonRGBToRGB {
 		// fetching of bytes from PixelData is copied from SourceImage class ...
 		byte srcSamples[] = null;
 		{
-			Attribute a = list.get(TagFromName.PixelData);
+			Attribute a = list.getPixelData();
 			if (ValueRepresentation.isOtherByteVR(a.getVR())) {
 				srcSamples = a.getByteValues();
 			}
@@ -150,7 +154,7 @@ public class ConvertNonRGBToRGB {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

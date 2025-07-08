@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -22,16 +22,19 @@ import javax.swing.JDialog;
 
 import junit.framework.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 //import sun.awt.AppContext;
 
 public class TestCleanerReceiveAndClean extends TestCase {
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(TestCleanerReceiveAndClean.class);
 
 	protected static final String ourCallingAET = "TESTCALLINGAET";								// really doesn't matter (what we as SCU use when we send files to DicomCleaner)
 	protected static final String localNameOfUnitTestSCP = "UNITTEST";							// must already be configured in .com.pixelmed.display.DicomCleaner.properties
 	protected static final String savedImagesFolderName = "./tmp/TestCleanerReceiveAndClean";	// must already exist; is not cleaned up
 	protected static final String existingTestFileToBeCleaned = "testcleanerfile.dcm";			// must already exist
-	protected static final int    sendingDebugLevel = 0;										// in case we want any trace during send of test file to DicomCleaner
-	protected static final int    receivingCleanedDebugLevel = 0;								// in case we want any trace during receipt of cleaned file from DicomCleaner
 	
 	protected static final int    waitIntervalWhenSleeping = 10;								// in ms
 	
@@ -78,14 +81,14 @@ public class TestCleanerReceiveAndClean extends TestCase {
 		public void checkIsAsExpected(AttributeList list) {
 			if (handleAsUID) {
 				if (cleaned) {
-					assertTrue("Cleaned "+list.getDictionary().getFullNameFromTag(tag),!originalValue.equals(Attribute.getSingleStringValueOrNull(list,tag)));
+					assertTrue("Cleaned "+DicomDictionary.StandardDictionary.getFullNameFromTag(tag),!originalValue.equals(Attribute.getSingleStringValueOrNull(list,tag)));
 				}
 				else {
-					assertEquals("Not Cleaned "+list.getDictionary().getFullNameFromTag(tag),originalValue,Attribute.getSingleStringValueOrNull(list,tag));
+					assertEquals("Not Cleaned "+DicomDictionary.StandardDictionary.getFullNameFromTag(tag),originalValue,Attribute.getSingleStringValueOrNull(list,tag));
 				}
 			}
 			else {
-				assertEquals((cleaned ? "" : "Not ")+"Cleaned "+list.getDictionary().getFullNameFromTag(tag),(cleaned ? cleanedValueIfCleaned : originalValue),Attribute.getSingleStringValueOrNull(list,tag));
+				assertEquals((cleaned ? "" : "Not ")+"Cleaned "+DicomDictionary.StandardDictionary.getFullNameFromTag(tag),(cleaned ? cleanedValueIfCleaned : originalValue),Attribute.getSingleStringValueOrNull(list,tag));
 			}
 		}
 		
@@ -133,7 +136,9 @@ public class TestCleanerReceiveAndClean extends TestCase {
 	static protected String addContributingEquipmentLabelText = "Add contributing equipment";
 	static protected String removeClinicalTrialAttributesLabelText = "Remove clinical trial attributes";
 	static protected String zipExportLabelText = "Zip exported files";
-	
+	static protected String hierarchicalExportLabelText = "Hierarchical names in export";
+	static protected String acceptAnyTransferSyntaxLabelText = "Accept any Transfer Syntax";
+
 	protected volatile DicomCleaner application;
 	
 	protected volatile String lastReceivedDicomFileName;
@@ -157,7 +162,7 @@ public class TestCleanerReceiveAndClean extends TestCase {
 //System.err.println("applicationThread.run(): application = "+application);
 				}
 				catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		};
@@ -183,8 +188,7 @@ public class TestCleanerReceiveAndClean extends TestCase {
 				aet,
 				new File(savedImagesFolderName),
 				StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER,
-				new OurReceivedObjectHandler(),
-				receivingCleanedDebugLevel);
+				new OurReceivedObjectHandler());
 			Thread storageSOPClassSCPDispatcherThread = new Thread(storageSOPClassSCPDispatcher);
 			storageSOPClassSCPDispatcherThread.start();
 			while (storageSOPClassSCPDispatcherThread.getState() != Thread.State.RUNNABLE) {
@@ -216,6 +220,8 @@ public class TestCleanerReceiveAndClean extends TestCase {
 		assertTrue(removeClinicalTrialAttributesLabelText+" is not selected by default", ! ((JCheckBox)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JCheckBox",removeClinicalTrialAttributesLabelText)[0]).isSelected());
 		assertTrue(addContributingEquipmentLabelText     +" is     selected by default",   ((JCheckBox)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JCheckBox",addContributingEquipmentLabelText)[0]).isSelected());
 		assertTrue(zipExportLabelText                    +" is not selected by default", ! ((JCheckBox)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JCheckBox",zipExportLabelText)[0]).isSelected());
+		assertTrue(hierarchicalExportLabelText           +" is not selected by default", ! ((JCheckBox)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JCheckBox",hierarchicalExportLabelText)[0]).isSelected());
+		assertTrue(acceptAnyTransferSyntaxLabelText      +" is not selected by default", ! ((JCheckBox)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JCheckBox",acceptAnyTransferSyntaxLabelText)[0]).isSelected());
 
 		{
 			SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles();
@@ -223,7 +229,7 @@ public class TestCleanerReceiveAndClean extends TestCase {
 			String    theirHost = "localhost";
 			int       theirPort = Integer.parseInt(application.getPropertyInsistently("Dicom.ListeningPort"));
 			String theirAETitle = application.getPropertyInsistently("Dicom.CalledAETitle");
-			new StorageSOPClassSCU(theirHost,theirPort,theirAETitle,ourCallingAET,setOfDicomFiles,0/*compressionLevel*/,null,null,0,sendingDebugLevel);
+			new StorageSOPClassSCU(theirHost,theirPort,theirAETitle,ourCallingAET,setOfDicomFiles,0/*compressionLevel*/,null,null,0);
 		}
 
 		//Thread.currentThread().sleep(1000);
@@ -269,7 +275,7 @@ public class TestCleanerReceiveAndClean extends TestCase {
 						((JButton)UserInterfaceUtilities.findComponentsOfClassWithTextValue("javax.swing.JButton","Send")[0]).doClick();
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			};

@@ -1,9 +1,12 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
 import java.util.ArrayList;
 import java.util.Locale;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>Various static methods helpful for formatting floating point values.</p>
@@ -11,9 +14,9 @@ import java.util.Locale;
  * @author	dclunie
  */
 public class FloatFormatter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FloatFormatter.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FloatFormatter.java,v 1.8 2012/02/01 18:29:00 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FileUtilities.class);
 	
 	public static String stringValueForNaN = "NaN";
 	public static String stringValueForNegativeInfinity = "-Infinity";
@@ -251,7 +254,7 @@ public class FloatFormatter {
 			}
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 			count=0;			// discard any intermediate results
 		}
 		return count != wanted ? null : values;
@@ -286,7 +289,7 @@ public class FloatFormatter {
 			}
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("", e);
 			count=0;			// discard any intermediate results
 		}
 		double[] values = null;
@@ -322,6 +325,7 @@ public class FloatFormatter {
 		-113340878115264.8,
 		1133408781152648.0,
 		-1133408781152648.0,
+		.012624143592677,
 		99999.999,
 		-99999.999,
 		99999.999999999999999,
@@ -363,6 +367,7 @@ public class FloatFormatter {
 		"-113340878115264.8",
 		"1133408781152648.0",
 		"-1133408781152648.0",
+		".012624143592677",
 		"99999.999",
 		"-99999.999",
 		"99999.999999999999999",
@@ -404,6 +409,7 @@ public class FloatFormatter {
 		"-.1133E15",
 		".1133E16",
 		"-.1133E16",
+		"0.0126",
 		"100000",
 		"-100000",
 		"100000",
@@ -445,6 +451,7 @@ public class FloatFormatter {
 		"-113340878115265",
 		"1133408781152648",
 		"-.11334087812E16",
+		".012624143592677",
 		"99999.999",
 		"-99999.999",
 		"100000",
@@ -465,16 +472,16 @@ public class FloatFormatter {
 	};
 	
 	public static void main(String arg[]) {
-		System.err.println("Test of FloatFormatter.toString():");
+		slf4jlogger.info("Test of FloatFormatter.toString():");
 		for (int i=0; i< testDoubleValues.length; ++i) {
 			String sv = FloatFormatter.toString(testDoubleValues[i]);
-			System.err.println("\t"+(sv.equals(testDoubleStringExpectedForToString[i]) ? "PASS" : "FAIL")+": Supplied <"+testDoubleStringSupplied[i]+">\t Got <"+sv+">\t Expected <"+testDoubleStringExpectedForToString[i]+">");
+			System.err.println("\t"+(sv.equals(testDoubleStringExpectedForToString[i]) ? "PASS" : "FAIL")+": Supplied <"+testDoubleStringSupplied[i]+">\t Got <"+sv+">\t Expected <"+testDoubleStringExpectedForToString[i]+">");	// No need for SLF4J since test
 		}
-		System.err.println("Test of FloatFormatter.toStringOfFixedMaximumLength(double,16):");
+		slf4jlogger.info("Test of FloatFormatter.toStringOfFixedMaximumLength(double,16):");
 		for (int i=0; i< testDoubleValues.length; ++i) {
 			String sv = FloatFormatter.toStringOfFixedMaximumLength(testDoubleValues[i],16,true);
 			int svl = sv.length();
-			System.err.println("\t"+(sv.equals(testDoubleStringExpectedForFixedMaximumLength16[i]) && svl <= 16 ? "PASS" : "FAIL")+": Supplied <"+testDoubleStringSupplied[i]+">\t Got <"+sv+"> (length="+svl+")\t Expected <"+testDoubleStringExpectedForFixedMaximumLength16[i]+">\t Double.toString() <"+Double.toString(testDoubleValues[i])+">");
+			System.err.println("\t"+(sv.equals(testDoubleStringExpectedForFixedMaximumLength16[i]) && svl <= 16 ? "PASS" : "FAIL")+": Supplied <"+testDoubleStringSupplied[i]+">\t Got <"+sv+"> (length="+svl+")\t Expected <"+testDoubleStringExpectedForFixedMaximumLength16[i]+">\t Double.toString() <"+Double.toString(testDoubleValues[i])+">");	// No need for SLF4J since test
 		}
 		
 	}

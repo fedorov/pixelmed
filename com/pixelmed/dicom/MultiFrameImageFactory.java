@@ -1,10 +1,14 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
 import com.pixelmed.anatproc.CodedConcept;
 import com.pixelmed.anatproc.CTAnatomy;
+import com.pixelmed.anatproc.DisplayableAnatomicConcept;
 import com.pixelmed.anatproc.ProjectionXRayAnatomy;
+
+import com.pixelmed.geometry.GeometryOfSlice;
+import com.pixelmed.geometry.GeometryOfVolume;
 
 import com.pixelmed.utils.FileUtilities;
 
@@ -13,6 +17,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,9 +25,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.vecmath.Vector3d;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to create a set of instances, which when given unenhanced ("classic") images creates
@@ -31,11 +43,19 @@ import javax.vecmath.Vector3d;
  *
  * <p>Each enhanced image corresponds to one {@link com.pixelmed.dicom.FrameSet FrameSet}.</p>
  *
+ * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+ *
  * @author	dclunie
  */
 public class MultiFrameImageFactory {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MultiFrameImageFactory.java,v 1.50 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MultiFrameImageFactory.java,v 1.17 2013/06/25 22:47:04 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MultiFrameImageFactory.class);
+	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
+	
+	protected static boolean useRandomFrameOrderOption = false;			// for testing ... should make this a command line argument
+	protected static boolean doNotEncodeStackInformationOption = false;	// for testing ... should make this a command line argument
 
 	static void addIfPresentAndNotPerFrame(AttributeList targetList,AttributeList sourceList,AttributeTag tag,Set<AttributeTag> perFrameAttributeTags) {
 		addIfPresentAndNotPerFrame(targetList,sourceList,null/*done*/,tag,perFrameAttributeTags);
@@ -64,6 +84,8 @@ public class MultiFrameImageFactory {
 	static void addIfPresentWithValuesAndNotPerFrame(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,AttributeTag tag,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
 		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,tag,tag,perFrameAttributeTags);
 	}
+	
+	// The copying here is a lot of effort (because there is no clone values or set values methods in various Attribute sub-classes ... should improve this :(
 
 	static void addIfPresentWithValuesAndNotPerFrame(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,AttributeTag sourceTag,AttributeTag targetTag,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
 		if (perFrameAttributeTags == null || !perFrameAttributeTags.contains(sourceTag)) {
@@ -81,8 +103,47 @@ public class MultiFrameImageFactory {
 					done.add(sourceTag);
 					done.add(targetTag);
 				}
+				else if (sourceAttribute instanceof TextAttribute) {	// there should only be one value for TextAttribute
+					String[] values = sourceAttribute.getStringValues();
+					if (values != null && values.length > 0) {
+						if (values.length > 1) {
+							slf4jlogger.info("addIfPresentWithValuesAndNotPerFrame(): more than one value for TextAttribute for {} of class {}",sourceTag,sourceAttribute.getClass());
+						}
+						Attribute targetAttribute = AttributeFactory.newAttribute(targetTag);
+						targetList.put(targetAttribute);
+						for (String value : values) {
+							targetAttribute.addValue(value);
+						}
+					}
+					done.add(sourceTag);
+					done.add(targetTag);
+				}
+				else if (sourceAttribute instanceof UnsignedShortAttribute || sourceAttribute instanceof SignedShortAttribute) {
+					short[] values = sourceAttribute.getShortValues();		// use the native type that does not create cached copies
+					if (values != null && values.length > 0) {
+						Attribute targetAttribute = AttributeFactory.newAttribute(targetTag);
+						targetList.put(targetAttribute);
+						for (short value : values) {
+							targetAttribute.addValue(value);
+						}
+					}
+					done.add(sourceTag);
+					done.add(targetTag);
+				}
+				else if (sourceAttribute instanceof UnsignedLongAttribute || sourceAttribute instanceof SignedLongAttribute) {
+					int[] values = sourceAttribute.getIntegerValues();		// use the native type that does not create cached copies
+					if (values != null && values.length > 0) {
+						Attribute targetAttribute = AttributeFactory.newAttribute(targetTag);
+						targetList.put(targetAttribute);
+						for (int value : values) {
+							targetAttribute.addValue(value);
+						}
+					}
+					done.add(sourceTag);
+					done.add(targetTag);
+				}
 				else {
-System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(): unsupported copy of "+sourceTag+" of class "+sourceAttribute.getClass());
+					slf4jlogger.info("addIfPresentWithValuesAndNotPerFrame(): unsupported copy of {} of class {}",sourceTag,sourceAttribute.getClass());
 				}
 			}
 		}
@@ -137,6 +198,30 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 	
 	static void addEnhancedMRImageModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
+		// MR Image and Spectroscopy Instance Macro
+		// Acquisition Number   ... see addEnhancedCommonImageModule()
+		// Acquisition DateTime ... see addEnhancedCommonImageModule()
+		// Acquisition Duration ... see addEnhancedCommonImageModule()
+		// Referenced Raw Data Sequence etc.  ... see addEnhancedCommonImageModule()
+		// ContentQualification ... see addEnhancedCommonImageModule()
+		
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ResonantNucleus"),perFrameAttributeTags);
+		if (targetList.get(dictionary.getTagFromName("ResonantNucleus")) == null) {
+			// derive from ImagedNucleus, which is the one used in legacy MR IOD, but does not have a standard list of defined terms ... (could check these :()
+			addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ImagedNucleus"),dictionary.getTagFromName("ResonantNucleus"),perFrameAttributeTags);
+		}
+		
+		
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("KSpaceFiltering"),perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("MagneticFieldStrength"),perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ApplicableSafetyStandardAgency"),perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ApplicableSafetyStandardDescription"),perFrameAttributeTags);
+		
+		// ImageComments ... see addEnhancedCommonImageModule()
+	
+		// MR Image Description Macro ... keep consistent with addMRImageFrameTypeFunctionalGroup() where the same values are used (should refactor :()
+		//{ Attribute a = new CodeStringAttribute(TagFromName.ComplexImageComponent); a.addValue("MAGNITUDE"); targetList.put(a); }	// it almost always is, and have no way of knowing otherwise :(
+		//{ Attribute a = new CodeStringAttribute(TagFromName.AcquisitionContrast); a.addValue("UNKNOWN"); targetList.put(a); }		// this is actually a legal defined term, surprisingly :(
 	}
 	
 	static void addEnhancedPETImageModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
@@ -163,40 +248,13 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		// Bits Stored								- handled by distinguishingAttribute copy
 		// High Bit									- handled by distinguishingAttribute copy
 		
-		if (!perFrameAttributeTags.contains(TagFromName.ContentQualification)) {
-			String value = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.ContentQualification,"PRODUCT");
-			if (value.length() > 0) {
-				{ Attribute a = new CodeStringAttribute(TagFromName.ContentQualification); a.addValue(value); targetList.put(a); }
-				done.add(TagFromName.ContentQualification);
-			}
-		}
-
-		// Image Comments							- leave out; if present in source frames will be copied to per-frame or shared FrameComments
-
-		if (!perFrameAttributeTags.contains(TagFromName.BurnedInAnnotation)) {
-			// should not really assume no burned in annotation, but since most are, and this isn't usually present ... :(
-			// actualy only a value of NO is permitted in the IOD :(
-			String value = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.BurnedInAnnotation,"NO");
-			if (value.length() > 0) {
-				{ Attribute a = new CodeStringAttribute(TagFromName.BurnedInAnnotation); a.addValue(value); targetList.put(a); }
-				done.add(TagFromName.BurnedInAnnotation);
-			}
-		}
-		
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.RecognizableVisualFeatures,perFrameAttributeTags);
-
-		if (!perFrameAttributeTags.contains(TagFromName.LossyImageCompression)) {
-			// should not really assume uncompressed, but since most are, and this isn't usually present ... :(
-			// could do better by checking for presence and values in DerivationDescription, LossyImageCompressionRatio, LossyImageCompressionMethod :(
-			String value = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.LossyImageCompression,"00");
-			if (value.length() > 0) {
-				{ Attribute a = new CodeStringAttribute(TagFromName.LossyImageCompression); a.addValue(value); targetList.put(a); }
-				done.add(TagFromName.LossyImageCompression);
-			}
-		}
-
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.LossyImageCompressionRatio,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.LossyImageCompressionMethod,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContentQualification,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ImageComments,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.BurnedInAnnotation,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.RecognizableVisualFeatures,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.LossyImageCompression,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.LossyImageCompressionRatio,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.LossyImageCompressionMethod,perFrameAttributeTags);
 
 		if (!perFrameAttributeTags.contains(TagFromName.PresentationLUTShape)) {
 			// actually should really invert the pixel data if MONOCHROME1, since only MONOCHROME2 is permitted :(
@@ -212,7 +270,6 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		// Icon Image Sequence							- always discard these
 	}
 
-	
 	static void addEnhancedCommonImageModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
 		addEnhancedCommonImageModule(targetList,sourceList,done,perFrameAttributeTags,"NONE"/*volumeBasedCalculationTechnique*/);
 	}
@@ -267,6 +324,23 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		// PresentationLUTShape
 		// IrradiationEventUID
 	}
+	
+	static void addContrastBolusModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusAgent,perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusAgentSequence,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusRoute,perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusAdministrationRouteSequence,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusVolume,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusStartTime,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusStopTime,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusTotalDose,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastFlowRate,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastFlowDuration,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusIngredient,perFrameAttributeTags);
+		addIfPresentWithValuesAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusIngredientConcentration,perFrameAttributeTags);
+		
+		// could try to do clever stuff and add Enhanced module, or recognize ContrastBolusAgentSequence from ContrastBolusAgent, etc. :(
+	}
 
 	static void addSecondaryCaptureEquipmentModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
 		if (!perFrameAttributeTags.contains(TagFromName.ConversionType)) {
@@ -296,15 +370,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 	
 	static void addSecondaryCaptureMultiFrameImageModule(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
-		if (!perFrameAttributeTags.contains(TagFromName.BurnedInAnnotation)) {
-			// should not really assume no burned in annotation, but since most are, and this isn't usually present ... :(
-			// actualy only a value of NO is permitted in the IOD :(
-			String value = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.BurnedInAnnotation,"NO");
-			if (value.length() > 0) {
-				{ Attribute a = new CodeStringAttribute(TagFromName.BurnedInAnnotation); a.addValue(value); targetList.put(a); }
-				done.add(TagFromName.BurnedInAnnotation);
-			}
-		}
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.BurnedInAnnotation,perFrameAttributeTags);
 		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.RecognizableVisualFeatures,perFrameAttributeTags);
 		if (!perFrameAttributeTags.contains(TagFromName.PresentationLUTShape)) {
 			// actually should really invert the pixel data if MONOCHROME1, since only MONOCHROME2 is permitted :(
@@ -346,9 +412,9 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 	
 	static void addXRay3DGeneralPositionerMovementMacro(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
-		double tomoAngle = Attribute.getSingleDoubleValueOrDefault(sourceList,TagFromName.TomoAngle,0);
+		double tomoAngle = Attribute.getSingleDoubleValueOrDefault(sourceList,dictionary.getTagFromName("TomoAngle"),0);
 		if (tomoAngle > 0) {
-			{ Attribute a = new FloatSingleAttribute(TagFromName.PrimaryPositionerScanArc); a.addValue(tomoAngle); targetList.put(a); }
+			{ Attribute a = new FloatSingleAttribute(dictionary.getTagFromName("PrimaryPositionerScanArc")); a.addValue(tomoAngle); targetList.put(a); }
 		}
 		// PrimaryPositionerScanStartAngle
 		// PrimaryPositionerIncrement
@@ -357,16 +423,16 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	
 	static void addXRay3DGeneralSharedAcquisitionMacro(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Set<AttributeTag> perFrameAttributeTags) throws DicomException {
 		// SourceImageSequence
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.FieldOfViewDimensionsInFloat,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.FieldOfViewOrigin,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.FieldOfViewRotation,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.FieldOfViewHorizontalFlip,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.Grid,perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("FieldOfViewDimensionsInFloat"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("FieldOfViewOrigin"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("FieldOfViewRotation"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("FieldOfViewHorizontalFlip"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("Grid"),perFrameAttributeTags);
 		// Grid Description macro
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.KVP,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.XRayTubeCurrentInmA,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ExposureTimeInms,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ExposureInmAs,perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("KVP"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("XRayTubeCurrentInmA"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ExposureTimeInms"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(targetList,sourceList,done,dictionary.getTagFromName("ExposureInmAs"),perFrameAttributeTags);
 		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusAgent,perFrameAttributeTags);
 		addIfPresentAndNotPerFrame(targetList,sourceList,done,TagFromName.ContrastBolusAgentSequence,perFrameAttributeTags);
 		// StartAcquisitionDateTime
@@ -381,25 +447,25 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FieldOfViewShape,perFrameAttributeTags);
 		addXRay3DGeneralSharedAcquisitionMacro(itemList,sourceList,done,perFrameAttributeTags);
 		addXRay3DGeneralPositionerMovementMacro(itemList,sourceList,done,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.DistanceSourceToDetector,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.DistanceSourceToPatient,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.EstimatedRadiographicMagnificationFactor,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.AnodeTargetMaterial,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.BodyPartThickness,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.ExposureControlMode,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.ExposureControlModeDescription,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.HalfValueLayer,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FocalSpot,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.DetectorBinning,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.DetectorTemperature,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterType,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterMaterial,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterThicknessMinimum,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterThicknessMaximum,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterBeamPathLengthMinimum,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.FilterBeamPathLengthMaximum,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.CompressionForce,perFrameAttributeTags);
-		addIfPresentAndNotPerFrame(itemList,sourceList,done,TagFromName.PaddleDescription,perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("DistanceSourceToDetector"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("DistanceSourceToPatient"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("EstimatedRadiographicMagnificationFactor"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("AnodeTargetMaterial"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("BodyPartThickness"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("ExposureControlMode"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("ExposureControlModeDescription"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("HalfValueLayer"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FocalSpots"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("DetectorBinning"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("DetectorTemperature"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterType"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterMaterial"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterThicknessMinimum"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterThicknessMaximum"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterBeamPathLengthMinimum"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("FilterBeamPathLengthMaximum"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("CompressionForce"),perFrameAttributeTags);
+		addIfPresentAndNotPerFrame(itemList,sourceList,done,dictionary.getTagFromName("PaddleDescription"),perFrameAttributeTags);
 		// PerProjectionAcquisitionSequence
 	}
 	
@@ -412,25 +478,25 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 			}
 			// else could try to guess from ViewPosition, but rarely necessary :(
 		}
-		if (!perFrameAttributeTags.contains(TagFromName.BreastImplantPresent)) {
-			Attribute a = sourceList.get(TagFromName.BreastImplantPresent);
+		if (!perFrameAttributeTags.contains(dictionary.getTagFromName("BreastImplantPresent"))) {
+			Attribute a = sourceList.get(dictionary.getTagFromName("BreastImplantPresent"));
 			if (a != null) {
 				targetList.put(a);
-				done.add(TagFromName.BreastImplantPresent);
+				done.add(dictionary.getTagFromName("BreastImplantPresent"));
 			}
 		}
-		if (!perFrameAttributeTags.contains(TagFromName.PartialView)) {
-			Attribute a = sourceList.get(TagFromName.PartialView);
+		if (!perFrameAttributeTags.contains(dictionary.getTagFromName("PartialView"))) {
+			Attribute a = sourceList.get(dictionary.getTagFromName("PartialView"));
 			if (a != null) {
 				targetList.put(a);
-				done.add(TagFromName.PartialView);
+				done.add(dictionary.getTagFromName("PartialView"));
 			}
 		}
-		if (!perFrameAttributeTags.contains(TagFromName.PartialViewCodeSequence)) {
-			Attribute a = sourceList.get(TagFromName.PartialViewCodeSequence);
+		if (!perFrameAttributeTags.contains(dictionary.getTagFromName("PartialViewCodeSequence"))) {
+			Attribute a = sourceList.get(dictionary.getTagFromName("PartialViewCodeSequence"));
 			if (a != null) {
 				targetList.put(a);
-				done.add(TagFromName.PartialViewCodeSequence);
+				done.add(dictionary.getTagFromName("PartialViewCodeSequence"));
 			}
 		}
 	}
@@ -457,6 +523,8 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		AttributeList itemList = new AttributeList();
 		aMRImageFrameTypeSequence.addItem(itemList);
 		addCommonCTMRImageDescriptionMacro(itemList,sourceList,done,true/*frameLevel*/);
+		//{ Attribute a = new CodeStringAttribute(TagFromName.ComplexImageComponent); a.addValue("MAGNITUDE"); itemList.put(a); }		// it almost always is, and have no way of knowing otherwise :(
+		//{ Attribute a = new CodeStringAttribute(TagFromName.AcquisitionContrast); a.addValue("UNKNOWN"); itemList.put(a); }		// this is actually a legal defined term, surprisingly :(
 	}
 	
 	static boolean containsAttributesForPETImageFrameTypeFunctionalGroup(Set<AttributeTag> attributeTags) {
@@ -509,13 +577,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		targetList.put(aFrameAnatomySequence);
 		AttributeList itemList = new AttributeList();
 		aFrameAnatomySequence.addItem(itemList);
-		addIfPresent(itemList,sourceList,done,TagFromName.FrameLaterality);
-		if (itemList.get(TagFromName.FrameLaterality) == null) {
-			addIfPresentWithValues(itemList,sourceList,done,TagFromName.ImageLaterality,TagFromName.FrameLaterality);
-		}
-		if (itemList.get(TagFromName.Laterality) == null) {
-			addIfPresentWithValues(itemList,sourceList,done,TagFromName.Laterality,TagFromName.FrameLaterality);
-		}
+
 		addIfPresent(itemList,sourceList,done,TagFromName.AnatomicRegionSequence);
 		if (itemList.get(TagFromName.AnatomicRegionSequence) == null) {
 //System.err.println("MultiFrameImageFactory.addFrameAnatomyFunctionalGroup(): trying to derive value for AnatomicRegionSequence");
@@ -529,11 +591,33 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 			}
 			// do not bother to try to figure out what source attribute was used to add to done list :(
 		}
+		
+		addIfPresentWithValues(itemList,sourceList,done,TagFromName.FrameLaterality);
+		if (itemList.get(TagFromName.FrameLaterality) == null) {
+			addIfPresentWithValues(itemList,sourceList,done,TagFromName.ImageLaterality,TagFromName.FrameLaterality);
+		}
+		if (itemList.get(TagFromName.FrameLaterality) == null) {
+			addIfPresentWithValues(itemList,sourceList,done,TagFromName.Laterality,TagFromName.FrameLaterality);
+		}
+		if (itemList.get(TagFromName.FrameLaterality) == null) {
+			CodedSequenceItem anatomicRegion = CodedSequenceItem.getSingleCodedSequenceItemOrNull(itemList,TagFromName.AnatomicRegionSequence);
+			if (anatomicRegion != null) {
+//System.err.println("MultiFrameImageFactory.addFrameAnatomyFunctionalGroup(): no laterality information, so checking if AnatomicRegionSequence is unpaired");
+				CodedConcept found = CTAnatomy.getAnatomyConcepts().find(anatomicRegion);
+				if (found == null) {
+					found = ProjectionXRayAnatomy.getAnatomyConcepts().find(anatomicRegion);
+				}
+				if (found != null && found instanceof DisplayableAnatomicConcept && !((DisplayableAnatomicConcept)found).isPairedStructure()) {
+//System.err.println("MultiFrameImageFactory.addFrameAnatomyFunctionalGroup(): is unpaired");
+					{ Attribute a = new CodeStringAttribute(TagFromName.FrameLaterality); a.addValue("U"); itemList.put(a); }
+				}
+			}
+		}
 	}
 	
 	// always per-frame, so no need for containsAttributesForFrameContentFunctionalGroup()
 	
-	static Date addFrameContentFunctionalGroup(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Date earliestFrameAcquisitionDateTimeSoFar,boolean tzSpecified,String timezoneString) throws DicomException {
+	static Date addFrameContentFunctionalGroup(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,Date earliestFrameAcquisitionDateTimeSoFar,boolean tzSpecified,String timezoneString,Set<AttributeTag> perFrameAttributeTags,boolean doNotEncodeStackInformation) throws DicomException {
 		SequenceAttribute aFrameContentSequence = new SequenceAttribute(TagFromName.FrameContentSequence);
 		targetList.put(aFrameContentSequence);
 		AttributeList itemList = new AttributeList();
@@ -545,17 +629,19 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 				done.add(TagFromName.AcquisitionNumber);
 			}
 		}
-		// Frame Reference DateTime		1C
 		{
-			// copied this from FrameSet .... should refactor ... :(
+			// copied basis of this from FrameSet .... should refactor ... :(
 			String useAcquisitionDateTime = Attribute.getSingleStringValueOrEmptyString(sourceList,TagFromName.AcquisitionDateTime);
+			boolean acquisitionDateTimeInformationIsPerFrame = perFrameAttributeTags.contains(TagFromName.AcquisitionDateTime);
 			if (useAcquisitionDateTime.length() == 0) {
 				// Follow the pattern of com.pixelmed.dicom.DateTimeAttribute.getDateFromFormattedString(AttributeList,AttributeTag,AttributeTag)
 				String dateValue = Attribute.getSingleStringValueOrEmptyString(sourceList,TagFromName.AcquisitionDate);
+				acquisitionDateTimeInformationIsPerFrame = acquisitionDateTimeInformationIsPerFrame || perFrameAttributeTags.contains(TagFromName.AcquisitionDate);
 				if (dateValue.length() > 0) {
 					useAcquisitionDateTime = dateValue
 										   + Attribute.getSingleStringValueOrEmptyString(sourceList,TagFromName.AcquisitionTime);		// assume hh is zero padded if less than 10, which should be true, but should check :(
 										   // handle time zone later
+					acquisitionDateTimeInformationIsPerFrame = acquisitionDateTimeInformationIsPerFrame || perFrameAttributeTags.contains(TagFromName.AcquisitionTime);
 				}
 				// else leave it empty
 			}
@@ -563,33 +649,63 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 				done.add(TagFromName.AcquisitionDateTime);
 			}
 			if (useAcquisitionDateTime.length() > 0) {
+//System.err.println("addFrameContentFunctionalGroup(): tzSpecified="+tzSpecified);
+//System.err.println("addFrameContentFunctionalGroup(): timezoneString="+timezoneString);
 				if (tzSpecified && !(useAcquisitionDateTime.contains("+") || useAcquisitionDateTime.contains("-"))) {
 					useAcquisitionDateTime = useAcquisitionDateTime + timezoneString;													// only add it if TZ was not included in the original DT attribute and was present in TimezoneOffsetFromUTC
 				}
-				Attribute a = new DateTimeAttribute(TagFromName.FrameAcquisitionDateTime); a.addValue(useAcquisitionDateTime); itemList.put(a);
+				
 				try {
 					// need to handle timezone explicitly for earliestFrameAcquisitionDateTimeSoFar check
+					String useAcquisitionDateTimeForCalculations = null;
 					if (!(useAcquisitionDateTime.contains("+") || useAcquisitionDateTime.contains("-"))) {
-						useAcquisitionDateTime = useAcquisitionDateTime + "+0000";														// set to GMT used throughout program, if TZ was not included in the original DT attribute, or we did not already add it from TimezoneOffsetFromUTC
+						useAcquisitionDateTimeForCalculations = useAcquisitionDateTime + "+0000";										// set to GMT used throughout program, if TZ was not included in the original DT attribute, or we did not already add it from TimezoneOffsetFromUTC
 					}
-					Date testDate = DateTimeAttribute.getDateFromFormattedString(useAcquisitionDateTime);
+					else {
+						useAcquisitionDateTimeForCalculations = useAcquisitionDateTime;
+					}
+					Date testDate = DateTimeAttribute.getDateFromFormattedString(useAcquisitionDateTimeForCalculations);
 					if (testDate.before(earliestFrameAcquisitionDateTimeSoFar)) {
 						earliestFrameAcquisitionDateTimeSoFar = testDate;
 					}
+					if (acquisitionDateTimeInformationIsPerFrame) {
+//System.err.println("addFrameContentFunctionalGroup(): acquisitionDateTimeInformationIsPerFrame, so use it as is: "+useAcquisitionDateTime);
+						Attribute a = new DateTimeAttribute(TagFromName.FrameAcquisitionDateTime); a.addValue(useAcquisitionDateTime); itemList.put(a);
+					}
+					else {
+//System.err.println("addFrameContentFunctionalGroup(): acquisitionDateTimeInformationIsPerFrame is false, was: "+useAcquisitionDateTime);
+						// check for special case seen in GE DCE MR, in which AcquisitionTime is constant but TriggerTime (incorrectly, since not cardiac), signals acquisition time offset
+						if (sourceList.containsKey(TagFromName.TriggerTime) && !sourceList.containsKey(TagFromName.FrameReferenceDateTime)) {	// ?? should check for "not cardiac" somehow ?? should make this a command ;ine option ?? :(
+							int triggerTime = Attribute.getSingleIntegerValueOrDefault(sourceList,TagFromName.TriggerTime,0);	// in mS
+							testDate.setTime(testDate.getTime() + triggerTime);
+							useAcquisitionDateTime = DateTimeAttribute.getFormattedString(testDate,DateTimeAttribute.getTimeZone(timezoneString),tzSpecified);
+//System.err.println("addFrameContentFunctionalGroup(): acquisitionDateTimeInformationIsPerFrame is false and TriggerTime is "+triggerTime+", so add to AcquisitionDateTime is: "+useAcquisitionDateTime);
+							Attribute a = new DateTimeAttribute(TagFromName.FrameAcquisitionDateTime); a.addValue(useAcquisitionDateTime); itemList.put(a);
+							done.add(TagFromName.TriggerTime);		// need to be sure and not add TriggerTime as well, since already "used" to make revised FrameAcquisitionDateTime
+						}
+						else {
+//System.err.println("addFrameContentFunctionalGroup(): acquisitionDateTimeInformationIsPerFrame is false but no TriggerTime, so use it as is: "+useAcquisitionDateTime);
+							Attribute a = new DateTimeAttribute(TagFromName.FrameAcquisitionDateTime); a.addValue(useAcquisitionDateTime); itemList.put(a);
+						}
+					}
 				}
 				catch (java.text.ParseException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Cannot derive AcquisitionDateTime",e);
 				}
 			}
 		}
+		// Frame Reference DateTime		1C		... could try to guess from FrameAcquisitionDateTime and FrameAcquisitionDuration, but latter often missing :(
 		addIfPresentWithValues(itemList,sourceList,done,TagFromName.AcquisitionDuration,TagFromName.FrameAcquisitionDuration);
 		// Cardiac Cycle Position		3
 		// Respiratory Cycle Position	3
 		// Dimension Index Values		1C
-		// Temporal Position Index		1C
-		// Stack ID						1C
-		// In-Stack Position Number		1C
-
+		
+		addIfPresentWithValues(itemList,sourceList,done,TagFromName.TemporalPositionIndex);
+		if (!doNotEncodeStackInformation) {
+			slf4jlogger.info("addFrameContentFunctionalGroup(): Adding StackID and InStackPositionNumber");
+			addIfPresentWithValues(itemList,sourceList,done,TagFromName.StackID);
+			addIfPresentWithValues(itemList,sourceList,done,TagFromName.InStackPositionNumber);
+		}
 		addIfPresentWithValues(itemList,sourceList,done,TagFromName.ImageComments,TagFromName.FrameComments);
 
 		// Frame Label					3
@@ -605,11 +721,11 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 			}
 		}
 		catch (java.text.ParseException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Cannot derive from DateTimeAttribute from ContentDate and ContentTime",e);
 		}
 		catch (DicomException e) {
 			// this is OK ... will happen if ContentDate is absent or empty
-			//e.printStackTrace(System.err);
+			slf4jlogger.debug("ContentDate is absent or empty",e);
 		}
 		return earliestContentDateTimeSoFar;
 	}
@@ -627,29 +743,32 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 	
 	static boolean containsAttributesForPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(Set<AttributeTag> attributeTags) {
-		return attributeTags.contains(TagFromName.TomoLayerHeight);
+		return attributeTags.contains(dictionary.getTagFromName("TomoLayerHeight"));
 	}
 	
 	static void addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done,double orientation[]) throws DicomException {
-		double height = Attribute.getSingleDoubleValueOrDefault(sourceList,TagFromName.TomoLayerHeight,0);
-//System.err.println("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): have tomo height = "+height);
+		double height = Attribute.getSingleDoubleValueOrDefault(sourceList,dictionary.getTagFromName("TomoLayerHeight"),0);
+		slf4jlogger.debug("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): have tomo height = {}",height);
 		// the tomo layer height is the distance along the x-ray beam (normal to the plane defined by orientation (in PS 3.3, "Distance in mm between the table surface and the sharp image plane")
 		// assuming that the detector is not rotated relative to the central ray of the middle acquisition
 		// arbitrarily define the orgin as the image TLHC of height 0
 		
 		// translate the origin (0,0,0) by depth along the normal to row and column
 		
+		// the normal in right-handed (DICOM LPS+) will be away from the viewing direction, i.e., towards the patient's feet for CC or MLO (001277)
 		Vector3d normal = new Vector3d();
 		normal.cross(new Vector3d(orientation[0],orientation[1],orientation[2]),new Vector3d(orientation[3],orientation[4],orientation[5]));
 		normal.normalize();		// not really necessary, but just in case
 		double[] normalArray = new double[3];
 		normal.get(normalArray);
-		normalArray[2]=normalArray[2]*-1;	// change the direction of Z (DICOM is LPS+) ... see com.pixelmed.geometry.GeometryOfSlice
-//System.err.println("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): normal = "+normalArray[0]+","+normalArray[1]+","+normalArray[2]);
+		slf4jlogger.info("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): normal = {},{},{}",normalArray[0],normalArray[1],normalArray[2]);
+		
+		// height is above the "table", so negate its sign to project towards feet (001277)
+		height = height*-1;
 		normalArray[0] = normalArray[0] * height;
 		normalArray[1] = normalArray[1] * height;
 		normalArray[2] = normalArray[2] * height;
-//System.err.println("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): TLHC = "+normalArray[0]+","+normalArray[1]+","+normalArray[2]);
+		slf4jlogger.info("addPlanePositionFunctionalGroupDerivedFromTomoLayerHeight(): TLHC = {},{},{}",normalArray[0],normalArray[1],normalArray[2]);
 
 		SequenceAttribute aPlanePositionSequence = new SequenceAttribute(TagFromName.PlanePositionSequence);
 		targetList.put(aPlanePositionSequence);
@@ -676,7 +795,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 
 	static boolean containsAttributesForPlaneOrientationFunctionalGroupDerivedFromAngle(Set<AttributeTag> attributeTags) {
-		return attributeTags.contains(TagFromName.PositionerPrimaryAngle) && attributeTags.contains(TagFromName.PatientOrientation);
+		return attributeTags.contains(dictionary.getTagFromName("PositionerPrimaryAngle")) && attributeTags.contains(TagFromName.PatientOrientation);
 	}
 	
 	static boolean isUnitVector(double x,double y,double z) {
@@ -727,7 +846,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 //System.err.println("MultiFrameImageFactory.addPlaneOrientationFunctionalGroupDerivedFromAngle(): zColumnComponentSign = "+zColumnComponentSign);
 					// the positioner angle is defined to be tube movement right +ve with vertical zero degrees, which gives us the sin and cos relationships,
 					// but who knows how the modality then flipped the images, so we use the sign derived from the orientation
-					double positionerPrimaryAngle = Attribute.getSingleDoubleValueOrDefault(sourceList,TagFromName.PositionerPrimaryAngle,0);
+					double positionerPrimaryAngle = Attribute.getSingleDoubleValueOrDefault(sourceList,dictionary.getTagFromName("PositionerPrimaryAngle"),0);
 					xColumnComponent = Math.abs(Math.sin(positionerPrimaryAngle)) * xColumnComponentSign;
 					zColumnComponent = Math.abs(Math.cos(positionerPrimaryAngle)) * zColumnComponentSign;
 				}
@@ -801,9 +920,18 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		{
 			String value = Attribute.getSingleStringValueOrEmptyString(sourceList,TagFromName.RescaleType);
 			if (value.length() == 0) {
-				boolean isLocalizer = Attribute.getDelimitedStringValuesOrDefault(sourceList,TagFromName.ImageType,"").contains("LOCALIZER");
+				String modality = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.Modality,"");
 				if (haveValuesSoAddType) {
-					value = isLocalizer ? "US" : "HU";
+					value = "US";
+					if (modality.equals("CT")) {
+						boolean isLocalizer = Attribute.getDelimitedStringValuesOrDefault(sourceList,TagFromName.ImageType,"").contains("LOCALIZER");
+						if (!isLocalizer) {
+							value = "HU";
+						}
+					}
+					else if (modality.equals("PT")) {
+						value = Attribute.getSingleStringValueOrDefault(sourceList,TagFromName.Units,"US");
+					}
 				}
 			}
 			if (value.length() > 0) {
@@ -854,6 +982,47 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	//	// really should try and add MeasurementUnitsCodeSequence for HU except for localizer :(
 	//}
 
+	static boolean containsAttributesForReferencedImageFunctionalGroup(Set<AttributeTag> attributeTags) {
+		return attributeTags.contains(TagFromName.ReferencedImageSequence);
+	}
+
+	static void addReferencedImageFunctionalGroup(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done) throws DicomException {
+		Attribute aReferencedImageSequence = sourceList.get(TagFromName.ReferencedImageSequence);
+		if (aReferencedImageSequence != null) {
+			targetList.put(aReferencedImageSequence);
+			done.add(TagFromName.ReferencedImageSequence);
+		}
+		// really should make up dummy PurposeOfReferenceCodeSequence if not present in sequence already, since Type 1 in this functional group :(
+		// can we assume ("121311", DCM, "Localizer") ?
+	}
+
+	static boolean containsAttributesForDerivationImageFunctionalGroup(Set<AttributeTag> attributeTags) {
+		return attributeTags.contains(TagFromName.SourceImageSequence);
+	}
+
+	static void addDerivationImageFunctionalGroup(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done) throws DicomException {
+		SequenceAttribute aDerivationImageSequence = new SequenceAttribute(TagFromName.DerivationImageSequence);
+		targetList.put(aDerivationImageSequence);
+		AttributeList itemList = new AttributeList();
+		aDerivationImageSequence.addItem(itemList);
+
+		addIfPresentWithValues(itemList,sourceList,done,TagFromName.DerivationDescription);
+	
+		Attribute aDerivationCodeSequence = sourceList.get(TagFromName.DerivationCodeSequence);
+		if (aDerivationCodeSequence != null) {
+			itemList.put(aDerivationCodeSequence);
+			done.add(TagFromName.DerivationCodeSequence);
+		}
+		// else is Type 1 so really should provide a value (and in fact check if that in source was not empty) :(
+		
+		Attribute aSourceImageSequence = sourceList.get(TagFromName.SourceImageSequence);
+		if (aSourceImageSequence != null) {
+			itemList.put(aSourceImageSequence);
+			done.add(TagFromName.SourceImageSequence);
+		}
+		// really should make up dummy PurposeOfReferenceCodeSequence if not present in sequence already, since Type 1 in this functional group :(
+	}
+
 	static void addConversionSourceFunctionalGroup(AttributeList targetList,AttributeList sourceList,Set<AttributeTag> done) throws DicomException {
 		SequenceAttribute aConversionSourceAttributesSequence = new SequenceAttribute(TagFromName.ConversionSourceAttributesSequence);
 		targetList.put(aConversionSourceAttributesSequence);
@@ -864,7 +1033,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	}
 	
 	private static Set<AttributeTag> excludeFromCopyingIntoFunctionalGroups = new HashSet<AttributeTag>();
-	{
+	static {
 		excludeFromCopyingIntoFunctionalGroups.add(TagFromName.SpecificCharacterSet);
 	}
 	
@@ -875,7 +1044,7 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 	 * otherwise in the worst case the {@link com.pixelmed.dicom.SOPClass#RawDataStorage SOPClass.RawDataStorage} is returned.</p>
 	 *
 	 * @param		list	the attributes of the single frame instance
-	 * return				the SOP Class UID
+	 * @return				the SOP Class UID
 	 */
 	public static String chooseAppropriateConvertedSOPClassUID(AttributeList list) {
 		String sopClassUIDOfSource = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
@@ -916,20 +1085,76 @@ System.err.println("MultiFrameImageFactory.addIfPresentWithValuesAndNotPerFrame(
 		return sopClassUIDOfTarget;
 	}
 	
+	protected static int nextStackID;
+		
+	public static void addStack(AttributeList list,Map<String,StackOfSlices> stacks) {
+		slf4jlogger.info("addStack():");
+		// we will try and build a single stack if all the slices are parallel, regardless of the spacing (i.e., can't make multiple stacks for different orientations yet, like spine disk space para-axials :()
+		try {
+			StackOfSlices stack = new StackOfSlices(list);
+			if (!stack.isValid()) {
+				slf4jlogger.warn("addStack(): Could not make a valid stack");
+				return;
+			}
+			String stackID = null;
+			if (stacks != null) {
+				for (String key : stacks.keySet()) {
+					StackOfSlices testStack = stacks.get(key);
+					if (testStack.equals(stack)) {
+						stackID = key;
+						stack = testStack;		// re-use existing stack and discard the new identical one
+						break;
+					}
+				}
+			}
+			if (stackID == null) {
+				stackID = Integer.toString(nextStackID++);
+				if (stacks != null) {
+					stacks.put(stackID,stack);
+				}
+				slf4jlogger.info("addStack(): Making new stack {}",stackID);
+			}
+			else {
+				slf4jlogger.info("addStack(): Not replacing existing stack {}",stackID);
+			}
+			stack.addStackAttributesToExistingFrameContentSequence(list,stackID);
+		}
+		catch (DicomException e) {
+			slf4jlogger.error("", e);
+		}
+	}
+	
+	public static void addStackIfNotAlreadyPresent(AttributeList list,Map<String,StackOfSlices> stacks) {
+		slf4jlogger.info("addStackIfNotAlreadyPresent():");
+		SequenceAttribute perFrameFunctionalGroupsSequence = (SequenceAttribute)(list.get(TagFromName.PerFrameFunctionalGroupsSequence));
+		SequenceAttribute frameContentSequence = (SequenceAttribute)(perFrameFunctionalGroupsSequence.getItem(0).getAttributeList().get(TagFromName.FrameContentSequence));
+		AttributeList frameContentList = frameContentSequence.getItem(0).getAttributeList();
+		if (!frameContentList.containsKey(TagFromName.StackID) || !frameContentList.containsKey(TagFromName.InStackPositionNumber)) {
+			addStack(list,stacks);
+		}
+		else {
+			slf4jlogger.info("addStackIfNotAlreadyPresent(): Not replacing existing stack");
+		}
+	}
+	
 	private static Date farthestFutureDate = new Date(Long.MAX_VALUE);
 
 	/**
 	 * <p>Create an enhanced image from a set of DICOM single image files or {@link com.pixelmed.dicom.AttributeList AttributeList}s in a FrameSet.</p>
 	 *
-	 * @param		frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
-	 * @param		filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them (null if listsBySOPInstanceUID supplied)
-	 * @param		listsBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the {@link com.pixelmed.dicom.AttributeList AttributeList}s that contain them (null if filesBySOPInstanceUID supplied)
-	 * @param		multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
-	 * @exception	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
-	 * @exception	IOException								if an input file cannot be read
+	 * @param	frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
+	 * @param	filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them (null if listsBySOPInstanceUID supplied)
+	 * @param	listsBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the {@link com.pixelmed.dicom.AttributeList AttributeList}s that contain them (null if filesBySOPInstanceUID supplied)
+	 * @param	multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
+	 * @param	stacks									an existing (possibly empty) set of stacks from other FrameSets, which will be extended or re-used if a stack is found
+	 * @param	useRandomFrameOrder						order frames in encoded pixel data in random order rather than by source instance number
+	 * @param	doNotEncodeStackInformation				do not include stack information in enhanced images even if used for frame order sorting
+	 * @return											a list that is an enhanced multiframe image
+	 * @throws	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
+	 * @throws	IOException								if an input file cannot be read
 	 */
-	public static AttributeList createEnhancedImageFromFrameSet(FrameSet frameSet,Map<String,File> filesBySOPInstanceUID,Map<String,AttributeList> listsBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID) throws DicomException, IOException {
-System.err.println(frameSet);
+	public static AttributeList createEnhancedImageFromFrameSet(FrameSet frameSet,Map<String,File> filesBySOPInstanceUID,Map<String,AttributeList> listsBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID,Map<String,StackOfSlices> stacks,boolean useRandomFrameOrder,boolean doNotEncodeStackInformation) throws DicomException, IOException {
+		slf4jlogger.info(frameSet.toString());
 		Set<AttributeTag> distinguishingAttributeTags = frameSet.getDistinguishingAttributeTags();
 		Set<AttributeTag> sharedAttributeTags = frameSet.getSharedAttributeTags();
 		Set<AttributeTag> perFrameAttributeTags = frameSet.getPerFrameAttributeTags();
@@ -955,6 +1180,11 @@ System.err.println(frameSet);
 		TimeZone timezone = null;			// will be set to value of TimezoneOffsetFromUTC if present, else GMT, to use as base for comparing dates and times throughout the program
 		
 		List<String> sopInstanceUIDs = frameSet.getSOPInstanceUIDsSortedByFrameOrder();
+		
+		if (useRandomFrameOrder) {
+			Collections.shuffle(sopInstanceUIDs);
+		}
+		
 		double[] orientation = null;
 		boolean firstInstance = true;
 		for (String sopInstanceUID : sopInstanceUIDs) {
@@ -967,6 +1197,7 @@ System.err.println(frameSet);
 				}
 			}
 			if (frameSourceList != null) {
+				Set<AttributeTag> doneSharedSet = new HashSet<AttributeTag>();
 				if (firstInstance) {
 					timezoneString = Attribute.getSingleStringValueOrNull(frameSourceList,TagFromName.TimezoneOffsetFromUTC);	// NB. Assumes same in all frames :(
 //System.err.println("timezoneString = "+timezoneString);
@@ -990,10 +1221,9 @@ System.err.println(frameSet);
 					
 					multiFramePixelData = new MultiFramePixelData(rows,columns,samplesPerPixel,numberOfFrames);
 					
-					Set<AttributeTag> doneSharedSet = new HashSet<AttributeTag>();
 
 					{
-						CompositeInstanceContext cic = new CompositeInstanceContext(frameSourceList);
+						CompositeInstanceContext cic = new CompositeInstanceContext(frameSourceList,false/*forSR*/);
 						// leave existing Series stuff ... will overwrite SeriesInstanceUID later
 						// leave existing Instance stuff ... will overwrite SOPInstanceUID later
 						AttributeList ciclist = cic.getAttributeList();
@@ -1012,11 +1242,13 @@ System.err.println(frameSet);
 										
 					if (sopClassUIDOfTarget.equals(SOPClass.LegacyConvertedEnhancedCTImageStorage)) {
 						addEnhancedCommonImageModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);	// flag anything used as shared since we do not need to replicate it in unassigned groups
+						addContrastBolusModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
 						addEnhancedCTImageModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
 						addAcquisitionContextModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);		// surprisingly, this is not used in MF SC IODs
 					}
 					else if (sopClassUIDOfTarget.equals(SOPClass.LegacyConvertedEnhancedMRImageStorage)) {
 						addEnhancedCommonImageModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
+						addContrastBolusModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
 						addEnhancedMRImageModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
 						addAcquisitionContextModule(convertedList,frameSourceList,doneSharedSet,perFrameAttributeTags);
 					}
@@ -1119,21 +1351,21 @@ System.err.println(frameSet);
 					) {
 						addPixelValueTransformationFunctionalGroup(sharedFunctionalGroupsSequenceItemList,frameSourceList,doneSharedSet);
 					}
-															
-					// now go through shared list, and anything that is not in the convertedList already, should be added to the Unassigned Shared Converted Attributes Sequence
 					
-					{
-						SequenceAttribute aUnassignedSharedConvertedAttributesSequence = new SequenceAttribute(TagFromName.UnassignedSharedConvertedAttributesSequence);
-						sharedFunctionalGroupsSequenceItemList.put(aUnassignedSharedConvertedAttributesSequence);
-						AttributeList unassignedList =  new AttributeList();
-						aUnassignedSharedConvertedAttributesSequence.addItem(unassignedList);
-
-						for (AttributeTag t : sharedAttributeTags) {
-							if (convertedList.get(t) == null && !doneSharedSet.contains(t) && !excludeFromCopyingIntoFunctionalGroups.contains(t)) {		// i.e., not already copied into top level data set or a specific shared functional group
-								addIfPresent(unassignedList,frameSourceList,t);	// really shouldn't be null
-							}
-						}
+					if (!containsAttributesForReferencedImageFunctionalGroup(perFrameAttributeTags)
+					 && (containsAttributesForReferencedImageFunctionalGroup(sharedAttributeTags) || containsAttributesForReferencedImageFunctionalGroup(distinguishingAttributeTags))
+					) {
+						addReferencedImageFunctionalGroup(sharedFunctionalGroupsSequenceItemList,frameSourceList,doneSharedSet);
 					}
+					
+					if (!containsAttributesForDerivationImageFunctionalGroup(perFrameAttributeTags)
+					 && (containsAttributesForDerivationImageFunctionalGroup(sharedAttributeTags) || containsAttributesForDerivationImageFunctionalGroup(distinguishingAttributeTags))
+					) {
+						addDerivationImageFunctionalGroup(sharedFunctionalGroupsSequenceItemList,frameSourceList,doneSharedSet);
+					}
+					
+					// defer populating UnassignedSharedConvertedAttributesSequence, since need to check some attributes that are actually the same (shared) but are required to be repeated per-frame (e.g., AcquisitionNumber in FrameContentSequence)
+															
 				}
 				// else do not need to repeat distinguishing and shared, since FrameSet already guarantees thay are the same values
 				
@@ -1141,12 +1373,16 @@ System.err.println(frameSet);
 				aPerFrameFunctionalGroupsSequence.addItem(perFrameFunctionalGroupsSequenceItemList);
 				
 				Set<AttributeTag> donePerFrameSet = new HashSet<AttributeTag>();
-								
+
+				if (containsAttributesForFrameAnatomyFunctionalGroup(perFrameAttributeTags)) {
+					addFrameAnatomyFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
+				}
+				
 				if (containsAttributesForPixelMeasuresFunctionalGroup(perFrameAttributeTags)) {
 					addPixelMeasuresFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
 				}
 				
-				earliestFrameAcquisitionDateTimeSoFar = addFrameContentFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet,earliestFrameAcquisitionDateTimeSoFar,tzSpecified,timezoneString);
+				earliestFrameAcquisitionDateTimeSoFar = addFrameContentFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet,earliestFrameAcquisitionDateTimeSoFar,tzSpecified,timezoneString,perFrameAttributeTags,doNotEncodeStackInformation);
 				
 				earliestContentDateTimeSoFar = getEarliestContentDateTime(frameSourceList,earliestContentDateTimeSoFar);
 				
@@ -1186,6 +1422,14 @@ System.err.println(frameSet);
 					addPixelValueTransformationFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
 				}
 				
+				if (containsAttributesForReferencedImageFunctionalGroup(perFrameAttributeTags)) {
+					addReferencedImageFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
+				}
+				
+				if (containsAttributesForDerivationImageFunctionalGroup(perFrameAttributeTags)) {
+					addDerivationImageFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
+				}
+				
 				addConversionSourceFunctionalGroup(perFrameFunctionalGroupsSequenceItemList,frameSourceList,donePerFrameSet);
 
 				{
@@ -1200,8 +1444,27 @@ System.err.println(frameSet);
 						}
 					}
 				}
+				
+				if (firstInstance) {
+					// now go through shared list, and anything that is not in the convertedList already, should be added to the Unassigned Shared Converted Attributes Sequence
+					
+					{
+						SequenceAttribute aUnassignedSharedConvertedAttributesSequence = new SequenceAttribute(TagFromName.UnassignedSharedConvertedAttributesSequence);
+						sharedFunctionalGroupsSequenceItemList.put(aUnassignedSharedConvertedAttributesSequence);
+						AttributeList unassignedList =  new AttributeList();
+						aUnassignedSharedConvertedAttributesSequence.addItem(unassignedList);
+
+						for (AttributeTag t : sharedAttributeTags) {
+//System.err.println("MultiFrameImageFactory.createEnhancedImageFromFrameSet(): firstInstance - checking shared tag "+t);
+							if (convertedList.get(t) == null && !doneSharedSet.contains(t) && !donePerFrameSet.contains(t) && !excludeFromCopyingIntoFunctionalGroups.contains(t)) {		// i.e., not already copied into top level data set or a specific shared or per-frame functional group
+//System.err.println("MultiFrameImageFactory.createEnhancedImageFromFrameSet(): not already done or excluded so adding "+t);
+								addIfPresent(unassignedList,frameSourceList,t);	// really shouldn't be null
+							}
+						}
+					}
+				}
 			
-				multiFramePixelData.addFrame(frameSourceList.get(TagFromName.PixelData));
+				multiFramePixelData.addFrame(frameSourceList.getPixelData());
 			}
 			else {
 				throw new DicomException("Missing File or AttributeList for SOP Instance UID "+sopInstanceUID+" in FrameSet");
@@ -1255,6 +1518,10 @@ System.err.println(frameSet);
 			}
 		}
 		
+		if (!doNotEncodeStackInformation) {
+			addStackIfNotAlreadyPresent(convertedList,stacks);
+		}
+		
 		ClinicalTrialsAttributes.addContributingEquipmentSequence(convertedList,true/*retainExistingItems*/,
 				new CodedSequenceItem("109106","DCM","Enhanced Multi-frame Conversion Equipment"),
 				"PixelMed",														// Manufacturer
@@ -1295,20 +1562,64 @@ System.err.println(frameSet);
 	}
 
 	/**
+	 * <p>Create an enhanced image from a set of DICOM single image files or {@link com.pixelmed.dicom.AttributeList AttributeList}s in a FrameSet.</p>
+	 *
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
+	 * @param	filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them (null if listsBySOPInstanceUID supplied)
+	 * @param	listsBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the {@link com.pixelmed.dicom.AttributeList AttributeList}s that contain them (null if filesBySOPInstanceUID supplied)
+	 * @param	multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
+	 * @param	useRandomFrameOrder						order frames in encoded pixel data in random order rather than by source instance number
+	 * @param	doNotEncodeStackInformation				do not include stack information in enhanced images even if used for frame order sorting
+	 * @return											a list that is an enhanced multiframe image
+	 * @throws	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
+	 * @throws	IOException								if an input file cannot be read
+	 */
+	public static AttributeList createEnhancedImageFromFrameSet(FrameSet frameSet,Map<String,File> filesBySOPInstanceUID,Map<String,AttributeList> listsBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID,boolean useRandomFrameOrder,boolean doNotEncodeStackInformation) throws DicomException, IOException {
+		return createEnhancedImageFromFrameSet(frameSet,filesBySOPInstanceUID,listsBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,null/*stacks*/,useRandomFrameOrder,doNotEncodeStackInformation);
+	}
+	
+	/**
 	 * <p>Create an enhanced image from a set of DICOM single image files in a FrameSet.</p>
 	 *
-	 * @param		frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
-	 * @param		outputFolder							a folder in which to store converted files (which must already exist)
-	 * @param		filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them
-	 * @param		multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
-	 * @exception	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
-	 * @exception	IOException								if an input file cannot be read
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
+	 * @param	outputFolder							a folder in which to store converted files (which must already exist)
+	 * @param	filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them
+	 * @param	multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
+	 * @param	stacks									an existing (possibly empty) set of stacks from other FrameSets, which will be extended or re-used if a stack is found
+	 * @param	useRandomFrameOrder						order frames in encoded pixel data in random order rather than by source instance number
+	 * @param	doNotEncodeStackInformation				do not include stack information in enhanced images even if used for frame order sorting
+	 * @return											a file that is an enhanced multiframe image that was created
+	 * @throws	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
+	 * @throws	IOException								if an input file cannot be read
 	 */
-	public static File createEnhancedImageFromFrameSet(FrameSet frameSet,File outputFolder,Map<String,File> filesBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID) throws DicomException, IOException {
-		AttributeList convertedList = createEnhancedImageFromFrameSet(frameSet,filesBySOPInstanceUID,null/*listsBySOPInstanceUID*/,multiFrameReferenceBySingleFrameUID);
+	public static File createEnhancedImageFromFrameSet(FrameSet frameSet,File outputFolder,Map<String,File> filesBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID,Map<String,StackOfSlices> stacks,boolean useRandomFrameOrder,boolean doNotEncodeStackInformation) throws DicomException, IOException {
+		AttributeList convertedList = createEnhancedImageFromFrameSet(frameSet,filesBySOPInstanceUID,null/*listsBySOPInstanceUID*/,multiFrameReferenceBySingleFrameUID,stacks,useRandomFrameOrder,doNotEncodeStackInformation);
 		File convertedFile = new File(outputFolder,Attribute.getSingleStringValueOrDefault(convertedList,TagFromName.SOPInstanceUID,"NONAME"));
-		convertedList.write(convertedFile);
+		convertedList.write(convertedFile,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
 		return convertedFile;
+	}
+	
+	/**
+	 * <p>Create an enhanced image from a set of DICOM single image files in a FrameSet.</p>
+	 *
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	frameSet								an existing set of frames (single images) to convert that have already been determined to be a FrameSet
+	 * @param	outputFolder							a folder in which to store converted files (which must already exist)
+	 * @param	filesBySOPInstanceUID					an existing map of the SOP Instance UIDs of the single images to the files that contain them
+	 * @param	multiFrameReferenceBySingleFrameUID		an existing (possibly empty) map to which is added mappings from each single frame SOP Instance UIDs to converted UIDs + frame number references
+	 * @param	useRandomFrameOrder						order frames in encoded pixel data in random order rather than by source instance number
+	 * @param	doNotEncodeStackInformation				do not include stack information in enhanced images even if used for frame order sorting
+	 * @return											a file that is an enhanced multiframe image that was created
+	 * @throws	DicomException							if an input file cannot be found for a frame, or it cannot be parsed
+	 * @throws	IOException								if an input file cannot be read
+	 */
+	public static File createEnhancedImageFromFrameSet(FrameSet frameSet,File outputFolder,Map<String,File> filesBySOPInstanceUID,Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID,boolean useRandomFrameOrder,boolean doNotEncodeStackInformation) throws DicomException, IOException {
+		return createEnhancedImageFromFrameSet(frameSet,outputFolder,filesBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,null/*stacks*/,useRandomFrameOrder,doNotEncodeStackInformation);
 	}
 
 	/**
@@ -1316,11 +1627,13 @@ System.err.println(frameSet);
 	 *
 	 * <p>Non-DICOM files and problems parsing files are ignored, rather than causing failure</p>
 	 *
-	 * @param		files			a set of files (not folders) to convert
-	 * @param		outputFolder	a folder in which to store converted files (which must already exist)
-	 * @return						the files created
-	 * @exception	DicomException	if folder in which to store converted files does not exist
-	 * @exception	IOException		if an input file cannot be read
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	files			a set of files (not folders) to convert
+	 * @param	outputFolder	a folder in which to store converted files (which must already exist)
+	 * @return					the files created
+	 * @throws	DicomException	if folder in which to store converted files does not exist
+	 * @throws	IOException		if an input file cannot be read
 	 */
 	public static File[] convertImages(Set<File> files,File outputFolder) throws DicomException, IOException {
 		ArrayList<File> outputFiles = new ArrayList<File>();
@@ -1351,7 +1664,7 @@ System.err.println(frameSet);
 							setOfFrameSets.insertIntoFrameSets(list);
 						}
 						else {
-//System.err.println("MultiFrameImageFactory.doCommonConstructorStuff(): Doing nothing to non-image or already enhanced "+f);
+							slf4jlogger.info("doCommonConstructorStuff(): Doing nothing to non-image or already enhanced \"{}\" ({})",f,SOPClassDescriptions.getAbbreviationFromUID(sopClassUID));
 							setOfUnconvertedSOPInstanceUIDs.add(sopInstanceUID);
 						}
 					}
@@ -1361,7 +1674,7 @@ System.err.println(frameSet);
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("While reading \"{}\"",f,e);	// do NOT call f.getCanonicalPath(), since may throw Exception !
 			}
 		}
 //System.err.println("MultiFrameImageFactory.doCommonConstructorStuff(): FrameSets Result:");
@@ -1370,9 +1683,11 @@ System.err.println(frameSet);
 //		System.err.println(HierarchicalSOPInstanceReference.toString(unconvertedHierarchicalInstancesBySOPInstanceUID));
 
 		// Pass 2 ... convert FrameSets into enhanced images
+		nextStackID = 1;
+		Map<String,StackOfSlices> stacks = new TreeMap<String,StackOfSlices>();
 		Map<String,HierarchicalImageReference> multiFrameReferenceBySingleFrameUID = new HashMap<String,HierarchicalImageReference>();
 		for (FrameSet frameSet : setOfFrameSets) {
-			File enhancedImage = createEnhancedImageFromFrameSet(frameSet,outputFolder,filesBySOPInstanceUID,multiFrameReferenceBySingleFrameUID);
+			File enhancedImage = createEnhancedImageFromFrameSet(frameSet,outputFolder,filesBySOPInstanceUID,multiFrameReferenceBySingleFrameUID,stacks,useRandomFrameOrderOption,doNotEncodeStackInformationOption);
 			outputFiles.add(enhancedImage);
 		}
 
@@ -1394,11 +1709,13 @@ System.err.println(frameSet);
 	 *
 	 * <p>Non-DICOM files and problems parsing files are ignored, rather than causing failure</p>
 	 *
-	 * @param		files			an array of files (not folders) to convert
-	 * @param		outputFolder	a folder in which to store converted files (which must already exist)
-	 * @return						the files created
-	 * @exception	DicomException	if folder in which to store converted files does not exist
-	 * @exception	IOException		if an input file cannot be read
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	files			an array of files (not folders) to convert
+	 * @param	outputFolder	a folder in which to store converted files (which must already exist)
+	 * @return					the files created
+	 * @throws	DicomException	if folder in which to store converted files does not exist
+	 * @throws	IOException		if an input file cannot be read
 	 */
 	public static File[] convertImages(File files[],File outputFolder) throws DicomException, IOException {
 		Set<File> inputFiles = new HashSet<File>();
@@ -1413,11 +1730,13 @@ System.err.println(frameSet);
 	 *
 	 * <p>Non-DICOM files and problems parsing files are ignored, rather than causing failure</p>
 	 *
-	 * @param		inputPaths		a set of paths of filenames and/or folder names of files containing the images to convert
-	 * @param		outputPath		a path in which to store converted files (which must already exist)
-	 * @return						the files created
-	 * @exception	DicomException	if folder in which to store converted files does not exist
-	 * @exception	IOException		if an input file cannot be read
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
+	 * @param	inputPaths		a set of paths of filenames and/or folder names of files containing the images to convert
+	 * @param	outputPath		a path in which to store converted files (which must already exist)
+	 * @return					the files created
+	 * @throws	DicomException	if folder in which to store converted files does not exist
+	 * @throws	IOException		if an input file cannot be read
 	 */
 	public static File[] convertImages(String inputPaths[],String outputPath) throws DicomException, IOException {
 		Set<File> inputFiles = new HashSet<File>();
@@ -1431,6 +1750,8 @@ System.err.println(frameSet);
 	/**
 	 * <p>For testing, read all DICOM files and convert them to enhanced images when possible.</p>
 	 *
+	 * <p>Files are written in Explicit VR Little Endian Transfer Syntax.</p>
+	 *
 	 * @param	arg	the filenames and/or folder names of files containing the images to partition, followed by the path in which to store the converted instances
 	 */
 	public static void main(String arg[]) {
@@ -1442,7 +1763,7 @@ System.err.println(frameSet);
 				System.arraycopy(arg,0,inputPaths,0,inputCount);
 				File[] outputFiles = convertImages(inputPaths,outputPath);
 				for (File of : outputFiles) {
-					System.err.println("Output file: "+of);
+					System.err.println("Output file: "+of);	// no need to use SLF4J since command line utility/test
 				}
 			}
 			else {
@@ -1452,7 +1773,7 @@ System.err.println(frameSet);
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(1);
 		}
 	}

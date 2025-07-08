@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
@@ -8,11 +8,16 @@ import com.pixelmed.network.*;
 import java.io.*;
 import java.util.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.query.QueryInformationModel QueryInformationModel} class is an abstract class that contains the core
+ * <p>The {@link QueryInformationModel QueryInformationModel} class is an abstract class that contains the core
  * functionality for performing DICOM query and retrieval over the network.</p>
  *
  * <p>It hides the underlying DICOM network implementation.</p>
+ *
+ * <p>Associations can be cached and reused.</p>
  *
  * <p>Concrete sub-classes implement the behavior for specific query models, such as
  * {@link com.pixelmed.query.StudyRootQueryInformationModel StudyRootQueryInformationModel},
@@ -23,7 +28,7 @@ import java.util.*;
  * own query models as concrete sub-classes. The public methods of primary interest to application
  * builders are:</p>
  * <ul>
- * <li> {@link #QueryInformationModel(String,int,String,String,int) QueryInformationModel()}
+ * <li> {@link #QueryInformationModel(String,int,String,String) QueryInformationModel()}
  * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
  * <li> {@link #performHierarchicalMove(AttributeList) performHierarchicalMove()}
  * <li> {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}
@@ -36,9 +41,9 @@ import java.util.*;
  * @author	dclunie
  */
 abstract public class QueryInformationModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.37 2025/01/29 10:58:09 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.23 2008/01/24 19:03:49 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryInformationModel.class);
 
 	/***/
 	private String hostname;
@@ -49,7 +54,13 @@ abstract public class QueryInformationModel {
 	/***/
 	private String callingAETitle;
 	/***/
-	protected int debugLevel;
+	protected Association cFindAssociation;
+	/***/
+	protected Association cMoveAssociation;
+	
+	public final Association getCFindAssociation() { return cFindAssociation; }
+	
+	public final Association getCMoveAssociation() { return cMoveAssociation; }
 	
 	/***/
 	public final String getCalledAETitle() { return calledAETitle; }
@@ -110,10 +121,10 @@ abstract public class QueryInformationModel {
 	 * @param	oldList
 	 * @param	parentUniqueKeys
 	 * @param	queryLevel
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private AttributeList makeIdentifierFromAttributesAtThisQueryLevel(AttributeList oldList,AttributeList parentUniqueKeys,InformationEntity queryLevel) throws DicomException {
-if (debugLevel > 1) System.err.println("makeIdentifierFromAttributesAtThisQueryLevel: queryLevel="+queryLevel);
+		slf4jlogger.trace("makeIdentifierFromAttributesAtThisQueryLevel: queryLevel={}",queryLevel);
 		HashSet allInformationEntitiesToIncludeAtThisQueryLevel = getAllInformationEntitiesToIncludeAtThisQueryLevel(queryLevel);
 //System.err.println("makeIdentifierFromAttributesAtThisQueryLevel: allInformationEntitiesToIncludeAtThisQueryLevel="+allInformationEntitiesToIncludeAtThisQueryLevel);
 		DicomDictionary dictionary = oldList.getDictionary();
@@ -148,7 +159,7 @@ if (debugLevel > 1) System.err.println("makeIdentifierFromAttributesAtThisQueryL
 				}
 			}
 		}
-if (debugLevel > 1) System.err.println("makeIdentifierFromAttributesAtThisQueryLevel: identifier="+newList);
+		slf4jlogger.trace("makeIdentifierFromAttributesAtThisQueryLevel: identifier={}",newList);
 		return newList;
 	}
 	/***/
@@ -167,16 +178,22 @@ if (debugLevel > 1) System.err.println("makeIdentifierFromAttributesAtThisQueryL
 	 * @param       parentUniqueKeys        	the unique keys of the parents of this level
 	 * @param       queryLevel              	the level of the query
 	 * @param       responseIdentifierHandler	the tree to add the response results to
-	 * @exception   IOException			thrown if there is an generic IO problem
-	 * @exception   DicomException          	thrown if there is a problem performing or parsing the query
-	 * @exception   DicomNetworkException   	thrown if there is a problem with the DICOM network protocol
+	 * @throws   IOException			thrown if there is an generic IO problem
+	 * @throws   DicomException          	thrown if there is a problem performing or parsing the query
+	 * @throws   DicomNetworkException   	thrown if there is a problem with the DICOM network protocol
 	 */
 	void performQuery(AttributeList filter,AttributeList parentUniqueKeys,InformationEntity queryLevel,IdentifierHandler responseIdentifierHandler) throws IOException, DicomException, DicomNetworkException {
-if (debugLevel > 0) System.err.println("QueryInformationModel.performQuery(): queryLevel="+queryLevel);
-if (debugLevel > 0) System.err.println("QueryInformationModel.performQuery(): parentUniqueKeys="+parentUniqueKeys);
+		slf4jlogger.debug("performQuery(): queryLevel={}",queryLevel);
+		slf4jlogger.debug("performQuery(): parentUniqueKeys=\n{}",parentUniqueKeys);
 		AttributeList requestIdentifier = makeIdentifierFromAttributesAtThisQueryLevel(filter,parentUniqueKeys,queryLevel);
-if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): requestIdentifier="+requestIdentifier);
-		new FindSOPClassSCU(hostname,port,calledAETitle,callingAETitle,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler,debugLevel);
+		slf4jlogger.trace("performQuery(): requestIdentifier=\n{}",requestIdentifier);
+		if (cFindAssociation == null) {
+			new FindSOPClassSCU(hostname,port,calledAETitle,callingAETitle,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
+		}
+		else {
+		slf4jlogger.trace("performQuery(): reusing existing association");
+			new FindSOPClassSCU(cFindAssociation,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
+		}
 	}
 
 	/**
@@ -202,12 +219,12 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 *
 	 * @param	filter			the query request identifier as a list of DICOM attributes
 	 * @return				the results of query as a tree suitable for browing
-	 * @exception	IOException		thrown if there is an generic IO problem
-	 * @exception	DicomException		thrown if there is a problem performing or parsing the query
-	 * @exception	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 * @throws	IOException		thrown if there is an generic IO problem
+	 * @throws	DicomException		thrown if there is a problem performing or parsing the query
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
 	 */
 	public QueryTreeModel performHierarchicalQuery(AttributeList filter) throws IOException, DicomException, DicomNetworkException {
-		return new QueryTreeModel(this,filter,debugLevel);
+		return new QueryTreeModel(this,filter);
 	}
 	
 	/**
@@ -220,16 +237,23 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 * specified in the constructor in this class instance.</p>
 	 *
 	 * @param		identifier				the move request identifier as a list of DICOM attributes
-	 * @exception	IOException				thrown if there is an generic IO problem
-	 * @exception	DicomException			thrown if there is a problem performing or parsing the query
-	 * @exception	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 * @throws	IOException				thrown if there is an generic IO problem
+	 * @throws	DicomException			thrown if there is a problem performing or parsing the query
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
 	 */
 	public void performHierarchicalMove(AttributeList identifier) throws IOException, DicomException, DicomNetworkException {
-		new MoveSOPClassSCU(hostname,port,calledAETitle,callingAETitle,callingAETitle,getMoveSOPClassUID(),identifier,debugLevel);
+		if (cMoveAssociation == null) {
+			new MoveSOPClassSCU(hostname,port,calledAETitle,callingAETitle,callingAETitle,getMoveSOPClassUID(),identifier);
+		}
+		else {
+			slf4jlogger.trace("performHierarchicalMove(): reusing existing association");
+			new MoveSOPClassSCU(cMoveAssociation,callingAETitle,getMoveSOPClassUID(),identifier);
+		}
+
 	}
 	
 	/**
-	 * @deprecated	See {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}.
+	 * @deprecated	See {@link com.pixelmed.query.QueryInformationModel#performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}.
 	 */
 	public void performHierarchicalMove(AttributeList identifier,String retrieveAE) throws IOException, DicomException, DicomNetworkException {
 		performHierarchicalMoveFrom(identifier,retrieveAE);
@@ -246,12 +270,18 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 *
 	 * @param		identifier				the move request identifier as a list of DICOM attributes
 	 * @param		retrieveAE				the AE title of where to move the object(s) from
-	 * @exception	IOException				thrown if there is an generic IO problem
-	 * @exception	DicomException			thrown if there is a problem performing or parsing the query
-	 * @exception	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 * @throws	IOException				thrown if there is an generic IO problem
+	 * @throws	DicomException			thrown if there is a problem performing or parsing the query
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
 	 */
 	public void performHierarchicalMoveFrom(AttributeList identifier,String retrieveAE) throws IOException, DicomException, DicomNetworkException {
-		new MoveSOPClassSCU(hostname,port,retrieveAE,callingAETitle,callingAETitle,getMoveSOPClassUID(),identifier,debugLevel);
+		if (cMoveAssociation == null) {
+			new MoveSOPClassSCU(hostname,port,retrieveAE,callingAETitle,callingAETitle,getMoveSOPClassUID(),identifier);
+		}
+		else {
+			slf4jlogger.trace("performHierarchicalMoveFrom(): reusing existing association");
+			new MoveSOPClassSCU(cMoveAssociation,callingAETitle,getMoveSOPClassUID(),identifier);
+		}
 	}
 	
 	/**
@@ -265,12 +295,18 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 *
 	 * @param		identifier				the move request identifier as a list of DICOM attributes
 	 * @param		moveDestination			the AE title of where to move the object(s) to
-	 * @exception	IOException				thrown if there is an generic IO problem
-	 * @exception	DicomException			thrown if there is a problem performing or parsing the query
-	 * @exception	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 * @throws	IOException				thrown if there is an generic IO problem
+	 * @throws	DicomException			thrown if there is a problem performing or parsing the query
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
 	 */
 	public void performHierarchicalMoveTo(AttributeList identifier,String moveDestination) throws IOException, DicomException, DicomNetworkException {
-		new MoveSOPClassSCU(hostname,port,calledAETitle,callingAETitle,moveDestination,getMoveSOPClassUID(),identifier,debugLevel);
+		if (cMoveAssociation == null) {
+			new MoveSOPClassSCU(hostname,port,calledAETitle,callingAETitle,moveDestination,getMoveSOPClassUID(),identifier);
+		}
+		else {
+			slf4jlogger.trace("performHierarchicalMoveTo(): reusing existing association");
+			new MoveSOPClassSCU(cMoveAssociation,moveDestination,getMoveSOPClassUID(),identifier);
+		}
 	}
 	
 	/**
@@ -279,12 +315,108 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 * @param		identifier				the move request identifier as a list of DICOM attributes
 	 * @param		retrieveAE				the AE title of where to move the object(s) from
 	 * @param		moveDestination			the AE title of where to move the object(s) to
-	 * @exception	IOException				thrown if there is an generic IO problem
-	 * @exception	DicomException			thrown if there is a problem performing or parsing the query
-	 * @exception	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 * @throws	IOException				thrown if there is an generic IO problem
+	 * @throws	DicomException			thrown if there is a problem performing or parsing the query
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
 	 */
 	public void performHierarchicalMoveFromTo(AttributeList identifier,String retrieveAE,String moveDestination) throws IOException, DicomException, DicomNetworkException {
-		new MoveSOPClassSCU(hostname,port,retrieveAE,callingAETitle,moveDestination,getMoveSOPClassUID(),identifier,debugLevel);
+		new MoveSOPClassSCU(hostname,port,retrieveAE,callingAETitle,moveDestination,getMoveSOPClassUID(),identifier);
+	}
+	
+	/**
+	 * <p>Release any cached Associations.</p>
+	 *
+	 * @throws	DicomNetworkException	thrown if there is a problem with the DICOM network protocol
+	 */
+	public void releaseAssociations() throws DicomNetworkException {
+		if (cFindAssociation != null) {
+			try {
+				slf4jlogger.trace("releasing C-FIND association");
+				// State 6
+				cFindAssociation.release();
+			}
+			catch (Exception e) {
+				cFindAssociation = null;
+			}
+		}
+		if (cMoveAssociation != null) {
+			try {
+				slf4jlogger.trace("releasing C-MOVE association");
+				// State 6
+				cMoveAssociation.release();
+			}
+			catch (Exception e) {
+				cMoveAssociation = null;
+			}
+		}
+	}
+	
+	/**
+	 * <p>Construct a query information model.</p>
+	 *
+	 * <p>Opens association to be reused if reuseAssociations is true otherwise restablishes them on demand.</p>
+	 *
+	 * <p>Does not actually perform a query or retrieval; for that see:</p>
+	 * <ul>
+	 * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
+	 * <li> {@link #performHierarchicalMove(AttributeList) performHierarchicalMove()}
+	 * <li> {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}
+	 * <li> {@link #performHierarchicalMoveTo(AttributeList,String) performHierarchicalMoveTo()}
+	 * <li> {@link #performHierarchicalMoveFromTo(AttributeList,String,String) performHierarchicalMoveFromTo()}
+	 * </ul>
+	 *
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #QueryInformationModel(String,int,String,String,boolean)} instead.
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
+	 * @param	calledAETitle		their AE title
+	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 * @param	debugLevel			unused
+	 * @param	reuseAssociations	keep alive and reuse Associations
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
+	 */
+	public QueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel,boolean reuseAssociations) throws DicomException, DicomNetworkException, IOException  {
+		this(hostname,port,calledAETitle,callingAETitle,reuseAssociations);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Construct a query information model.</p>
+	 *
+	 * <p>Opens association to be reused if reuseAssociations is true otherwise restablishes them on demand.</p>
+	 *
+	 * <p>Does not actually perform a query or retrieval; for that see:</p>
+	 * <ul>
+	 * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
+	 * <li> {@link #performHierarchicalMove(AttributeList) performHierarchicalMove()}
+	 * <li> {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}
+	 * <li> {@link #performHierarchicalMoveTo(AttributeList,String) performHierarchicalMoveTo()}
+	 * <li> {@link #performHierarchicalMoveFromTo(AttributeList,String,String) performHierarchicalMoveFromTo()}
+	 * </ul>
+	 *
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
+	 * @param	calledAETitle		their AE title
+	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 * @param	reuseAssociations	keep alive and reuse Associations
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
+	 */
+	public QueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,boolean reuseAssociations) throws DicomException, DicomNetworkException, IOException  {
+		this.hostname=hostname;
+		this.port=port;
+		this.calledAETitle=calledAETitle;
+		this.callingAETitle=callingAETitle;
+		if (reuseAssociations) {
+			cFindAssociation = FindSOPClassSCU.getSuitableAssociation(hostname,port,calledAETitle,callingAETitle,getFindSOPClassUID());
+			cMoveAssociation = MoveSOPClassSCU.getSuitableAssociation(hostname,port,calledAETitle,callingAETitle,getMoveSOPClassUID());
+		}
+		else {
+			cFindAssociation = null;
+			cMoveAssociation = null;
+		}
 	}
 	
 	/**
@@ -299,18 +431,43 @@ if (debugLevel > 1) System.err.println("QueryInformationModel.performQuery(): re
 	 * <li> {@link #performHierarchicalMoveFromTo(AttributeList,String,String) performHierarchicalMoveFromTo()}
 	 * </ul>
 	 *
-	 * @param	hostname		their hostname or IP address
-	 * @param	port			their port number
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #QueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle)} instead.
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
 	 * @param	calledAETitle		their AE title
 	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
-	 * @param	debugLevel		0 is no debugging (silent), > 0 more verbose levels of debugging
+	 * @param	debugLevel			ignored
 	 */
 	public QueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel) {
+		this(hostname,port,calledAETitle,callingAETitle);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Construct a query information model.</p>
+	 *
+	 * <p>Does not actually open an association or perform a query or retrieval; for that see:</p>
+	 * <ul>
+	 * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
+	 * <li> {@link #performHierarchicalMove(AttributeList) performHierarchicalMove()}
+	 * <li> {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}
+	 * <li> {@link #performHierarchicalMoveTo(AttributeList,String) performHierarchicalMoveTo()}
+	 * <li> {@link #performHierarchicalMoveFromTo(AttributeList,String,String) performHierarchicalMoveFromTo()}
+	 * </ul>
+	 *
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
+	 * @param	calledAETitle		their AE title
+	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 */
+	public QueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle) {
+		// don't use this() with reuseAssociations false, otherwise need to declare DicomNetworkException, which is not needed
 		this.hostname=hostname;
 		this.port=port;
 		this.calledAETitle=calledAETitle;
 		this.callingAETitle=callingAETitle;
-		this.debugLevel=debugLevel;
+		cFindAssociation = null;
+		cMoveAssociation = null;
 	}
 
 }

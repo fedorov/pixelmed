@@ -1,6 +1,10 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.*; 
+import com.pixelmed.dicom.*;
+import com.pixelmed.event.EventContext;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -12,9 +16,8 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.dicom.*;
-import com.pixelmed.event.EventContext;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an entire application for displaying and viewing chest x-ray images.</p>
@@ -25,8 +28,9 @@ import com.pixelmed.event.EventContext;
  * @author	dclunie
  */
 public class ChestImageViewer {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ChestImageViewer.java,v 1.15 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/ChestImageViewer.java,v 1.3 2013/01/19 18:59:04 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ChestImageViewer.class);
 
 	protected JFrame frame;
 	protected JPanel multiPanel;
@@ -108,7 +112,7 @@ public class ChestImageViewer {
 	
 	/**
 	 * @param		filenames
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public void loadMultiPanelFromSpecifiedFiles(String filenames[]) throws Exception {
 	
@@ -152,7 +156,7 @@ public class ChestImageViewer {
 				list.read(distream);
 				if (list.isImage()) {
 					int i = nImages++;
-System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
+					slf4jlogger.info("IMAGE [{}] is file {} ({})",i,f,filenames[f]);
 
 					orientations[i] = getPatientOrientation(list);
 //System.err.println("IMAGE ["+i+"] orientation="+(orientations[i] == null && orientations[i].length == 2 ? "" : (orientations[i][0] + " " + orientations[i][1])));
@@ -192,7 +196,7 @@ System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
 				}
 			}
 			catch (Exception e) {	// FileNotFoundException,IOException,DicomException
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 
@@ -295,7 +299,7 @@ System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
 
 	/**
 	 * @param		filenames
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public ChestImageViewer(String filenames[]) throws Exception {
 		DisplayDeviceArea[] displayDeviceAreas = getPresentationAndImageDeviceAreas();
@@ -357,7 +361,7 @@ System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
 			new ChestImageViewer(arg);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

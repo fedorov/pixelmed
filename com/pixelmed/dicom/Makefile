@@ -18,6 +18,7 @@ AttributeTreeBrowser.class \
 AttributeTreeRecord.class \
 BinaryInputStream.class \
 BinaryOutputStream.class \
+ByteFrameSource.class \
 ClinicalTrialsAttributes.class \
 CodedSequenceItem.class \
 CodeStringAttribute.class \
@@ -30,6 +31,8 @@ ColorPaletteHotMetalBlue.class \
 ColorPalettePET.class \
 ColorPalettePET20Step.class \
 CompositeInstanceContext.class \
+CompressedFrameDecoder.class \
+CompressedFrameEncoder.class \
 ContentItem.class \
 ContentItemFactory.class \
 CrossSectionalImageLibrary.class \
@@ -50,11 +53,13 @@ DicomInputStream.class \
 DicomOutputStream.class \
 DicomStreamCopier.class \
 DisplayShutter.class \
+EncapsulateImageInDicom.class \
 EncapsulatedInputStream.class \
 FileMetaInformation.class \
 FloatDoubleAttribute.class \
 FloatSingleAttribute.class \
 FrameSet.class \
+FunctionalGroupUtilities.class \
 GeometryOfSliceFromAttributeList.class \
 GeometryOfVolumeFromAttributeList.class \
 HierarchicalImageReference.class \
@@ -64,6 +69,8 @@ ImageReference.class \
 ImageToDicom.class \
 InformationEntity.class \
 IntegerStringAttribute.class \
+JSONRepresentationOfDicomObjectFactory.class \
+JSONRepresentationOfStructuredReportObjectFactory.class \
 LongStringAttribute.class \
 LongTextAttribute.class \
 LossyImageCompression.class \
@@ -75,19 +82,27 @@ MultiFramePixelData.class \
 NullOutputStream.class \
 OtherAttributeOnDisk.class \
 OtherByteAttribute.class \
+OtherByteAttributeCompressedSeparateFramesOnDisk.class \
 OtherByteAttributeMultipleCompressedFilesOnDisk.class \
 OtherByteAttributeMultipleCompressedFrames.class \
 OtherByteAttributeMultipleFilesOnDisk.class \
+OtherByteAttributeMultipleFrameArrays.class \
 OtherByteAttributeOnDisk.class \
 OtherDoubleAttribute.class \
 OtherFloatAttribute.class \
+OtherFloatAttributeMultipleFilesOnDisk.class \
+OtherLongAttribute.class \
+OtherVeryLongAttribute.class \
 OtherWordAttribute.class \
+OtherWordAttributeMultipleFilesOnDisk.class \
+OtherWordAttributeMultipleFrameArrays.class \
 OtherWordAttributeOnDisk.class \
 Overlay.class \
 PDFToDicomImage.class \
 PersonIdentification.class \
 PersonNameAttribute.class \
 PixelSpacing.class \
+PrivatePixelData.class \
 ProjectionXRayImageLibrary.class \
 RealWorldValueTransform.class \
 SequenceAttribute.class \
@@ -98,12 +113,15 @@ ShortStringAttribute.class \
 ShortTextAttribute.class \
 SignedLongAttribute.class \
 SignedShortAttribute.class \
+SignedVeryLongAttribute.class \
+SingleOverlay.class \
 SOPClass.class \
 SOPClassDescriptions.class \
 SOPInstanceReference.class \
 SpatialCoordinateAndImageReference.class \
 SpecificCharacterSet.class \
 SpectroscopyVolumeLocalization.class \
+StackOfSlices.class \
 StandaloneAttributeTreeBrowser.class \
 StoredFilePathStrategyHashSubFolders.class \
 StoredFilePathStrategySingleFolder.class \
@@ -117,21 +135,28 @@ StructuredReportTreeBrowser.class \
 SUVTransform.class \
 TagFromName.class \
 TextAttribute.class \
+TiledFramesIndex.class \
 TimeAttribute.class \
 TransferSyntax.class \
 TransferSyntaxFromName.class \
 UIDGenerator.class \
 UniqueIdentifierAttribute.class \
+UniversalResourceAttribute.class \
 UnknownAttribute.class \
+UnlimitedCharactersAttribute.class \
 UnlimitedTextAttribute.class \
+UniversalResourceAttribute.class \
+UnPackBits.class \
 UnsignedLongAttribute.class \
 UnsignedShortAttribute.class \
+UnsignedVeryLongAttribute.class \
 ValueRepresentation.class \
 VersionAndConstants.class \
 Veterinary.class \
 VOITransform.class \
 XMLRepresentationOfDicomObjectFactory.class \
-XMLRepresentationOfStructuredReportObjectFactory.class
+XMLRepresentationOfStructuredReportObjectFactory.class \
+confidentialityprofiledataelementsandhandling.xml
 
 all:	${OBJS}
 
@@ -139,11 +164,9 @@ PATHTOROOT = ../../..
 
 include ${PATHTOROOT}/Makefile.common.mk
 
-.java.class:
-	javac ${JAVACOPTIONS} -classpath ${PATHTOROOT}:${DICOMADDITIONALJARS} -sourcepath ${PATHTOROOT} $<
-
 clean:
 	rm -f *~ *.class core *.bak \
+		confidentialityprofiledataelementsandhandling.xml \
 		/tmp/testDicomFile_MEVRLE_EVRLE_8.dcm \
 		/tmp/testDicomFile_MEVRLE_IVRLE_8.dcm \
 		/tmp/testDicomFile_MEVRLE_EVRLE_12.dcm \
@@ -161,7 +184,6 @@ createAttributeClasses:
 	./createAttributeClasses.sh
 
 test:	testBinaryInputStream testAttributeList_read testAttributeList_readseq
-
 
 testBinaryInputStream:	BinaryInputStream.class
 	touch /tmp/testBinaryInputStream
@@ -237,13 +259,12 @@ testAttributeList_read:		AttributeList.class \
 	dcdiff /tmp/testDicomFile_NOM_EVRLE_12.dcm /tmp/crap
 	dccmp /tmp/testDicomFile_NOM_EVRLE_12.dcm /tmp/crap
 
-testAttributeList_readseq:	AttributeList.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap TEST
+testAttributeList_readseq:	AttributeList.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap TEST
 	@echo "comparing what was read with written"
-	ls -l ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
-	dcdiff ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
-	dccmp ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
+	ls -l $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
+	dcdiff $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
+	dccmp $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/crap
 
 testattribute:	AttributeTest.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeTest
@@ -251,18 +272,15 @@ testattribute:	AttributeTest.class
 testattributetag:	AttributeTag.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeTag
 
-testDICOMDIR:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
+testDICOMDIR:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
 
 
-testDICOMDIR2:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/ge/opal/dd_opal
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser ${PATHTOHOME}/Work/dctool.support/images/dicom/ge/opal/dd_opal
+testDICOMDIR2:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser $${HOME}/Work/dctool.support/images/dicom/ge/opal/dd_opal
 
-testDICOMDIR3:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/dicomdirs/dicomdir.carestreammissingimagelowerleveloffset
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser ${PATHTOHOME}/Work/dctool.support/images/dicom/dicomdirs/dicomdir.carestreammissingimagelowerleveloffset
+testDICOMDIR3:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRecordFactory.class DicomDirectoryBrowser.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser $${HOME}/Work/dctool.support/images/dicom/dicomdirs/dicomdir.carestreammissingimagelowerleveloffset
 
 /tmp/testDICOMDIR4.tmp:	/tmp/testDicomFile_MEVRLE_EVRLE_8.dcm
 	dcdirmk -novalidatename -noicons -noinstancechildoffset -of $@ /tmp/testDicomFile_MEVRLE_EVRLE_8.dcm
@@ -271,20 +289,20 @@ testDICOMDIR4:	DicomDirectory.class DicomDirectoryRecord.class DicomDirectoryRec
 				/tmp/testDICOMDIR4.tmp
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDirectoryBrowser /tmp/testDICOMDIR4.tmp
 
-/tmp/testfl1.dcm:	${PATHTOHOME}/Work/dctool.support/images/dicom/rsna99.image.19991117/tests/test513.pres
-	dccp $< $@
+/tmp/testfl1.dcm:
+	dccp $${HOME}/Work/dctool.support/images/dicom/rsna99.image.19991117/tests/test513.pres $@
 
 testfl1:	AttributeList.class /tmp/testfl1.dcm
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList /tmp/testfl1.dcm "" TEST
 
-/tmp/testfl2.dcm:	${PATHTOHOME}/Work/dctool.support/images/dicom/rsna99.image.19991117/tests/test515.pres
-	dccp $< $@
+/tmp/testfl2.dcm:
+	dccp $${HOME}/Work/dctool.support/images/dicom/rsna99.image.19991117/tests/test515.pres $@
 
 testfl2:	AttributeList.class /tmp/testfl2.dcm
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList /tmp/testfl2.dcm "" TEST
 
-/tmp/testsr1.dcm:	${PATHTOHOME}/Work/dctool.support/images/dicom/sr/examplef9/examplef9.dcm
-	dccp $< $@
+/tmp/testsr1.dcm:
+	dccp $${HOME}/Work/dctool.support/images/dicom/sr/examplef9/examplef9.dcm $@
 
 testsr1:	StructuredReport.class ContentItem.class ContentItemFactory.class StructuredReportBrowser.class \
 				/tmp/testsr1.dcm
@@ -298,30 +316,26 @@ testsr1tb:	StructuredReport.class ContentItem.class ContentItemFactory.class Str
 				/tmp/testsr1.dcm
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} StructuredReportTreeBrowser /tmp/testsr1.dcm
 
-${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm:	${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.source
-	ancreate < $< > $@.tmp
+/tmp/testscoord.dcm:
+	ancreate < $${HOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.source > $@.tmp
 	dccp $@.tmp $@
 	rm -f $@.tmp
 
-testsr2:	StructuredReport.class ContentItem.class ContentItemFactory.class StructuredReportBrowser.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReportBrowser ${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
+testsr2:	StructuredReport.class ContentItem.class ContentItemFactory.class StructuredReportBrowser.class /tmp/testscoord.dcm
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReportBrowser /tmp/testscoord.dcm
 
-testsrhierref:	HierarchicalSOPInstanceReference.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.HierarchicalSOPInstanceReference ${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
+testsrhierref:	HierarchicalSOPInstanceReference.class /tmp/testscoord.dcm
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.HierarchicalSOPInstanceReference /tmp/testscoord.dcm
 
-testsrhierref2:	HierarchicalSOPInstanceReference.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
+testsrhierref2:	HierarchicalSOPInstanceReference.class /tmp/testscoord.dcm
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.HierarchicalSOPInstanceReference \
-		"${PATHTOHOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/Recontexted/107166 [RIDER 2151469008]/20070208 000000/Series 90002 [SR - Completed]/1.3.6.1.4.1.5962.99.1.50.9533.1271360773857.134.1.0.2.1.dcm"
+		"$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/Recontexted/107166 [RIDER 2151469008]/20070208 000000/Series 90002 [SR - Completed]/1.3.6.1.4.1.5962.99.1.50.9533.1271360773857.134.1.0.2.1.dcm"
 
-testattrlistbrowser:	AttributeListTableBrowser.class AttributeListTableModel.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeListTableBrowser ${PATHTOHOME}/Work/dctool.support/images/dicom/sr/mytests/testscoord.dcm
+testattrlistbrowser:	AttributeListTableBrowser.class AttributeListTableModel.class /tmp/testscoord.dcm
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeListTableBrowser /tmp/testscoord.dcm
 
 testdeflate:
-	rm -f /tmp/crap /tmp/crap2 /tmp/crap3
+	rm -rf /tmp/crap /tmp/crap2 /tmp/crap3
 	@echo "try AttributeList of EVRLE with meta to deflate and back"
 	dcsmpte /tmp/crap -bits 12 -nometa -output-vr explicit -output-endian little
 	@echo "first deflate (with metaheader)"
@@ -332,8 +346,8 @@ testdeflate:
 	andiff /tmp/crap /tmp/crap3
 	@echo "expect binary comparison of original and decompressed to succeed"
 	dccmp /tmp/crap /tmp/crap3
-	@echo ""
-	rm -f /tmp/crap /tmp/crap2 /tmp/crap3
+	@echo "comparison done"
+	rm -rf /tmp/crap /tmp/crap2 /tmp/crap3
 	@echo "try DicomStreamCopier of EVRLE with meta to deflate and back"
 	dcsmpte /tmp/crap -bits 12 -nometa -output-vr explicit -output-endian little
 	@echo "first deflate (with metaheader)"
@@ -344,9 +358,10 @@ testdeflate:
 	andiff /tmp/crap /tmp/crap3
 	@echo "expect binary comparison of original and decompressed to succeed"
 	dccmp /tmp/crap /tmp/crap3
+	@echo "comparison done"
 
 testbzip2:
-	rm -f /tmp/crap /tmp/crap2 /tmp/crap3
+	rm -rf /tmp/crap /tmp/crap2 /tmp/crap3
 	@echo "try AttributeList of EVRLE with meta to bzip2 and back"
 	dcsmpte /tmp/crap -bits 12 -nometa -output-vr explicit -output-endian little
 	@echo "first bzip2 (with metaheader)"
@@ -357,9 +372,37 @@ testbzip2:
 	andiff /tmp/crap /tmp/crap3
 	@echo "expect binary comparison of original and decompressed to succeed"
 	dccmp /tmp/crap /tmp/crap3
-	@echo ""
-	rm -f /tmp/crap /tmp/crap2 /tmp/crap3
-	@echo "try DicomStreamCopier of EVRLE with meta to bzip2 and back"
+	@echo "comparison done"
+	# test compatibility with dicom3tools
+	@echo "then decompress with dicom3tools"
+	rm -f /tmp/crap3
+	dcunbzip2 /tmp/crap2 /tmp/crap3
+	@echo "expect no difference between original and decompressed except presence of metaheader"
+	andiff /tmp/crap /tmp/crap3
+	@echo "expect binary comparison of original and decompressed to succeed"
+	dccmp /tmp/crap /tmp/crap3
+	@echo "comparison done"
+	@echo "now compress with dicom3tools"
+	rm -f /tmp/crap2
+	dcbzip2 /tmp/crap /tmp/crap2
+	@echo "then decompress"
+	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList "" /tmp/crap2 "1.2.840.10008.1.2.1" /tmp/crap3 NO
+	@echo "expect no difference between original and decompressed"
+	andiff /tmp/crap /tmp/crap3
+	@echo "expect binary comparison of original and decompressed to succeed"
+	dccmp /tmp/crap /tmp/crap3
+	@echo "comparison done"
+	# test compatibility with dicom3tools
+	@echo "then decompress with dicom3tools"
+	rm -f /tmp/crap3
+	dcunbzip2 /tmp/crap2 /tmp/crap3
+	@echo "expect no difference between original and decompressed except presence of metaheader"
+	andiff /tmp/crap /tmp/crap3
+	@echo "expect binary comparison of original and decompressed to succeed"
+	dccmp /tmp/crap /tmp/crap3
+	@echo "comparison done"
+	rm -rf /tmp/crap /tmp/crap2 /tmp/crap3
+	@echo "try DicomStreamCopier of EVRLE without meta to bzip2 and back"
 	dcsmpte /tmp/crap -bits 12 -nometa -output-vr explicit -output-endian little
 	@echo "first deflate (with metaheader)"
 	java -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomStreamCopier "1.2.840.10008.1.2.1" /tmp/crap "1.3.6.1.4.1.5962.300.1" /tmp/crap2
@@ -369,12 +412,13 @@ testbzip2:
 	andiff /tmp/crap /tmp/crap3
 	@echo "expect binary comparison of original and decompressed to succeed"
 	dccmp /tmp/crap /tmp/crap3
+	@echo "comparison done"
 
-# need to invokve with make -i, else expected errors will stop progress
+# need to invoke with make -i, else expected errors will stop progress
 teststreamcopier:	DicomStreamCopier.class
 	make -i COPIERCLASS=com.pixelmed.dicom.DicomStreamCopier testcopierusing
 
-# need to invokve with make -i, else expected errors will stop progress
+# need to invoke with make -i, else expected errors will stop progress
 testattributelistcopier:	AttributeList.class
 	make -i COPIERCLASS=com.pixelmed.dicom.AttributeList COPIERNOMETA=NO COPIERMETA=YES testcopierusing
 
@@ -588,10 +632,9 @@ testmeta:	FileMetaInformation.class
 testdictionary:	DicomDictionaryBase.class DicomDictionary.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.DicomDictionaryBase
 
-testxml:	XMLRepresentationOfDicomObjectFactory.class \
-				${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
+testxml:	XMLRepresentationOfDicomObjectFactory.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.XMLRepresentationOfDicomObjectFactory ${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR | tidy -xml -indent -wrap 1000
+		com.pixelmed.dicom.XMLRepresentationOfDicomObjectFactory $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR | tidy -quiet -xml -indent -wrap 1000
 
 testxmlback:	XMLRepresentationOfDicomObjectFactory.class /tmp/testxmlback.orig.dcm
 	@echo "Creating xml"
@@ -604,35 +647,33 @@ testxmlback:	XMLRepresentationOfDicomObjectFactory.class /tmp/testxmlback.orig.d
 	dcdiff /tmp/testxmlback.orig.dcm /tmp/testxmlback.dcm
 	rm -f /tmp/testxmlback.xml /tmp/testxmlback.dcm
 
-testxmlbackdir:	${PATHTOHOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR
-	cp $< /tmp/testxmlback.orig.dcm
+testxmlbackdir:
+	cp $${HOME}/Work/dctool.support/images/dicom/forjpeg2000/discimg/DICOMDIR /tmp/testxmlback.orig.dcm
 	make testxmlback
 	rm -f /tmp/testxmlback.orig.dcm
 
-testxmlbackimg:	${PATHTOHOME}/work/nemamfmr/DISCIMG/IMAGES/ONEBRAIN
-	cp $< /tmp/testxmlback.orig.dcm
+testxmlbackimg:
+	cp $${HOME}/work/nemamfmr/DISCIMG/IMAGES/ONEBRAIN /tmp/testxmlback.orig.dcm
 	make testxmlback
 	rm -f /tmp/testxmlback.orig.dcm
 
-testxmlbackimgwithat:	${PATHTOHOME}/work/dctool.support/images/dicom/philips/philipsnmbonescan.dcm
-	#cp $< /tmp/testxmlback.orig.dcm
-	dccp -nodisclaimer -removeprivate -d PixelData $< /tmp/testxmlback.orig.dcm
+testxmlbackimgwithat:
+	#cp $${HOME}/work/dctool.support/images/dicom/philips/philipsnmbonescan.dcm /tmp/testxmlback.orig.dcm
+	dccp -nodisclaimer -removeprivate -d PixelData $${HOME}/work/dctool.support/images/dicom/philips/philipsnmbonescan.dcm /tmp/testxmlback.orig.dcm
 	make testxmlback
 	rm -f /tmp/testxmlback.orig.dcm
 
-testsrxml:	XMLRepresentationOfStructuredReportObjectFactory.class \
-				${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr
+testsrxml:	XMLRepresentationOfStructuredReportObjectFactory.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory ${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr | tidy -q -xml -indent -wrap 1000
+		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory /Volumes/Toshiba5TEnc/Pictures/Medical/ChestCAD/R2CAD/Old/175255_4860_0000001449.sr | tidy -q -xml -indent -wrap 1000
 
-testsrxmlroundtrip:	XMLRepresentationOfStructuredReportObjectFactory.class \
-				${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr
+testsrxmlroundtrip:	XMLRepresentationOfStructuredReportObjectFactory.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory toXML ${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr | tidy -q -xml -indent -wrap 1000 >/tmp/crap.xml
+		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory toXML /Volumes/Toshiba5TEnc/Pictures/Medical/ChestCAD/R2CAD/Old/175255_4860_0000001449.sr | tidy -q -xml -indent -wrap 1000 >/tmp/crap.xml
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
 		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory toDICOM /tmp/crap.xml >/tmp/crap.dcm
 	@echo "Comparing original with round trip DICOM encoding"
-	dcdiff ${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr /tmp/crap.dcm
+	dcdiff /Volumes/Toshiba5TEnc/Pictures/Medical/ChestCAD/R2CAD/Old/175255_4860_0000001449.sr /tmp/crap.dcm
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
 		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory toXML /tmp/crap.dcm | tidy -q -xml -indent -wrap 1000 >/tmp/crap2.xml
 	@echo "Comparing original xml with xml of round trip DICOM encoding"
@@ -642,30 +683,24 @@ testsrxmlroundtrip:	XMLRepresentationOfStructuredReportObjectFactory.class \
 	@echo "Comparing second round trip DICOM encoding"
 	dcdiff /tmp/crap.dcm /tmp/crap2.dcm
 
-testsrdump:	StructuredReport.class \
-				${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReport ${PATHTOHOME}/Pictures/Medical/R2CAD/Old/175255_4860_0000001449.sr
+testsrdump:	StructuredReport.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReport \
+		/Volumes/Toshiba5TEnc/Pictures/Medical/ChestCAD/R2CAD/Old/175255_4860_0000001449.sr
 
-testkowithtemplatexml:	XMLRepresentationOfStructuredReportObjectFactory.class \
-				${PATHTOHOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000
+testkowithtemplatexml:	XMLRepresentationOfStructuredReportObjectFactory.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory ${PATHTOHOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000 | tidy -q -xml -indent -wrap 1000
+		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory $${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000 | tidy -q -xml -indent -wrap 1000
 
-testkowithtemplatedump:	StructuredReport.class \
-				${PATHTOHOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000
-	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReport ${PATHTOHOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000
+testkowithtemplatedump:	StructuredReport.class
+	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.StructuredReport $${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000004/KO000000
 
-testsrwithrefxml:	XMLRepresentationOfStructuredReportObjectFactory.class \
-				${PATHTOHOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946
+testsrwithrefxml:	XMLRepresentationOfStructuredReportObjectFactory.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory ${PATHTOHOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946 | tidy -q -xml -indent -wrap 1000
+		com.pixelmed.dicom.XMLRepresentationOfStructuredReportObjectFactory $${HOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946 | tidy -q -xml -indent -wrap 1000
 
-testsrwithrefdump:	StructuredReport.class \
-				${PATHTOHOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946
+testsrwithrefdump:	StructuredReport.class
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
-		com.pixelmed.dicom.StructuredReport ${PATHTOHOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946
-
-
+		com.pixelmed.dicom.StructuredReport $${HOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Corrected/IMAGES/SBIPT000/20061030/SR1/12946
 
 testpatientnames:	SpecificCharacterSet.class
 	mkdir -p $${HOME}/Pictures/medical/charsettests
@@ -723,7 +758,7 @@ testclinicaltrials:	ClinicalTrialsAttributes.class
 testremoveunsafeprivate:	AttributeList.class ClinicalTrialsAttributes.class
 	java -Xms512m -Xmx512m -cp ${PATHTOROOT}:${DICOMADDITIONALJARS}  com.pixelmed.dicom.ClinicalTrialsAttributes $${HOME}/work/dctool.support/images/dicom/philips/philipspetwithprivatesuv.dcm /tmp/crap
 	dcdiff $${HOME}/work/dctool.support/images/dicom/philips/philipspetwithprivatesuv.dcm /tmp/crap
-	rm -f /tmp/crap
+	rm -rf /tmp/crap
 
 testimagetodicom:	ImageToDicom.class
 	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.ImageToDicom \
@@ -731,7 +766,27 @@ testimagetodicom:	ImageToDicom.class
 		/tmp/crap \
 		"Smith^Joan" "P001" "1234" "001" "027"
 	dciodvfy /tmp/crap
-	#rm -f /tmp/crap
+	#rm -rf /tmp/crap
+
+testencapimageindicomsc:	EncapsulateImageInDicom.class
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.EncapsulateImageInDicom \
+		"$${HOME}/Pictures/Medical/VL_more/Dermatology/ISIC/onefileexperiments/ISIC_0000013.jpg" \
+		/tmp/crap \
+		"ISIC^0000013" "ISIC_0000013" "1" "1" "1"
+	dcfile /tmp/crap
+	dciodvfy /tmp/crap
+	#rm -rf /tmp/crap
+	# "${PATHTOROOT}/../../experiments/davwork.jpg"
+	# "$${HOME}/Pictures/Medical/VL_more/Dermatology/ISIC/20171108_onefileexperiments/ISIC_0000013.jpg"
+
+testencapimageindicomvl:	EncapsulateImageInDicom.class
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.EncapsulateImageInDicom \
+		"$${HOME}/Pictures/Medical/VL_more/Dermatology/ISIC/onefileexperiments/ISIC_0000013.jpg" \
+		/tmp/crap \
+		"ISIC^0000013" "ISIC_0000013" "1" "1" "1" "XC" "1.2.840.10008.5.1.4.1.1.77.1.4"
+	dcfile /tmp/crap
+	dciodvfy /tmp/crap
+	#rm -rf /tmp/crap
 
 testimagetodicom_mfrgb:	ImageToDicom.class
 	ppmpat -quiet -squig 512 512 | pnmtotiff -quiet > /tmp/crap1.tif
@@ -742,9 +797,9 @@ testimagetodicom_mfrgb:	ImageToDicom.class
 	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.ImageToDicom \
 		/tmp/crapmulti.tif /tmp/crapmulti.dcm \
 		"Smith^Joan" "P001" "1234" "001" "027"
-	rm -f /tmp/crap1.tif /tmp/crap2.tif /tmp/crap3.tif /tmp/crapmulti.tif
+	rm -rf /tmp/crap1.tif /tmp/crap2.tif /tmp/crap3.tif /tmp/crapmulti.tif
 	dciodvfy /tmp/crapmulti.dcm
-	#rm -f /tmp/crapmulti.dcm
+	#rm -rf /tmp/crapmulti.dcm
 
 
 testimagetodicom_mfgray:	ImageToDicom.class
@@ -756,17 +811,17 @@ testimagetodicom_mfgray:	ImageToDicom.class
 	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.ImageToDicom \
 		/tmp/crapmulti.tif /tmp/crapmulti.dcm \
 		"Smith^Joan" "P001" "1234" "001" "027"
-	rm -f /tmp/crap1.tif /tmp/crap2.tif /tmp/crap3.tif /tmp/crapmulti.tif
+	rm -rf /tmp/crap1.tif /tmp/crap2.tif /tmp/crap3.tif /tmp/crapmulti.tif
 	dciodvfy /tmp/crapmulti.dcm
-	#rm -f /tmp/crapmulti.dcm
+	#rm -rf /tmp/crapmulti.dcm
 
 testimagetodicomicc:	ImageToDicom.class
 	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/jai_imageio.jar com.pixelmed.dicom.ImageToDicom \
-		"${HOME}/Documents/Medical/stuff/Color/ICC/TestImages/Is your system ICC Version 4 ready?_files/Upper_Right.jpg" \
+		"$${HOME}/Documents/Medical/stuff/Color/ICC/TestImages/Is your system ICC Version 4 ready?_files/Upper_Right.jpg" \
 		/tmp/crap \
 		"Smith^Joan" "P001" "1234" "001" "027"
 	dciodvfy /tmp/crap
-	#rm -f /tmp/crap
+	#rm -rf /tmp/crap
 
 /tmp/crap1:
 	dcsmpte /tmp/crap1
@@ -775,14 +830,14 @@ testimagetodicomicc:	ImageToDicom.class
 	dcsmpte /tmp/crap2
 
 testdicomfile:	SetOfDicomFiles.class  /tmp/crap1 /tmp/crap2
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.SetOfDicomFiles /tmp/crap1 /tmp/crap2
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.SetOfDicomFiles /tmp/crap1 /tmp/crap2
 
 testpdftodicom:	PDFToDicomImage.class
 	# may also need :${PATHTOROOT}/jdom.jar:${PATHTOROOT}/bcprov-jdk14-119.jar:${PATHTOROOT}/pjes.jar and JAI IIO for embedded JPEG 2000 images
-	java -Djava.awt.headless=true -Xmx512m -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar:${PATHTOADDITIONAL}/jpedalSTD.jar com.pixelmed.dicom.PDFToDicomImage ${PATHTOROOT}/../../experiments/test.pdf /tmp/crap \
+	java -Djava.awt.headless=true -Xmx512m -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR}:${PATHTOADDITIONAL}/jpedalSTD.jar com.pixelmed.dicom.PDFToDicomImage ${PATHTOROOT}/../../experiments/test.pdf /tmp/crap \
 		"Smith^Joan" "P001" "1234" "001" "027" 144
 	dciodvfy /tmp/crap
-	#rm -f /tmp/crap
+	#rm -rf /tmp/crap
 
 testuidgen:	UIDGenerator.class
 	java -cp ${PATHTOROOT} com.pixelmed.dicom.UIDGenerator 1000
@@ -791,11 +846,11 @@ testtransynfromname:	TransferSyntaxFromName.class
 	java -cp ${PATHTOROOT} com.pixelmed.dicom.TransferSyntaxFromName
 
 testmediaimporter:	MediaImporter.class
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.MediaImporter
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.MediaImporter
 
 testphoneticpersonname:	PersonNameAttribute.class
 	dcsmpte /tmp/crap -r PatientName "Jane Smith"
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.PersonNameAttribute /tmp/crap
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.PersonNameAttribute /tmp/crap
 	rm /tmp/crap
 
 testmakedicomdir:	DicomDirectory.class
@@ -807,7 +862,7 @@ testmakedicomdir:	DicomDirectory.class
 	dcsmpte tmp/crap2a -r PatientID 2 -r PatientName Two -r StudyID 21 -stamp 9999
 	dcsmpte tmp/crap2b -r PatientID 2 -r PatientName Two -r StudyID 22 -stamp 9999
 	dcsmpte tmp/crap2c -r PatientID 2 -r PatientName Two -r StudyID 23 -stamp 9999
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.DicomDirectory \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.DicomDirectory \
 		tmp.DICOMDIR \
 		tmp/crap1a tmp/crap1b tmp/crap2a tmp/crap1c tmp/crap2b tmp/crap2c
 	dcdirdmp tmp.DICOMDIR
@@ -826,7 +881,7 @@ testmakedicomdirwithdir:	DicomDirectory.class
 	dcsmpte tmp/crap2a -r PatientID 2 -r PatientName Two -r StudyID 21 -stamp 9999
 	dcsmpte tmp/crap2b -r PatientID 2 -r PatientName Two -r StudyID 22 -stamp 9999
 	dcsmpte tmp/crap2c -r PatientID 2 -r PatientName Two -r StudyID 23 -stamp 9999
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.DicomDirectory \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.DicomDirectory \
 		tmp \
 		DICOMDIR \
 		crap1a crap1b crap2a crap1c crap2b crap2c
@@ -840,7 +895,7 @@ testmakedicomdirwithdir:	DicomDirectory.class
 testmakedicomdirscenarios:	DicomDirectory.class
 	mkdir -p tmp
 	(cd tmp; rm -f IMAGES; ln -s $${HOME}/Documents/Medical/stuff/ftp.ihe.net/Mammography/SBI2007Demo/DICOMImages/Scenarios/IMAGES IMAGES)
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.DicomDirectory \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.DicomDirectory \
 		tmp.DICOMDIR \
 		`find tmp/IMAGES -follow -type f -a -name '[0-9]*'`
 	dcdirdmp tmp.DICOMDIR
@@ -852,7 +907,7 @@ testmakedicomdirscenarios:	DicomDirectory.class
 testmakedicomdirko:	DicomDirectory.class
 	mkdir -p tmp
 	(cd tmp; rm -f IMAGES; ln -s $${HOME}/Pictures/Medical/KOFromPDI2004 KOFromPDI2004)
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.DicomDirectory \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.DicomDirectory \
 		tmp.DICOMDIR \
 		`find tmp/KOFromPDI2004 -follow -type f -a -name '[0-9A-Z]*'`
 	dcdirdmp tmp.DICOMDIR
@@ -870,7 +925,7 @@ testisdicom:	DicomFileUtilities.class
 	echo "Hello" >/tmp/crapnotdicom
 	java -cp ${PATHTOROOT} com.pixelmed.dicom.DicomFileUtilities \
 		/tmp/crapevrlemeta /tmp/crapivrlenometa /tmp/crapevrlenometa /tmp/crapevrbenometa /tmp/crapnotdicom
-	rm -f /tmp/crapevrlemeta /tmp/crapivrlenometa /tmp/crapevrlenometa /tmp/crapevrbenometa /tmp/crapnotdicom
+	rm -rf /tmp/crapevrlemeta /tmp/crapivrlenometa /tmp/crapevrlenometa /tmp/crapevrbenometa /tmp/crapnotdicom
 
 testoverlay:	Overlay.class
 	java -cp ${PATHTOROOT} com.pixelmed.dicom.Overlay $${HOME}/work/dctool.support/images/dicom/overlays/nonzerohighbitstopogram.dcm
@@ -909,7 +964,7 @@ testcolorpalette_pet20step:	ColorPalettePET20Step.class ColorPalette.class
 testcolorpalettes:	testcolorpalette_hotiron testcolorpalette_hotmetalblue testcolorpalette_pet testcolorpalette_pet20step
 
 testframeset:	FrameSet.class SetOfFrameSets.class
-	java -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.SetOfFrameSets \
+	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.SetOfFrameSets \
 		"$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/Recontexted/107166 [RIDER 2151469008]/20070208 000000/Series 103 [CT]"
 		#"${PATHTOROOT}/${PATHTOTESTFILESFROMROOT}/DoseImagesCollected/cdsToshibaDoseScreensAndAllImages/CD0526090412/DICOM/ST00001"
 		#"$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000000" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000001" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000002" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000003"
@@ -917,39 +972,49 @@ testframeset:	FrameSet.class SetOfFrameSets.class
 testtoenhancedmr:	MultiFrameImageFactory.class FrameSet.class SetOfFrameSets.class AttributeList.class
 	mkdir -p /tmp/testtoenhanced
 	rm -rf /tmp/testtoenhanced/*
-	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.MultiFrameImageFactory \
-		"$${HOME}/Pictures/Medical/ParametricMaps/PkModeling_verification/PCAMPMRI-0241/PCAMPMRI-0241-DCE" /tmp/testtoenhanced
+	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.MultiFrameImageFactory \
+		"$${HOME}/Pictures/Medical/MRDualEcho/BrainSpinEcho/deid/DICOM" /tmp/testtoenhanced
+		#"$${HOME}/Pictures/Medical/QIICRDICOMSampleData/BWH-QIN 2/9-3D_DCE" /tmp/testtoenhanced
+		#"$${HOME}/Pictures/Medical/ParametricMaps/PkModeling_verification/PCAMPMRI-0241/PCAMPMRI-0241-DCE" /tmp/testtoenhanced
 		#"$${HOME}/Pictures/Medical/japanese/JP_CharSetSample/MRI_JPsample" /tmp/testtoenhanced
 
 testtoenhancedctpet:	MultiFrameImageFactory.class FrameSet.class SetOfFrameSets.class AttributeList.class
 	mkdir -p /tmp/testtoenhanced
 	rm -rf /tmp/testtoenhanced/*
-	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.MultiFrameImageFactory \
+	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.MultiFrameImageFactory \
 		"$${HOME}/Pictures/Medical/PETCTPhilips/PET-CT"  /tmp/testtoenhanced
 
 testtoenhancedct:	MultiFrameImageFactory.class FrameSet.class SetOfFrameSets.class AttributeList.class
 	mkdir -p /tmp/testtoenhanced
 	rm -rf /tmp/testtoenhanced/*
-	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${PATHTOADDITIONAL}/commons-codec-1.3.jar com.pixelmed.dicom.MultiFrameImageFactory \
-		"$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/Recontexted/277654 [RIDER 2357766186]" /tmp/testtoenhanced
+	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.MultiFrameImageFactory \
+		"$${HOME}/Pictures/Medical/NeuroLabUSC_dcm_qa_ct/dcm_qa_ct-master/In" /tmp/testtoenhanced
 		#"$${HOME}/Documents/Work/QIBA/CT/QIBA_1B_RadPharm/RoundOne/Recontexted/107166 [RIDER 2151469008]/20070208 000000/Series 103 [CT]" /tmp/testtoenhanced
 		#"$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000000" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000001" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000002" "$${HOME}/Pictures/Medical/SRExamples/IHEPDI2005/GE/PAT00000/ST000000/SE000003" /tmp/testtoenhanced
-		#"/Volumes/CluniePortable1TB1_Enc800/Hold/VeryThin03RI/20080259/Original/25917613004 [25917613004]/20110609 123538/Series 003 [CT_Body 0_5]" /tmp/testtoenhanced
+		#"/Volumes/Toshiba5TEnc/Hold/VeryThin03RI/20080259/Original/25917613004 [25917613004]/20110609 123538/Series 003 [CT_Body 0_5]" /tmp/testtoenhanced
 		#"${PATHTOROOT}/${PATHTOTESTFILESFROMROOT}/DoseImagesCollected/cdsToshibaDoseScreensAndAllImages/CD0526090412/DICOM/ST00001" /tmp/testtoenhanced
+		#"$${HOME}/Pictures/Medical/EnhancedMultiframe/dcm2niix_issue/TCGA-13-2071_test_fixed"
+		#"$${HOME}/Pictures/Medical/NeuroLabUSC_dcm_qa_ct/dcm_qa_ct-master/In"
+
+testpetforseg:	MultiFrameImageFactory.class FrameSet.class SetOfFrameSets.class AttributeList.class
+	mkdir -p /tmp/petforseg
+	rm -rf /tmp/petforseg/*
+	java -Xms3g -Xmx3g -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.dicom.MultiFrameImageFactory \
+		"$${HOME}/Pictures/Medical/QIICRDICOMSampleData/Iowa-QIN/PET"  /tmp/petforseg
 
 testimagelibrary.create:	ImageLibrary.class
 	mkdir -p ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary
 	rm -f ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/imagelibrary.compare.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.ImageLibrary \
 		${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/imagelibrary.compare.dcm \
-		/Volumes/CluniePortable1TB1/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
+		/Volumes/Toshiba5TEnc/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
 	dcsrdump ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/imagelibrary.compare.dcm
 
 testimagelibrary:	ImageLibrary.class
 	rm -f /tmp/imagelibrary.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.ImageLibrary \
 		/tmp/imagelibrary.dcm \
-		/Volumes/CluniePortable1TB1/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
+		/Volumes/Toshiba5TEnc/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
 	dcsrdump /tmp/imagelibrary.dcm
 	echo "Comparing ..."
 	dcsrdiff ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/imagelibrary.compare.dcm /tmp/imagelibrary.dcm
@@ -960,14 +1025,14 @@ testcrosssectionalimagelibrary.create:	CrossSectionalImageLibrary.class ImageLib
 	rm -f ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/crosssectionalimagelibrary.compare.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.CrossSectionalImageLibrary \
 		${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/crosssectionalimagelibrary.compare.dcm \
-		/Volumes/CluniePortable1TB1/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
+		/Volumes/Toshiba5TEnc/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
 	dcsrdump ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/crosssectionalimagelibrary.compare.dcm
 
 testcrosssectionalimagelibrary:	CrossSectionalImageLibrary.class ImageLibrary.class
 	rm -f /tmp/crosssectionalimagelibrary.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.CrossSectionalImageLibrary \
 		/tmp/crosssectionalimagelibrary.dcm \
-		/Volumes/CluniePortable1TB1/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
+		/Volumes/Toshiba5TEnc/Pictures/Medical/TCIA/LIDCIDRI/LIDC-IDRI/LIDC-IDRI-0068/1.3.6.1.4.1.14519.5.2.1.6279.6001.709632090821449989953075380168
 	dcsrdump /tmp/crosssectionalimagelibrary.dcm
 	echo "Comparing ..."
 	dcsrdiff ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/crosssectionalimagelibrary.compare.dcm /tmp/crosssectionalimagelibrary.dcm
@@ -978,27 +1043,306 @@ testprojectionxrayimagelibrary.create:	ProjectionXRayImageLibrary.class ImageLib
 	rm -f ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/projectionxrayimagelibrary.compare.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.ProjectionXRayImageLibrary \
 		${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/projectionxrayimagelibrary.compare.dcm \
-		"/Volumes/CluniePortable1TB1/Pictures/Medical/INbreast/cluniework/INbreast_Fixed/20586908_6c613a14b80a8591_MG_R_CC_ANON_FIXED.dcm"
+		"/Volumes/Toshiba5TEnc/Pictures/Medical/INbreast/INbreast_Fixed/20586908_6c613a14b80a8591_MG_R_CC_ANON_FIXED.dcm"
 	dcsrdump ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/projectionxrayimagelibrary.compare.dcm
 
 testprojectionxrayimagelibrary:	ProjectionXRayImageLibrary.class ImageLibrary.class
 	rm -f /tmp/projectionxrayimagelibrary.dcm
 	java -cp .:${PATHTOROOT}:${PATHTOADDITIONAL}/vecmath1.2-1.14.jar com.pixelmed.dicom.ProjectionXRayImageLibrary \
 		/tmp/projectionxrayimagelibrary.dcm \
-		"/Volumes/CluniePortable1TB1/Pictures/Medical/INbreast/cluniework/INbreast_Fixed/20586908_6c613a14b80a8591_MG_R_CC_ANON_FIXED.dcm"
+		"/Volumes/Toshiba5TEnc/Pictures/Medical/INbreast/INbreast_Fixed/20586908_6c613a14b80a8591_MG_R_CC_ANON_FIXED.dcm"
 	dcsrdump /tmp/projectionxrayimagelibrary.dcm
 	echo "Comparing ..."
 	dcsrdiff ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/projectionxrayimagelibrary.compare.dcm /tmp/projectionxrayimagelibrary.dcm
 	dcdiff ${PATHTOROOT}/${PATHTOTESTRESULTSFROMROOT}/testimagelibrary/projectionxrayimagelibrary.compare.dcm /tmp/projectionxrayimagelibrary.dcm
 
 testreadmfjpeg:
-	rm -f /tmp/crap
+	rm -rf /tmp/crap
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList \
 		"$${HOME}/Work/dctool.support/images/dicom/jpeg/jpegmfecho.dcm" \
 		/tmp/crap
 
 testreadencapnometaheaderguessjpeg:
-	rm -f /tmp/crap
+	rm -rf /tmp/crap
 	java -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.AttributeList \
 		"$${HOME}/Work/dctool.support/images/dicom/jpeg/nometa.jpeg.50.dcm" \
 		/tmp/crap
+
+testtiledframesindexexactmultiple:	TiledFramesIndex.class
+	java -Xmx4g -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.TiledFramesIndex \
+		"$${HOME}/Pictures/Medical/WSI/WG26Demo2017/AsOf20170923/wsiimages/Tulip^Chris [P-45214579]/20121212 000000 [T13 0121]/Series 003 [SM]/1.3.46.670589.45.1.1.219124696743444.1.4600.1388967452753.3.dcm"
+
+testtiledframesindexnotexactmultiple:	TiledFramesIndex.class
+	java -Xmx4g -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} com.pixelmed.dicom.TiledFramesIndex \
+		"$${HOME}/Pictures/Medical/NEMA/WG26/Hamamatsu/Human_15x15_20x.dcm"
+
+testjsonstdout:	JSONRepresentationOfDicomObjectFactory.class
+	rm -f /tmp/crap.dcm /tmp/crap.json /tmp/crap_rt.dcm
+	dcsmpte /tmp/crap.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		/tmp/crap.dcm \
+		>/tmp/crap.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		>/tmp/crap_rt.dcm
+	#expect only meta header differences
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+	#expect no difference in PixelData
+	dccmp /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonfileargs:	JSONRepresentationOfDicomObjectFactory.class
+	rm -f /tmp/crap.dcm /tmp/crap.json /tmp/crap_rt.dcm
+	dcsmpte /tmp/crap.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		/tmp/crap.dcm \
+		/tmp/crap.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		/tmp/crap_rt.dcm
+	#expect only meta header differences
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+	#expect no difference in PixelData
+	dccmp /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonfileargstojson:	JSONRepresentationOfDicomObjectFactory.class
+	rm -f /tmp/crap.dcm /tmp/crap.json /tmp/crap_rt.dcm
+	dcsmpte /tmp/crap.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toJSON \
+		/tmp/crap.dcm \
+		/tmp/crap.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		/tmp/crap_rt.dcm
+	#expect only meta header differences
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+	#expect no difference in PixelData
+	dccmp /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonfileargstojsonusekeyword:	JSONRepresentationOfDicomObjectFactory.class
+	rm -f /tmp/crap.dcm /tmp/crap.json /tmp/crap_rt.dcm
+	dcsmpte /tmp/crap.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toJSON \
+		/tmp/crap.dcm \
+		/tmp/crap.json \
+		USEKEYWORD \
+		ADDTAG
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		/tmp/crap_rt.dcm
+	#expect only meta header differences
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+	#expect no difference in PixelData
+	dccmp /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonfileargstojsonaddkeyword:	JSONRepresentationOfDicomObjectFactory.class
+	rm -f /tmp/crap.dcm /tmp/crap.json /tmp/crap_rt.dcm
+	dcsmpte /tmp/crap.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toJSON \
+		/tmp/crap.dcm \
+		/tmp/crap.json \
+		ADDKEYWORD
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		/tmp/crap_rt.dcm
+	#expect only meta header differences
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+	#expect no difference in PixelData
+	dccmp /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonrtssfileargstojson:	JSONRepresentationOfDicomObjectFactory.class
+	cp "$${HOME}/Pictures/Medical/RTSS/RS.ZZ_YUNINN_.dcm" /tmp/crap.dcm
+	rm -f /tmp/crap.json /tmp/crap_rt.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toJSON \
+		/tmp/crap.dcm \
+		/tmp/crap.json \
+		USEKEYWORD \
+		COLLAPSEVALUEARRAYS \
+		COLLAPSEEMPTYTONULL \
+		USEUIDKEYWORDS \
+		DONOTUSENUMBERFORISDS
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory \
+		toDICOM \
+		/tmp/crap.json \
+		/tmp/crap_rt.dcm
+	#expect meta header differences, conversion of sequence to delimited form, (and contour data use of scientific notation converted to decimal (e.g., -7.8e-1 to -0.78) if USENUMBERFORISDS)
+	andiff /tmp/crap.dcm /tmp/crap_rt.dcm
+
+testjsonsrfileargstojson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	#select example that does not need (missing) laterality
+	cp "$${HOME}/Documents/Work/NCI/CrowdsCureCancer/converttoDICOMSR/dicomsrfiles/48.dcm" $${HOME}/work/simpleSR/examples/sr_orig.dcm
+	rm -f $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames.json
+	rm -f $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement.json
+	rm -f $${HOME}/work/simpleSR/examples/sr_rt.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory=debug \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toJSON \
+		$${HOME}/work/simpleSR/examples/sr_orig.dcm \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement.json \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames.json
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_orig.dcm
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames.json | jq . >$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement.json | jq . >$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_pretty.json
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_pretty.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfDicomObjectFactory=debug \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement.json \
+		$${HOME}/work/simpleSR/examples/sr_rt.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_orig.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_rt.dcm
+	#expect only meta header differences
+	andiff $${HOME}/work/simpleSR/examples/sr_orig.dcm $${HOME}/work/simpleSR/examples/sr_rt.dcm
+	dcsrdiff $${HOME}/work/simpleSR/examples/sr_orig.dcm $${HOME}/work/simpleSR/examples/sr_rt.dcm
+
+testjsonsreditedfileargsfromjson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	rm -f $${HOME}/work/simpleSR/examples/sr_editedtobesimple.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=info \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_editedtobesimple.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_editedtobesimple.json \
+		$${HOME}/work/simpleSR/examples/sr_editedtobesimple.dcm
+
+testjsonsreditedjustnumberfileargsfromjson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	rm -f $${HOME}/work/simpleSR/examples/sr_editedjustnumber.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=info \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_editedjustnumber.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_editedjustnumber.json \
+		$${HOME}/work/simpleSR/examples/sr_editedjustnumber.dcm
+
+testjsonsrlidctojson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	cp "$${HOME}/Documents/Work/NCI/Slicer/QIICR/LIDC/lidc1.dcm" $${HOME}/work/simpleSR/examples/sr_lidc1.dcm
+	rm -f $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc.json
+	rm -f $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc.json
+	rm -f $${HOME}/work/simpleSR/examples/sr_lidc1_rt.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toJSON \
+		$${HOME}/work/simpleSR/examples/sr_lidc1.dcm \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc.json \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc.json
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_lidc1.dcm
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc.json | jq . >$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc.json | jq . >$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc_pretty.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_lidc.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_lidc.json \
+		$${HOME}/work/simpleSR/examples/sr_lidc1_rt.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_lidc1.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_lidc1_rt.dcm
+	#expect only meta header differences, and differences in floating point representation (e.g., removed trailing zeroes) if useNumberForNumericContentItemValue
+	andiff $${HOME}/work/simpleSR/examples/sr_lidc1.dcm $${HOME}/work/simpleSR/examples/sr_lidc1_rt.dcm
+	dcsrdiff $${HOME}/work/simpleSR/examples/sr_lidc1.dcm $${HOME}/work/simpleSR/examples/sr_lidc1_rt.dcm
+
+testjsonsrsyngoviamm3dsctojson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	cp "$${HOME}/Pictures/Medical/SiemensSyngoViaResults/NewWithSCOORD3D/PT_CT_TaskflowOncology_ABDOMEN_496/MM_Basic_Comprehensive_DICOM_SR/MM_Basic_Comprehensive3D_SR_30000013022023101834700000175.dcm" $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm
+	rm -f $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc.json
+	rm -f $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc.json
+	rm -f $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc_rt.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toJSON \
+		$${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc.json \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc.json
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc.json | jq . >$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc.json | jq . >$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc_pretty.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_syngoviamm3dsc.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_syngoviamm3dsc.json \
+		$${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc_rt.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc_rt.dcm
+	#expect only meta header differences, conversion of sequence to delimited form, and removal of private attributes in content tree
+	andiff $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc_rt.dcm
+	dcsrdiff $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc.dcm $${HOME}/work/simpleSR/examples/sr_syngoviamm3dsc_rt.dcm
+
+testjsonsrqiicriowahntojson:	JSONRepresentationOfStructuredReportObjectFactory.class
+	rm -rf /tmp/testconvertsrtsct
+	mkdir -p /tmp/testconvertsrtsct
+	java -Djava.awt.headless=true -cp ${PATHTOROOT} \
+		com.pixelmed.apps.ConvertSRTCodesToSCT \
+		"$${HOME}/Documents/Work/NCI/Slicer/QIICR/IowaCompleteCaseDownloadForJSONSR/QIN-HEADNECK/QIN-HEADNECK-01-0024/08-10-1986-Thorax1HEADNECKPETCT-15969/75-tumor measurements - User1 SemiAuto trial 1-62668/000000.dcm" \
+		/tmp/testconvertsrtsct
+	rm -rf /tmp/filetouse.dat
+	find /tmp/testconvertsrtsct -name '*.dcm' >/tmp/filetouse.dat
+	mv "`cat /tmp/filetouse.dat`" $${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm
+	rm -rf /tmp/testconvertsrtsct
+	rm -f $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn.json
+	rm -f $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn.json
+	rm -f $${HOME}/work/simpleSR/examples/sr_qiicriowahn_rt.dcm
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toJSON \
+		$${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn.json \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn.json
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn.json | jq . >$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn.json | jq . >$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn_pretty.json
+	cat $${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn_pretty.json
+	cat $${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn_pretty.json
+	java -Djava.awt.headless=true -cp ${PATHTOROOT}:${DICOMADDITIONALJARS} \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory=debug \
+		com.pixelmed.dicom.JSONRepresentationOfStructuredReportObjectFactory \
+		toDICOM \
+		$${HOME}/work/simpleSR/examples/measurementWithImportedBusinessNames_qiicriowahn.json \
+		$${HOME}/work/simpleSR/examples/businessNameDeclarationsForMeasurement_qiicriowahn.json \
+		$${HOME}/work/simpleSR/examples/sr_qiicriowahn_rt.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm
+	dcsrdump $${HOME}/work/simpleSR/examples/sr_qiicriowahn_rt.dcm
+	#expect only meta header differences
+	andiff $${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm $${HOME}/work/simpleSR/examples/sr_qiicriowahn_rt.dcm
+	dcsrdiff $${HOME}/work/simpleSR/examples/sr_qiicriowahn.dcm $${HOME}/work/simpleSR/examples/sr_qiicriowahn_rt.dcm
+
+confidentialityprofiledataelementsandhandling.xml:	${HOME}/${PATHTOSTANDARDFROMHOME}/support/stylesheets/extractconfidentialityprofiledataelementsandhandling.xsl ${HOME}/${PATHTOSTANDARDFROMHOME}/source/docbook/part15/part15.xml
+	java -cp ${PATHTOROOT} ${XALANJAVAOPTS} \
+		com.pixelmed.utils.ExecuteTranslet \
+		"$${HOME}/${PATHTOSTANDARDFROMHOME}/support/stylesheets/extractconfidentialityprofiledataelementsandhandling.xsl" \
+		"$${HOME}/${PATHTOSTANDARDFROMHOME}/source/docbook/part15/part15.xml" \
+		$@

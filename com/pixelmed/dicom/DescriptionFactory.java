@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -16,7 +16,7 @@ import java.util.*;
 abstract public class DescriptionFactory {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DescriptionFactory.java,v 1.12 2011/12/29 15:26:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DescriptionFactory.java,v 1.24 2025/01/29 10:58:06 dclunie Exp $";
 	
 	// 0.5477 would be the square root of 1 (unit vector sum of squares) divided by 3 (oblique axes - a "double" oblique)
 	// 0.7071 would be the square root of 1 (unit vector sum of squares) divided by 2 (oblique axes)
@@ -28,10 +28,10 @@ abstract public class DescriptionFactory {
 	 *
 	 * <p>Some degree of deviation from one of the standard orthogonal axes is allowed before deciding no major axis applies and returning null.</p>
 	 *
-	 * @param	x
-	 * @param	y
-	 * @param	z
-	 * @return		the string describing the orientation of the vector, or null if oblique
+	 * @param	x	x component between -1 and 1
+	 * @param	y	y component between -1 and 1
+	 * @param	z	z component between -1 and 1
+	 * @return	the string describing the orientation of the vector, or null if oblique
 	 */
 	public static final String getMajorAxisFromPatientRelativeDirectionCosine(double x,double y,double z) {
 		String axis = null;
@@ -70,12 +70,12 @@ abstract public class DescriptionFactory {
 	 *
 	 * <p>Some degree of deviation from one of the standard orthogonal planes is allowed before deciding the plane is OBLIQUE.</p>
 	 *
-	 * @param	rowX
-	 * @param	rowY
-	 * @param	rowZ
-	 * @param	colX
-	 * @param	colY
-	 * @param	colZ
+	 * @param	rowX	row x component between -1 and 1
+	 * @param	rowY	row y component between -1 and 1
+	 * @param	rowZ	row z component between -1 and 1
+	 * @param	colX	column x component between -1 and 1
+	 * @param	colY	column y component between -1 and 1
+	 * @param	colZ	column z component between -1 and 1
 	 * @return		the string describing the plane of orientation, AXIAL, CORONAL, SAGITTAL or OBLIQUE, or null if undetermined
 	 */
 	public static final String makeImageOrientationLabelFromImageOrientationPatient(
@@ -105,8 +105,8 @@ abstract public class DescriptionFactory {
 	 *
 	 * <p>Some degree of deviation from one of the standard orthogonal planes is allowed before deciding the plane is OBLIQUE.</p>
 	 *
-	 * @param	aImageOrientationPatient
-	 * @return		the string describing the plane of orientation, AXIAL, CORONAL, SAGITTAL or OBLIQUE, or null if undetermined
+	 * @param	aImageOrientationPatient	attribute containing the patient-relative orientation
+	 * @return								the string describing the plane of orientation, AXIAL, CORONAL, SAGITTAL or OBLIQUE, or null if undetermined
 	 */
 	public static final String makeImageOrientationLabelFromImageOrientationPatient(Attribute aImageOrientationPatient) {
 		String label = null;
@@ -133,8 +133,8 @@ abstract public class DescriptionFactory {
 	 *
 	 * <p>Some degree of deviation from one of the standard orthogonal planes is allowed before deciding the plane is OBLIQUE.</p>
 	 *
-	 * @param	list
-	 * @return		the string describing the plane of orientation, AXIAL, CORONAL, SAGITTAL or OBLIQUE, or null if undetermined
+	 * @param	list	list of attributes containing ImageOrientationPatient
+	 * @return			the string describing the plane of orientation, AXIAL, CORONAL, SAGITTAL or OBLIQUE, or null if undetermined
 	 */
 	public static final String makeImageOrientationLabelFromImageOrientationPatient(AttributeList list) {
 		Attribute aImageOrientationPatient = list.get(TagFromName.ImageOrientationPatient);
@@ -150,10 +150,10 @@ abstract public class DescriptionFactory {
 	 * more than one letter is returned, from major to minor axes, with up to three
 	 * letters in the case of a "double oblique".</p>
 	 *
-	 * @param	x
-	 * @param	y
-	 * @param	z
-	 * @return		the string describing the orientation of the vector 
+	 * @param	x	x component between -1 and 1
+	 * @param	y	y component between -1 and 1
+	 * @param	z	z component between -1 and 1
+	 * @return		the string describing the orientation of the vector
 	 */
 	public static final String makePatientOrientationFromPatientRelativeDirectionCosine(double x,double y,double z) {
 		StringBuffer buffer = new StringBuffer();
@@ -195,13 +195,13 @@ abstract public class DescriptionFactory {
 	 *
 	 * <p>The row and column letters returned are separated by the usual DICOM string delimiter, a backslash.</p>
 	 *
-	 * @param	rowX
-	 * @param	rowY
-	 * @param	rowZ
-	 * @param	colX
-	 * @param	colY
-	 * @param	colZ
-	 * @return		the string describing the row and then the column 
+	 * @param	rowX	row x component between -1 and 1
+	 * @param	rowY	row y component between -1 and 1
+	 * @param	rowZ	row z component between -1 and 1
+	 * @param	colX	column x component between -1 and 1
+	 * @param	colY	column y component between -1 and 1
+	 * @param	colZ	column z component between -1 and 1
+	 * @return	the string describing the row and then the column
 	 */
 	public static final String makePatientOrientationFromImageOrientationPatient(
 			double rowX,double rowY,double rowZ,
@@ -556,23 +556,39 @@ abstract public class DescriptionFactory {
 	public static final String makePatientDescription(Map attributes) {
 //System.err.println("DescriptionFactory.makePatientDescription(Map)");
 		StringBuffer buffer = new StringBuffer();
-		String //patientName = (String)(attributes.get("PM_PATIENTNAME_CANONICAL"));
-		//if (patientName == null) {
-			patientName = (String)(attributes.get("PATIENTNAME"));
-		//}
-		if (patientName != null) {
-			if (patientName.contains("^")) {
-//System.err.println("DescriptionFactory.makePatientDescription(Map): patientName was "+patientName);
-				patientName = patientName.replaceFirst("\\^+$","");	// Trailing empty components are of no significance so should be treated as absent
-//System.err.println("DescriptionFactory.makePatientDescription(Map): patientName now "+patientName);
+		{
+			String //patientName = (String)(attributes.get("PM_PATIENTNAME_CANONICAL"));
+			//if (patientName == null) {
+				patientName = (String)(attributes.get("PATIENTNAME"));
+			//}
+			if (patientName == null) {
+				patientName = "";					// want to treat null and empty patient name the same way
 			}
-			buffer.append(patientName);
-			buffer.append(" ");
+			else {
+				if (patientName.contains("^")) {
+//System.err.println("DescriptionFactory.makePatientDescription(Map): patientName was "+patientName);
+					patientName = patientName.replaceFirst("\\^+$","");	// Trailing empty components are of no significance so should be treated as absent
+//System.err.println("DescriptionFactory.makePatientDescription(Map): patientName now "+patientName);
+				}
+				patientName = patientName.trim();	// want to treat empty patient name, patient name with spaces the same way
+			}
+			if (patientName.length() > 0) {
+				buffer.append(patientName);
+				buffer.append(" ");
+			}
 		}
-		String patientID = (String)(attributes.get("PATIENTID"));
-		if (patientID != null) {
-			buffer.append(patientID);
-			buffer.append(" ");
+		{
+			String patientID = (String)(attributes.get("PATIENTID"));
+			if (patientID == null) {
+				patientID = "";
+			}
+			else {
+				patientID = patientID.trim();
+			}
+			if (patientID.length() > 0) {
+				buffer.append(patientID);
+				buffer.append(" ");
+			}
 		}
 		return buffer.toString();
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.doseocr;
 
@@ -8,9 +8,13 @@ import com.pixelmed.dose.*;
 import java.util.List;
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class RenderedDoseReport {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/RenderedDoseReport.java,v 1.14 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/RenderedDoseReport.java,v 1.25 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(RenderedDoseReport.class);
 
 	private static String getReportFragmentFromCTDose(CTDose ctDose,AttributeList list,CTIrradiationEventDataFromImages eventDataFromImages,boolean summary,boolean doHTML) {
 		String reportFragment = "";
@@ -67,8 +71,8 @@ public class RenderedDoseReport {
 		if (doseScreenFilenames != null && !doseScreenFilenames.isEmpty()) {
 //System.err.println("RenderedDoseReport.generateDoseReportInformation(): Have "+doseScreenFilenames.size()+" screens");
 			try {
-				OCR ocr = new OCR(doseScreenFilenames,0/*debugLevel*/);
-				CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,0/*debugLevel*/,eventDataFromImages,true);
+				OCR ocr = new OCR(doseScreenFilenames);
+				CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,eventDataFromImages,true);
 				if (ctDose == null) {
 					for (String screenFilename : doseScreenFilenames) {
 //System.err.println("RenderedDoseReport.generateDoseReportInformation(): Screen "+screenFilename);
@@ -77,7 +81,7 @@ public class RenderedDoseReport {
 							list.read(screenFilename);
 //System.err.print(list);
 							if (ExposureDoseSequence.isPhilipsDoseScreenInstance(list)) {
-								ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,0/*debugLevel*/,eventDataFromImages,true);
+								ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,eventDataFromImages,true);
 							}
 							if (ctDose != null) {
 //System.err.println("RenderedDoseReport.generateDoseReportInformation(): have ctDose from individual ExposureDoseSequence files");
@@ -85,7 +89,7 @@ public class RenderedDoseReport {
 							}
 						}
 						catch (Exception e) {
-							e.printStackTrace(System.err);
+							slf4jlogger.error("",e);
 						}
 					}
 				}
@@ -95,7 +99,7 @@ public class RenderedDoseReport {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 
@@ -117,7 +121,7 @@ public class RenderedDoseReport {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return report;
@@ -160,10 +164,10 @@ public class RenderedDoseReport {
 				paths.add(arg[i]);
 			}
 			String report = generateDoseReportInformationFromFiles(paths,summary,contentType);
-			System.err.println(report);
+			System.err.println(report);		// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

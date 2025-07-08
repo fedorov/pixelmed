@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -14,10 +14,15 @@ import com.pixelmed.geometry.GeometryOfVolume;
 import com.pixelmed.geometry.LocalizerPoster;
 import com.pixelmed.geometry.LocalizerPosterFactory;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 abstract class LocalizerManager {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/LocalizerManager.java,v 1.5 2013/02/01 13:53:20 dclunie Exp $";
-		
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/LocalizerManager.java,v 1.17 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(LocalizerManager.class);
+	
 	/***/
 	protected LocalizerPoster localizerPoster;
 	/***/
@@ -36,10 +41,10 @@ abstract class LocalizerManager {
 			localizerPoster = LocalizerPosterFactory.getLocalizerPoster(false/*intersect*/,false/*volume*/);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		catch (NoClassDefFoundError e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 
@@ -64,16 +69,16 @@ abstract class LocalizerManager {
 		 */
 		public void changed(Event e) {
 			SourceImageSelectionChangeEvent sis = (SourceImageSelectionChangeEvent)e;
-//System.err.println("LocalizerManager.OurReferenceSourceImageSelectionChangeListener.changed(): event="+sis);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("OurReferenceSourceImageSelectionChangeListener.changed(): event {}",sis.toString());
 			referenceImageSortOrder = sis.getSortOrder();
 			referenceIndex = sis.getIndex();
 			if (referenceImageSortOrder != null) {
 				referenceIndex=referenceImageSortOrder[referenceIndex];
 			}
 			referenceImageGeometry=sis.getGeometryOfVolume();
-//System.err.println("LocalizerManager.OurReferenceSourceImageSelectionChangeListener.changed(): referenceImageGeometry="+referenceImageGeometry);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("OurReferenceSourceImageSelectionChangeListener.changed(): referenceImageGeometry {}",referenceImageGeometry.toString());
 			if (referenceImageGeometry != null && referenceImageGeometry.getGeometryOfSlices() == null) {
-//System.err.println("LocalizerManager.OurReferenceSourceImageSelectionChangeListener.changed(): getGeometryOfSlices() is null, so not using referenceImageGeometry");
+				slf4jlogger.debug("OurReferenceSourceImageSelectionChangeListener.changed(): getGeometryOfSlices() is null, so not using referenceImageGeometry");
 				referenceImageGeometry=null;
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Selected reference image does not contain necessary geometry for localization."));
 			}
@@ -113,12 +118,12 @@ abstract class LocalizerManager {
 		 */
 		public void changed(Event e) {
 			FrameSelectionChangeEvent fse = (FrameSelectionChangeEvent)e;
-//System.err.println("LocalizerManager.OurReferenceImageFrameSelectionChangeListener.changed(): event="+fse);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("OurReferenceImageFrameSelectionChangeListener.changed(): event {}",fse.toString());
 			referenceIndex = fse.getIndex();
 			if (referenceImageSortOrder != null) {
 				referenceIndex=referenceImageSortOrder[referenceIndex];
 			}
-//System.err.println("LocalizerManager.OurReferenceImageFrameSelectionChangeListener.changed(): referenceImageGeometry="+referenceImageGeometry);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("OurReferenceImageFrameSelectionChangeListener.changed(): referenceImageGeometry {}",referenceImageGeometry.toString());
 			if (referenceImageGeometry != null) {
 				drawOutlineOnLocalizerReferenceImagePanel();
 			}
@@ -157,7 +162,7 @@ abstract class LocalizerManager {
 		 * @param	e
 		 */
 		public void changed(com.pixelmed.event.Event e) {
-//System.err.println("LocalizerManager.OurReferenceImageFrameSortOrderChangeListener.changed():");
+			slf4jlogger.debug("OurReferenceImageFrameSortOrderChangeListener.changed():");
 			FrameSortOrderChangeEvent fso = (FrameSortOrderChangeEvent)e;
 			referenceImageSortOrder = fso.getSortOrder();
 			referenceIndex = fso.getIndex();
@@ -187,12 +192,12 @@ abstract class LocalizerManager {
 	}
 	
 	public void setReferenceImagePanel(SingleImagePanel referencedImagePanel) {
-//System.err.println("LocalizerManager.setReferenceImagePanel():");
+		slf4jlogger.debug("setReferenceImagePanel():");
 		this.referencedImagePanel=referencedImagePanel;
 	}
 		
 	public void reset() {
-//System.err.println("LocalizerManager.reset():");
+		slf4jlogger.debug("reset():");
 		referenceImageGeometry=null;
 		referencedImagePanel=null;
 		referenceIndex=0;

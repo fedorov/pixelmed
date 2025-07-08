@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
 
@@ -8,7 +8,7 @@ package com.pixelmed.ftp;
  * @author	dclunie
  */
 public class FTPSecurityType {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPSecurityType.java,v 1.2 2012/02/01 23:02:12 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPSecurityType.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
 	
 	private String description;
 	private FTPSecurityType() {}

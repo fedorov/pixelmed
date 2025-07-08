@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.*; 
+import com.pixelmed.dicom.*;
 
 import java.awt.*; 
 import java.awt.event.*; 
@@ -11,15 +14,11 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.dicom.*;
-
 /**
  * @author	dclunie
  */
 class TestAppMultiFrameStackMode extends ApplicationFrame {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFrameStackMode.java,v 1.16 2007/12/19 22:44:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/TestAppMultiFrameStackMode.java,v 1.27 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * @param	arg
@@ -62,8 +61,7 @@ class TestAppMultiFrameStackMode extends ApplicationFrame {
 				DicomInputStream i = new DicomInputStream(new FileInputStream(arg[0]));
 				sImg=new SourceImage(i);
 			} catch (Exception e) {
-				System.err.println(e);
-				e.printStackTrace(System.err);
+				e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 				System.exit(0);
 			}
 		}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -27,6 +27,10 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 	public static Test suite() {
 		TestSuite suite = new TestSuite("TestNumericContentItemFloatingAndRational");
 				
+		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_StringOnlyFromAttributeListConstructor_NonSR"));
+		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_FloatingFromAttributeListConstructor_nonSR"));
+		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_StringOnlyConstructor_nonSR"));
+		
 		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_StringOnlyFromAttributeListConstructor"));
 		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_FloatingFromAttributeListConstructor"));
 		suite.addTest(new TestNumericContentItemFloatingAndRational("TestNumericContentItemFloatingAndRational_RationalFromAttributeListConstructor"));
@@ -50,6 +54,23 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 	}
 	
 	protected void tearDown() {
+	}
+	
+	public void TestNumericContentItemFloatingAndRational_StringOnlyFromAttributeListConstructor_NonSR() throws Exception {
+		String stringValue = "1";
+	
+		AttributeList list = new AttributeList();
+		{ Attribute a = new CodeStringAttribute(TagFromName.ValueType); a.addValue("NUMERIC"); list.put(a); }
+		
+		{ Attribute a = new DecimalStringAttribute(TagFromName.NumericValue); a.addValue(stringValue); list.put(a); }
+
+		ContentItemFactory cif = new ContentItemFactory();
+		ContentItemFactory.NumericContentItem nci = (ContentItemFactory.NumericContentItem)(cif.getNewContentItem(null/*parent*/,list));
+		
+		assertEquals("getNumericValue",stringValue,nci.getNumericValue());
+		assertTrue("!hasFloatingPointValue",!nci.hasFloatingPointValue());
+		assertTrue("!hasRationalValue",!nci.hasRationalValue());
+		assertTrue("getQualifier",nci.getQualifier() == null);
 	}
 	
 	public void TestNumericContentItemFloatingAndRational_StringOnlyFromAttributeListConstructor() throws Exception {
@@ -140,6 +161,26 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 		assertTrue("getQualifier",nci2.getQualifier() == null);
 	}
 	
+	public void TestNumericContentItemFloatingAndRational_FloatingFromAttributeListConstructor_nonSR() throws Exception {
+		String stringValue = "1";
+		double doubleValue = 1d;
+	
+		AttributeList list = new AttributeList();
+		{ Attribute a = new CodeStringAttribute(TagFromName.ValueType); a.addValue("NUMERIC"); list.put(a); }
+		
+		{ Attribute a = new DecimalStringAttribute(TagFromName.NumericValue); a.addValue(stringValue); list.put(a); }
+		{ Attribute a = new FloatDoubleAttribute(TagFromName.FloatingPointValue); a.addValue(doubleValue); list.put(a); }
+
+		ContentItemFactory cif = new ContentItemFactory();
+		ContentItemFactory.NumericContentItem nci = (ContentItemFactory.NumericContentItem)(cif.getNewContentItem(null/*parent*/,list));
+		
+		assertEquals("getNumericValue",stringValue,nci.getNumericValue());
+		assertTrue("hasFloatingPointValue",nci.hasFloatingPointValue());
+		assertEquals("getFloatingPointValue",doubleValue,nci.getFloatingPointValue());
+		assertTrue("!hasRationalValue",!nci.hasRationalValue());
+		assertTrue("getQualifier",nci.getQualifier() == null);
+	}
+	
 	public void TestNumericContentItemFloatingAndRational_RationalFromAttributeListConstructor() throws Exception {
 		String stringValue = ".333333333333333";	// 16 chars
 		int numerator = 1;
@@ -190,6 +231,26 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 		assertTrue("getQualifier",nci2.getQualifier() == null);
 	}
 	
+	public void TestNumericContentItemFloatingAndRational_StringOnlyConstructor_nonSR() throws Exception {
+		String stringValue = "1";
+	
+		ContentItemFactory cif = new ContentItemFactory();
+		ContentItemFactory.NumericContentItem nci = cif.makeNumericContentItem(null/*parent*/,true/*isNotSR*/,null/*relationshipType*/,null/*conceptName*/,stringValue,null/*units*/,null/*qualifier*/);
+		
+		assertEquals("getNumericValue",stringValue,nci.getNumericValue());
+		assertTrue("!hasFloatingPointValue",!nci.hasFloatingPointValue());
+		assertTrue("!hasRationalValue",!nci.hasRationalValue());
+		assertTrue("getQualifier",nci.getQualifier() == null);
+		
+		{
+			AttributeList list = nci.getAttributeList();
+			assertEquals("get NumericValue from AttributeList",stringValue,Attribute.getSingleStringValueOrEmptyString(list,TagFromName.NumericValue));
+			assertTrue("no RationalNumeratorValue from AttributeList",list.get(TagFromName.RationalNumeratorValue) == null);
+			assertTrue("no RationalDenominatorValue from AttributeList",list.get(TagFromName.RationalDenominatorValue) == null);
+			assertTrue("no NumericValueQualifierCodeSequence from AttributeList",list.get(TagFromName.NumericValueQualifierCodeSequence) == null);
+		}
+	}
+	
 	public void TestNumericContentItemFloatingAndRational_StringOnlyConstructor() throws Exception {
 		String stringValue = "1";
 	
@@ -200,6 +261,20 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 		assertTrue("!hasFloatingPointValue",!nci.hasFloatingPointValue());
 		assertTrue("!hasRationalValue",!nci.hasRationalValue());
 		assertTrue("getQualifier",nci.getQualifier() == null);
+
+		{
+			AttributeList list = nci.getAttributeList();
+			SequenceAttribute mvs=(SequenceAttribute)(list.get(TagFromName.MeasuredValueSequence));
+			assertTrue("MeasuredValueSequence present",mvs != null);
+			assertTrue("MeasuredValueSequence has exactly one item",mvs.getNumberOfItems() == 1);
+			AttributeList mvl = mvs.getItem(0).getAttributeList();
+			
+			assertEquals("get NumericValue from AttributeList",stringValue,Attribute.getSingleStringValueOrEmptyString(mvl,TagFromName.NumericValue));
+			assertTrue("no FloatingPointValue from AttributeList",mvl.get(TagFromName.FloatingPointValue) == null);
+			assertTrue("no RationalNumeratorValue from AttributeList",mvl.get(TagFromName.RationalNumeratorValue) == null);
+			assertTrue("no RationalDenominatorValue from AttributeList",mvl.get(TagFromName.RationalDenominatorValue) == null);
+			assertTrue("no NumericValueQualifierCodeSequence from AttributeList",mvl.get(TagFromName.NumericValueQualifierCodeSequence) == null);
+		}
 		
 		StructuredReport sr = new StructuredReport(nci);
 		XMLRepresentationOfStructuredReportObjectFactory xmf = new XMLRepresentationOfStructuredReportObjectFactory();
@@ -234,6 +309,20 @@ public class TestNumericContentItemFloatingAndRational extends TestCase {
 		assertEquals("getFloatingPointValue",doubleValue,nci.getFloatingPointValue());
 		assertTrue("!hasRationalValue",!nci.hasRationalValue());
 		assertTrue("getQualifier",nci.getQualifier() == null);
+
+		{
+			AttributeList list = nci.getAttributeList();
+			SequenceAttribute mvs=(SequenceAttribute)(list.get(TagFromName.MeasuredValueSequence));
+			assertTrue("MeasuredValueSequence present",mvs != null);
+			assertTrue("MeasuredValueSequence has exactly one item",mvs.getNumberOfItems() == 1);
+			AttributeList mvl = mvs.getItem(0).getAttributeList();
+			
+			assertEquals("get NumericValue from AttributeList",stringValue,Attribute.getSingleStringValueOrEmptyString(mvl,TagFromName.NumericValue));
+			assertEquals("get FloatingPointValue from AttributeList",doubleValue,mvl.get(TagFromName.FloatingPointValue).getDoubleValues()[0]);
+			assertTrue("no RationalNumeratorValue from AttributeList",mvl.get(TagFromName.RationalNumeratorValue) == null);
+			assertTrue("no RationalDenominatorValue from AttributeList",mvl.get(TagFromName.RationalDenominatorValue) == null);
+			assertTrue("no NumericValueQualifierCodeSequence from AttributeList",mvl.get(TagFromName.NumericValueQualifierCodeSequence) == null);
+		}
 		
 		StructuredReport sr = new StructuredReport(nci);
 		XMLRepresentationOfStructuredReportObjectFactory xmf = new XMLRepresentationOfStructuredReportObjectFactory();

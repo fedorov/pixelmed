@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
- * <p>The {@link com.pixelmed.web.WebRequest WebRequest} class parses a URL
+ * <p>The {@link WebRequest WebRequest} class parses a URL
  * that contains a <code>requestType</code> parameter and additional query parameters.</p>
  *
  * <p>This form is used both by WADO and the IHE RID profile transactions.</p>
@@ -17,7 +17,7 @@ import java.util.StringTokenizer;
  * @author	dclunie
  */
 public class WebRequest {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebRequest.java,v 1.3 2005/01/27 13:06:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebRequest.java,v 1.14 2025/01/29 10:58:10 dclunie Exp $";
 
 	// common URL stuff
 	
@@ -69,7 +69,7 @@ public class WebRequest {
 	 *
 	 * @param	query	the part of the URI after the ? symbol, consisting of parameters separated by "&" each a name-value pair separated by "="
 	 * @return		a Map of parameter name-value pairs, with the names and values having had any embedded escape characters decoded
-	 * @exception		if not a valid request
+	 * @throws		if not a valid request
 	 */
 	public static Map parseQueryIntoParameters(String query) throws Exception {
 		Map parameters = new HashMap();
@@ -113,7 +113,7 @@ public class WebRequest {
 	 * <p>Does not throw an exception if no requestType, just does no further parsing of the query. The path will still be extracted and valid</p>
 	 *
 	 * @param	uriString	the entire URI string (possibly without the scheme and userinfo and host and port, e.g. if from an HTTP get method)
-	 * @exception			if not a valid request
+	 * @throws			if not a valid request
 	 */
 	public WebRequest(String uriString) throws Exception {
 		URI uri = new URI(uriString);

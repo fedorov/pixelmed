@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.doseocr;
 
@@ -17,9 +17,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * <p>A class fto test OCR against tabulated data.</p>
+ *
+ * @author	dclunie
+ */
 public class TestOCRAgainstTabulatedData extends TestCase {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/TestOCRAgainstTabulatedData.java,v 1.13 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/doseocr/TestOCRAgainstTabulatedData.java,v 1.24 2025/01/29 10:58:08 dclunie Exp $";
 	
 	// constructor to support adding tests to suite ...
 	
@@ -97,10 +101,10 @@ public class TestOCRAgainstTabulatedData extends TestCase {
 				String fileName = mFileName.group(1);		// first group is not 0, which is the entire match
 //System.err.println("Matched file "+fileName);
 				File imageFile = mapOfBaseNameToFile.get(fileName);
-System.err.println("Processing file "+imageFile);
-				OCR ocr = new OCR(imageFile.getCanonicalPath(),pathToOcrGlyphs,null,0/*debugLevel*/);
+				System.err.println("Processing file "+imageFile);	// no need to use SLF4J since command line utility/test
+				OCR ocr = new OCR(imageFile.getCanonicalPath(),pathToOcrGlyphs,null);
 //System.err.println(ocr);
-				ctDoseFromOCR = OCR.getCTDoseFromOCROfDoseScreen(ocr,0/*debugLevel*/,null,false);
+				ctDoseFromOCR = OCR.getCTDoseFromOCROfDoseScreen(ocr,null,false);
 //System.err.println(ctDoseFromOCR);
 				assertFalse("check parse returned something",ctDoseFromOCR == null);
 				ctDoseFromData = new CTDose(ScopeOfDoseAccummulation.STUDY,"0.0.0.0",null,null,"");
@@ -150,16 +154,16 @@ System.err.println("Processing file "+imageFile);
 								ctDoseFromData.addAcquisition(new CTDoseAcquisition(studyInstanceUID,false/*isSeries*/,series,CTScanType.selectFromDescription(scanType),null/*scan range*/,CTDIvol,DLP,CTPhantomType.selectFromDescription(phantom)));
 							}
 							else if(line.startsWith("ENDFILE")) {
-System.err.println("From OCR:\n"+ctDoseFromOCR);
-System.err.println("From Data:\n"+ctDoseFromData);
+								System.err.println("From OCR:\n"+ctDoseFromOCR);
+								System.err.println("From Data:\n"+ctDoseFromData);
 								assertEquals("Checking DLP Total",ctDoseFromData.getDLPTotal(),ctDoseFromOCR.getDLPTotal());
 								assertEquals("Checking totalNumberOfIrradiationEvents",ctDoseFromData.getTotalNumberOfIrradiationEvents(),ctDoseFromOCR.getTotalNumberOfIrradiationEvents());
 								int n = ctDoseFromData.getTotalNumberOfIrradiationEvents();
 								for (int i=0; i<n; ++i) {
 									CTDoseAcquisition acqFromOCR = ctDoseFromOCR.getAcquisition(i);
 									CTDoseAcquisition acqFromData = ctDoseFromData.getAcquisition(i);
-System.err.println("From OCR:\n"+acqFromOCR);
-System.err.println("From Data:\n"+acqFromData);
+									System.err.println("From OCR:\n"+acqFromOCR);
+									System.err.println("From Data:\n"+acqFromData);
 									assertTrue("Checking CTDoseAcquisition "+i+" equality",acqFromOCR.equals(acqFromData));
 								}
 							}

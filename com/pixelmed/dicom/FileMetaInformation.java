@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -15,7 +15,7 @@ import java.io.*;
  */
 public class FileMetaInformation {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FileMetaInformation.java,v 1.10 2008/02/21 04:49:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FileMetaInformation.java,v 1.23 2025/01/29 10:58:06 dclunie Exp $";
 	
 	private static final AttributeTag groupLengthTag = new AttributeTag(0x0002,0x0000);
 
@@ -24,11 +24,11 @@ public class FileMetaInformation {
 	/**
 	 * <p>Construct an instance of the  file meta information from the specified parameters.</p>
 	 *
-	 * @param	mediaStorageSOPClassUID		the SOP Class UID of the dataset to which the file meta information will be prepended
-	 * @param	mediaStorageSOPInstanceUID	the SOP Instance UID of the dataset to which the file meta information will be prepended
-	 * @param	transferSyntaxUID		the transfer syntax UID that will be used to write the dataset
+	 * @param	mediaStorageSOPClassUID			the SOP Class UID of the dataset to which the file meta information will be prepended
+	 * @param	mediaStorageSOPInstanceUID		the SOP Instance UID of the dataset to which the file meta information will be prepended
+	 * @param	transferSyntaxUID				the transfer syntax UID that will be used to write the dataset
 	 * @param	sourceApplicationEntityTitle	the source AE title of the dataset (may be null)
-	 * @exception	DicomException
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public FileMetaInformation(String mediaStorageSOPClassUID,String mediaStorageSOPInstanceUID,String transferSyntaxUID,String sourceApplicationEntityTitle) throws DicomException {
 		list=new AttributeList();
@@ -41,12 +41,12 @@ public class FileMetaInformation {
 	 *
 	 * <p>Note that the appropriate (mandatory) file meta information group length tag is also computed and added.</p>
 	 *
-	 * @param	list				the list to be extended with file meta information attributes
-	 * @param	mediaStorageSOPClassUID		the SOP Class UID of the dataset to which the file meta information will be prepended
-	 * @param	mediaStorageSOPInstanceUID	the SOP Instance UID of the dataset to which the file meta information will be prepended
-	 * @param	transferSyntaxUID		the transfer syntax UID that will be used to write the dataset
+	 * @param	list							the list to be extended with file meta information attributes
+	 * @param	mediaStorageSOPClassUID			the SOP Class UID of the dataset to which the file meta information will be prepended
+	 * @param	mediaStorageSOPInstanceUID		the SOP Instance UID of the dataset to which the file meta information will be prepended
+	 * @param	transferSyntaxUID				the transfer syntax UID that will be used to write the dataset
 	 * @param	sourceApplicationEntityTitle	the source AE title of the dataset (may be null)
-	 * @exception	DicomException
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public static void addFileMetaInformation(AttributeList list,
 			String mediaStorageSOPClassUID,String mediaStorageSOPInstanceUID,String transferSyntaxUID,String sourceApplicationEntityTitle) throws DicomException {
@@ -55,9 +55,22 @@ public class FileMetaInformation {
 		int longVL = (4+4+4);	// Four byte VL in EVR (OB)
 
 		{ AttributeTag t = TagFromName.FileMetaInformationVersion;   Attribute a = new OtherByteAttribute(t);         byte[] b=new byte[2]; b[0]=0x00; b[1]=0x01; a.setValues(b); list.put(t,a); gl+=a.getPaddedVL(); gl += longVL; }
-		{ AttributeTag t = TagFromName.MediaStorageSOPClassUID;      Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(mediaStorageSOPClassUID);                        list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
-		{ AttributeTag t = TagFromName.MediaStorageSOPInstanceUID;   Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(mediaStorageSOPInstanceUID);                     list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
-		{ AttributeTag t = TagFromName.TransferSyntaxUID;            Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(transferSyntaxUID);                              list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
+		
+		if (mediaStorageSOPClassUID == null || mediaStorageSOPClassUID.trim().length() == 0) {			// (001137)
+			throw new DicomException("Cannot add FileMetaInformation without MediaStorageSOPClassUID value");
+		}
+		else { AttributeTag t = TagFromName.MediaStorageSOPClassUID;      Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(mediaStorageSOPClassUID);                        list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
+		
+		if (mediaStorageSOPInstanceUID == null || mediaStorageSOPInstanceUID.trim().length() == 0) {	// (001137)
+			throw new DicomException("Cannot add FileMetaInformation without MediaStorageSOPInstanceUID value");
+		}
+		else { AttributeTag t = TagFromName.MediaStorageSOPInstanceUID;   Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(mediaStorageSOPInstanceUID);                     list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
+		
+		if (transferSyntaxUID == null || transferSyntaxUID.trim().length() == 0) {						// (001137)
+			throw new DicomException("Cannot add FileMetaInformation without TransferSyntaxUID value");
+		}
+		else { AttributeTag t = TagFromName.TransferSyntaxUID;            Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(transferSyntaxUID);                              list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
+		
 		{ AttributeTag t = TagFromName.ImplementationClassUID;       Attribute a = new UniqueIdentifierAttribute(t);  a.addValue(VersionAndConstants.implementationClassUID);     list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
 		{ AttributeTag t = TagFromName.ImplementationVersionName;    Attribute a = new ShortStringAttribute(t,null);  a.addValue(VersionAndConstants.implementationVersionName);  list.put(t,a); gl+=a.getPaddedVL(); gl += shortVL; }
 		if (sourceApplicationEntityTitle != null && sourceApplicationEntityTitle.length() > 0) {
@@ -72,10 +85,10 @@ public class FileMetaInformation {
 	 * <p>Add the file meta information attributes to an existing list, extracting
 	 * the known UIDs from that list, and adding the additional parameters supplied.</p>
 	 *
-	 * @param	list				the list to be extended with file meta information attributes
-	 * @param	transferSyntaxUID		the transfer syntax UID that will be used to write this list
+	 * @param	list							the list to be extended with file meta information attributes
+	 * @param	transferSyntaxUID				the transfer syntax UID that will be used to write this list
 	 * @param	sourceApplicationEntityTitle	the source AE title of the dataset in the list (may be null)
-	 * @exception	DicomException
+	 * @throws	DicomException					if error in DICOM encoding
 	 */
 	public static void addFileMetaInformation(AttributeList list,String transferSyntaxUID,String sourceApplicationEntityTitle) throws DicomException {
 		String mediaStorageSOPClassUID = null;
@@ -123,7 +136,7 @@ public class FileMetaInformation {
 
 		try {
 			AttributeList list = new FileMetaInformation("1.2.3.44","1.2",TransferSyntax.Default,"MYAE").getAttributeList();
-			System.err.println("As constructed:");
+			System.err.println("As constructed:");	// no need to use SLF4J since command line utility/test
 			System.err.print(list);
 			ByteArrayOutputStream bout = new ByteArrayOutputStream();
 			list.write(new DicomOutputStream(bout,TransferSyntax.ExplicitVRLittleEndian,null));
@@ -135,7 +148,7 @@ public class FileMetaInformation {
 			System.err.print(rlist);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

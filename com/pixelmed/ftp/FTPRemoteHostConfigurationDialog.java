@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.ftp;
 
@@ -34,7 +34,7 @@ import javax.swing.text.JTextComponent;
  */
 public class FTPRemoteHostConfigurationDialog extends FTPRemoteHost {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPRemoteHostConfigurationDialog.java,v 1.2 2013/01/21 17:01:18 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/ftp/FTPRemoteHostConfigurationDialog.java,v 1.13 2025/01/29 10:58:08 dclunie Exp $";
 
 	protected static final String badFieldString = "\\\\\\BAD\\\\\\";
 	
@@ -296,14 +296,14 @@ public class FTPRemoteHostConfigurationDialog extends FTPRemoteHost {
 		try {
 			if (arg.length == 0) {
 				FTPRemoteHost frh = new FTPRemoteHostConfigurationDialog();
-System.err.println("FTPRemoteHostConfigurationDialog.main(): result of dialog "+frh);
+				System.err.println("FTPRemoteHostConfigurationDialog.main(): result of dialog "+frh);	// no need to use SLF4J since command line utility/test
 			}
 			else {
 				throw new Exception("Argument list must be empty");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

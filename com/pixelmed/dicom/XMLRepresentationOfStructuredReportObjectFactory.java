@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,6 +21,9 @@ import org.xml.sax.SAXException;
 import java.io.*;
 import java.util.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to encode a representation of a DICOM Structured Report object in an XML form,
  * suitable for analysis as human-readable text, or for feeding into an
@@ -39,7 +42,7 @@ try {
     Document document = new XMLRepresentationOfStructuredReportObjectFactory().getDocument(sr);
     XMLRepresentationOfStructuredReportObjectFactory.write(System.out,document);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -53,7 +56,7 @@ try {
     Document document = new XMLRepresentationOfStructuredReportObjectFactory().getDocument(sr,list);
     XMLRepresentationOfStructuredReportObjectFactory.write(System.out,document);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -64,7 +67,7 @@ try {
     list.read("dicomsrfile",null,true,true);
     XMLRepresentationOfStructuredReportObjectFactory.createDocumentAndWriteIt(list,System.out);
 } catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
  }
  * </pre>
  *
@@ -76,8 +79,9 @@ try {
  * @author	dclunie
  */
 public class XMLRepresentationOfStructuredReportObjectFactory {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfStructuredReportObjectFactory.java,v 1.37 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfStructuredReportObjectFactory.java,v 1.23 2013/09/11 15:34:17 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(XMLRepresentationOfStructuredReportObjectFactory.class);
 
 	protected static String contentItemIdentiferPrefix = "ci_";
 
@@ -151,6 +155,20 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 					documentNode.getAttributes().setNamedItem(attr);
 				}
 				
+				String observationDateTime = contentItem.getObservationDateTime();
+				if (observationDateTime != null && observationDateTime.length() > 0) {
+					Attr attr = document.createAttribute("datetime");
+					attr.setValue(observationDateTime);
+					documentNode.getAttributes().setNamedItem(attr);
+				}
+				
+				String observationUID = contentItem.getObservationUID();
+				if (observationUID != null && observationUID.length() > 0) {
+					Attr attr = document.createAttribute("uid");
+					attr.setValue(observationUID);
+					documentNode.getAttributes().setNamedItem(attr);
+				}
+
 				String referencedContentItemIdentifier = contentItem.getReferencedContentItemIdentifier();
 				if (referencedContentItemIdentifier != null && referencedContentItemIdentifier.length() > 0) {
 					Attr attr = document.createAttribute("IDREF");
@@ -424,7 +442,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	/**
 	 * <p>Construct a factory object, which can be used to get XML documents from DICOM objects.</p>
 	 *
-	 * @exception	ParserConfigurationException
+	 * @throws	ParserConfigurationException
 	 */
 	public XMLRepresentationOfStructuredReportObjectFactory() throws ParserConfigurationException {
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -462,7 +480,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 				sr = new StructuredReport(list);
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		Document document = db.newDocument();
@@ -484,7 +502,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 				new XMLRepresentationOfDicomObjectFactory().addAttributesFromListToNode(clonedList,document,headerElement);
 			}
 			catch (ParserConfigurationException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		if (sr != null) {
@@ -542,9 +560,18 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 			NamedNodeMap attributes = node.getAttributes();
 			if (attributes != null) {
 				codeValue = getNamedNodeAttributeOrNull(attributes,"cv");
+//System.err.println("getCodedSequenceItem(): codeValue = "+codeValue);
 				codingSchemeDesignator = getNamedNodeAttributeOrNull(attributes,"csd");
+//System.err.println("getCodedSequenceItem(): codingSchemeDesignator = "+codingSchemeDesignator);
 				codeMeaning = getNamedNodeAttributeOrNull(attributes,"cm");
+//System.err.println("getCodedSequenceItem(): codeMeaning = "+codeMeaning);
 				codingSchemeVersion = getNamedNodeAttributeOrNull(attributes,"csv");
+//System.err.println("getCodedSequenceItem(): codingSchemeVersion = "+codingSchemeVersion);
+				if (codeValue == null || codeValue.length() == 0
+				 || codingSchemeDesignator == null || codingSchemeDesignator.length() == 0
+				 || codeMeaning == null || codeMeaning.length() == 0) {
+					throw new DicomException("Need at least Code Value ("+codeValue+"), Coding Scheme Designator ("+codingSchemeDesignator+") and Code Meaning ("+codeMeaning+") to build CodedSequenceItem - cannot be absent or empty");
+				}
 			}
 			if (codingSchemeVersion == null || codingSchemeVersion.length() == 0) {
 				item = new CodedSequenceItem(codeValue,codingSchemeDesignator,codeMeaning);
@@ -566,6 +593,10 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 //System.err.println("XMLRepresentationOfStructuredReportObjectFactory.getNextContentItemFromXMLNodeSiblings(): concept = "+concept);
 				String relationshipType = getNamedNodeAttributeOrNull(attributes,"relationship");
 //System.err.println("XMLRepresentationOfStructuredReportObjectFactory.getNextContentItemFromXMLNodeSiblings(): relationshipType = "+relationshipType);
+				String observationDateTime = getNamedNodeAttributeOrNull(attributes,"datetime");
+//System.err.println("XMLRepresentationOfStructuredReportObjectFactory.getNextContentItemFromXMLNodeSiblings(): observationDateTime = "+observationDateTime);
+				String observationUID = getNamedNodeAttributeOrNull(attributes,"uid");
+//System.err.println("XMLRepresentationOfStructuredReportObjectFactory.getNextContentItemFromXMLNodeSiblings(): observationUID = "+observationUID);
 				ContentItem contentItem = null;
 				if (nodeName.equals("container")) {
 					String continuity = getNamedNodeAttributeOrNull(attributes,"continuity");
@@ -578,7 +609,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						relationshipType,
 						concept,
 						continuity != null && continuity.equals("SEPARATE"),
-						templatemappingresource,template);
+						templatemappingresource,template,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("code")) {
 					CodedSequenceItem value = getCodedSequenceItem(getNamedChildElement(node,"value"));
@@ -586,7 +618,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("num")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -601,7 +634,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 								floatingPointValue = new Double(d);
 							}
 							catch (NumberFormatException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 					}
@@ -614,7 +647,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 								rationalNumeratorValue = new Integer(i);
 							}
 							catch (NumberFormatException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 					}
@@ -627,7 +660,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 								rationalDenominatorValue = new Long(l);
 							}
 							catch (NumberFormatException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 					}
@@ -640,7 +673,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						rationalNumeratorValue,
 						rationalDenominatorValue,
 						units,
-						qualifier);
+						qualifier,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("datetime")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -648,7 +682,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("date")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -656,7 +691,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("time")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -664,7 +700,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("pname")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -672,7 +709,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("uidref")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -680,7 +718,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("text")) {
 					String value = getTextValueOfNamedChildElementOrNull(node,"value");
@@ -688,7 +727,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						null /* parent will be set later by addChild() operation */,
 						relationshipType,
 						concept,
-						value);
+						value,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("scoord")) {
 					String graphicType = null;
@@ -736,7 +776,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						relationshipType,
 						concept,
 						graphicType,
-						graphicData);
+						graphicData,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("scoord3d")) {
 					String graphicType = null;
@@ -788,7 +829,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						concept,
 						graphicType,
 						graphicData,
-						referencedFrameOfReferenceUID);
+						referencedFrameOfReferenceUID,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("tcoord")) {
 				}
@@ -800,7 +842,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						relationshipType,
 						concept,
 						referencedSOPClassUID,
-						referencedSOPInstanceUID);
+						referencedSOPInstanceUID,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("image")) {
 //System.err.println("XMLRepresentationOfStructuredReportObjectFactory.getNextContentItemFromXMLNodeSiblings(): is image");
@@ -848,7 +891,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 						referencedFrameNumber,
 						referencedSegmentNumber,
 						presentationStateSOPClassUID,presentationStateSOPInstanceUID,
-						realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID);
+						realWorldValueMappingSOPClassUID,realWorldValueMappingSOPInstanceUID,
+						observationDateTime,observationUID);
 				}
 				else if (nodeName.equals("waveform")) {
 				}
@@ -902,7 +946,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param		document		the XML document
 	 * @return						the StructuredReport
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public StructuredReport getStructuredReport(Document document) throws DicomException, ParserConfigurationException {
 		StructuredReport structuredReport = null;
@@ -948,7 +992,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param		document		the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(Document document) throws DicomException, ParserConfigurationException {
 		AttributeList list = new AttributeList();
@@ -996,10 +1040,10 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param		stream			the input stream containing the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	IOException
-	 * @exception	SAXException
-	 * @exception	ParserConfigurationException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	SAXException
+	 * @throws	ParserConfigurationException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(InputStream stream) throws IOException, SAXException, ParserConfigurationException, DicomException {
 		Document document = db.parse(stream);
@@ -1012,10 +1056,10 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param		name			the input file containing the XML document
 	 * @return						the list of DICOM attributes
-	 * @exception	IOException
-	 * @exception	SAXException
-	 * @exception	ParserConfigurationException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	SAXException
+	 * @throws	ParserConfigurationException
+	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(String name) throws IOException, SAXException, ParserConfigurationException, DicomException {
 		InputStream fi = new FileInputStream(name);
@@ -1069,7 +1113,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param	out		the output stream to write to
 	 * @param	document	the XML document
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public static void write(OutputStream out,Document document) throws IOException, TransformerConfigurationException, TransformerException {
 		
@@ -1089,8 +1133,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param	list	the attribute list
 	 * @param	out		the output stream to write to
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public static void createDocumentAndWriteIt(AttributeList list,OutputStream out) throws IOException, DicomException {
 		createDocumentAndWriteIt(null,list,out);
@@ -1101,8 +1145,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 *
 	 * @param	sr		the Structured Report
 	 * @param	out		the output stream to write to
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public static void createDocumentAndWriteIt(StructuredReport sr,OutputStream out) throws IOException, DicomException {
 		createDocumentAndWriteIt(sr,null,out);
@@ -1114,8 +1158,8 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 	 * @param	sr		the Structured Report			may be null if list is not - will build an sr tree model
 	 * @param	list	the attribute list				may be null if only the sr content tree is to be written
 	 * @param	out		the output stream to write to
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public static void createDocumentAndWriteIt(StructuredReport sr,AttributeList list,OutputStream out) throws IOException, DicomException {
 		try {
@@ -1185,7 +1229,7 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 			}
 				
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

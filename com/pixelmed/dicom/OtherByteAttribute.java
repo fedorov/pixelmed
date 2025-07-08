@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class OtherByteAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttribute.java,v 1.14 2008/02/21 04:45:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttribute.java,v 1.27 2025/01/29 10:58:07 dclunie Exp $";
 
 	private byte[] values;
 
@@ -38,8 +38,8 @@ public class OtherByteAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public OtherByteAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -52,8 +52,8 @@ public class OtherByteAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public OtherByteAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -63,8 +63,8 @@ public class OtherByteAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		values=null;
@@ -82,18 +82,12 @@ public class OtherByteAttribute extends Attribute {
 		}
 	}
 
-	/***/
 	public long getPaddedVL() {
 		long vl = getVL();
 		if (vl%2 != 0) ++vl;
 		return vl;
 	}
 	
-	/**
-	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
-	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		if (values != null && values.length > 0) {
@@ -116,21 +110,58 @@ public class OtherByteAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
+	 */
+	public void addValue(String v) throws DicomException {
+		if (values == null) {
+			// see also StringAttribute translateStringToByteArray()
+			if (v != null && v.length() > 0) {
+				byte[] b = v.getBytes();
+				int length = b.length;
+				if (length%2 == 0) {
+					values=b;
+				}
+				else {
+					values= new byte[length+1];
+					System.arraycopy(b,0,values,0,length);
+					values[length]=(byte)0x20;	// space not null since ostensibly a string
+				}
+				valueMultiplicity=1;		// different from normal value types where VM is size of array
+				valueLength=values.length;
+			}
+		}
+		else {
+			throw new DicomException("internal error - cannot add more than one string value for attribute "+getTag()+" "+getClass().getName());
+		}
+	}
+	
+	/**
+	 * @param	v
+	 * @throws	DicomException
 	 */
 	public void setValues(byte[] v) throws DicomException {
 		values=v;
 		valueMultiplicity=1;		// different from normal value types where VM is size of array
 		valueLength=v.length;
 	}
+	/**
+	 * @param	v
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v,boolean big) throws DicomException { setValues(v); }
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public byte[] getByteValues() throws DicomException { return values; }
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
+	 */
+	public byte[] getByteValues(boolean big) throws DicomException  { return values; }
+
+	/**
 	 */
 	public void removeValues() {
 		values=null;

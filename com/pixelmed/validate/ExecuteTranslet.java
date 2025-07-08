@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.validate;
 
@@ -14,15 +14,16 @@ import javax.xml.transform.stream.StreamResult;
  * <p>Use a translet from an XSL-T source file to transform one XML file to another.</p>
  *
  * @author	dclunie
+ * @deprecated	use {@link com.pixelmed.utils.ExecuteTranslet} instead.
  */
 public class ExecuteTranslet {
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/ExecuteTranslet.java,v 1.2 2013/01/14 12:55:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/ExecuteTranslet.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
 
 	/**
 	 * <p>Apply the XSL-T translet.</p>
 	 *
 	 * @param	arg	the name of the class file containing the XSL-T translet, the name of the input XML file and the name of the output file
+	 * @deprecated	use {@link com.pixelmed.utils.ExecuteTranslet#main(String arg[]) com.pixelmed.utils.ExecuteTranslet.main()} instead.
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -34,7 +35,7 @@ public class ExecuteTranslet {
 			transformer.transform(inputSource,outputResult);
 			
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

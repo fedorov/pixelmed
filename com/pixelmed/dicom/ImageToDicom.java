@@ -1,6 +1,8 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
+
+import com.pixelmed.convert.CommonConvertedAttributeGeneration;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +32,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 
 import java.util.Iterator;
+import java.util.Locale;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NamedNodeMap;
@@ -39,15 +42,19 @@ import javax.xml.xpath.XPathFactory;
 import com.pixelmed.utils.StringUtilities;
 import com.pixelmed.utils.XPathQuery;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>A class for converting RGB consumer image input format files (anything JIIO can recognize) into images of a specified SOP Class, or single or multi frame DICOM Secondary Capture images.</p>
+ * <p>A class for converting RGB consumer image format input files (anything JIIO can recognize) into DICOM images of a specified SOP Class, or single or multi frame DICOM Secondary Capture images.</p>
  *
  * @author	dclunie
  */
 
 public class ImageToDicom {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageToDicom.java,v 1.31 2025/02/11 16:42:04 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ImageToDicom.java,v 1.16 2013/10/16 16:27:58 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(ImageToDicom.class);
 
 	// the following should work but does not return text values for nodes, which seem to be added as values of nodes ... is the JIIO metadata tree in some way incorrectly formed ? :(
 	//private static String dumpTree(Node tree) {
@@ -65,7 +72,7 @@ public class ImageToDicom {
 	//		transformer.transform(source, result);
 	//	}
 	//	catch (Exception e) {
-	//		e.printStackTrace(System.err);
+	//		slf4jlogger.error("",e);
 	//	}
 	//	return out.toString();
 	//}
@@ -126,7 +133,7 @@ public class ImageToDicom {
 			compressionType = XPathQuery.getNamedAttributeValueOfElementNode((Node)(XPathFactory.newInstance().newXPath().evaluate("//CompressionTypeName",metadata,XPathConstants.NODE)),"value");
 		}
 		catch (javax.xml.xpath.XPathExpressionException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return compressionType;
 	}
@@ -141,33 +148,35 @@ public class ImageToDicom {
 			}
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		catch (javax.xml.xpath.XPathExpressionException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return bitsPerSample;
 	}
 	
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
 	 *
-	 * @param	inputFile	a consumer format image file (e.g., 8 or > 8 bit JPEG, JPEG 2000, GIF, etc.)
-	 * @param	list		an existing (possibly empty) attribute list, if null, a new one will be created; may already include "better" image pixel module attributes to use
-	 * return				attribute list with Image Pixel Module (including Pixel Data) added
-	 * @exception			DicomException
+	 * @param	inputFile		a consumer format image file (e.g., 8 or &gt; 8 bit JPEG, JPEG 2000, GIF, etc.)
+	 * @param	list			an existing (possibly empty) attribute list, if null, a new one will be created; may already include "better" image pixel module attributes to use
+	 * @return					attribute list with Image Pixel Module (including Pixel Data) added
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public static AttributeList generateDICOMPixelModuleFromConsumerImageFile(String inputFile,AttributeList list) throws IOException, DicomException {
 		return generateDICOMPixelModuleFromConsumerImageFile(new File(inputFile),list);
 	}
 	
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
 	 *
-	 * @param	inputFile	a consumer format image file (e.g., 8 or > 8 bit JPEG, JPEG 2000, GIF, etc.)
-	 * @param	list		an existing (possibly empty) attribute list, if null, a new one will be created; may already include "better" image pixel module attributes to use
-	 * return				attribute list with Image Pixel Module (including Pixel Data) added
-	 * @exception			DicomException
+	 * @param	inputFile		a consumer format image file (e.g., 8 or &gt; 8 bit JPEG, JPEG 2000, GIF, etc.)
+	 * @param	list			an existing (possibly empty) attribute list, if null, a new one will be created; may already include "better" image pixel module attributes to use
+	 * @return					attribute list with Image Pixel Module (including Pixel Data) added
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public static AttributeList generateDICOMPixelModuleFromConsumerImageFile(File inputFile,AttributeList list) throws IOException, DicomException {
 		int numberOfFrames = 0;
@@ -178,12 +187,13 @@ public class ImageToDicom {
 		Iterator readers = ImageIO.getImageReaders(fiis);
 		if (readers.hasNext()) {
 			reader = (ImageReader)readers.next();	// assume 1st supplied reader is the "best" one to use :(
-System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile(): Using reader = "+reader);
 		}
 		if (reader != null) {
+			slf4jlogger.info("generateDICOMPixelModuleFromConsumerImageFile(): Using reader {} {} {}",reader.getOriginatingProvider().getDescription(Locale.US),reader.getOriginatingProvider().getVendorName(),reader.getOriginatingProvider().getVersion());
 			reader.setInput(fiis);
 			try {
 				numberOfFrames =  reader.getNumImages(true/*allowSearch*/);
+				slf4jlogger.info("generateDICOMPixelModuleFromConsumerImageFile(): Have numberOfFrames from reader.getNumImages() = {}",numberOfFrames);
 			}
 			catch (Exception e) {	// IOException or IllegalStateException
 				numberOfFrames = 1;
@@ -240,14 +250,8 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 					}
 				}
 			}
-			try {
-//System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile(): Calling dispose() on reader");
-				reader.dispose();
-			}
-			catch (Exception e) {
-				e.printStackTrace(System.err);
-			}
 		}
+		// move dispose() until later after all uses of reader() done (001435)
 		if (src == null) {
 			throw new DicomException("Unrecognized image file type");
 		}
@@ -386,7 +390,15 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 		else {
 			throw new DicomException("Unsupported pixel data form ("+srcNumBands+" bands)");
 		}
-			
+		// moved dispose down here after all uses of reader() done (001435)
+		try {
+//System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile(): Calling dispose() on reader");
+			reader.dispose();
+		}
+		catch (Exception e) {
+			slf4jlogger.error("",e);
+		}
+
 		if (list == null) {
 			list = new AttributeList();
 		}
@@ -451,11 +463,12 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 
 	
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create a single frame DICOM Image Pixel Module.</p>
 	 *
-	 * @param	inputFile	a consumer format image file (e.g., 8 or > 8 bit JPEG, JPEG 2000, GIF, etc.)
-	 * return				a new attribute list with Image Pixel Module (including Pixel Data) added
-	 * @exception			DicomException
+	 * @param	inputFile		a consumer format image file (e.g., 8 or &gt; 8 bit JPEG, JPEG 2000, GIF, etc.)
+	 * @return					a new attribute list with Image Pixel Module (including Pixel Data) added
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public static AttributeList generateDICOMPixelModuleFromConsumerImageFile(String inputFile) throws IOException, DicomException {
 		return generateDICOMPixelModuleFromConsumerImageFile(inputFile,null);
@@ -463,16 +476,17 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 	
 	
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create a single or multi frame DICOM Secondary Capture image.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create a single or multi frame DICOM Secondary Capture image.</p>
 	 *
-	 * @param	inputFile
-	 * @param	outputFile
-	 * @param	patientName
-	 * @param	patientID
-	 * @param	studyID
-	 * @param	seriesNumber
-	 * @param	instanceNumber
-	 * @exception			DicomException
+	 * @param	inputFile		consumer image format input file
+	 * @param	outputFile		DICOM output image
+	 * @param	patientName		patient name
+	 * @param	patientID		patient ID
+	 * @param	studyID			study ID
+	 * @param	seriesNumber	series number
+	 * @param	instanceNumber	instance number
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public ImageToDicom(String inputFile,String outputFile,String patientName,String patientID,String studyID,String seriesNumber,String instanceNumber)
 			throws IOException, DicomException {
@@ -480,18 +494,19 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 	}
 
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create an image of the specified SOP Class, or a single or multi frame DICOM Secondary Capture image.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create a DICOM image of the specified SOP Class, or a single or multi frame DICOM Secondary Capture image.</p>
 	 *
-	 * @param	inputFile
-	 * @param	outputFile
-	 * @param	patientName
-	 * @param	patientID
-	 * @param	studyID
-	 * @param	seriesNumber
-	 * @param	instanceNumber
-	 * @param	modality	may be null
-	 * @param	sopClass	may be null
-	 * @exception			DicomException
+	 * @param	inputFile		consumer image format input file
+	 * @param	outputFile		DICOM output image
+	 * @param	patientName		patient name
+	 * @param	patientID		patient ID
+	 * @param	studyID			study ID
+	 * @param	seriesNumber	series number
+	 * @param	instanceNumber	instance number
+	 * @param	modality		may be null
+	 * @param	sopClass		may be null
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public ImageToDicom(String inputFile,String outputFile,String patientName,String patientID,String studyID,String seriesNumber,String instanceNumber,String modality,String sopClass)
 			throws IOException, DicomException {
@@ -532,23 +547,9 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 		int samplesPerPixel = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.SamplesPerPixel,1);
 
 		if (sopClass == null) {
-			// if modality were not null, could actually attempt to guess SOP Class based on modality here :(
-			sopClass = SOPClass.SecondaryCaptureImageStorage;
-			if (numberOfFrames > 1) {
-				if (samplesPerPixel == 1) {
-					int bitsAllocated = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.BitsAllocated,1);
-					if (bitsAllocated == 8) {
-						sopClass = SOPClass.MultiframeGrayscaleByteSecondaryCaptureImageStorage;
-					}
-					else if (bitsAllocated == 16) {
-						sopClass = SOPClass.MultiframeGrayscaleWordSecondaryCaptureImageStorage;
-					}
-				}
-				else if (samplesPerPixel == 3) {
-					sopClass = SOPClass.MultiframeTrueColorSecondaryCaptureImageStorage;
-				}
-				// no current mechanism in generateDICOMPixelModuleFromConsumerImageFile() for creating MultiframeSingleBitSecondaryCaptureImageStorage, only 8 or 16
-			}
+			int bitsAllocated = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.BitsAllocated,1);
+			sopClass = CommonConvertedAttributeGeneration.selectSOPClassForModalityNumberOfFramesAndPixelCharacteristics(modality,numberOfFrames,samplesPerPixel,bitsAllocated,false/*isFloatPixelData*/);	// (001239)
+			// no current mechanism in generateDICOMPixelModuleFromConsumerImageFile() for creating MultiframeSingleBitSecondaryCaptureImageStorage, only 8 or 16
 		}
 
 		if (numberOfFrames > 1) {
@@ -583,13 +584,14 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 			modality = "OT";
 		}
 		{ Attribute a = new CodeStringAttribute(TagFromName.Modality); a.addValue(modality); list.put(a); }
-			
+		CodingSchemeIdentification.replaceCodingSchemeIdentificationSequenceWithCodingSchemesUsedInAttributeList(list);
+		list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
 		FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,"OURAETITLE");
 		list.write(outputFile,TransferSyntax.ExplicitVRLittleEndian,true,true);
 	}
 	
 	/**
-	 * <p>Read a consumer image input format file (anything JIIO can recognize), and create an image of the specified SOP Class, or a single or multi frame DICOM Secondary Capture image.</p>
+	 * <p>Read a consumer image format input file (anything JIIO can recognize), and create an image of the specified SOP Class, or a single or multi frame DICOM Secondary Capture image.</p>
 	 *
 	 * @param	arg	seven, eight or nine parameters, the inputFile, outputFile, patientName, patientID, studyID, seriesNumber, instanceNumber, and optionally the modality, and SOP Class
 	 */
@@ -614,7 +616,7 @@ System.err.println("ImageToDicom.generateDICOMPixelModuleFromConsumerImageFile()
 			new ImageToDicom(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],modality,sopClass);
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			slf4jlogger.error("",e);	// use SLF4J since may be invoked from script
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -23,6 +23,9 @@ public class TestSUVTransformValues extends TestCase {
 		
 		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_BQML"));
 		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_BQMLWithTimezoneOffset"));
+		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_BQMLStartDateTime"));
+		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_BQMLStartDateTimeWithTimezoneOffsetInStartDateTime"));
+		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_BQMLStartDateTimeWithTimezoneOffsetButNotInStartDateTime"));
 		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_PhilipsSUVScaleFactor"));
 		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_GMLUnitsWithoutSUVType"));
 		suite.addTest(new TestSUVTransformValues("TestSUVTransformValues_DeriveScanDateTimeFromHalfLifeAcquisitionDateTimeFrameReferenceTimeAndActualFrameDuration"));
@@ -42,7 +45,7 @@ public class TestSUVTransformValues extends TestCase {
 
 		int storedPixelValue = 7972;
 		double expectedSUVbw = 1.0d;
-		double expectedSUVbsa = 0.03806d;
+		double expectedSUVbsa = 0.3806d;
 		double expectedSUVlbm = 1.0d;
 		double expectedSUVibw = 2.7726d;
 		double precisionErrorTolerated = 1e-4d;
@@ -94,14 +97,13 @@ public class TestSUVTransformValues extends TestCase {
 		assertTrue("getSUVibwValue",Math.abs(ts.getSUVibwValue(storedPixelValue) - expectedSUVibw) < precisionErrorTolerated);
 	}
 	
-	
 	public void TestSUVTransformValues_BQMLWithTimezoneOffset() throws Exception {
 	
 		// test values based on DRO object, with weight amended to make SUVbw == SUVlbm ...
 
 		int storedPixelValue = 7972;
 		double expectedSUVbw = 1.0d;
-		double expectedSUVbsa = 0.03806d;
+		double expectedSUVbsa = 0.3806d;
 		double expectedSUVlbm = 1.0d;
 		double expectedSUVibw = 2.7726d;
 		double precisionErrorTolerated = 1e-4d;
@@ -154,14 +156,193 @@ public class TestSUVTransformValues extends TestCase {
 		assertTrue("isValidSUVibw",ts.isValidSUVibw());
 		assertTrue("getSUVibwValue",Math.abs(ts.getSUVibwValue(storedPixelValue) - expectedSUVibw) < precisionErrorTolerated);
 	}
+
+	public void TestSUVTransformValues_BQMLStartDateTime() throws Exception {
 	
+		// test values based on DRO object, with weight amended to make SUVbw == SUVlbm ...
+
+		int storedPixelValue = 7972;
+		double expectedSUVbw = 1.0d;
+		double expectedSUVbsa = 0.3806d;
+		double expectedSUVlbm = 1.0d;
+		double expectedSUVibw = 2.7726d;
+		double precisionErrorTolerated = 1e-4d;
+
+		AttributeList list = new AttributeList();
+		{
+			AttributeList risList = new AttributeList();
+			
+			{ Attribute a = new TimeAttribute(TagFromName.RadiopharmaceuticalStartDateTime); a.addValue("20111031130100"); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideTotalDose); a.addValue(370000000d); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideHalfLife); a.addValue(6586d); risList.put(a); }
+			
+			SequenceAttribute aRadiopharmaceuticalInformationSequence = new SequenceAttribute(TagFromName.RadiopharmaceuticalInformationSequence);
+			SequenceItem risItem = new SequenceItem(risList);
+			aRadiopharmaceuticalInformationSequence.addItem(risItem);
+			list.put(aRadiopharmaceuticalInformationSequence);
+		}
+
+		{ Attribute a = new CodeStringAttribute(TagFromName.PatientSex); a.addValue("M"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientSize); a.addValue(2.898275349237887d); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientWeight); a.addValue(70d); list.put(a); }
+
+		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SOPClassUID); a.addValue(SOPClass.PETImageStorage); list.put(a); }
+		
+		{ Attribute a = new CodeStringAttribute(TagFromName.CorrectedImage); a.addValue("ATTN"); a.addValue("DECY"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.Units); a.addValue("BQML"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.DecayCorrection); a.addValue("START"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleIntercept); a.addValue(0); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleSlope); a.addValue(0.453901487278775d); list.put(a); }
+
+		{ Attribute a = new DateAttribute(TagFromName.SeriesDate);      a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new DateAttribute(TagFromName.AcquisitionDate); a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.SeriesTime);      a.addValue("140100"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.AcquisitionTime); a.addValue("140100"); list.put(a); }
+		
+		SUVTransform t = new SUVTransform(list);
+		SUVTransform.SingleSUVTransform ts = t.getSingleSUVTransform(1);
+		
+		assertTrue("isValidSUVbw",ts.isValidSUVbw());
+		assertTrue("getSUVbwValue",Math.abs(ts.getSUVbwValue(storedPixelValue) - expectedSUVbw) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbsa",ts.isValidSUVbsa());
+		assertTrue("getSUVbsaValue",Math.abs(ts.getSUVbsaValue(storedPixelValue) - expectedSUVbsa) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbw",ts.isValidSUVlbm());
+		assertTrue("getSUVlbmValue",Math.abs(ts.getSUVlbmValue(storedPixelValue) - expectedSUVlbm) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVibw",ts.isValidSUVibw());
+		assertTrue("getSUVibwValue",Math.abs(ts.getSUVibwValue(storedPixelValue) - expectedSUVibw) < precisionErrorTolerated);
+	}
+
+	public void TestSUVTransformValues_BQMLStartDateTimeWithTimezoneOffsetInStartDateTime() throws Exception {
+	
+		// test values based on DRO object, with weight amended to make SUVbw == SUVlbm ...
+
+		int storedPixelValue = 7972;
+		double expectedSUVbw = 1.0d;
+		double expectedSUVbsa = 0.3806d;
+		double expectedSUVlbm = 1.0d;
+		double expectedSUVibw = 2.7726d;
+		double precisionErrorTolerated = 1e-4d;
+
+		AttributeList list = new AttributeList();
+		{
+			AttributeList risList = new AttributeList();
+			
+			{ Attribute a = new TimeAttribute(TagFromName.RadiopharmaceuticalStartDateTime); a.addValue("20111031130100-0700"); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideTotalDose); a.addValue(370000000d); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideHalfLife); a.addValue(6586d); risList.put(a); }
+			
+			SequenceAttribute aRadiopharmaceuticalInformationSequence = new SequenceAttribute(TagFromName.RadiopharmaceuticalInformationSequence);
+			SequenceItem risItem = new SequenceItem(risList);
+			aRadiopharmaceuticalInformationSequence.addItem(risItem);
+			list.put(aRadiopharmaceuticalInformationSequence);
+		}
+
+		{ Attribute a = new CodeStringAttribute(TagFromName.PatientSex); a.addValue("M"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientSize); a.addValue(2.898275349237887d); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientWeight); a.addValue(70d); list.put(a); }
+
+		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SOPClassUID); a.addValue(SOPClass.PETImageStorage); list.put(a); }
+		
+		{ Attribute a = new CodeStringAttribute(TagFromName.CorrectedImage); a.addValue("ATTN"); a.addValue("DECY"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.Units); a.addValue("BQML"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.DecayCorrection); a.addValue("START"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleIntercept); a.addValue(0); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleSlope); a.addValue(0.453901487278775d); list.put(a); }
+
+		{ Attribute a = new DateAttribute(TagFromName.SeriesDate);      a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new DateAttribute(TagFromName.AcquisitionDate); a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.SeriesTime);      a.addValue("140100"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.AcquisitionTime); a.addValue("140100"); list.put(a); }
+		
+		{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue("-0700"); list.put(a); }
+		
+		SUVTransform t = new SUVTransform(list);
+		SUVTransform.SingleSUVTransform ts = t.getSingleSUVTransform(1);
+		
+		assertTrue("isValidSUVbw",ts.isValidSUVbw());
+		assertTrue("getSUVbwValue",Math.abs(ts.getSUVbwValue(storedPixelValue) - expectedSUVbw) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbsa",ts.isValidSUVbsa());
+		assertTrue("getSUVbsaValue",Math.abs(ts.getSUVbsaValue(storedPixelValue) - expectedSUVbsa) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbw",ts.isValidSUVlbm());
+		assertTrue("getSUVlbmValue",Math.abs(ts.getSUVlbmValue(storedPixelValue) - expectedSUVlbm) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVibw",ts.isValidSUVibw());
+		assertTrue("getSUVibwValue",Math.abs(ts.getSUVibwValue(storedPixelValue) - expectedSUVibw) < precisionErrorTolerated);
+	}
+
+
+	public void TestSUVTransformValues_BQMLStartDateTimeWithTimezoneOffsetButNotInStartDateTime() throws Exception {
+	
+		// test values based on DRO object, with weight amended to make SUVbw == SUVlbm ...
+
+		int storedPixelValue = 7972;
+		double expectedSUVbw = 1.0d;
+		double expectedSUVbsa = 0.3806d;
+		double expectedSUVlbm = 1.0d;
+		double expectedSUVibw = 2.7726d;
+		double precisionErrorTolerated = 1e-4d;
+
+		AttributeList list = new AttributeList();
+		{
+			AttributeList risList = new AttributeList();
+			
+			{ Attribute a = new TimeAttribute(TagFromName.RadiopharmaceuticalStartDateTime); a.addValue("20111031130100"); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideTotalDose); a.addValue(370000000d); risList.put(a); }
+			{ Attribute a = new DecimalStringAttribute(TagFromName.RadionuclideHalfLife); a.addValue(6586d); risList.put(a); }
+			
+			SequenceAttribute aRadiopharmaceuticalInformationSequence = new SequenceAttribute(TagFromName.RadiopharmaceuticalInformationSequence);
+			SequenceItem risItem = new SequenceItem(risList);
+			aRadiopharmaceuticalInformationSequence.addItem(risItem);
+			list.put(aRadiopharmaceuticalInformationSequence);
+		}
+
+		{ Attribute a = new CodeStringAttribute(TagFromName.PatientSex); a.addValue("M"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientSize); a.addValue(2.898275349237887d); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.PatientWeight); a.addValue(70d); list.put(a); }
+
+		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.SOPClassUID); a.addValue(SOPClass.PETImageStorage); list.put(a); }
+		
+		{ Attribute a = new CodeStringAttribute(TagFromName.CorrectedImage); a.addValue("ATTN"); a.addValue("DECY"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.Units); a.addValue("BQML"); list.put(a); }
+		{ Attribute a = new CodeStringAttribute(TagFromName.DecayCorrection); a.addValue("START"); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleIntercept); a.addValue(0); list.put(a); }
+		{ Attribute a = new DecimalStringAttribute(TagFromName.RescaleSlope); a.addValue(0.453901487278775d); list.put(a); }
+
+		{ Attribute a = new DateAttribute(TagFromName.SeriesDate);      a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new DateAttribute(TagFromName.AcquisitionDate); a.addValue("20111031"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.SeriesTime);      a.addValue("140100"); list.put(a); }
+		{ Attribute a = new TimeAttribute(TagFromName.AcquisitionTime); a.addValue("140100"); list.put(a); }
+		
+		{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue("-0700"); list.put(a); }
+		
+		SUVTransform t = new SUVTransform(list);
+		SUVTransform.SingleSUVTransform ts = t.getSingleSUVTransform(1);
+		
+		assertTrue("isValidSUVbw",ts.isValidSUVbw());
+		assertTrue("getSUVbwValue",Math.abs(ts.getSUVbwValue(storedPixelValue) - expectedSUVbw) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbsa",ts.isValidSUVbsa());
+		assertTrue("getSUVbsaValue",Math.abs(ts.getSUVbsaValue(storedPixelValue) - expectedSUVbsa) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVbw",ts.isValidSUVlbm());
+		assertTrue("getSUVlbmValue",Math.abs(ts.getSUVlbmValue(storedPixelValue) - expectedSUVlbm) < precisionErrorTolerated);
+
+		assertTrue("isValidSUVibw",ts.isValidSUVibw());
+		assertTrue("getSUVibwValue",Math.abs(ts.getSUVibwValue(storedPixelValue) - expectedSUVibw) < precisionErrorTolerated);
+	}
+
 	public void TestSUVTransformValues_PhilipsSUVScaleFactor() throws Exception {
 	
 		// test values based on DRO object, with weight amended to make SUVbw == SUVlbm ...
 
 		int storedPixelValue = 7972;
 		double expectedSUVbw = 1.0d;
-		double expectedSUVbsa = 0.03806d;
+		double expectedSUVbsa = 0.3806d;
 		double expectedSUVlbm = 1.0d;
 		double expectedSUVibw = 2.7726d;
 		double precisionErrorTolerated = 1e-4d;
@@ -204,7 +385,7 @@ public class TestSUVTransformValues extends TestCase {
 
 		int storedPixelValue = 7972;
 		double expectedSUVbw = 1.0d;
-		double expectedSUVbsa = 0.03806d;
+		double expectedSUVbsa = 0.3806d;
 		double expectedSUVlbm = 1.0d;
 		double expectedSUVibw = 2.7726d;
 		double precisionErrorTolerated = 1e-4d;

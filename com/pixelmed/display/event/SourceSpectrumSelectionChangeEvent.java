@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -13,7 +13,7 @@ import com.pixelmed.geometry.GeometryOfVolume;
  */
 public class SourceSpectrumSelectionChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/SourceSpectrumSelectionChangeEvent.java,v 1.5 2004/08/16 01:56:56 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/SourceSpectrumSelectionChangeEvent.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
 
 	private float[][] srcSpectra;
 	private int nSrcSpectra;

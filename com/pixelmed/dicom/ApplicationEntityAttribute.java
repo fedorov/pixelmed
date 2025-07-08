@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,11 @@ import java.io.*;
  */
 public class ApplicationEntityAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ApplicationEntityAttribute.java,v 1.9 2013/09/09 15:58:00 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ApplicationEntityAttribute.java,v 1.21 2025/01/29 10:58:06 dclunie Exp $";
+
+	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
+	
+	public final int getMaximumLengthOfSingleValue() { return MAX_LENGTH_SINGLE_VALUE; }
 
 	/**
 	 * <p>Construct an (empty) attribute.</p>
@@ -36,8 +40,8 @@ public class ApplicationEntityAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	public ApplicationEntityAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);
@@ -50,8 +54,8 @@ public class ApplicationEntityAttribute extends StringAttribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException		if an I/O error occurs
-	 * @exception	DicomException	if a DICOM parsing error occurs
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if a DICOM parsing error occurs
 	 */
 	public ApplicationEntityAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t,vl,i);

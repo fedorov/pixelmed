@@ -1,10 +1,15 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
 import com.pixelmed.dicom.*;
+import com.pixelmed.network.DicomNetworkException;
 
+import java.io.IOException;
 import java.util.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link com.pixelmed.query.StudyRootQueryInformationModel StudyRootQueryInformationModel}
@@ -95,24 +100,15 @@ import java.util.*;
  * @author	dclunie
  */
 public class StudyRootQueryInformationModel extends QueryInformationModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.34 2025/01/29 10:58:09 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.21 2010/01/31 11:59:07 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(StudyRootQueryInformationModel.class);
 	
 	private static HashSet useForStudy;
 	private static HashSet useForSeries;
 	private static HashSet useForInstance;
-
-	/**
-	 * <p>Construct a study root query information model.</p>
-	 *
-	 * @param	hostname		their hostname or IP address
-	 * @param	port			their port number
-	 * @param	calledAETitle		their AE title
-	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
-	 * @param	debugLevel		0 is no debugging (silent), > 0 more verbose levels of debugging
-	 */
-	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel) {
-		super(hostname,port,calledAETitle,callingAETitle,debugLevel);
+	
+	private void populateInformationEntitySets() {
 		if (useForStudy == null) {
 			useForStudy=new HashSet();
 			useForStudy.add(InformationEntity.PATIENT);
@@ -128,6 +124,70 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 			useForInstance.add(InformationEntity.INSTANCE);
 			useForInstance.add(InformationEntity.CONCATENATION);
 		}
+	}
+
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #StudyRootQueryInformationModel(String,int,String,String,boolean)} instead.
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
+	 * @param	calledAETitle		their AE title
+	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 * @param	debugLevel			ignored
+	 * @param	reuseAssociations	keep alive and reuse Associations
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
+	 */
+	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel,boolean reuseAssociations) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,reuseAssociations);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port number
+	 * @param	calledAETitle		their AE title
+	 * @param	callingAETitle		our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 * @param	reuseAssociations	keep alive and reuse Associations
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	IOException
+	 */
+	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,boolean reuseAssociations) throws DicomNetworkException, DicomException, IOException {
+		super(hostname,port,calledAETitle,callingAETitle,reuseAssociations);
+		populateInformationEntitySets();
+	}
+
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #StudyRootQueryInformationModel(String,int,String,String)} instead.
+	 * @param	hostname		their hostname or IP address
+	 * @param	port			their port number
+	 * @param	calledAETitle	their AE title
+	 * @param	callingAETitle	our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 * @param	debugLevel			ignored
+	 */
+	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle,int debugLevel) {
+		this(hostname,port,calledAETitle,callingAETitle);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @param	hostname		their hostname or IP address
+	 * @param	port			their port number
+	 * @param	calledAETitle	their AE title
+	 * @param	callingAETitle	our AE title (both when we query or retrieve and where we are listening as a storage SCP)
+	 */
+	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle) {
+		super(hostname,port,calledAETitle,callingAETitle);
+		populateInformationEntitySets();
 	}
 	
 	/***/
@@ -294,12 +354,12 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 			{ AttributeTag t = TagFromName.SOPInstanceUID; Attribute a = new UniqueIdentifierAttribute(t); filter.put(t,a); }
 			{ AttributeTag t = TagFromName.SOPClassUID; Attribute a = new UniqueIdentifierAttribute(t); filter.put(t,a); }
 			{ AttributeTag t = TagFromName.SpecificCharacterSet; Attribute a = new CodeStringAttribute(t); filter.put(t,a); a.addValue(characterSets[0]); }
-			QueryInformationModel model = new StudyRootQueryInformationModel(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],1);
+			QueryInformationModel model = new StudyRootQueryInformationModel(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3]);
 			QueryTreeModel tree = model.performHierarchicalQuery(filter);
-System.err.println("Tree="+tree);
+			System.err.println("Tree="+tree);	// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

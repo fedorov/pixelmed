@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -26,7 +26,7 @@ import java.util.*;
 public class ModalityTransform {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ModalityTransform.java,v 1.5 2008/04/28 11:46:25 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ModalityTransform.java,v 1.15 2025/01/29 10:58:06 dclunie Exp $";
 	
 	/***/
 	private class SingleModalityTransform {

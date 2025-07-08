@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -31,9 +31,15 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Vector;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class CTIrradiationEventDataFromImages {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTIrradiationEventDataFromImages.java,v 1.52 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CTIrradiationEventDataFromImages.class);
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTIrradiationEventDataFromImages.java,v 1.39 2013/02/01 13:53:20 dclunie Exp $";
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
 
 	private UIDGenerator u = new UIDGenerator();
 	
@@ -84,7 +90,7 @@ public class CTIrradiationEventDataFromImages {
 			d = getDoubleValueOrZeroIfEmpty(s);
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return d;
 	}
@@ -109,6 +115,10 @@ public class CTIrradiationEventDataFromImages {
 	//private Set<String> irradiationEventUIDs = new TreeSet<String>();
 	
 	private Map<String,List<Slice>> slicesByIrradiationEventUID = new HashMap<String,List<Slice>>();
+	
+	private String timezoneOffsetFromUTC;
+	private boolean timezoneOffsetFromUTCIsClean = true;
+	public String getTimezoneOffsetFromUTC() { return timezoneOffsetFromUTCIsClean ? timezoneOffsetFromUTC : null; }
 	
 	private String patientAge;
 	private boolean patientAgeIsClean = true;
@@ -556,7 +566,7 @@ public class CTIrradiationEventDataFromImages {
 			}
 		}
 		catch (DicomException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		
 		String useProtocolName = booleanExistsInMapAndIsTrue(protocolNameByEventIsClean,uid) ? protocolNameByEvent.get(uid) : null;
@@ -581,7 +591,7 @@ public class CTIrradiationEventDataFromImages {
 						halfSliceThickness = sliceThickness/2;
 					}
 					catch (NumberFormatException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				
@@ -646,7 +656,7 @@ public class CTIrradiationEventDataFromImages {
 //System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersBySeriesNumberScanRangeAndStudyInstanceUID(): Aaargh ! key="+key+" already exists in map ...");
 //System.err.print("CTIrradiationEventDataFromImages.getAcquisitionParametersBySeriesNumberScanRangeAndStudyInstanceUID(): already there = "+apAlreadyThere);
 //System.err.print("CTIrradiationEventDataFromImages.getAcquisitionParametersBySeriesNumberScanRangeAndStudyInstanceUID(): new = "+ap);
-System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersBySeriesNumberScanRangeAndStudyInstanceUID(): just using the first one encountered - may be non-deterministic :(");
+slf4jlogger.info("CTIrradiationEventDataFromImages.getAcquisitionParametersBySeriesNumberScanRangeAndStudyInstanceUID(): just using the first one encountered - may be non-deterministic :(");
 						}
 						acquisitionParametersBySeriesNumberAndScanRangeAndStudyInstanceUIDKey.put(key,ap);
 					}
@@ -717,7 +727,7 @@ System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersByS
 //System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersByAcquisitionNumber(): OK - not replacing with shorter length of reconstruction");
 										}
 										else {
-System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersByAcquisitionNumber(): same length but not equal :( just using the first one encountered - may be non-deterministic :(");
+slf4jlogger.info("CTIrradiationEventDataFromImages.getAcquisitionParametersByAcquisitionNumber(): same length but not equal :( just using the first one encountered - may be non-deterministic :(");
 										}
 									}
 								}
@@ -760,7 +770,7 @@ System.err.println("CTIrradiationEventDataFromImages.getAcquisitionParametersByA
 //System.err.println("CTIrradiationEventDataFromImages.add(): add() file "+file);
 		if (filesAlreadyDone.contains(file)) {
 			// could be loop in file system caused by symbolic links, DICOMDIR with bad filename that is a directory or empty component added to parent and not explicitly handled
-System.err.println("CTIrradiationEventDataFromImages.add(): ignoring request to handle path already processed "+file);
+slf4jlogger.info("CTIrradiationEventDataFromImages.add(): ignoring request to handle path already processed {}",file);
 		}
 		else {
 			filesAlreadyDone.add(file);
@@ -787,10 +797,10 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring request to 
 							if (doFileName != null) {
 								File doFile = new File(doFileName);
 								if (doFile.isDirectory()) {
-System.err.println("CTIrradiationEventDataFromImages.add(): ignoring directory (rather than file) referenced from within DICOMDIR "+doFileName);
+slf4jlogger.info("CTIrradiationEventDataFromImages.add(): ignoring directory (rather than file) referenced from within DICOMDIR {}",doFileName);
 								}
 								else if (doFile.getName().toUpperCase(java.util.Locale.US).equals("DICOMDIR")) {
-System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR referenced from within DICOMDIR");
+slf4jlogger.info("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR referenced from within DICOMDIR");
 								}
 								else {
 //System.err.println("CTIrradiationEventDataFromImages.add(): adding DICOMDIR referenced file "+doFileName);
@@ -800,10 +810,10 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 						}
 					}
 					catch (IOException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 					catch (DicomException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				else if (file.isFile() && DicomFileUtilities.isDicomOrAcrNemaFile(file)) {
@@ -843,7 +853,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 					}
 					catch (Exception e) {
 						// probably wasn't a DICOM file after all, so don't sweat it
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				else {
@@ -945,7 +955,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 										}
 										catch (NumberFormatException e) {
 											System.err.println("CTIrradiationEventDataFromImages.organizeSlicesIntoIrradiationEvents(): Bad SliceLocation in SOP Instance "+s.sopInstanceUID);
-											e.printStackTrace(System.err);
+											slf4jlogger.error("",e);
 										}
 									}
 									else {
@@ -1012,7 +1022,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 								irradiationEventUID = u.getAnotherNewUID();
 							}
 							catch (DicomException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 //System.err.println("CTIrradiationEventDataFromImages.organizeSlicesIntoIrradiationEvents(): IrradiationEventUID = "+irradiationEventUID);
 							//irradiationEventUIDs.add(irradiationEventUID);
@@ -1032,6 +1042,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 	
 	private class Slice {
 		String irradiationEventUID;
+		String timezoneOffsetFromUTC;
 		String patientAge;
 		String patientSex;
 		String patientWeight;
@@ -1076,6 +1087,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 
 			buf.append("Slice:\n");
 			buf.append("\tIrradiationEventUID = "); buf.append(irradiationEventUID); buf.append("\n");
+			buf.append("\tTimezoneOffsetFromUTC = "); buf.append(timezoneOffsetFromUTC); buf.append("\n");
 			buf.append("\tPatientAge = "); buf.append(patientAge); buf.append("\n");
 			buf.append("\tPatientSex = "); buf.append(patientSex); buf.append("\n");
 			buf.append("\tPatientWeight = "); buf.append(patientWeight); buf.append("\n");
@@ -1120,6 +1132,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 
 		Slice(AttributeList list) {
 			irradiationEventUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.IrradiationEventUID);
+			timezoneOffsetFromUTC = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.TimezoneOffsetFromUTC);
 			patientAge = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.PatientAge);
 			patientSex = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.PatientSex);
 			patientWeight = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.PatientWeight);
@@ -1142,13 +1155,13 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			
 			orientation = DescriptionFactory.makeImageOrientationLabelFromImageOrientationPatient(list);
 			
 			{
-				String exposureTimeInMilliSeconds = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.ExposureTime);
+				String exposureTimeInMilliSeconds = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("ExposureTime"));
 				if (!exposureTimeInMilliSeconds.equals("")) {
 					exposureTimeInSeconds = "";
 					try {
@@ -1160,22 +1173,22 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 				}
 			}
 
-			kvp = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.KVP);
-			tubeCurrent = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.XRayTubeCurrent);
+			kvp = Attribute.getDelimitedStringValuesOrEmptyString(list,dictionary.getTagFromName("KVP"));
+			tubeCurrent = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("XRayTubeCurrent"));
 
 			midScanTime="";
 			if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0019,0x0010)).equals("GEMS_ACQU_01")) {
 				midScanTime = Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0019,0x1024));
 			}
 
-			exposureTimePerRotation = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.RevolutionTime);
+			exposureTimePerRotation = Attribute.getDelimitedStringValuesOrEmptyString(list,dictionary.getTagFromName("RevolutionTime"));
 			if (exposureTimePerRotation.equals("")) {
 				if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0019,0x0010)).equals("GEMS_ACQU_01")) {
 					exposureTimePerRotation = Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0019,0x1027));	//  Rotation Speed (Gantry Period)
 				}
 			}
 
-			nominalSingleCollimationWidth = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.SingleCollimationWidth);
+			nominalSingleCollimationWidth = Attribute.getDelimitedStringValuesOrEmptyString(list,dictionary.getTagFromName("SingleCollimationWidth"));
 			if (nominalSingleCollimationWidth.equals("")) {
 				if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0045,0x0010)).equals("GEMS_HELIOS_01")) {
 					nominalSingleCollimationWidth = Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0045,0x1002));	//   Macro width at ISO Center
@@ -1188,7 +1201,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 				}
 			}
 
-			nominalTotalCollimationWidth = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.TotalCollimationWidth);
+			nominalTotalCollimationWidth = Attribute.getDelimitedStringValuesOrEmptyString(list,dictionary.getTagFromName("TotalCollimationWidth"));
 			if (nominalTotalCollimationWidth.equals("") && !nominalSingleCollimationWidth.equals("")) {
 				if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0045,0x0010)).equals("GEMS_HELIOS_01")) {
 					try {
@@ -1200,7 +1213,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 						}
 					}
 					catch (NumberFormatException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				else if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x7005,0x0010)).equals("TOSHIBA_MEC_CT3")) {
@@ -1214,7 +1227,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 				}
 			}
 
-			pitchFactor = Attribute.getDelimitedStringValuesOrEmptyString(list,TagFromName.SpiralPitchFactor);
+			pitchFactor = Attribute.getDelimitedStringValuesOrEmptyString(list,dictionary.getTagFromName("SpiralPitchFactor"));
 			if (pitchFactor.equals("")) {
 				if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0043,0x0010)).equals("GEMS_PARM_01")) {
 					pitchFactor = Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0043,0x1027));	//   Scan Pitch Ratio in the form "n.nnn:1"
@@ -1228,7 +1241,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 					// to the Nominal Total Collimation Width. For Sequenced Acquisition, the Pitch Factor is the ratio
 					// of the Table Feed per single sequenced scan to the Nominal Total Collimation Width.
 					try {
-						double dTableFeedPerRotation = Attribute.getSingleDoubleValueOrDefault(list,TagFromName.TableFeedPerRotation,0d);
+						double dTableFeedPerRotation = Attribute.getSingleDoubleValueOrDefault(list,dictionary.getTagFromName("TableFeedPerRotation"),0d);
 						if (dTableFeedPerRotation == 0) {
 							if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x0045,0x0010)).equals("GEMS_ACQU_01")) {
 								dTableFeedPerRotation = Attribute.getSingleDoubleValueOrDefault(list,new AttributeTag(0x0019,0x1023),0d);	// Table Speed [mm/rotation]
@@ -1243,7 +1256,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 						}
 					}
 					catch (NumberFormatException e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			}
@@ -1266,18 +1279,18 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			
 			sliceThickness = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SliceThickness);
 			
 			frameOfReferenceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.FrameOfReferenceUID);
 			
-			exposureModulationType = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.ExposureModulationType);
+			exposureModulationType = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("ExposureModulationType"));
 			
-			estimatedDoseSaving = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.EstimatedDoseSaving);	//is FD VR
+			estimatedDoseSaving = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("EstimatedDoseSaving"));	//is FD VR
 			
-			CTDIvol = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.CTDIvol);							//is FD VR
+			CTDIvol = Attribute.getSingleStringValueOrEmptyString(list,dictionary.getTagFromName("CTDIvol"));							//is FD VR
 			
 			if (Attribute.getDelimitedStringValuesOrEmptyString(list,new AttributeTag(0x7005,0x0010)).equals("TOSHIBA_MEC_CT3")) {
 				Attribute aDLP = list.get(new AttributeTag(0x7005,0x1040));												//is FD VR
@@ -1298,6 +1311,17 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 			for (Slice s : event) {
 				// handle attributes that are global (i.e., not indexed by event), and assume that the entire set is one patient
 				// the common logic is not refactored into a utility method, since need to return two values, the string and the cleanliness of it
+				if (timezoneOffsetFromUTCIsClean) {
+					String newValue = s.timezoneOffsetFromUTC;
+					if (!newValue.equals("")) {
+						if (timezoneOffsetFromUTC == null || timezoneOffsetFromUTC.equals("")) {
+							timezoneOffsetFromUTC = newValue;
+						}
+						else if (!timezoneOffsetFromUTC.equals(newValue)) {
+							timezoneOffsetFromUTCIsClean = false;
+						}
+					}
+				}
 				if (patientAgeIsClean) {
 					String newValue = s.patientAge;
 					if (!newValue.equals("")) {
@@ -1505,7 +1529,7 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 					}
 					catch (DicomException e) {
 						value = "-- bad  --";
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			}
@@ -1700,10 +1724,10 @@ System.err.println("CTIrradiationEventDataFromImages.add(): ignoring DICOMDIR re
 	public static final void main(String arg[]) {
 		try {
 			CTIrradiationEventDataFromImages eventDataFromImages = new CTIrradiationEventDataFromImages(arg[0]);
-System.err.print(eventDataFromImages);
+System.err.print(eventDataFromImages);	// no need to use SLF4J since command line utility/test
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 	

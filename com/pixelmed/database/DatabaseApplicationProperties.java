@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2007, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -21,7 +21,7 @@ import java.util.Properties;
  */
 public class DatabaseApplicationProperties {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseApplicationProperties.java,v 1.7 2007/07/04 18:13:58 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseApplicationProperties.java,v 1.17 2025/01/29 10:58:06 dclunie Exp $";
 
 	private static final String defaultDatabaseFileName  = ".com.pixelmed.display.DicomImageViewer.database";
 	private static final String defaultSavedImagesFolderName  = ".com.pixelmed.display.DicomImageViewer.images";

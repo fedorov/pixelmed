@@ -22,6 +22,16 @@ all:	${OBJS}
 
 include ${PATHTOROOT}/Makefile.common.mk
 
+# https://en.wikipedia.org/wiki/Favicon
+# Manually created favicon.png in AI from inverted logo
+
+# http://www.winterdrache.de/freeware/png2ico/
+# port install png2ico
+# NB. unusual reverse order of arguments ... USAGE: png2ico icofile [--colors <num>] pngfile1 [pngfile2 ...]
+# .ico is already added to .SUFFIXES in Makefile.common.mk
+.png.ico:
+	png2ico $@ $<
+
 archive:
 	tar -cvf - Makefile *.java | gzip -best > ../../../network.`date '+%Y%m%d'`.tar.gz
 

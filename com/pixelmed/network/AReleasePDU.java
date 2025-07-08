@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -9,7 +9,7 @@ import com.pixelmed.utils.ByteArray;
  */
 class AReleasePDU {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AReleasePDU.java,v 1.5 2003/10/09 21:38:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AReleasePDU.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
 
 	private byte[] b;
 
@@ -18,7 +18,7 @@ class AReleasePDU {
 
 	/**
 	 * @param	pduType
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AReleasePDU(int pduType) throws DicomNetworkException {
 
@@ -47,7 +47,7 @@ class AReleasePDU {
 
 	/**
 	 * @param	pdu
-	 * @exception	DicomNetworkException
+	 * @throws	DicomNetworkException
 	 */
 	public AReleasePDU(byte[] pdu) throws DicomNetworkException {
 		b=pdu;

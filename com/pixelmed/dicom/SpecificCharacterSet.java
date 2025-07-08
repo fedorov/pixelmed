@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -6,6 +6,9 @@ import com.pixelmed.utils.HexDump;
 
 import java.io.*;
 import java.util.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to encapsulate the functionality defined by the DICOM Specific Character Set
@@ -16,7 +19,9 @@ import java.util.*;
  * @author	dclunie
  */
 public class SpecificCharacterSet {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SpecificCharacterSet.java,v 1.29 2011/07/17 14:21:46 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SpecificCharacterSet.java,v 1.44 2025/01/29 10:58:07 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SpecificCharacterSet.class);
 
 	/***/
 	private String useEncoding;			// really should make this an enumeration, then we could use string literal pool values and match without equals() :(
@@ -62,18 +67,10 @@ public class SpecificCharacterSet {
 	}
 
 	/**
-	 * @param	bytes
-	 */
-	//static private void dumpBytes(byte[] bytes) {
-	//	for (int i=0; i<bytes.length; ++i) System.err.print(Integer.toHexString(((int)bytes[i])&0xff)+" ");
-	//	System.err.println();
-	//}
-
-	/**
 	 * @return true if JIS encodings are working properly
 	 */
 	private boolean testIfNativeJISWorking() {
-//System.err.println("testIfNativeJISWorking()");
+		slf4jlogger.trace("testIfNativeJISWorking()");
 		boolean success=false;
 		byte[] jis0208bytes = {
 			(byte)0x3b,(byte)0x33,(byte)0x45,(byte)0x44
@@ -81,8 +78,8 @@ public class SpecificCharacterSet {
 		try {
 			String string = new String(jis0208bytes,"JIS0208");
 			byte[] utf8Bytes = string.getBytes("UTF8");
-//System.err.println("testIfNativeJISWorking():src = "); dumpBytes(jis0208bytes);
-//System.err.println("testIfNativeJISWorking():dst = "); dumpBytes(utf8Bytes);
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("testIfNativeJISWorking():src = {}",HexDump.byteArrayToHexString(jis0208bytes));
+			if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("testIfNativeJISWorking():dst = {}",HexDump.byteArrayToHexString(utf8Bytes));
 			// if not working will come back unchanged (3b 33 45 44)
 			// if working will come back e5 b1 b1 e7 94 b0
 			success =   utf8Bytes.length == 6
@@ -95,41 +92,41 @@ public class SpecificCharacterSet {
 				;
 		}
 		catch (java.io.UnsupportedEncodingException e) {
-			//e.printStackTrace(System.err);
+			//slf4jlogger.error("", e);
 		}
-//System.err.println("testIfNativeJISWorking(): returns "+success);
+		slf4jlogger.trace("testIfNativeJISWorking(): returns {}",success);
 		return success;
 	}
 	
 	/**
 	 */
 	static private HashMap initializeOwnMapping(String name) {
-//System.err.println("SpecificCharacterSet.initializeOwnMapping(): start "+name);
+		slf4jlogger.trace("initializeOwnMapping(): start {}",name);
 		HashMap map=new HashMap();
 		InputStream ownMappingSourceStream = SpecificCharacterSet.class.getResourceAsStream("/com/pixelmed/dicom/"+name);
 		if (ownMappingSourceStream != null) {
-//System.err.println("Opening "+name);
+			slf4jlogger.trace("Opening {}",name);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(ownMappingSourceStream));
 			String line;
 			try {
 				while ((line=reader.readLine()) != null) {
-//System.err.println("Read "+line);
+					slf4jlogger.trace("Read {}",line);
 					StringTokenizer tokens = new StringTokenizer(line);
 					if (tokens.countTokens() == 2) {
 						// the decode method handles the 0x
 						// can't use Short.decode() because some values "too large"
 						Short jisvalue = new Short(Integer.decode(tokens.nextToken()).shortValue());
 						Character univalue = new Character((char)(Integer.decode(tokens.nextToken()).shortValue()));
-//System.err.println("Decoded 0x"+Integer.toHexString(jisvalue.intValue())+" to 0x"+Integer.toHexString(univalue.charValue()));
+						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Decoded 0x"+Integer.toHexString(jisvalue.intValue())+" to 0x"+Integer.toHexString(univalue.charValue()));
 						map.put(jisvalue,univalue);
 					}
 				}
 			}
 			catch (IOException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("", e);
 			}
 		}
-//System.err.println("SpecificCharacterSet.initializeOwnMapping(): done "+name);
+		slf4jlogger.trace("initializeOwnMapping(): done {}",name);
 		return map;
 	}
 	
@@ -159,7 +156,7 @@ public class SpecificCharacterSet {
 		}
 		else {
 			int l = setOfUnicodeBlocks.size();
-//System.err.println("SpecificCharacterSet.getSuitableEncodingFromSetOfUnicodeBlocks(): setOfUnicodeBlocks.size()="+l);
+			slf4jlogger.trace("getSuitableEncodingFromSetOfUnicodeBlocks(): setOfUnicodeBlocks.size()={}",l);
 			if (l == 0) {
 				encoding = "ASCII";
 			}
@@ -200,7 +197,7 @@ public class SpecificCharacterSet {
 				// else leave to UTF8
 			}
 		}
-//System.err.println("SpecificCharacterSet.getSuitableEncodingFromSetOfUnicodeBlocks(): encoding="+encoding);
+		slf4jlogger.trace("getSuitableEncodingFromSetOfUnicodeBlocks(): encoding={}",encoding);
 		return encoding;
 	}
 	
@@ -214,69 +211,18 @@ public class SpecificCharacterSet {
 	public static Set getSetOfUnicodeBlocksUsedBy(String value) {
 		HashSet setOfUnicodeBlocks = new HashSet();
 		if (value != null && value.length() > 0) {
-//System.err.println("SpecificCharacterSet.getSetOfUnicodeBlocksUsedBy(): value="+value);
+			slf4jlogger.trace("getSetOfUnicodeBlocksUsedBy(): value={}",value);
 			int l = value.length();
 			char[] chars = new char[l];
 			value.getChars(0,l,chars,0);
 			for (int i=0; i<value.length(); ++i) {
 				char c = chars[i];
 				Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
-//System.err.println("SpecificCharacterSet.getSetOfUnicodeBlocksUsedBy(): - character <"+c+"> block = "+block);
+				slf4jlogger.trace("getSetOfUnicodeBlocksUsedBy(): - character <{}> block = {}",c,block);
 				setOfUnicodeBlocks.add(block);
 			}
 		}
 		return setOfUnicodeBlocks;
-	}
-	
-	/**
-	 * <p>Get all of the values of the string attributes of a dataset.</p>
-	 *
-	 * <p>Recurses into SequenceAttributes.</p>
-	 *
-	 * @param	list	the list of attributes
-	 * @return			a {@link java.util.Set Set} of {@link java.lang.Character.UnicodeBlock Character.UnicodeBlock}s
-	 *
-	 */
-	public static String getAllStringValuesAffectedBySpecificCharacterSet(AttributeList list) {
-		StringBuffer str = new StringBuffer();
-		if (list != null) {
-			Iterator it = list.values().iterator();
-			while (it.hasNext()) {
-				Attribute a = (Attribute)it.next();
-				if (a != null) {
-					if (a instanceof SequenceAttribute) {
-						Iterator is = ((SequenceAttribute)a).iterator();
-						while (is.hasNext()) {
-							SequenceItem item = (SequenceItem)is.next();
-							if (item != null) {
-								AttributeList subList = item.getAttributeList();
-								if (subList != null) {
-									str.append(getAllStringValuesAffectedBySpecificCharacterSet(subList));
-								}
-							}
-						}
-					}
-					else if (a instanceof StringAttributeAffectedBySpecificCharacterSet) {
-						try {
-							String[] sv = a.getStringValues();
-							if (sv != null) {
-								for (int i=0; i< sv.length; ++i) {
-									String v = sv[i];
-									if (v != null) {
-										str.append(v);
-									}
-								}
-							}
-						}
-						catch (DicomException e) {
-							// don't worry if can't get string values for some reason
-							e.printStackTrace(System.err);
-						}
-					}
-				}
-			}
-		}
-		return str.toString();
 	}
 	
 	/**
@@ -289,7 +235,45 @@ public class SpecificCharacterSet {
 	 *
 	 */
 	public static Set getSetOfUnicodeBlocksUsedBy(AttributeList list) {
-		return getSetOfUnicodeBlocksUsedBy(getAllStringValuesAffectedBySpecificCharacterSet(list));
+		HashSet setOfUnicodeBlocks = new HashSet();
+		if (list != null) {
+			Iterator it = list.values().iterator();
+			while (it.hasNext()) {
+				Attribute a = (Attribute)it.next();
+				if (a != null) {
+					if (a instanceof SequenceAttribute) {
+						Iterator is = ((SequenceAttribute)a).iterator();
+						while (is.hasNext()) {
+							SequenceItem item = (SequenceItem)is.next();
+							if (item != null) {
+								AttributeList subList = item.getAttributeList();
+								if (subList != null) {
+									setOfUnicodeBlocks.addAll(getSetOfUnicodeBlocksUsedBy(subList));
+								}
+							}
+						}
+					}
+					else if (a instanceof StringAttributeAffectedBySpecificCharacterSet) {
+						try {
+							String[] sv = a.getStringValues();
+							if (sv != null) {
+								for (int i=0; i< sv.length; ++i) {
+									String v = sv[i];
+									if (v != null) {
+										setOfUnicodeBlocks.addAll(getSetOfUnicodeBlocksUsedBy(v));
+									}
+								}
+							}
+						}
+						catch (DicomException e) {
+							// don't worry if can't get string values for some reason
+							slf4jlogger.error("", e);
+						}
+					}
+				}
+			}
+		}
+		return setOfUnicodeBlocks;
 	}
 	
 	/**
@@ -329,18 +313,17 @@ public class SpecificCharacterSet {
 	 * @param	specificCharacterSetByteValues		the values of Specific Character Set as byte[]
 	 */
 	public SpecificCharacterSet(String[] specificCharacterSetAttributeValues,byte[] specificCharacterSetByteValues) {
-//System.err.println("SpecificCharacterSet(): specificCharacterSetAttributeValues="+specificCharacterSetAttributeValues);
 		//this.specificCharacterSetAttributeValues=specificCharacterSetAttributeValues;
 		useEncoding=null;	// see "http://java.sun.com/j2se/1.5.0/docs/guide/intl/encoding.doc.html" for values JRE recognizes
 		useISO2022=false;
 		if (!useOwnJISCheckPerformed) {
 			useOwnJIS=!testIfNativeJISWorking();
-//System.err.println("SpecificCharacterSet(): useOwnJIS="+useOwnJIS);
+			slf4jlogger.trace("SpecificCharacterSet(): useOwnJIS={}",useOwnJIS);
 			useOwnJISCheckPerformed=true;
 		}
 		if (specificCharacterSetAttributeValues != null && specificCharacterSetAttributeValues.length >= 1) {
 			String firstValue = specificCharacterSetAttributeValues[0];
-//System.err.println("SpecificCharacterSet(): firstValue="+firstValue);
+			slf4jlogger.trace("SpecificCharacterSet(): firstValue={}",firstValue);
 			if (firstValue == null || firstValue.equals("")) {
 				useEncoding="ASCII";
 			}
@@ -453,18 +436,18 @@ public class SpecificCharacterSet {
 				useEncoding="Cp949";		// IR 149 KS X 1001 - i.e. start with this before any escape sequences seen
 			}
 			else {
-//System.err.println("Check for big5 - specific character set as bytes: "+HexDump.dump(specificCharacterSetByteValues));
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Check for big5 - specific character set as bytes: {}",HexDump.dump(specificCharacterSetByteValues));
 				if (specificCharacterSetByteValues != null
 				 && specificCharacterSetByteValues.length == 4
 				 && (specificCharacterSetByteValues[0] & 0xff) == 0xff
 				 && (specificCharacterSetByteValues[1] & 0xff) == 0xbe
 				 && (specificCharacterSetByteValues[2] & 0xff) == 0xdd
 				 && (specificCharacterSetByteValues[3] & 0xff) == 0xa8) {
-System.err.println("Error - encountered non-standard illegal encoding of Big5 Specific Character Set");
+					slf4jlogger.error("encountered non-standard illegal encoding of Big5 Specific Character Set");
 					useEncoding="Big5";
 				}
 				else {
-System.err.println("Warning - unrecognized first value of Specific Character Set, using ASCII; first value ="+firstValue+" ("+HexDump.dump(specificCharacterSetByteValues)+")");
+					if (slf4jlogger.isTraceEnabled()) slf4jlogger.warn("unrecognized first value of Specific Character Set, using ASCII; first value ={} ({})",firstValue,HexDump.dump(specificCharacterSetByteValues));
 					useEncoding="ASCII";
 				}
 			}
@@ -478,11 +461,11 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 		else {
 			useEncoding="ASCII";
 		}
-//System.err.println("SpecificCharacterSet(): useEncoding="+useEncoding);
+		slf4jlogger.trace("SpecificCharacterSet(): useEncoding={}",useEncoding);
 	}
 	
 	public String getValueToUseInSpecificCharacterSetAttribute() {
-//System.err.println("SpecificCharacterSet.getSuitableEncodingFromSetOfUnicodeBlocks(): useEncoding="+useEncoding);
+		slf4jlogger.trace("getValueToUseInSpecificCharacterSetAttribute(): useEncoding={}",useEncoding);
 		String value = "ISO_IR 192";		// default to UTF-8 if not recognized or (was) using ISO2022 (don't support encoding with ISO 2022 escapes)
 		if (!useISO2022) {
 			if (useEncoding.equals("ASCII")) {	// use of == rather than equals() would OK since only string literal pool values are possible for useEncoding, which is private to this class, but safer to use equals() in case we change something
@@ -528,7 +511,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 				value = "ISO_IR 13";
 			}
 		}
-//System.err.println("SpecificCharacterSet.getSuitableEncodingFromSetOfUnicodeBlocks(): return value="+value);
+		slf4jlogger.trace("getValueToUseInSpecificCharacterSetAttribute(): return value={}",value);
 		return value;
 	}
 
@@ -550,7 +533,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 				short lobyte = (short)(((short)(bytes[i++])) & 0xff);
 				short lookup = (short)((hibyte<<8) | lobyte);
 				Character c = (Character)useMapping.get(new Short(lookup));
-//System.err.println("SpecificCharacterSet.translateByteArrayToString(): Mapped from 0x"+Integer.toHexString(lookup)+" to "+c);				
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("translateByteArrayToString(): Mapped from 0x{} to {}",Integer.toHexString(lookup),c);
 				if (c != null) buf.append(c.charValue());
 			}
 			s=buf.toString();
@@ -568,10 +551,10 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 	 * @param	useEncoding	the encoding to use
 	 */
 	private String translateByteArrayToString(byte[] bytes,int offset,int length,String useEncoding) {
-//System.err.println("SpecificCharacterSet.translateByteArrayToString() useEncoding="+useEncoding+" offset="+offset+" length="+length);
+		slf4jlogger.trace("translateByteArrayToString() useEncoding={} offset={} length={}",useEncoding,offset,length);
 		String s = null;
 		if (length > 0 && useOwnJIS && useEncoding.equals("JIS0208")) {
-//System.err.println("SpecificCharacterSet.translateByteArrayToString() using own JIS0208");
+			slf4jlogger.trace("translateByteArrayToString() using own JIS0208");
 			if (ownJIS0208Mapping == null) {
 				initializeOwnJIS0208Mapping();
 			}
@@ -593,7 +576,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 				}
 			}
 			catch (UnsupportedEncodingException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 				s=new String(bytes,offset,length);		// use default ... better than returning null (000307)
 			}
 		}
@@ -610,8 +593,8 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 	 * @return			the string decoded according to the specific character set
 	 */
 	public String translateByteArrayToString(byte[] bytes,int offset,int length) {
-//System.err.println("SpecificCharacterSet.translateByteArrayToString():  byte array is:\n"+com.pixelmed.utils.HexDump.dump(bytes));
-//System.err.println("SpecificCharacterSet.translateStringToByteArray(): useEncoding is "+useEncoding);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("translateByteArrayToString():  byte array is:\n{}",com.pixelmed.utils.HexDump.dump(bytes));
+		slf4jlogger.trace("translateStringToByteArray(): useEncoding is {}",useEncoding);
 		String s = null;
 		if (useEncoding == null) {
 			s=new String(bytes,0,length);
@@ -628,9 +611,9 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 				int bytesperchar = 1;
 				String lastEncoding = useEncoding;
 				while (done < length) {
-//System.err.println("SpecificCharacterSet.translateByteArrayToString() looping startlast="+startlast+" done="+done);
+					slf4jlogger.trace("translateByteArrayToString() looping startlast={} done={}",startlast,done);
 					if (bytes[done] == 0x1b) { // escape character
-//System.err.println("SpecificCharacterSet.translateByteArrayToString() escape character");
+						slf4jlogger.trace("translateByteArrayToString() escape character");
 						if (done > startlast) sbuf.append(translateByteArrayToString(bytes,startlast,done-startlast,lastEncoding));
 						if (bytes[done+1] == 0x28 && bytes[done+2] == 0x42) {
 							lastEncoding="ASCII";		// IR 6 ISO 646
@@ -734,8 +717,8 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 				s=translateByteArrayToString(bytes,0,length,useEncoding);
 			}
 		}
-//System.err.println("SpecificCharacterSet.translateByteArrayToString(): result string is <"+s+">");
-//System.err.println("SpecificCharacterSet.translateByteArrayToString(): result string is:\n"+com.pixelmed.utils.StringUtilities.dump(s));
+		slf4jlogger.trace("translateByteArrayToString(): result string is <{}>",s);
+		slf4jlogger.trace("translateByteArrayToString(): result string is:\n{}",com.pixelmed.utils.StringUtilities.dump(s));
 		return s;
 	}
 
@@ -746,14 +729,14 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 	 *
 	 * @param	string				the string to be encoded
 	 * @return					the byte array encoded according to the specific character set
-	 * @exception	UnsupportedEncodingException
+	 * @throws	UnsupportedEncodingException
 	 */
 	public byte[] translateStringToByteArray(String string) throws UnsupportedEncodingException {
-//System.err.println("SpecificCharacterSet.translateStringToByteArray(): string is <"+string+">");
-//System.err.println("SpecificCharacterSet.translateStringToByteArray(): string is:\n"+com.pixelmed.utils.StringUtilities.dump(string));
-//System.err.println("SpecificCharacterSet.translateStringToByteArray(): useEncoding is "+useEncoding);
+		slf4jlogger.trace("translateStringToByteArray(): string is <{}>",string);
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("translateStringToByteArray(): string is:\n{}",com.pixelmed.utils.StringUtilities.dump(string));
+		slf4jlogger.trace("translateStringToByteArray(): useEncoding is {}",useEncoding);
 		byte[] b = useEncoding == null ? string.getBytes() : string.getBytes(useEncoding);
-//System.err.println("SpecificCharacterSet.translateStringToByteArray(): return byte array is:\n"+com.pixelmed.utils.HexDump.dump(b));
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("translateStringToByteArray(): return byte array is:\n{}",com.pixelmed.utils.HexDump.dump(b));
 		return b;
 	}
 
@@ -765,6 +748,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 	 * @param	specificCharacterSet
 	 */
 	static private void createDicomFileWithPatientName(String fileName,byte[] example,String specificCharacterSet) {
+		slf4jlogger.trace("createDicomFileWithPatientName(): fileName {}",fileName);
 		try {
 			BinaryOutputStream o=new BinaryOutputStream(new FileOutputStream(fileName),false);
 			{
@@ -794,7 +778,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			if (pad) o.write((byte)' ');
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 
@@ -858,7 +842,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"greek.dcm",iso88597Bytes,"ISO_IR 126");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		
 		try {
@@ -867,7 +851,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"french.dcm",iso88591Bytes,"ISO_IR 100");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		
 		try {
@@ -876,7 +860,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"german.dcm",iso88591Bytes,"ISO_IR 100");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 
 		try {
@@ -885,7 +869,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"arabic.dcm",iso88596Bytes,"ISO_IR 127");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		
 		try {
@@ -894,7 +878,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"russian.dcm",iso88595Bytes,"ISO_IR 144");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		
 		try {
@@ -904,7 +888,7 @@ System.err.println("Warning - unrecognized first value of Specific Character Set
 			createDicomFileWithPatientName(prefixPath+"hebrew.dcm",iso88598Bytes,"ISO_IR 138");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -9,7 +9,7 @@ package com.pixelmed.utils;
  */
 public class Base64 {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/Base64.java,v 1.1 2012/04/17 12:49:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/Base64.java,v 1.11 2025/01/29 10:58:09 dclunie Exp $";
 	
 	public static String getBase64(double v) {
 		long l = Double.doubleToRawLongBits(v);

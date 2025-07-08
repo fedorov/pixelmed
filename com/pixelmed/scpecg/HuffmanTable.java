@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -11,7 +11,7 @@ package com.pixelmed.scpecg;
  * @author	dclunie
  */
 public class HuffmanTable {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanTable.java,v 1.3 2004/01/25 03:47:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanTable.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
 	
 	protected int numberOfCodeStructuresInTable;
 	protected int[] numberOfBitsInPrefix;
@@ -35,7 +35,7 @@ public class HuffmanTable {
 	 *
 	 * @param	numberOfCodeStructuresInTable		the number of codes (i.e. the size of all the array parameters)
 	 * @param	numberOfBitsInPrefix			for each code, the number of prefix bits for each code (i.e. the Huffman code)
-	 * @param	numberOfBitsInEntireCode		for each code, if > numberOfBitsInPrefix, used to find the number of original bits encoded
+	 * @param	numberOfBitsInEntireCode		for each code, if &gt; numberOfBitsInPrefix, used to find the number of original bits encoded
 	 * @param	tableModeSwitch				for each code, a flag to indicate to switch to another table (1 indicates no switch)
 	 * @param	baseValueRepresentedByBaseCode		for each code, the value that the code represents
 	 * @param	baseCode				the codes (with the order of bits reversed)

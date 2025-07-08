@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to describe a set of frames sharing common characteristics suitable for display or analysis as an entity.</p>
@@ -32,19 +35,19 @@ import java.util.TreeSet;
  * @author	dclunie
  */
 public class FrameSet {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FrameSet.java,v 1.34 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FrameSet.java,v 1.15 2013/02/17 18:55:25 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FrameSet.class);
 	
-	private Map<AttributeTag,String> distinguishingAttributes;
-	private Map<String,Map<AttributeTag,String>> perFrameAttributesIndexedBySOPInstanceUID;
+	private AttributeList distinguishingAttributes;
+	private Map<String,AttributeList> perFrameAttributesIndexedBySOPInstanceUID;
 	private Set<AttributeTag> perFrameAttributesPresentInAnyFrame;
-	private Map<AttributeTag,String> sharedAttributes;
+	private AttributeList sharedAttributes;
 	private Map<AttributeTag,Integer> sharedAttributesFrameCount;
+	private Set<AttributeTag> alreadyRemovedFromSharedAttributesBecausePreviouslyFoundToBeUnequal;
 	private List<String> sopInstanceUIDsSortedByFrameOrder;
 	private int numberOfFrames;
 	private boolean partitioned;
-	
-	private Map<AttributeTag,String> mapOfUsedAttributeTagsToDictionaryKeywords = new HashMap<AttributeTag,String>();
 	
 	private static Set<AttributeTag> distinguishingAttributeTags = new HashSet<AttributeTag>();
 	{
@@ -84,9 +87,14 @@ public class FrameSet {
 		
 		//distinguishingAttributeTags.add(TagFromName.BodyPartExamined);
 		
+		distinguishingAttributeTags.add(TagFromName.ProtocolName);						// For MR, do not want to merge images with different protocols
+		distinguishingAttributeTags.add(TagFromName.ConvolutionKernel);					// For CT, do not want to merge images with different kernels
+		
 		distinguishingAttributeTags.add(TagFromName.ImageOrientationPatient);
 		distinguishingAttributeTags.add(TagFromName.PixelSpacing);
 		distinguishingAttributeTags.add(TagFromName.SliceThickness);
+		
+		//distinguishingAttributeTags.add(TagFromName.SeriesNumber);
 		
 		distinguishingAttributeTags.add(TagFromName.AcquisitionContextSequence);		// unlikely to be encountered, but do not want to have to handle per-frame if present
 		
@@ -100,48 +108,106 @@ public class FrameSet {
 		excludeFromGeneralPerFrameProcessingTags.add(TagFromName.AcquisitionDate);
 		excludeFromGeneralPerFrameProcessingTags.add(TagFromName.AcquisitionTime);
 	}
+
+	private static java.text.NumberFormat scientificFormatter = new java.text.DecimalFormat("0.###E0");		// want 3 digit precision only to allow floating point jitter, e.g., in ImageOrientationPatient
+	
+	private String getDelimitedStringValuesAllowingForFloatingPointJitter(Attribute a) {
+		String s = "";
+		if (a == null || a.getVM() == 0) {
+		}
+		else if (a instanceof DecimalStringAttribute || a instanceof FloatSingleAttribute || a instanceof FloatDoubleAttribute) {
+			StringBuffer buf =  new StringBuffer();
+			String prefix = "";
+			try {
+				double[] vs = a.getDoubleValues();
+				for (double v : vs) {
+					buf.append(prefix);
+					buf.append(scientificFormatter.format(v));
+					prefix = "\\";
+				}
+			}
+			catch (DicomException e) {		// folow same pattern as Attribute.getDelimitedStringValuesOrEmptyString() and ignore exceptions
+			}
+			s = buf.toString();
+		}
+		else {
+			s = a.getDelimitedStringValuesOrEmptyString();
+		}
+		return s;
+	}
+	
+	private String getDelimitedStringValuesAllowingForFloatingPointJitter(AttributeList list,AttributeTag tag) {
+		return getDelimitedStringValuesAllowingForFloatingPointJitter(list.get(tag));
+	}
+	
+	private boolean equalsAllowingForFloatingPointJitter(AttributeList list1,AttributeList list2) {
+//System.err.println("FrameSet.equalsAllowingForFloatingPointJitter():");
+		if (list1.size() == list2.size()) {
+			Iterator<Attribute> i = list1.values().iterator();
+			while (i.hasNext()) {
+				Attribute a1 = i.next();
+				Attribute a2 = list2.get(a1.getTag());
+				// ideally would have Attribute.equals() available to us, but don't at this time :(
+				String a1s = getDelimitedStringValuesAllowingForFloatingPointJitter(a1).trim();		// otherwise trailing spaces may cause mismatch, e.g., padded "DCM " versus unpadded "DCM"
+				String a2s = getDelimitedStringValuesAllowingForFloatingPointJitter(a2).trim();
+//System.err.println("FrameSet.equalsAllowingForFloatingPointJitter(): comparing trimmed string "+as);
+//System.err.println("FrameSet.equalsAllowingForFloatingPointJitter():      with trimmed string "+oas);
+				if (!a1s.equals(a2s)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		else {
+//System.err.println("FrameSet.equalsAllowingForFloatingPointJitter(): different sizes");
+			return false;
+		}
+	}
 	
 	/**
 	 * <p>Extract the attributes and values that are required to be common to all members of this {@link com.pixelmed.dicom.FrameSet FrameSet}s
-	 * and for which different values will create distinct {@link com.pixelmed.dicom.FrameSet FrameSet}ss.</p>
+	 * and for which different values will create distinct {@link com.pixelmed.dicom.FrameSet FrameSet}s.</p>
 	 *
-	 * @param	list	a lists of DICOM attributes
-	 * @return		a Map<AttributeTag,String> of the attributes and values required to be the same for membership in this {@link com.pixelmed.dicom.FrameSet FrameSet}s
+	 * @param	list	a list of DICOM attributes
+	 * @return			a list of the attributes with values required to be the same for membership in this {@link com.pixelmed.dicom.FrameSet FrameSet}s
 	 */
-	private Map<AttributeTag,String> extractDistinguishingAttributes(AttributeList list) {
-		Map<AttributeTag,String> map = new TreeMap<AttributeTag,String>();	// want to keep sorted for output as toString()		
+	private AttributeList extractDistinguishingAttributes(AttributeList list) {
+		AttributeList distinguishingAttributes = new AttributeList();
 		for (AttributeTag tag : distinguishingAttributeTags) {
-			map.put(tag,Attribute.getDelimitedStringValuesOrEmptyString(list,tag));
-			if (mapOfUsedAttributeTagsToDictionaryKeywords.get(tag) == null) {
-				mapOfUsedAttributeTagsToDictionaryKeywords.put(tag,list.getDictionary().getNameFromTag(tag));
+			Attribute a = list.get(tag);
+			if (a == null) {
+				try {
+					a = AttributeFactory.newAttribute(tag);
+				}
+				catch (DicomException e) {
+					slf4jlogger.error("Internal Error: Could not create Distinguishing Attribute for tag {} - ignoring it",tag,e);
+				}
+			}
+			if (a != null) {
+				distinguishingAttributes.put(a);
 			}
 		}
-		return map;
+		return distinguishingAttributes;
 	}
 	
 	/**
 	 * <p>Extract the attributes and values that are potentially different for all members of this {@link com.pixelmed.dicom.FrameSet FrameSet}s.</p>
 	 *
-	 * @param	list	a lists of DICOM attributes
-	 * @return		a Map<AttributeTag,String> of the attributes and values that are potentially different for each member of this {@link com.pixelmed.dicom.FrameSet FrameSet}s
+	 * @param	list	a list of DICOM attributes
+	 * @return			a list of the attributes with values that are potentially different for each member of this {@link com.pixelmed.dicom.FrameSet FrameSet}s
 	 */
-	private Map<AttributeTag,String> extractPerFrameAttributes(AttributeList list) {
-		Map<AttributeTag,String> map = new TreeMap<AttributeTag,String>();	// want to keep sorted for output as toString()
+	private AttributeList extractPerFrameAttributes(AttributeList list) {
+		AttributeList perFrameAttributes = new AttributeList();
 		
-		DicomDictionary dictionary = list.getDictionary();
 		for (AttributeTag tag : list.keySet()) {
 			if (! tag.isPrivate() && ! tag.isRepeatingGroup() && ! tag.isFileMetaInformationGroup() && ! tag.isGroupLength() && ! excludeFromGeneralPerFrameProcessingTags.contains(tag)) {
 				Attribute a = list.get(tag);
-				if (! (a instanceof SequenceAttribute)) {
-					String value = a.getDelimitedStringValuesOrEmptyString();
-					map.put(tag,value);
+				{
+					perFrameAttributes.put(a);
 					if (!tag.equals(TagFromName.SOPInstanceUID)) {
-						addToSharedAttributesIfEqualValues(tag,value);
+						addToSharedAttributesIfEqualValuesAndNotPreviouslyFoundToBeUnequal(a);
 					}
 					// if there was only one frame in the FrameSet, SOPInstanceUID would become shared, but need to leave SOPInstanceUID in per-frame group else sorting does not work
-					if (mapOfUsedAttributeTagsToDictionaryKeywords.get(tag) == null) {
-						mapOfUsedAttributeTagsToDictionaryKeywords.put(tag,list.getDictionary().getNameFromTag(tag));
-					}
 				}
 			}
 		}
@@ -156,56 +222,69 @@ public class FrameSet {
 									   // do NOT try to guess and add time zone ... not needed here if same for all frames
 			}
 		}
-		map.put(TagFromName.AcquisitionDateTime,useAcquisitionDateTime);
-		addToSharedAttributesIfEqualValues(TagFromName.AcquisitionDateTime,useAcquisitionDateTime);
-		if (mapOfUsedAttributeTagsToDictionaryKeywords.get(TagFromName.AcquisitionDateTime) == null) {
-			mapOfUsedAttributeTagsToDictionaryKeywords.put(TagFromName.AcquisitionDateTime,list.getDictionary().getNameFromTag(TagFromName.AcquisitionDateTime));
+		try {
+			Attribute aAcquisitionDateTime = new DateTimeAttribute(TagFromName.AcquisitionDateTime);
+			aAcquisitionDateTime.addValue(useAcquisitionDateTime);
+			perFrameAttributes.put(aAcquisitionDateTime);				// even if empty, still add it
+			addToSharedAttributesIfEqualValuesAndNotPreviouslyFoundToBeUnequal(aAcquisitionDateTime);
+		}
+		catch (DicomException e) {
+			slf4jlogger.error("Could not create AcquisitionDateTime - not added",e);
 		}
 
-		return map;
+		return perFrameAttributes;
 	}
 	
-	private void addToSharedAttributesIfEqualValues(AttributeTag tag,String value) {
-		String sharedValue = sharedAttributes.get(tag);
-		if (sharedValue == null) {
-			// may be first frame, which is OK, or may not have been in previous frames, which will be detected and remove later when checking frame counts
-			sharedAttributes.put(tag,value);
-			sharedAttributesFrameCount.put(tag,new Integer(1));
+	private void addToSharedAttributesIfEqualValuesAndNotPreviouslyFoundToBeUnequal(Attribute a) {
+		AttributeTag tag = a.getTag();
+		Attribute sharedAttribute = sharedAttributes.get(tag);
+		if (sharedAttribute == null) {
+			if (!alreadyRemovedFromSharedAttributesBecausePreviouslyFoundToBeUnequal.contains(tag)) {
+				// may be first frame, which is OK, or may not have been in previous frames, which will be detected and remove later when checking frame counts
+				sharedAttributes.put(a);
+				sharedAttributesFrameCount.put(tag,new Integer(1));
+			}
+			// else ignore it, regardless of value
 		}
 		else {
+			String sharedValue = getDelimitedStringValuesAllowingForFloatingPointJitter(sharedAttribute);
+			String value = getDelimitedStringValuesAllowingForFloatingPointJitter(a);
 			if (sharedValue.equals(value)) {
 				sharedAttributesFrameCount.put(tag,new Integer(sharedAttributesFrameCount.get(tag).intValue()+1));	// need to check later that was present for every frame
 			}
 			else {
 				sharedAttributes.remove(tag);
+				alreadyRemovedFromSharedAttributesBecausePreviouslyFoundToBeUnequal.add(tag);
 			}
 		}
 	}
 	
 	private void removeSharedAttributesThatAreNotInEveryFrame() {
-		Iterator<AttributeTag> i = sharedAttributes.keySet().iterator();
-		while (i.hasNext()) {
-			AttributeTag tag = i.next();
+		// standard pattern using Iterator.remove() to avoid ConcurrentModificationException
+		Iterator<Map.Entry<AttributeTag,Attribute>> it = sharedAttributes.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<AttributeTag,Attribute> entry = it.next();
+			AttributeTag tag = entry.getKey();
 			int count = sharedAttributesFrameCount.get(tag).intValue();
 			if (count < numberOfFrames) {
 //System.err.println("FrameSet.removeSharedAttributesThatAreNotInEveryFrame(): removing "+tag+" since only present in "+count+" frames");
-				i.remove();
+				it.remove();
 			}
 		}
 	}
 	
 	private void removeSharedAttributesFromPerFrameAttributes() {
 		for (AttributeTag tag : sharedAttributes.keySet()) {
-			for (Map<AttributeTag,String> map : perFrameAttributesIndexedBySOPInstanceUID.values()) {
-				map.remove(tag);
+			for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {
+				perFrameAttributes.remove(tag);
 			}
 		}
 	}
 	
 	private void extractPerFrameAttributesPresentInAnyFrame() {
-		perFrameAttributesPresentInAnyFrame = new TreeSet<AttributeTag>();	// want to keep sorted for output as toString()
-		for (Map<AttributeTag,String> frameEntry : perFrameAttributesIndexedBySOPInstanceUID.values()) {	// traversal order doesn't matter
-			perFrameAttributesPresentInAnyFrame.addAll(getAttributeTagsInMapWithValues(frameEntry));		// only add them IF THEY HAVE VALUES to match distinguished and shared behavior
+		perFrameAttributesPresentInAnyFrame = new TreeSet<AttributeTag>();												// want to keep sorted for output as toString()
+		for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {					// traversal order doesn't matter
+			perFrameAttributesPresentInAnyFrame.addAll(getAttributeTagsInAttributeListWithValues(perFrameAttributes));	// only add them IF THEY HAVE VALUES to match distinguished and shared behavior
 		}
 	}
 	
@@ -238,28 +317,28 @@ public class FrameSet {
 			return sopInstanceUID.hashCode();
 		}
 		
-		FrameSortKey(Map<AttributeTag,String> map) {
-			sopInstanceUID = map.get(TagFromName.SOPInstanceUID);
+		FrameSortKey(AttributeList list) {
+			sopInstanceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPInstanceUID);
 			
 			seriesNumber = -1;
-			String seriesNumberAsString = map.get(TagFromName.SeriesNumber);
-			if (seriesNumberAsString != null) {
+			String seriesNumberAsString = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SeriesNumber);
+			if (seriesNumberAsString.length() > 0) {
 				try {
 					seriesNumber = Integer.parseInt(seriesNumberAsString);
 				}
 				catch (NumberFormatException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Could not parse SeriesNumber as integer {}",seriesNumberAsString,e);
 				}
 			}
 			
 			instanceNumber = -1;
-			String instanceNumberAsString = map.get(TagFromName.InstanceNumber);
-			if (instanceNumberAsString != null) {
+			String instanceNumberAsString = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.InstanceNumber);
+			if (instanceNumberAsString.length() > 0) {
 				try {
 					instanceNumber = Integer.parseInt(instanceNumberAsString);
 				}
 				catch (NumberFormatException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Could not parse InstanceNumber as integer {}",instanceNumberAsString,e);
 				}
 			}
 		}
@@ -267,8 +346,8 @@ public class FrameSet {
 	
 	private void extractFrameSortOrderFromPerFrameAttributes() {
 		SortedSet<FrameSortKey> frameSortOrder = new TreeSet<FrameSortKey>();
-		for (Map<AttributeTag,String> map : perFrameAttributesIndexedBySOPInstanceUID.values()) {
-			frameSortOrder.add(new FrameSortKey(map));
+		for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {
+			frameSortOrder.add(new FrameSortKey(perFrameAttributes));
 		}
 
 		sopInstanceUIDsSortedByFrameOrder = new ArrayList(frameSortOrder.size());
@@ -296,12 +375,12 @@ public class FrameSet {
 	/**
 	 * <p>Check to see if a single frame object is a potential member of the current {@link com.pixelmed.dicom.FrameSet FrameSet}s.</p>
 	 *
-	 * @param	list	a lists of DICOM attributes for the object to be checked
+	 * @param	list	a list of DICOM attributes for the object to be checked
 	 * @return			true if the attribute list matches the criteria for membership in this {@link com.pixelmed.dicom.FrameSet FrameSet}s
 	 */
 	boolean eligible(AttributeList list) {
-		Map<AttributeTag,String> tryMap = extractDistinguishingAttributes(list);
-		boolean isEligible =  tryMap.equals(distinguishingAttributes);
+		AttributeList tryList = extractDistinguishingAttributes(list);
+		boolean isEligible = equalsAllowingForFloatingPointJitter(distinguishingAttributes,tryList);
 //System.err.println("FrameSet.eligible(): "+isEligible);
 		return isEligible;
 	}
@@ -311,14 +390,14 @@ public class FrameSet {
 	 *
 	 * <p>It is assumed that the object has already been determined to be eligible.</p>
 	 *
-	 * @param		list			a lists of DICOM attributes for the object to be inserted
-	 * @exception	DicomException	if no SOP Instance UID
+	 * @param		list			a list of DICOM attributes for the object to be inserted
+	 * @throws	DicomException	if no SOP Instance UID
 	 */
 	void insert(AttributeList list) throws DicomException {
 		++numberOfFrames;
 		String sopInstanceUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPInstanceUID);
 		if (sopInstanceUID.length() > 0) {
-			Map<AttributeTag,String> perFrameAttributesForThisInstance = extractPerFrameAttributes(list);
+			AttributeList perFrameAttributesForThisInstance = extractPerFrameAttributes(list);
 			perFrameAttributesIndexedBySOPInstanceUID.put(sopInstanceUID,perFrameAttributesForThisInstance);
 		}
 		else {
@@ -330,15 +409,16 @@ public class FrameSet {
 	/**
 	 * <p>Create a new {@link com.pixelmed.dicom.FrameSet FrameSet} using the single frame object.</p>
 	 *
-	 * @param		list			a lists of DICOM attributes for the object from which the {@link com.pixelmed.dicom.FrameSet FrameSet} is to be created
-	 * @exception	DicomException	if no SOP Instance UID
+	 * @param		list			a list of DICOM attributes for the object from which the {@link com.pixelmed.dicom.FrameSet FrameSet} is to be created
+	 * @throws	DicomException	if no SOP Instance UID
 	 */
 	FrameSet(AttributeList list) throws DicomException {
 		distinguishingAttributes = extractDistinguishingAttributes(list);
-		perFrameAttributesIndexedBySOPInstanceUID = new TreeMap<String,Map<AttributeTag,String>>();
+		perFrameAttributesIndexedBySOPInstanceUID = new TreeMap<String,AttributeList>();
 		perFrameAttributesPresentInAnyFrame = null;
-		sharedAttributes = new TreeMap<AttributeTag,String>();				// want to keep sorted for output as toString()
+		sharedAttributes = new AttributeList();				// want to keep sorted for output as toString()
 		sharedAttributesFrameCount = new HashMap<AttributeTag,Integer>();	// count is used to (later) clean up tags that are not in every frame
+		alreadyRemovedFromSharedAttributesBecausePreviouslyFoundToBeUnequal = new HashSet<AttributeTag>();
 		sopInstanceUIDsSortedByFrameOrder = null;
 		numberOfFrames = 0;
 		insert(list);
@@ -355,17 +435,16 @@ public class FrameSet {
 	}
 	
 	/**
-	 * <p>Given a map of tags to values or empty strings, return only those with values.</p>
+	 * <p>Given a list of DICOM attributes, return only those with values or one or more sequence items.</p>
 	 *
-	 * @param	map		a {@link java.util.Map Map} of {@link com.pixelmed.dicom.AttributeTag AttributeTag}s to {@link java.util.String String}s
+	 * @param	list	a list of DICOM attributes
 	 * @return			a new {@link java.util.Set Set} of {@link com.pixelmed.dicom.AttributeTag AttributeTag}s
 	 */
-	static public Set<AttributeTag> getAttributeTagsInMapWithValues(Map<AttributeTag,String> map) {
+	static public Set<AttributeTag> getAttributeTagsInAttributeListWithValues(AttributeList list) {
 		Set<AttributeTag> tagsWithValues = new TreeSet<AttributeTag>();
-		for (AttributeTag tag : map.keySet()) {
-			String value = map.get(tag);
-			if (value != null && value.length() > 0) {
-				tagsWithValues.add(tag);
+		for (Attribute a : list.values()) {
+			if (a.getVM() > 0 || (a instanceof SequenceAttribute && ((SequenceAttribute)a).getNumberOfItems() > 0)) {
+				tagsWithValues.add(a.getTag());
 			}
 		}
 		return tagsWithValues;
@@ -378,7 +457,7 @@ public class FrameSet {
 	 */
 	public Set<AttributeTag> getDistinguishingAttributeTags() {
 		partitionPerFrameIntoSharedAttributes();
-		return getAttributeTagsInMapWithValues(distinguishingAttributes);
+		return getAttributeTagsInAttributeListWithValues(distinguishingAttributes);
 	}
 	
 	/**
@@ -388,7 +467,7 @@ public class FrameSet {
 	 */
 	public Set<AttributeTag> getSharedAttributeTags() {
 		partitionPerFrameIntoSharedAttributes();
-		return getAttributeTagsInMapWithValues(sharedAttributes);
+		return getAttributeTagsInAttributeListWithValues(sharedAttributes);
 	}
 	
 	/**
@@ -414,23 +493,6 @@ public class FrameSet {
 	}
 
 	/**
-	 * <p>Return a String representing a Map.Entry's value.</p>
-	 *
-	 * @param	entry	a key-value pair from a Map
-	 * @return	a string representation of the value of this object
-	 */
-	private String toString(Map.Entry<AttributeTag,String> entry) {
-		StringBuffer strbuf = new StringBuffer();
-		AttributeTag tag = entry.getKey();
-		strbuf.append(tag.toString());
-		strbuf.append(" ");
-		strbuf.append(mapOfUsedAttributeTagsToDictionaryKeywords.get(tag));
-		strbuf.append(" = ");
-		strbuf.append(entry.getValue());
-		return strbuf.toString();
-	}
-	
-	/**
 	 * <p>Return a String representing this object's value.</p>
 	 *
 	 * @return	a string representation of the value of this object
@@ -443,19 +505,17 @@ public class FrameSet {
 		strbuf.append("\n");
 		if (distinguishingAttributes != null) {
 			strbuf.append("\tDistinguishing:\n");
-			Set<Map.Entry<AttributeTag,String>> set = distinguishingAttributes.entrySet();
-			for (Map.Entry<AttributeTag,String> entry : set) {
+			for (AttributeTag tag : distinguishingAttributes.keySet()) {
 				strbuf.append("\t\t");
-				strbuf.append(toString(entry));
+				strbuf.append(distinguishingAttributes.get(tag).toString(AttributeList.getDictionary()));
 				strbuf.append("\n");
 			}
 		}
 		strbuf.append("\tShared:\n");
 		if (sharedAttributes != null) {
-			Set<Map.Entry<AttributeTag,String>> set = sharedAttributes.entrySet();
-			for (Map.Entry<AttributeTag,String> entry : set) {
+			for (AttributeTag tag : sharedAttributes.keySet()) {
 				strbuf.append("\t\t\t");
-				strbuf.append(toString(entry));
+				strbuf.append(sharedAttributes.get(tag).toString(AttributeList.getDictionary()));
 				strbuf.append("\n");
 			}
 		}
@@ -474,18 +534,17 @@ public class FrameSet {
 		if (perFrameAttributesIndexedBySOPInstanceUID != null) {
 			int j = 0;
 			for (String sopInstanceUID : sopInstanceUIDsSortedByFrameOrder) {
-			//for (Map<AttributeTag,String> map : perFrameAttributesIndexedBySOPInstanceUID.values()) {
+			//for (AttributeList map : perFrameAttributesIndexedBySOPInstanceUID.values()) {
 //System.err.println("FrameSet.toString(): sopInstanceUID = "+sopInstanceUID);
 				if (sopInstanceUID != null) {
-					Map<AttributeTag,String> map = perFrameAttributesIndexedBySOPInstanceUID.get(sopInstanceUID);
+					AttributeList perFrameAttributes = perFrameAttributesIndexedBySOPInstanceUID.get(sopInstanceUID);
 					strbuf.append("\tFrame [");
 					strbuf.append(Integer.toString(j));
 					strbuf.append("]:\n");
-					if (map != null) {
-						Set<Map.Entry<AttributeTag,String>> set = map.entrySet();
-						for (Map.Entry<AttributeTag,String> entry : set) {
+					if (perFrameAttributes != null) {
+						for (AttributeTag tag : perFrameAttributes.keySet()) {
 							strbuf.append("\t\t\t");
-							strbuf.append(toString(entry));
+							strbuf.append(perFrameAttributes.get(tag).toString(AttributeList.getDictionary()));
 							strbuf.append("\n");
 						}
 					}

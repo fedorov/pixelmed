@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -13,8 +13,11 @@ import java.io.*;
 import com.pixelmed.dicom.*;
 import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.database.DatabaseTreeBrowser DatabaseTreeBrowser} class implements a Swing graphical user interface
+ * <p>The {@link DatabaseTreeBrowser DatabaseTreeBrowser} class implements a Swing graphical user interface
  * to browse the contents of {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
  *
  * <p>The browser is rendered as a tree view of the entire database and a one row tabular representation of the
@@ -59,8 +62,9 @@ import com.pixelmed.utils.JTreeWithAdditionalKeyStrokeActions;
  * @author	dclunie
  */
 public class DatabaseTreeBrowser {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeBrowser.java,v 1.33 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeBrowser.java,v 1.21 2013/01/26 15:14:10 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DatabaseTreeBrowser.class);
 
 	private JTree tree;
 	private DatabaseTreeModel treeModel;
@@ -73,7 +77,7 @@ public class DatabaseTreeBrowser {
 	 * @param	d				the instance of the database (information model)
 	 * @param	treeBrowserScrollPane		the scrolling pane in which the tree view of the entire model (database) will be rendered
 	 * @param	attributeBrowserScrollPane	the scrolling pane in which the tabular view of the currently selected entity (record) will be rendered
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public DatabaseTreeBrowser(DatabaseInformationModel d,JScrollPane treeBrowserScrollPane,JScrollPane attributeBrowserScrollPane) throws DicomException {
 		databaseInformationModel=d;
@@ -92,7 +96,7 @@ public class DatabaseTreeBrowser {
 	 *
 	 * @param	d				the instance of the database (information model)
 	 * @param	frame				a frame to whose content pane will be added scrolling panes containing tree and tabular selection views
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public DatabaseTreeBrowser(DatabaseInformationModel d,JFrame frame) throws DicomException {
 		this(d,frame.getContentPane());
@@ -103,7 +107,7 @@ public class DatabaseTreeBrowser {
 	 *
 	 * @param	d				the instance of the database (information model)
 	 * @param	content			a container to which will be added scrolling panes containing tree and tabular selection views
-	 * @exception	DicomException			thrown if the information cannot be extracted
+	 * @throws	DicomException			thrown if the information cannot be extracted
 	 */
 	public DatabaseTreeBrowser(DatabaseInformationModel d,Container content) throws DicomException {
 		databaseInformationModel=d;
@@ -244,7 +248,7 @@ public class DatabaseTreeBrowser {
 								table.setColumnWidths();
 								attributeBrowserScrollPane.setViewportView(table);
 							} catch (Exception e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 					}

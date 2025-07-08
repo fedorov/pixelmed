@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -23,7 +23,7 @@ import java.util.Locale;
  */
 public class FloatDoubleAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FloatDoubleAttribute.java,v 1.20 2012/02/01 23:16:13 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FloatDoubleAttribute.java,v 1.32 2025/01/29 10:58:06 dclunie Exp $";
 
 	double[] values;
 
@@ -49,8 +49,8 @@ public class FloatDoubleAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public FloatDoubleAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -63,8 +63,8 @@ public class FloatDoubleAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public FloatDoubleAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -74,14 +74,13 @@ public class FloatDoubleAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException		if an I/O error occurs
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		flushCachedCopies();
 		if (vl%bytesPerValue != 0) {
-			i.skipInsistently(vl);
-			throw new DicomException("incorrect value length ("+vl+" dec) for VR "+getVRAsString()+" - skipping value length bytes to get to next data element");
+			throw new DicomException("incorrect value length ("+vl+" dec) for VR "+getVRAsString()+" - caller will need to skip value length bytes to get to next data element");
 		}
 		else {
 			int vm=(int)(vl/bytesPerValue);
@@ -90,11 +89,6 @@ public class FloatDoubleAttribute extends Attribute {
 		}
 	}
 
-	/**
-	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
-	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		double[] v = getDoubleValues();
@@ -105,7 +99,6 @@ public class FloatDoubleAttribute extends Attribute {
 		}
 	}
 	
-	/***/
 	public String toString(DicomDictionary dictionary) {
 		StringBuffer str = new StringBuffer();
 		str.append(super.toString(dictionary));
@@ -127,10 +120,6 @@ public class FloatDoubleAttribute extends Attribute {
 
 	}
 
-	/**
-	 * @param	format		the format to use for each numerical or decimal value
-	 * @exception	DicomException
-	 */
 	public String[] getStringValues(NumberFormat format) throws DicomException {
 		String sv[] = null;
 		double[] v = getDoubleValues();
@@ -142,17 +131,11 @@ public class FloatDoubleAttribute extends Attribute {
 		}
 		return sv;
 	}
-	/**
-	 * @exception	DicomException
-	 */
+
 	public double[] getDoubleValues() throws DicomException {
 		return values;
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(double v) throws DicomException {
 		flushCachedCopies();
 		values=ArrayCopyUtilities.expandArray(values);
@@ -160,42 +143,22 @@ public class FloatDoubleAttribute extends Attribute {
 		valueLength+=8;
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(float v) throws DicomException {
 		addValue((double)v);
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(short v) throws DicomException {
 		addValue((double)v);
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(int v) throws DicomException {
 		addValue((double)v);
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(long v) throws DicomException {
 		addValue((double)v);
 	}
 
-	/**
-	 * @param	v
-	 * @exception	DicomException
-	 */
 	public void addValue(String v) throws DicomException {
 		flushCachedCopies();
 		double doubleValue = 0;
@@ -208,9 +171,6 @@ public class FloatDoubleAttribute extends Attribute {
 		addValue(doubleValue);
 	}
 
-	/**
-	 * @exception	DicomException
-	 */
 	public void removeValues() {
 		flushCachedCopies();
 		values=null;

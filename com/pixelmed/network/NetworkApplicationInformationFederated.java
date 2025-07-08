@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2009, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -8,14 +8,18 @@ import java.util.ArrayList;
 import java.util.ListIterator; 
 import java.util.Set;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class encapsulates information about DICOM network devices federated from multiple sources.</p>
  *
  * @author	dclunie
  */
 public class NetworkApplicationInformationFederated extends NetworkApplicationInformation {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationInformationFederated.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationInformationFederated.java,v 1.7 2009/12/09 23:57:00 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkApplicationInformationFederated.class);
 	
 	protected static final long RefreshFromSourcesInterval = 10*1000;	// milliseconds
 
@@ -131,15 +135,10 @@ public class NetworkApplicationInformationFederated extends NetworkApplicationIn
 	 * @param	webServerApplicationProperties	the pre-configured web server network properties
 	 */
 	public void startupAllKnownSourcesAndRegister(NetworkApplicationProperties networkApplicationProperties,WebServerApplicationProperties webServerApplicationProperties) {
-		int debugLevel = 0;
-		if (networkApplicationProperties != null) {
-			debugLevel = networkApplicationProperties.getNetworkDynamicConfigurationDebugLevel();
-		}
-//System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): debugLevel = "+debugLevel);
 //System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): try mDNS");
 		NetworkConfigurationFromMulticastDNS networkConfigurationFromMulticastDNS = null;
 		try {
-			networkConfigurationFromMulticastDNS = new NetworkConfigurationFromMulticastDNS(debugLevel);
+			networkConfigurationFromMulticastDNS = new NetworkConfigurationFromMulticastDNS();
 			networkConfigurationFromMulticastDNS.activateDiscovery();
 			addSource(networkConfigurationFromMulticastDNS);
 			if (networkApplicationProperties != null) {
@@ -150,24 +149,20 @@ public class NetworkApplicationInformationFederated extends NetworkApplicationIn
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Ignoring exception", e);
 		}
 //System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): back from mDNS");
-		if (debugLevel > 1) {
-			System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): federatedNetworkApplicationInformation after DNS ...\n"+this);
-		}
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("startupAllKnownSourcesAndRegister(): federatedNetworkApplicationInformation after DNS ...\n{}"+this.toString());
 //System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): try LDAP");
 		try {
-			NetworkConfigurationFromLDAP networkConfigurationFromLDAP = new NetworkConfigurationFromLDAP(debugLevel);
+			NetworkConfigurationFromLDAP networkConfigurationFromLDAP = new NetworkConfigurationFromLDAP();
 			networkConfigurationFromLDAP.activateDiscovery(5*60*1000);
 			addSource(networkConfigurationFromLDAP);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Ignoring exception", e);
 		}
-		if (debugLevel > 1) {
-			System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): federatedNetworkApplicationInformation after LDAP ...\n"+this);
-		}
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): federatedNetworkApplicationInformation after LDAP ...\n{}",this.toString());
 //System.err.println("NetworkApplicationInformationFederated.startupAllKnownSourcesAndRegister(): try properties");
 		if (networkApplicationProperties != null) {
 			try {
@@ -175,7 +170,7 @@ public class NetworkApplicationInformationFederated extends NetworkApplicationIn
 				addSource(networkConfigurationFromProperties);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception", e);
 			}
 		}
 		

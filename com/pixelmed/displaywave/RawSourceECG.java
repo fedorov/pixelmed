@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.displaywave;
 
@@ -15,7 +15,7 @@ import com.pixelmed.dicom.BinaryInputStream;
 public class RawSourceECG extends SourceECG {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/RawSourceECG.java,v 1.4 2004/01/25 03:47:19 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/displaywave/RawSourceECG.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
 
 	/**
 	 * <p>Construct ECG from a raw data an input stream (such as from a file or the network).</p>
@@ -26,7 +26,7 @@ public class RawSourceECG extends SourceECG {
 	 * @param	samplingIntervalInMilliSeconds		the sampling interval (duration of each sample) in milliseconds
 	 * @param	amplitudeScalingFactorInMilliVolts	how many millivolts per unit of sample data (may be different for each channel)
 	 * @param	interleaved				true if the channels are interleaved, false if successive
-	 * @exception	IOException
+	 * @throws	IOException
 	 */
 	public RawSourceECG(BinaryInputStream i,
 				int numberOfChannels,int nSamplesPerChannel,

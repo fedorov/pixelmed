@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -9,8 +9,11 @@ import com.pixelmed.query.RetrieveResponseGeneratorFactory;
 import java.sql.*;
 import java.util.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel} class is an abstract class that contains the core
+ * <p>The {@link DatabaseInformationModel DatabaseInformationModel} class is an abstract class that contains the core
  * functionality for storing, accessing and maintaining a persistent representation of selected attributes of composite
  * objects.</p>
  *
@@ -58,9 +61,9 @@ import java.util.*;
  * @author	dclunie
  */
 public abstract class DatabaseInformationModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseInformationModel.java,v 1.87 2025/01/29 10:58:06 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseInformationModel.java,v 1.70 2013/03/16 16:47:50 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DatabaseInformationModel.class);
 
 	public static final String FILE_COPIED = "C";
 	public static final String FILE_REFERENCED = "R";
@@ -151,7 +154,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	databaseFileName		the file name of the underlying SQL database instance to be used
 	 * @param	rootInformationEntity	the top entity of the information model; specific to a particular model's constructor
 	 * @param	dictionary				used to decide which attributes to include for each entity when creating the tables
-	 * @exception	DicomException		thrown if a connection to the database cannot be established
+	 * @throws	DicomException		thrown if a connection to the database cannot be established
 	 */
 	public DatabaseInformationModel(String databaseFileName,InformationEntity rootInformationEntity,DicomDictionary dictionary) throws DicomException {
 		doCommonConstructorStuff(databaseFileName,null,rootInformationEntity,dictionary,defaultDatabaseRootName);
@@ -167,7 +170,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	rootInformationEntity	the top entity of the information model; specific to a particular model's constructor
 	 * @param	dictionary				used to decide which attributes to include for each entity when creating the tables
 	 * @param	databaseRootName		the name used for the root node of the database in TreeModel
-	 * @exception	DicomException		thrown if a connection to the database cannot be established
+	 * @throws	DicomException		thrown if a connection to the database cannot be established
 	 */
 	public DatabaseInformationModel(String databaseFileName,InformationEntity rootInformationEntity,DicomDictionary dictionary,String databaseRootName) throws DicomException {
 		doCommonConstructorStuff(databaseFileName,null,rootInformationEntity,dictionary,databaseRootName);
@@ -183,7 +186,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	databaseServerName		the name to use for external TCP access to database (such a server will not be started if this value is null or zero length)
 	 * @param	rootInformationEntity	the top entity of the information model; specific to a particular model's constructor
 	 * @param	dictionary				used to decide which attributes to include for each entity when creating the tables
-	 * @exception	DicomException		thrown if a connection to the database cannot be established
+	 * @throws	DicomException		thrown if a connection to the database cannot be established
 	 */
 	public DatabaseInformationModel(String databaseFileName,String databaseServerName,InformationEntity rootInformationEntity,DicomDictionary dictionary) throws DicomException {
 		doCommonConstructorStuff(databaseFileName,databaseServerName,rootInformationEntity,dictionary,defaultDatabaseRootName);
@@ -200,7 +203,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	rootInformationEntity	the top entity of the information model; specific to a particular model's constructor
 	 * @param	dictionary				used to decide which attributes to include for each entity when creating the tables
 	 * @param	databaseRootName		the name used for the root node of the database in TreeModel
-	 * @exception	DicomException		thrown if a connection to the database cannot be established
+	 * @throws	DicomException		thrown if a connection to the database cannot be established
 	 */
 	public DatabaseInformationModel(String databaseFileName,String databaseServerName,InformationEntity rootInformationEntity,DicomDictionary dictionary,String databaseRootName) throws DicomException {
 		doCommonConstructorStuff(databaseFileName,databaseServerName,rootInformationEntity,dictionary,databaseRootName);
@@ -217,20 +220,20 @@ public abstract class DatabaseInformationModel {
 	 * @param	rootInformationEntity	the top entity of the information model; specific to a particular model's constructor
 	 * @param	dictionary				used to decide which attributes to include for each entity when creating the tables
 	 * @param	databaseRootName		the name used for the root node of the database in TreeModel
-	 * @exception	DicomException		thrown if a connection to the database cannot be established
+	 * @throws	DicomException		thrown if a connection to the database cannot be established
 	 */
 	protected void doCommonConstructorStuff(String databaseFileName,String databaseServerName,InformationEntity rootInformationEntity,DicomDictionary dictionary,String databaseRootName) throws DicomException {
-//System.err.println("DatabaseInformationModel.doCommonConstructorStuff(): databaseFileName = "+databaseFileName);
+		slf4jlogger.debug("DatabaseInformationModel.doCommonConstructorStuff(): databaseFileName = {}",databaseFileName);
 		this.databaseRootName=databaseRootName;
 		this.rootInformationEntity=rootInformationEntity;
 		this.dictionary=dictionary;
 		if (this.dictionary == null) {
-//System.err.println("DatabaseInformationModel.doCommonConstructorStuff(): no dictionary supplied so using default");
-			this.dictionary = new DicomDictionary();
+			slf4jlogger.debug("DatabaseInformationModel.doCommonConstructorStuff(): no dictionary supplied so using default");
+			this.dictionary = DicomDictionary.StandardDictionary;
 		}
-//		else {
-//System.err.println("DatabaseInformationModel.doCommonConstructorStuff(): dictionary class = "+dictionary.getClass());
-//		}
+		else {
+			slf4jlogger.debug("DatabaseInformationModel.doCommonConstructorStuff(): dictionary class = {}",dictionary.getClass());
+		}
 		listsOfAttributesByInformationEntity = new HashMap(6);
 		additionalIndexMapOfColumnsToTables = new HashMap();
 		makeLocalColumnExcludeList();
@@ -243,12 +246,12 @@ public abstract class DatabaseInformationModel {
 			properties.put("sql.enforce_size","FALSE");				// default is true with 2.x
 			properties.put("sql.enforce_strict_size","FALSE");		// default is true with 2.x
 			databaseConnection=DriverManager.getConnection("jdbc:hsqldb:"+databaseFileName,properties);
-//System.err.println("DatabaseInformationModel(): first call to primeListsOfAttributesByInformationEntityFromExistingMetaData() to see if tables exist");
+			slf4jlogger.debug("DatabaseInformationModel(): first call to primeListsOfAttributesByInformationEntityFromExistingMetaData() to see if tables exist");
 			primeListsOfAttributesByInformationEntityFromExistingMetaData();
 			if (listsOfAttributesByInformationEntity.size() == 0) {
-//System.err.println("DatabaseInformationModel(): our tables do not exist, create them");
+				slf4jlogger.debug("DatabaseInformationModel(): our tables do not exist, create them");
 				createTables();
-//System.err.println("DatabaseInformationModel(): second call to primeListsOfAttributesByInformationEntityFromExistingMetaData() now that we have added our tables");
+				slf4jlogger.debug("DatabaseInformationModel(): second call to primeListsOfAttributesByInformationEntityFromExistingMetaData() now that we have added our tables");
 				primeListsOfAttributesByInformationEntityFromExistingMetaData();
 			}
 			createDescriptiveNameMap();
@@ -257,7 +260,7 @@ public abstract class DatabaseInformationModel {
 			throw new DicomException("Cannot connect to database: "+e);
 		}
 		if (databaseServerName != null && databaseServerName.trim().length() > 0) {
-//System.err.println("DatabaseInformationModel.doCommonConstructorStuff(): attempting to start external database server named = "+databaseServerName);
+			slf4jlogger.debug("DatabaseInformationModel.doCommonConstructorStuff(): attempting to start external database server named = {}",databaseServerName);
 			try {
 				String serverProperties="database.0="+databaseFileName+";dbname.0="+databaseServerName;
 				externalServerInstance = new org.hsqldb.Server();
@@ -282,36 +285,41 @@ public abstract class DatabaseInformationModel {
 	 */
 	public void close() {
 		if (externalServerInstance != null) {
-//System.err.println("DatabaseInformationModel.close(): externalServerInstance shutdown start");
+			slf4jlogger.debug("DatabaseInformationModel.close(): externalServerInstance shutdown start");
 			externalServerInstance.shutdown();
-//System.err.println("DatabaseInformationModel.close(): externalServerInstance shutdown finished");
+			slf4jlogger.debug("DatabaseInformationModel.close(): externalServerInstance shutdown finished");
 			externalServerInstance = null;
 		}
 		if (databaseConnection != null) {
-//System.err.println("DatabaseInformationModel.close(): shutdown compact start");
+			slf4jlogger.debug("DatabaseInformationModel.close(): shutdown compact start");
 			try {
 				Statement s = databaseConnection.createStatement();
 				s.execute("SHUTDOWN COMPACT;");	// no ResultSet expected
 				s.close();
 			} catch (SQLException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception during database shutdown compact: ",e.toString());
 			}
-//System.err.println("DatabaseInformationModel.close(): shutdown compact finished");
+			slf4jlogger.debug("DatabaseInformationModel.close(): shutdown compact finished");
 			try {
 				databaseConnection.close();
 			}
 			catch (SQLException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception during database close: ",e.toString());
 			}
 			databaseConnection=null;
 		}
 	}
 
 	/***/
+	//public boolean isClosed() {
+	//	return databaseConnection == null;
+	//}
+
+	/***/
 	protected void finalize() {
 		close();
 	}
-	
+
 	/***/
 	Statement createStatement() throws java.sql.SQLException {
 		return databaseConnection.createStatement();
@@ -360,7 +368,7 @@ public abstract class DatabaseInformationModel {
 	Map getDescriptiveNameMap() { return descriptiveNameMap; }
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void createDescriptiveNameMap() throws DicomException {
 		descriptiveNameMap = new HashMap();
@@ -434,7 +442,7 @@ public abstract class DatabaseInformationModel {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void createTables() throws DicomException {
 		InformationEntity ie = rootInformationEntity;
@@ -448,7 +456,7 @@ public abstract class DatabaseInformationModel {
 	/**
 	 * @param	ie
 	 * @param	withParentReference
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void createTable(InformationEntity ie,boolean withParentReference) throws DicomException {
 		String tableName = getTableNameForInformationEntity(ie);
@@ -500,7 +508,7 @@ public abstract class DatabaseInformationModel {
 	 * <p>Called after creating tables and default indexes.</p>
 	 */
 	protected void createAdditionalIndexes() throws DicomException {
-//System.err.println("DatabaseInformationModel.createAdditionalIndexes():");
+		slf4jlogger.debug("DatabaseInformationModel.createAdditionalIndexes():");
 		if (additionalIndexMapOfColumnsToTables != null) {
 			Iterator i = additionalIndexMapOfColumnsToTables.keySet().iterator();
 			while (i.hasNext()) {
@@ -533,6 +541,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	ie
 	 */
 	private void extendCreateStatementStringWithMandatoryColumns(StringBuffer b,boolean withParentReference,InformationEntity ie) {
+		slf4jlogger.debug("extendCreateStatementStringWithMandatoryColumns(): for ie {}",ie.toString());
 		b.append(localPrimaryKeyColumnName);
 		b.append(" VARCHAR");
 		b.append(" PRIMARY KEY");
@@ -559,16 +568,19 @@ public abstract class DatabaseInformationModel {
 	 * @param	ie
 	 */
 	private void extendCreateStatementStringWithAttributesInDicomDictionary(StringBuffer b,InformationEntity ie) {
+		slf4jlogger.debug("extendCreateStatementStringWithAttributesInDicomDictionary(): for ie {}",ie.toString());
+		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("extendCreateStatementStringWithAttributesInDicomDictionary(): for dictionary is {}",dictionary.getClass());
 		Iterator i = dictionary.getTagIterator();
 		while (i.hasNext()) {
 			AttributeTag tag = (AttributeTag)i.next();
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("extendCreateStatementStringWithAttributesInDicomDictionary(): tag = ",tag.toString());
 			if (ie == dictionary.getInformationEntityFromTag(tag)) {
 				String tableName = getTableNameForInformationEntity(ie);
 				String columnName = getDatabaseColumnNameFromDicomTag(tag);
 				byte[] vr = dictionary.getValueRepresentationFromTag(tag);
 				String columnType = getSQLTypeFromDicomValueRepresentation(vr);
 				if (columnName != null && columnType != null) {
-//System.err.println(columnName+" = "+tableName+" "+columnType+" "+isAttributeUsedInTable(tableName,columnName));
+					slf4jlogger.debug("extendCreateStatementStringWithAttributesInDicomDictionary(): {} = {} {} {}",columnName,tableName,columnType,isAttributeUsedInTable(tableName,columnName));
 					b.append(", ");
 					b.append(columnName);
 					b.append(" ");
@@ -586,7 +598,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	columnName
 	 */
 	private void extendCreateStatementStringWithPersonNameSearchColumns(StringBuffer b,String columnName,String tableName) {
-//System.err.println("extendCreateStatementStringWithPersonNameSearchColumns(): columnName = "+columnName+" tableName = "+tableName);
+		slf4jlogger.debug("extendCreateStatementStringWithPersonNameSearchColumns(): columnName = {} tableName = {}",columnName,tableName);
 		{
 			String newColumnName = personNameCanonicalColumnNamePrefix + columnName + personNameCanonicalColumnNameSuffix;
 			b.append(", ");
@@ -612,7 +624,7 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when creating the tables for a new database.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.
 	 * Defaults to adding no extra columns if not overridden (i.e. it is not abstract).</p>
 	 *
 	 * <p> For example, there may be a DICOM attribute that is defined to be in a particular information
@@ -634,7 +646,7 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when creating the tables for a new database.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.
 	 * Defaults to adding no extra columns if not overridden (i.e. it is not abstract).</p>
 	 *
 	 * <p> For example, there may be dates and times derived from DICOM attributes.</p>
@@ -649,7 +661,7 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when creating the tables for a new database.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.
 	 * Defaults to adding four extra columns for each table if not overridden (i.e. it is not abstract).</p>
 	 *
 	 * @param	b		the statement being constructed
@@ -664,7 +676,7 @@ public abstract class DatabaseInformationModel {
 
 	/**
 	 * @param	list
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	private void extendTablesAsNecessary(AttributeList list) throws DicomException {		// doesn't work with Hypersonic ... ALTER command not supported :(
 		DicomDictionary dictionary = list.getDictionary();
@@ -678,7 +690,7 @@ public abstract class DatabaseInformationModel {
 				String columnName = getDatabaseColumnNameFromDicomTag(tag);
 				String columnType = getSQLTypeFromDicomValueRepresentation(a.getVR());	// use actual, not dictionary VR, in case was explicit
 				if (columnName != null && columnType != null && !isAttributeUsedInTable(tableName,columnName)) {
-//System.err.println(a.toString()+" "+columnName+" = "+tableName+" "+columnType+" "+isAttributeUsedInTable(tableName,columnName));
+					slf4jlogger.debug("{} {} = {} {} ",a.toString(),columnName,tableName,columnType,isAttributeUsedInTable(tableName,columnName));
 					try {
 						Statement s = databaseConnection.createStatement();
 						s.execute("ALTER TABLE " + tableName
@@ -695,7 +707,7 @@ public abstract class DatabaseInformationModel {
 	}
 
 	/**
-	 * @deprecated use  {@link #deleteRecord(InformationEntity,String) deleteRecord(InformationEntity,String)} instead
+	 * @deprecated use  {@link com.pixelmed.database.DatabaseInformationModel#deleteRecord(InformationEntity,String) deleteRecord(InformationEntity,String)} instead
 	 */
 	public void deleteSelectedRecord(InformationEntity ie,String localPrimaryKeyValue) throws DicomException {
 		deleteRecord(ie,localPrimaryKeyValue);
@@ -712,15 +724,15 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * @param	ie						the {@link com.pixelmed.dicom.InformationEntity InformationEntity} that corresponds to the table containing the record to be deleted
 	 * @param	localPrimaryKeyValue	primary key of the record
-	 * @exception	DicomException	thrown if there are problems executing the database statement
+	 * @throws	DicomException	thrown if there are problems executing the database statement
 	 */
 	public void deleteRecord(InformationEntity ie,String localPrimaryKeyValue) throws DicomException {
-//System.err.println("DatabaseInformationModel.deleteRecord(): ie = "+ie);
-//System.err.println("DatabaseInformationModel.deleteRecord(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+		slf4jlogger.debug("DatabaseInformationModel.deleteRecord(): ie = {}",ie);
+		slf4jlogger.debug("DatabaseInformationModel.deleteRecord(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 		if (ie != null && localPrimaryKeyValue != null && localPrimaryKeyValue.length() > 0) {
 			try {
 				String tableName = getTableNameForInformationEntity(ie);
-//System.err.println("DatabaseInformationModel.deleteRecord(): tableName = "+tableName);
+				slf4jlogger.debug("DatabaseInformationModel.deleteRecord(): tableName = {}",tableName);
 				StringBuffer b = new StringBuffer();
 				b.append("DELETE FROM ");
 				b.append(tableName);
@@ -731,12 +743,12 @@ public abstract class DatabaseInformationModel {
 				b.append("\'");
 				Statement s = databaseConnection.createStatement();
 				String ss = b.toString();
-//System.err.println("DatabaseInformationModel.deleteRecord(): Statement to execute = "+ss);
+				slf4jlogger.debug("DatabaseInformationModel.deleteRecord(): Statement to execute = {}",ss);
 				s.execute(ss);	// no ResultSet expected
 				s.close();
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Rethrowing database exception during deleteRecord as DicomException",e);
 				throw new DicomException("Cannot perform deletion: "+e);
 			}
 		}
@@ -764,11 +776,11 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>The file reference type is left empty since unknown.</p>
 	 *
-	 * @deprecated use  {@link #insertObject(AttributeList,String,String) insertObject()} instead
+	 * @deprecated use  {@link com.pixelmed.database.DatabaseInformationModel#insertObject(AttributeList,String,String) insertObject()} instead
 	 *
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	fileName	the name of a file where the object is stored and from whence it may later be read
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	public void insertObject(AttributeList list,String fileName) throws DicomException {
 		insertObject(list,fileName,""/*fileReferenceType*/);
@@ -797,10 +809,10 @@ public abstract class DatabaseInformationModel {
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	fileName	the name of a file where the object is stored and from whence it may later be read
 	 * @param	fileReferenceType	"C" for copied (i.e., delete on purge), "R" for referenced (i.e., do not delete on purge)
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	public void insertObject(AttributeList list,String fileName,String fileReferenceType) throws DicomException {
-//System.err.println("DatabaseInformationModel.insertObject(): fileName="+fileName);
+		slf4jlogger.debug("DatabaseInformationModel.insertObject(): fileName = "+fileName);
 		// iterate through information entities, extracting matching keys, checking for a match, inserting new if not ...
 		try {
 			InformationEntity ie = rootInformationEntity;
@@ -826,7 +838,7 @@ public abstract class DatabaseInformationModel {
 
 				Statement s = databaseConnection.createStatement();
 				String ss = b.toString();
-//System.err.println("DatabaseInformationModel.insertObject(): Statement to execute = "+ss);
+				slf4jlogger.debug("DatabaseInformationModel.insertObject(): Statement to execute = {}",ss);
 				ResultSet r = s.executeQuery(ss);
 
 				String entityPrimaryKey = null;
@@ -835,9 +847,9 @@ public abstract class DatabaseInformationModel {
 					entityPrimaryKey=r.getString(localPrimaryKeyColumnName).trim();		// since CHAR not VARCHAR, returns trailing spaces :(
 					++count; 
 				}
-//System.err.println("DatabaseInformationModel.insertObject(): ie="+ie+" count="+count+" entityPrimaryKey="+entityPrimaryKey);
+				slf4jlogger.debug("DatabaseInformationModel.insertObject(): ie = {} count = {} entityPrimaryKey = ",ie,count,entityPrimaryKey);
 				if (count != 1 || entityPrimaryKey == null) {	// too few or too many ... make a new entry ...
-//System.err.println("DatabaseInformationModel.insertObject(): Inserting new row in "+tableName);
+					slf4jlogger.debug("DatabaseInformationModel.insertObject(): Inserting new row in {}",tableName);
 					b = new StringBuffer();
 					b.append("INSERT INTO ");
 					b.append(tableName);
@@ -858,32 +870,32 @@ public abstract class DatabaseInformationModel {
 					b.append("\'");
 					if (ie != rootInformationEntity) {
 						b.append(",\'");
-//System.err.println("DatabaseInformationModel.insertObject(): localParentReference = <"+localParentReference+">");
-//System.err.println("DatabaseInformationModel.insertObject(): localParentReference.length() = "+localParentReference.length());
+						slf4jlogger.debug("DatabaseInformationModel.insertObject(): localParentReference = <{}>",localParentReference);
+						slf4jlogger.debug("DatabaseInformationModel.insertObject(): localParentReference.length() = {}",localParentReference.length());
 						b.append(localParentReference);
 						b.append("\'");
 					}
 					b.append(",");
 					b.append(Long.toString(System.currentTimeMillis()));	// no quotes, since INTEGER
 					extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(b,list,ie,fileName,fileReferenceType);
-//System.err.println("DatabaseInformationModel.insertObject(): After extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity = "+b.toString());
+					if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("DatabaseInformationModel.insertObject(): After extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity = {}",b.toString());
 					extendInsertStatementStringWithDerivedAttributeValuesForSelectedInformationEntity(b,list,ie);
-//System.err.println("DatabaseInformationModel.insertObject(): After extendInsertStatementStringWithDerivedAttributeValuesForSelectedInformationEntity = "+b.toString());
+					if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("DatabaseInformationModel.insertObject(): After extendInsertStatementStringWithDerivedAttributeValuesForSelectedInformationEntity = {}",b.toString());
 					extendInsertStatementStringWithPersonNameSearchValuesForSelectedInformationEntity(b,list,ie);
 					b.append(")");
 					ss = b.toString();
-//System.err.println("DatabaseInformationModel.insertObject(): Statement to execute = "+ss);
+					slf4jlogger.debug("DatabaseInformationModel.insertObject(): Statement to execute = {}",ss);
 					s.execute(ss);	// no ResultSet expected
 				}
 
 				s.close();
-//System.err.println("DatabaseInformationModel.insertObject(): Done "+tableName+" entityPrimaryKey="+entityPrimaryKey+" localParentReference="+localParentReference);
+				slf4jlogger.debug("DatabaseInformationModel.insertObject(): Done {} entityPrimaryKey = {} localParentReference = {}",tableName,entityPrimaryKey,localParentReference);
 				localParentReference=entityPrimaryKey;
 				ie=getChildTypeForParent(ie,list);
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Rethrowing database exception during insertObject as DicomException", e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
 	}
@@ -907,12 +919,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which a select statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithPersonNameSearchColumnsForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 	
@@ -922,12 +934,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which a select statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithPersonNameSearchValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 
@@ -941,12 +953,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which a select statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendStatementStringWithMatchingAttributesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 
@@ -955,12 +967,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithAttributeNamesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 
@@ -969,17 +981,17 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * <p>The file reference type is left empty since unknown.</p>
 	 *
-	 * @deprecated use  {@link #extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer,AttributeList,InformationEntity,String,String) extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity()} instead
+	 * @deprecated use  {@link com.pixelmed.database.DatabaseInformationModel#extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer,AttributeList,InformationEntity,String,String) extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity()} instead
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
 	 * @param	fileName	the local filename, which may be non-null for <code>INSTANCE</code> level insertions
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie,String fileName) throws DicomException;
 
@@ -988,14 +1000,14 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
 	 * @param	fileName	the local filename, which may be non-null for <code>INSTANCE</code> level insertions
 	 * @param	fileReferenceType	"C" for copied (i.e., delete on purge), "R" for referenced (i.e., do not delete on purge)
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie,String fileName,String fileReferenceType) throws DicomException;
 	
@@ -1004,12 +1016,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithDerivedAttributeNamesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 
@@ -1018,12 +1030,12 @@ public abstract class DatabaseInformationModel {
 	 *
 	 * <p>Called when inserting a new record for an instance of the entity.</p>
 	 *
-	 * <p>Specific to each concrete information model extending {@link com.pixelmed.database.DatabaseInformationModel DatabaseInformationModel}.</p>
+	 * <p>Specific to each concrete information model extending {@link DatabaseInformationModel DatabaseInformationModel}.</p>
 	 *
 	 * @param	b		the statement being constructed
 	 * @param	list		the DICOM attributes of a composite object, containing the attributes describing this instance of the entity
 	 * @param	ie		the {@link com.pixelmed.dicom.InformationEntity InformationEntity} for which an insert statement is being constructed
-	 * @exception	DicomException	thrown if there are problems extracting the DICOM attributes
+	 * @throws	DicomException	thrown if there are problems extracting the DICOM attributes
 	 */
 	protected abstract void extendInsertStatementStringWithDerivedAttributeValuesForSelectedInformationEntity(StringBuffer b,AttributeList list,InformationEntity ie) throws DicomException;
 	
@@ -1038,7 +1050,7 @@ public abstract class DatabaseInformationModel {
 	protected abstract String createPrimaryKeyForSelectedInformationEntity(InformationEntity ie);
 
 	/**
-	 * @exception	SQLException
+	 * @throws	SQLException
 	 */
 	private void primeListsOfAttributesByInformationEntityFromExistingMetaData() throws SQLException {
 		DatabaseMetaData meta = databaseConnection.getMetaData();
@@ -1047,15 +1059,15 @@ public abstract class DatabaseInformationModel {
 			String tableName  = columns.getString(3);
 			String columnName = columns.getString(4);
 			//String type = columns.getString(6);
-//System.err.println("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): tableName="+tableName+" columnName="+columnName);
+			slf4jlogger.debug("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): tableName = {} columnName = {}",tableName,columnName);
 			if (tableName != null && columnName != null && isInformationEntityInModel(tableName)) {
-//System.err.println("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): non-null and tableName is in the model");
+				slf4jlogger.debug("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): non-null and tableName is in the model");
 				LinkedList listOfAttributes = (LinkedList)listsOfAttributesByInformationEntity.get(tableName);
 				if (listOfAttributes == null) {
 					listOfAttributes = new LinkedList();
 					listsOfAttributesByInformationEntity.put(tableName,listOfAttributes);	// NB. column name will be all UPPERCASE
 				}
-//System.err.println("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): adding to table "+tableName+" "+columnName);
+				slf4jlogger.debug("DatabaseInformationModel.primeListsOfAttributesByInformationEntityFromExistingMetaData(): adding to table {} {}",tableName,columnName);
 				listOfAttributes.add(columnName);
 			}
 		}
@@ -1085,11 +1097,11 @@ public abstract class DatabaseInformationModel {
 			LinkedList listOfAttributes = (LinkedList)listsOfAttributesByInformationEntity.get(tableName.toUpperCase(java.util.Locale.US));
 			if (listOfAttributes != null) {
 				if (listOfAttributes.contains(columnName.toUpperCase(java.util.Locale.US))) {
-//System.err.println("DatabaseInformationModel.isAttributeUsedInTable(String,String): "+tableName+" contains "+columnName);
+					slf4jlogger.debug("isAttributeUsedInTable(String,String): {} contains {}",tableName,columnName);
 					return true;	// NB. depends on all identical strings being same object
 				}
 				else {
-//System.err.println("DatabaseInformationModel.isAttributeUsedInTable(String,String): "+tableName+" does not contain "+columnName);
+					slf4jlogger.debug("isAttributeUsedInTable(String,String): {} does not contain {}",tableName,columnName);
 				}
 			}
 		}
@@ -1105,10 +1117,10 @@ public abstract class DatabaseInformationModel {
 	 * @param	localPrimaryKeyValue	the string value of the unique key which identifies the instance of the entity (not including wildcards)
 	 * @param	key			the string name of the attribute (column) to be set (updated)
 	 * @param	value			the string value to set
-	 * @exception	DicomException		thrown if the update fails
+	 * @throws	DicomException		thrown if the update fails
 	 */
 	public void updateSelectedRecord(InformationEntity ie,String localPrimaryKeyValue,String key,String value) throws DicomException {
-//System.err.println("DatabaseInformationModel.updateSelectedRecord(): "+ie+" "+localPrimaryKeyValue+" "+key+" "+value);
+		slf4jlogger.debug("DatabaseInformationModel.updateSelectedRecord(): {} {} {} {}",ie,localPrimaryKeyValue,key,value);
 		try {
 			if (ie != null) {
 				String tableName = getTableNameForInformationEntity(ie);
@@ -1136,7 +1148,7 @@ public abstract class DatabaseInformationModel {
 				s.close();
 			}
 		} catch (Exception e) {
-                        e.printStackTrace(System.err);
+            slf4jlogger.error("Rethrowing database exception during updateSelectedRecord as DicomException",e);
 			throw new DicomException("Cannot perform update: "+e);
 		}
 	}
@@ -1149,7 +1161,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	ie			the {@link com.pixelmed.dicom.InformationEntity InformationEntity} of the record to be returned
 	 * @param	localPrimaryKeyValue	the string value of the unique key which identifies the instance of the entity (not including wildcards)
 	 * @return				a {@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public Map findAllAttributeValuesForSelectedRecord(InformationEntity ie,String localPrimaryKeyValue) throws DicomException {
 		TreeMap map = new TreeMap();
@@ -1176,17 +1188,64 @@ public abstract class DatabaseInformationModel {
 					for (int i=1; i<=numberOfColumns; ++i) {
 						String key = md.getColumnName(i);	// will be upper case
 						String value = r.getString(i);
-//System.err.println("findAllAttributeValuesForSelectedRecord: ["+i+"] key = "+key+" value = "+value);
+						slf4jlogger.debug("findAllAttributeValuesForSelectedRecord: [{}] key = {} value = {}",i,key,value);
 						map.put(key,value);
 					}
 				}
 				s.close();
 			}
 		} catch (Exception e) {
-                        e.printStackTrace(System.err);
+			slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
 		return map;
+	}
+
+	/**
+	 * <p>For a particular instance of an information entity, get the value of the selected column in the entity's database table.</p>
+	 *
+	 * @param	ie			the {@link com.pixelmed.dicom.InformationEntity InformationEntity} of the record to be returned
+	 * @param	localPrimaryKeyValue	the string value of the unique key which identifies the instance of the entity (not including wildcards)
+	 * @param	key						the name of the attribute to be returned
+	 * @return				a {@link java.lang.String String} value, or an empty string if not found
+	 * @throws	DicomException		thrown if the query fails
+	 */
+	public String findSelectedAttributeValuesForSelectedRecord(InformationEntity ie,String localPrimaryKeyValue,String key) throws DicomException {
+		String value = "";
+		try {
+			if (ie != null) {
+				String tableName = getTableNameForInformationEntity(ie);
+				StringBuffer b = new StringBuffer();
+				b.append("SELECT ");
+				b.append(key);
+				b.append(" FROM ");
+				b.append(tableName);
+				if (localPrimaryKeyValue != null) {
+					b.append(" WHERE ");
+					b.append(localPrimaryKeyColumnName);
+					//b.append(" LIKE \'");
+					b.append(" = \'");
+					b.append(localPrimaryKeyValue);
+					b.append("\'");
+				}
+				b.append(";");
+				Statement s = databaseConnection.createStatement();
+				ResultSet r = s.executeQuery(b.toString());
+				ResultSetMetaData md = r.getMetaData();
+				int numberOfColumns = md.getColumnCount();
+				if (r.next()) {							// there should be exactly one
+					if (numberOfColumns == 1 && md.getColumnName(1).equals(key.toUpperCase())) {	// returned Column Name will be upper case
+						value = r.getString(1);
+						slf4jlogger.debug("findSelectedAttributeValuesForSelectedRecord: key = {} value = {}",key,value);
+					}
+				}
+				s.close();
+			}
+		} catch (Exception e) {
+			slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
+			throw new DicomException("Cannot perform selection: "+e);
+		}
+		return value;
 	}
 
 	/**
@@ -1197,7 +1256,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	ie			the {@link com.pixelmed.dicom.InformationEntity InformationEntity} of the records to be returned
 	 * @return				an {@link java.util.ArrayList ArrayList} of records, each value of which is a
 	 *					{@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public ArrayList findAllAttributeValuesForAllRecordsForThisInformationEntity(InformationEntity ie) throws DicomException {
 //long startTime=System.currentTimeMillis();
@@ -1218,7 +1277,7 @@ public abstract class DatabaseInformationModel {
 					for (int i=1; i<=numberOfColumns; ++i) {
 						String key = md.getColumnName(i);	// will be upper case
 						String value = r.getString(i);
-//System.err.println("findAllAttributeValuesForAllRecordsForThisInformationEntity: ["+i+"] key = "+key+" value = "+value);
+						slf4jlogger.debug("findAllAttributeValuesForAllRecordsForThisInformationEntity: [{}] key = {} value = {}",i,key,value);
 						map.put(key,value);
 					}
 					recordsAsMapsOfStrings.add(map);
@@ -1226,10 +1285,10 @@ public abstract class DatabaseInformationModel {
 				s.close();
 			}
 		} catch (Exception e) {
-                        e.printStackTrace(System.err);
+            slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
-//System.err.println("Select all values for all records of "+ie.toString()+" time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of "+ie.toString()+" time "+(System.currentTimeMillis()-startTime)+" milliseconds");
 		return recordsAsMapsOfStrings;
 	}
 	
@@ -1246,7 +1305,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	uid			the {@link java.lang.String String} UID of the records to be returned
 	 * @return				an {@link java.util.ArrayList ArrayList} of records, each value of which is a
 	 *					{@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public ArrayList findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedUID(InformationEntity ie,String uid) throws DicomException {
 		return findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(ie,getUIDColumnNameForInformationEntity(ie),uid);
@@ -1262,7 +1321,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	keyValue	the {@link java.lang.String String} value of the key to be matched
 	 * @return				an {@link java.util.ArrayList ArrayList} of records, each value of which is a
 	 *					{@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public ArrayList findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(InformationEntity ie,String keyName,String keyValue) throws DicomException {
 //long startTime=System.currentTimeMillis();
@@ -1281,7 +1340,7 @@ public abstract class DatabaseInformationModel {
 				b.append("\'");
 				b.append(";");
 				String ss = b.toString();
-//System.err.println("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(): statement to execute = "+ss);
+		slf4jlogger.debug("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(): statement to execute = {}",ss);
 				Statement s = databaseConnection.createStatement();
 				ResultSet r = s.executeQuery(ss);
 				ResultSetMetaData md = r.getMetaData();
@@ -1291,7 +1350,7 @@ public abstract class DatabaseInformationModel {
 					for (int i=1; i<=numberOfColumns; ++i) {
 						String key = md.getColumnName(i);	// will be upper case
 						String value = r.getString(i);
-//System.err.println("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(): ["+i+"] key = "+key+" value = "+value);
+		slf4jlogger.debug("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(): ["+i+"] key = {}",key+" value = {}",value);
 						map.put(key,value);
 					}
 					recordsAsMapsOfStrings.add(map);
@@ -1299,10 +1358,10 @@ public abstract class DatabaseInformationModel {
 				s.close();
 			}
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
-//System.err.println("Select all values for all records of "+ie.toString()+" time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of "+ie.toString()+" time "+(System.currentTimeMillis()-startTime)+" milliseconds");
 		return recordsAsMapsOfStrings;
 	}
 	
@@ -1314,7 +1373,7 @@ public abstract class DatabaseInformationModel {
 		}
 		String[] columnNames = (String[])(mapOfInformationEntitiesToColumnNames.get(ie));
 		if (columnNames == null) {
-//System.err.println("getArrayOfColumnNamesForSpecifiedInformationEntity() "+ie.toString()+" caching metadata");
+		slf4jlogger.debug("getArrayOfColumnNamesForSpecifiedInformationEntity() "+ie.toString()+" caching metadata");
 			ResultSetMetaData md = r.getMetaData();
 			int numberOfColumns = md.getColumnCount();
 			ArrayList list = new ArrayList();
@@ -1338,7 +1397,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	localParentReference	the string value of the unique key which identifies the instance of the parent entity (not including wildcards)
 	 * @return				an {@link java.util.ArrayList ArrayList} of records, each value of which is a
 	 *					{@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public ArrayList findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(InformationEntity ie,String localParentReference) throws DicomException {
 //long startTime=System.currentTimeMillis();
@@ -1360,9 +1419,9 @@ public abstract class DatabaseInformationModel {
 				b.append(";");
 				Statement s = databaseConnection.createStatement();
 				ResultSet r = s.executeQuery(b.toString());
-//System.err.println("Select all values for all records of "+ie.toString()+" with specified parent select only time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of {} with specified parent select only time {} milliseconds",ie.toString(),(System.currentTimeMillis()-startTime));
 				String[] columnNames = getArrayOfColumnNamesForSpecifiedInformationEntity(ie,r);
-//System.err.println("Select all values for all records of "+ie.toString()+" with specified parent get column names only time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of {} with specified parent get column names only time {} milliseconds",ie.toString(),(System.currentTimeMillis()-startTime));
 				int numberOfColumns = columnNames.length;
 //long timeInNextResult = 0;
 //long timeInMappingColumns = 0;
@@ -1375,7 +1434,7 @@ public abstract class DatabaseInformationModel {
 					for (int i=1; i<=numberOfColumns; ++i) {
 						String key = columnNames[i-1];
 						String value = r.getString(i);
-//System.err.println("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent: ["+i+"] key = "+key+" value = "+value);
+						slf4jlogger.debug("findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent: [{}] key = {} value = {}",i,key,value);
 						map.put(key,value);
 					}
 //long mappingColumnsEndTime = System.currentTimeMillis();
@@ -1383,15 +1442,15 @@ public abstract class DatabaseInformationModel {
 					recordsAsMapsOfStrings.add(map);
 //resultSetIteratorStartTime = System.currentTimeMillis();
 				}
-//System.err.println("Select all values for all records of "+ie.toString()+" with specified parent select timeInNextResult "+timeInNextResult+" milliseconds");
-//System.err.println("Select all values for all records of "+ie.toString()+" with specified parent select timeInMappingColumns "+timeInMappingColumns+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of {} with specified parent select timeInNextResult {} milliseconds",ie.toString(),timeInNextResult);
+//slf4jlogger.debug("Select all values for all records of {} with specified parent select timeInMappingColumns {} milliseconds",ie.toString(),timeInMappingColumns);
 				s.close();
 			}
 		} catch (Exception e) {
-                        e.printStackTrace(System.err);
+            slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
-//System.err.println("Select all values for all records of "+ie.toString()+" with specified parent time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of {} with specified parent time {} milliseconds",ie.toString(),(System.currentTimeMillis()-startTime));
 		return recordsAsMapsOfStrings;
 	}
 
@@ -1406,7 +1465,7 @@ public abstract class DatabaseInformationModel {
 	 * @param	parentMatchingValue	the string value of the attribute of the parent to be matched (not including wildcards)
 	 * @return				an {@link java.util.ArrayList ArrayList} of records, each value of which is a
 	 *					{@link java.util.TreeMap TreeMap} of {@link java.lang.String String} values indexed by {@link java.lang.String String} upper case column names
-	 * @exception	DicomException		thrown if the query fails
+	 * @throws	DicomException		thrown if the query fails
 	 */
 	public ArrayList findAllAttributeValuesForAllRecordsForThisInformationEntityWithMatchingParent(
 			InformationEntity ieWanted,InformationEntity ieParent,String parentMatchingAttribute,String parentMatchingValue) throws DicomException {
@@ -1439,7 +1498,7 @@ public abstract class DatabaseInformationModel {
 				b.append("\'");
 				b.append(";");
 				String str = b.toString();
-//System.err.println("findSelectedAttributeValueForAllRecordsForThisInformationEntityWithMatchingParent: "+str);
+				slf4jlogger.debug("findSelectedAttributeValueForAllRecordsForThisInformationEntityWithMatchingParent: {}",str);
 				Statement s = databaseConnection.createStatement();
 				ResultSet r = s.executeQuery(str);
 				ResultSetMetaData md = r.getMetaData();
@@ -1449,7 +1508,7 @@ public abstract class DatabaseInformationModel {
 					for (int i=1; i<=numberOfColumns; ++i) {
 						String key = md.getColumnName(i);	// will be upper case
 						String value = r.getString(i);
-//System.err.println("findSelectedAttributeValueForAllRecordsForThisInformationEntityWithMatchingParent: ["+i+"] key = "+key+" value = "+value);
+						slf4jlogger.debug("findSelectedAttributeValueForAllRecordsForThisInformationEntityWithMatchingParent: [{}] key = {} value = {}",i,key,value);
 						map.put(key,value);
 					}
 					recordsAsMapsOfStrings.add(map);
@@ -1457,10 +1516,10 @@ public abstract class DatabaseInformationModel {
 				s.close();
 			}
 		} catch (Exception e) {
-                        e.printStackTrace(System.err);
+            slf4jlogger.error("Rethrowing database exception during selection as DicomException",e);
 			throw new DicomException("Cannot perform selection: "+e);
 		}
-//System.err.println("Select all values for all records of "+ieWanted.toString()+" with matching parent time "+(System.currentTimeMillis()-startTime)+" milliseconds");
+//slf4jlogger.debug("Select all values for all records of {} with matching parent time {} milliseconds",ieWanted.toString(),(System.currentTimeMillis()-startTime));
 		return recordsAsMapsOfStrings;
 	}
 
@@ -1599,7 +1658,7 @@ public abstract class DatabaseInformationModel {
 	/**
 	 * <p>For a particular information entity, find the name of the column in the entity's database table containing the local file name of a stored object.</p>
 	 *
-	 * @deprecated use  {@link #getLocalFileNameColumnName(InformationEntity) getLocalFileNameColumnName()} instead
+	 * @deprecated use  {@link com.pixelmed.database.DatabaseInformationModel#getLocalFileNameColumnName(InformationEntity) getLocalFileNameColumnName()} instead
 	 *
 	 * @param	ie	the {@link com.pixelmed.dicom.InformationEntity InformationEntity}, such as a
 	 *			instance (e.g. an image)
@@ -1755,23 +1814,45 @@ public abstract class DatabaseInformationModel {
 	/**
 	 * <p>Get a factory to manufacture a query response generator capable of performing a query and returning the results.</p>
 	 *
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
+	 * @return					the response generator factory
+	 */
+	public QueryResponseGeneratorFactory getQueryResponseGeneratorFactory() {
+		slf4jlogger.debug("DatabaseInformationModel.getQueryResponseGeneratorFactory():");
+		return null;
+	}
+
+	/**
+	 * <p>Get a factory to manufacture a query response generator capable of performing a query and returning the results.</p>
+	 *
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getQueryResponseGeneratorFactory()} instead.
+	 * @param	debugLevel		ignored
 	 * @return					the response generator factory
 	 */
 	public QueryResponseGeneratorFactory getQueryResponseGeneratorFactory(int debugLevel) {
-//System.err.println("DatabaseInformationModel.getQueryResponseGeneratorFactory():");
+		slf4jlogger.warn("getQueryResponseGeneratorFactory(): Debug level supplied as argument ignored");
+		return getQueryResponseGeneratorFactory();
+	}
+
+	/**
+	 * <p>Get a factory to manufacture a retrieve response generator capable of performing a retrieve and returning the results.</p>
+	 *
+	 * @return					the response generator factory
+	 */
+	public RetrieveResponseGeneratorFactory getRetrieveResponseGeneratorFactory() {
+		slf4jlogger.debug("DatabaseInformationModel.getRetrieveResponseGeneratorFactory():");
 		return null;
 	}
 
 	/**
 	 * <p>Get a factory to manufacture a retrieve response generator capable of performing a retrieve and returning the results.</p>
 	 *
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getRetrieveResponseGeneratorFactory()} instead.
+	 * @param	debugLevel		ignored
 	 * @return					the response generator factory
 	 */
 	public RetrieveResponseGeneratorFactory getRetrieveResponseGeneratorFactory(int debugLevel) {
-//System.err.println("DatabaseInformationModel.getRetrieveResponseGeneratorFactory():");
-		return null;
+		slf4jlogger.warn("getRetrieveResponseGeneratorFactory(): Debug level supplied as argument ignored");
+		return getRetrieveResponseGeneratorFactory();
 	}
 
 	/**

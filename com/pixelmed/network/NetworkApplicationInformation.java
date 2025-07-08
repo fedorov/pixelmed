@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -21,7 +21,7 @@ import java.util.TreeMap;
  */
 public class NetworkApplicationInformation {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationInformation.java,v 1.13 2012/11/24 01:01:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkApplicationInformation.java,v 1.24 2025/01/29 10:58:08 dclunie Exp $";
 
 	public static final String resourceName_PublicStorageSCPs = "/com/pixelmed/network/publicstoragescps.properties";
 	
@@ -192,7 +192,7 @@ public class NetworkApplicationInformation {
 	 *
 	 * @param	localName
 	 * @param	ae
-	 * @exception	DicomNetworkException	if local name or AET already used, or either is null or empty
+	 * @throws	DicomNetworkException	if local name or AET already used, or either is null or empty
 	 */
 	public void add(String localName,ApplicationEntity ae) throws DicomNetworkException {
 		String aeTitle = ae.getDicomAETitle();
@@ -234,7 +234,7 @@ public class NetworkApplicationInformation {
 	 * @param	port
 	 * @param	queryModel		null if unknown
 	 * @param	primaryDeviceType	null if unknown
-	 * @exception	DicomNetworkException	if local name or AET already used, or either is null or empty
+	 * @throws	DicomNetworkException	if local name or AET already used, or either is null or empty
 	 */
 	public void add(String localName,String aeTitle,String hostname,int port,String queryModel,String primaryDeviceType) throws DicomNetworkException {
 //System.err.println("NetworkApplicationInformation.add("+localName+","+aeTitle+","+hostname+","+port+","+queryModel+","+primaryDeviceType+")");

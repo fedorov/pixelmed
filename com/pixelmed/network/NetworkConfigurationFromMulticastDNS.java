@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -18,6 +18,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>This class provides a dynamic registry of DICOM network parameters
  * possibly federated from various sources.</p>
@@ -30,9 +33,9 @@ import java.util.Map;
  * @author	dclunie
  */
 public class NetworkConfigurationFromMulticastDNS extends NetworkConfigurationSource {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationFromMulticastDNS.java,v 1.23 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkConfigurationFromMulticastDNS.java,v 1.11 2012/02/01 23:02:12 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(NetworkConfigurationFromMulticastDNS.class);
 	
 	private static final String DICOMServiceName = "_dicom._tcp.local.";
 	private static final String ACRNEMAServiceName = "_acr-nema._tcp.local.";
@@ -60,9 +63,9 @@ public class NetworkConfigurationFromMulticastDNS extends NetworkConfigurationSo
 		
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			Class declaringClass = method.getDeclaringClass();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener.invoke(): class = "+declaringClass);
+			slf4jlogger.trace("OurJmDNSServiceListener.invoke(): class = {}",declaringClass);
 			String methodName = method.getName();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener.invoke(): methodName = "+methodName);
+			slf4jlogger.trace("OurJmDNSServiceListener.invoke(): methodName = {}",methodName);
 			if (declaringClass == javax.jmdns.ServiceListener.class)  {
 				if (methodName.equals("serviceAdded"))  {
 					serviceAdded((ServiceEvent)(args[0]));
@@ -91,44 +94,44 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.Our
 	 
 		public void serviceAdded(ServiceEvent event) {
 			String name = event.getName();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service added   : Name = "+name);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service added   : Name = {}",name);
 			String type = event.getType();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service added   : Type = "+type);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service added   : Type = {}",type);
 			ServiceInfo info = event.getInfo();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service added   : Info = "+info);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service added   : Info = {}",info);
 			// Always request info, even if not null, since info may not be complete (000612)
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: issuing request for info");
+			slf4jlogger.trace("OurJmDNSServiceListener: issuing request for info");
 			//jmDNS.requestServiceInfo(type,name,10000/*timeout in ms*/);
 			//jmDNS.requestServiceInfo(type,name);
 			jmDNS.requestServiceInfo(type,name,true/*persistent*/);		// the persistent flag seems to be the key to actually getting anything back ! (000612)
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: back from issuing request for info");
+			slf4jlogger.trace("OurJmDNSServiceListener: back from issuing request for info");
 			// will come back with info later as serviceResolved() event
 			// unless there really is no info, which is of course a problem :(
 		}
 		
 		public void serviceRemoved(ServiceEvent event) {
 			String name = event.getName();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service removed : Name = "+name);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service removed : Name = {}",name);
 			String type = event.getType();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service removed : Type = "+type);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service removed : Type = {}",type);
 			ServiceInfo info = event.getInfo();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service removed : Info = "+info);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service removed : Info = {}",info);
 			getNetworkApplicationInformation().remove(name);
 		}
 		
 		public void serviceResolved(ServiceEvent event) {
 			String name = event.getName();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: Name = "+name);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: Name = {}",name);
 			String type = event.getType();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: Type = "+type);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: Type = {}",type);
 			ServiceInfo info = event.getInfo();
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: Info = "+info);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: Info = {}",info);
 			String aet = null;
 			String primaryDeviceType = null;
 			String hostname = null;
 			int port = -1;
 			if (info != null) {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: Info getServer() = "+info.getServer());
+				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: Info getServer() = {}",info.getServer());
 				hostname = info.getHostAddress();
 				port = info.getPort();
 				Enumeration propertyNames = info.getPropertyNames();
@@ -144,7 +147,7 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.Our
 							primaryDeviceType = propertyValue;
 						}
 						else {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: Unrecognized property name = "+propertyName+" value = "+propertyValue);
+							slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: Unrecognized property name = {} value = {}",propertyName,propertyValue);
 						}
 					}
 				}
@@ -152,10 +155,10 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.Our
 			if (aet == null) {
 				aet = name;	// AET property is optional and if absent default to service instance name
 			}
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: hostname = "+hostname);
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: port = "+port);
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: aet = "+aet);
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.OurJmDNSServiceListener: Service resolved: primaryDeviceType = "+primaryDeviceType);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: hostname = {}",hostname);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: port = {}",port);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: aet = {}",aet);
+			slf4jlogger.trace("OurJmDNSServiceListener: Service resolved: primaryDeviceType = {}",primaryDeviceType);
 			if (name != null && name.length() > 0
 			 && hostname != null && hostname.length() > 0
 			 && aet != null && aet.length() > 0
@@ -166,7 +169,7 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.Our
 					getNetworkApplicationInformation().add(name,ae);
 				}
 				catch (DicomNetworkException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -180,14 +183,14 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.Our
 	 * @param	refreshInterval	is ignored completely, since DNS-SD over mDNS is asynchronous
 	 */
 	public void activateDiscovery(int refreshInterval) {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.activateDNSSelfDiscovery():");
+		slf4jlogger.trace("activateDNSSelfDiscovery():");
 		try {
 			Class classToUse = Thread.currentThread().getContextClassLoader().loadClass("javax.jmdns.JmDNS");
 			Class [] argTypes  = {};
 			java.lang.reflect.Method methodToUse = classToUse.getDeclaredMethod("create",argTypes);		// (000611)
 			Object[] argValues = {};
 			jmDNS = (JmDNS)(methodToUse.invoke(null/*since static*/,argValues));
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.activateDNSSelfDiscovery(): created jmDNS = "+jmDNS);
+			slf4jlogger.trace("activateDNSSelfDiscovery(): created jmDNS = {}",jmDNS);
 
 			//ServiceListener listener = new OurJmDNSServiceListener();
 			InvocationHandler listenerInvocationHandler = new OurJmDNSServiceListener();
@@ -201,17 +204,14 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.act
 
 		}
 		catch (ClassNotFoundException e) {
-if (debugLevel > 1) {
-	System.err.println("NetworkConfigurationFromMulticastDNS.activateDNSSelfDiscovery(): DNS Self Discovery not available (Could not load JmDNS class)");
-	e.printStackTrace(System.err);
-}
+			slf4jlogger.debug("activateDNSSelfDiscovery(): DNS Self Discovery not available (Could not load JmDNS class)",e);
 			jmDNS = null;
 		}
 		catch (Exception e) {
 		//catch (NoSuchMethodException e) {
 		//catch (InstantiationException e) {
 		//catch (IllegalAccessException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 			jmDNS = null;
 		}
 	}
@@ -220,13 +220,13 @@ if (debugLevel > 1) {
 	 * <p>Stop DNS Self-Discovery.</p>
 	 */
 	public void deActivateDiscovery() {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.deActivateDiscovery():");
+		slf4jlogger.trace("deActivateDiscovery():");
 		if (jmDNS != null) {
 			jmDNS.unregisterAllServices();
 			try {
 				jmDNS.close();			// needed, since otherwise application will not exit when main thread finished
 			} catch (Exception e) {		// (000609)
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 				jmDNS = null;
 			}
 		}
@@ -235,11 +235,19 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.deA
 	/**
 	 * <p>Construct an instance capable of handling dynamic configuration information but do not start anything yet.</p>
 	 *
-	 * @param	debugLevel
+	 * @deprecated			SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #NetworkConfigurationFromMulticastDNS()} instead.
+	 * @param	debugLevel	ignored
 	 */
 	public NetworkConfigurationFromMulticastDNS(int debugLevel) {
-		super(debugLevel);
-//System.err.println("NetworkConfigurationFromMulticastDNS(): debugLevel = "+debugLevel);
+		this();
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * <p>Construct an instance capable of handling dynamic configuration information but do not start anything yet.</p>
+	 */
+	public NetworkConfigurationFromMulticastDNS() {
+		super();
 	}
 	
 	/**
@@ -247,7 +255,7 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.deA
 	 *
 	 */
 	public void unregisterAllServices() {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.unRegisterAllServices():");
+		slf4jlogger.trace("unRegisterAllServices():");
 		if (jmDNS != null) {
 			jmDNS.unregisterAllServices();
 		}
@@ -261,7 +269,7 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.unR
 	 * @param	primaryDeviceType		the primaryDeviceType, or null if none
 	 */
 	public void registerDicomService(String calledApplicationEntityTitle,int port,String primaryDeviceType) {
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.registerDicomService():");
+		slf4jlogger.trace("registerDicomService():");
 		if (jmDNS != null) {
 			Map<String,String> properties = new HashMap<String,String>();	// (000611)
 			if (calledApplicationEntityTitle != null && calledApplicationEntityTitle.length() > 0) {
@@ -278,11 +286,11 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.reg
 				java.lang.reflect.Method methodToUse = classToUse.getDeclaredMethod("create",argTypes);
 				Object[] argValues = {DICOMServiceName,calledApplicationEntityTitle,port,0/*weight*/,0/*priority*/,properties};
 				ServiceInfo info =  (ServiceInfo)(methodToUse.invoke(null/*since static*/,argValues));
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.registerDicomService(): created ServiceInfo = "+info);
+				slf4jlogger.trace("registerDicomService(): created ServiceInfo = {}",info);
 				jmDNS.registerService(info);
 			}
 			catch (Exception e) {	// may be ClassNotFoundException,NoSuchMethodException,InstantiationException,IOException
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -312,11 +320,11 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.reg
 				java.lang.reflect.Method methodToUse = classToUse.getDeclaredMethod("create",argTypes);
 				Object[] argValues = {WADOServiceName,instanceName,port,0/*weight*/,0/*priority*/,properties};
 				ServiceInfo info =  (ServiceInfo)(methodToUse.invoke(null/*since static*/,argValues));
-if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.registerWADOService(): created ServiceInfo = "+info);
+				slf4jlogger.trace("registerWADOService(): created ServiceInfo = {}",info);
 				jmDNS.registerService(info);
 			}
 			catch (Exception e) {	// may be ClassNotFoundException,NoSuchMethodException,InstantiationException,IOException
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -329,7 +337,7 @@ if (debugLevel > 1) System.err.println("NetworkConfigurationFromMulticastDNS.reg
 	 * @param	arg	2 or 3 arguments if a service is to be registered, the AET of the DICOM service,the port that the service listens on, and optionally the primaryDeviceType
 	 */
 	public static void main(String arg[]) {
-		NetworkConfigurationFromMulticastDNS networkConfiguration = new NetworkConfigurationFromMulticastDNS(99);
+		NetworkConfigurationFromMulticastDNS networkConfiguration = new NetworkConfigurationFromMulticastDNS();
 		networkConfiguration.activateDiscovery();
 		if (arg.length > 1) {
 			networkConfiguration.registerDicomService(arg[0],Integer.parseInt(arg[1]),arg.length > 2 ? arg[2] : null);

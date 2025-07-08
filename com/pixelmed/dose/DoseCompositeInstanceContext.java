@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
@@ -12,22 +12,41 @@ import com.pixelmed.dicom.DicomException;
 import com.pixelmed.dicom.DecimalStringAttribute;
 import com.pixelmed.dicom.SequenceAttribute;
 import com.pixelmed.dicom.SequenceItem;
+import com.pixelmed.dicom.ShortStringAttribute;
 import com.pixelmed.dicom.TagFromName;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class DoseCompositeInstanceContext extends CompositeInstanceContext {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/DoseCompositeInstanceContext.java,v 1.2 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/DoseCompositeInstanceContext.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DoseCompositeInstanceContext.class);
 
 	public DoseCompositeInstanceContext() {
 		super();
 	}
 	
 	public DoseCompositeInstanceContext(AttributeList srcList) {
-		super(srcList);
+		super(srcList,true/*forSR*/);
 	}
 	
 	public void updateFromSource(CTIrradiationEventDataFromImages eventDataFromImages) {
 		if (eventDataFromImages != null) {
+			try {
+				String timezoneOffsetFromUTC = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TimezoneOffsetFromUTC);
+				if (timezoneOffsetFromUTC.length() == 0) {
+//System.err.println("GenerateRadiationDoseStructuredReport.createContextForNewRadiationDoseStructuredReportFromExistingInstance(): no timezoneOffsetFromUTC in list");
+					timezoneOffsetFromUTC = eventDataFromImages.getTimezoneOffsetFromUTC();
+					if (timezoneOffsetFromUTC != null && timezoneOffsetFromUTC.length() > 0) {
+//System.err.println("GenerateRadiationDoseStructuredReport.createContextForNewRadiationDoseStructuredReportFromExistingInstance(): found TimezoneOffsetFromUTC in eventDataFromImages");
+						{ Attribute a = new ShortStringAttribute(TagFromName.TimezoneOffsetFromUTC); a.addValue(timezoneOffsetFromUTC); list.put(a); }
+					}
+				}
+			}
+			catch (DicomException e) {
+				slf4jlogger.error("",e);
+			}
 			try {
 				// in case the patient sex, age, weight or size (height) were not in the source instance, use what was found in the other instances, if it is consistent ...
 				String patientAge = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PatientAge);
@@ -41,7 +60,7 @@ public class DoseCompositeInstanceContext extends CompositeInstanceContext {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			try {
 				String patientSex = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PatientSex);
@@ -55,7 +74,7 @@ public class DoseCompositeInstanceContext extends CompositeInstanceContext {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			try {
 				String patientWeight = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PatientWeight);
@@ -69,7 +88,7 @@ public class DoseCompositeInstanceContext extends CompositeInstanceContext {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			try {
 				String patientSize = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PatientSize);
@@ -83,7 +102,7 @@ public class DoseCompositeInstanceContext extends CompositeInstanceContext {
 				}
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}

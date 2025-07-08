@@ -1,23 +1,23 @@
 all:	pixelmed.jar
 
 PIXELMEDCODESIGNERKEYSTORE = "/Volumes/Access/Access/pixelmed_comodo_objectsigner.p12"
-PIXELMEDCODESIGNERALIAS = "pixelmed publishing's the usertrust network id"
-PIXELMEDCODESIGNEROPTIONS = -storetype pkcs12
+PIXELMEDCODESIGNERALIAS = "PixelMed Publishing's Sectigo Limited ID"
+PIXELMEDCODESIGNEROPTIONS = -storetype pkcs12 -tsa http://timestamp.comodoca.com/rfc3161 -digestalg SHA-256
 
-TAR = gnutar
+# use hard-dereference with gnutar in case we store the same file twice (though shouldn't do that), since hardlinks for duplicates causes bsdtar (e.g., on Mac) to freak out (000918)
+TAR = gnutar --hard-dereference
 #TAR = tar
 COMPRESS = bzip2
 COMPRESSEXT = bz2
 
 SUBDIRS = \
+	com/pixelmed/utils \
 	com/pixelmed/dicom \
 	com/pixelmed/geometry \
 	com/pixelmed/validate \
 	com/pixelmed/display \
-	com/pixelmed/display/event \
 	com/pixelmed/event \
 	com/pixelmed/network \
-	com/pixelmed/utils \
 	com/pixelmed/database \
 	com/pixelmed/query \
 	com/pixelmed/scpecg \
@@ -32,6 +32,7 @@ SUBDIRS = \
 	com/pixelmed/doseocr \
 	com/pixelmed/test \
 	com/pixelmed/ftp \
+	com/pixelmed/slf4j \
 	apple/dts/samplecode/osxadapter
 	
 
@@ -58,18 +59,45 @@ SUBPACKAGES = \
 	com.pixelmed.doseocr \
 	com.pixelmed.test \
 	com.pixelmed.ftp \
+	com.pixelmed.slf4j \
 	apple.dts.samplecode.osxadapter
 
 ADDITIONALFILES = \
 	COPYRIGHT \
+	DeidentifyAndRedact.bat \
+	DeidentifyAndRedact.sh \
+	DeidentifyAndRedactWithOriginalFileName.bat \
+	DicomAttributeBrowser.sh \
+	DicomBrowser.sh \
+	DicomCleanerAssumingJREInstalled.bat \
+	DicomCleanerWithOwnJRE.bat \
 	DicomImageViewer.bat \
 	DicomImageViewer.sh \
+	DicomImageViewerWithCDJRE.bat \
+	DicomImageViewerWithOwnJRE.bat \
+	DicomInstanceValidator.sh \
+	DicomSRValidator.bat \
+	DicomSRValidator.sh \
+	DoseUtilityAssumingJREInstalled.bat \
+	DoseUtilityWithOwnJRE.bat \
 	ECGViewer.bat \
 	ECGViewer.sh \
+	MoveDicomFilesIntoHierarchy.sh \
+	NetworkMediaImporter.bat \
+	NetworkMediaImporter.sh \
+	StructuredReportBrowser.sh \
+	StudyReceiver.bat \
+	studyreceiver.properties \
 	Makefile \
 	Makefile.common.mk \
 	README \
 	sample.com.pixelmed.display.DicomImageViewer.properties
+
+LOCALIZATIONFILES = \
+	com/pixelmed/display/*.properties \
+	com/pixelmed/display/*.utf-8_properties \
+	com/pixelmed/network/*.properties \
+	com/pixelmed/network/*.utf-8_properties
 
 WEBSTARTIMAGEFILES = \
 	webstart/images/DicomCleanerControlPanel.png \
@@ -118,10 +146,12 @@ WEBSTARTJNLPFILES = \
 
 ADDITIONALSOURCEFILES = \
 	Doxyfile \
+	icons/logo_1024.png \
 	icons/ConvertAmicasJPEG2000FilesetToDicom.icns \
 	icons/ConvertAmicasJPEG2000FilesetToDicom.png \
 	icons/ConvertAmicasJPEG2000FilesetToDicom.ico \
 	icons/DicomCleaner.icns \
+	icons/DicomCleaner_1024.png \
 	icons/DicomCleaner.png \
 	icons/DicomCleaner.ico \
 	icons/DicomImageBlackout.icns \
@@ -131,11 +161,14 @@ ADDITIONALSOURCEFILES = \
 	icons/DicomImageViewer.png \
 	icons/DicomImageViewer.ico \
 	icons/DoseUtility.icns \
+	icons/DoseUtility_1024.png \
 	icons/DoseUtility.png \
 	icons/DoseUtility.ico \
 	icons/DownloadOrTransmit.icns \
 	icons/DownloadOrTransmit.png \
 	icons/DownloadOrTransmit.ico \
+	icons/Makefile \
+	icons/makeiconsetfrompng.sh \
 	icons/MediaImporter.icns \
 	icons/MediaImporter.png \
 	icons/MediaImporter.ico \
@@ -145,7 +178,16 @@ ADDITIONALSOURCEFILES = \
 	${WEBSTARTHTMLFILES} \
 	${WEBSTARTJNLPFILES} \
 	${WEBSTARTIMAGEFILES} \
-	com/pixelmed/doseocr/OCR_Glyphs_DoseScreen.xml
+	webstart/Manifest.txt \
+	com/pixelmed/validate/contextgroupswanted.txt \
+	com/pixelmed/validate/extendedcontextgroups.xml \
+	com/pixelmed/validate/standardcontextgroups.xml \
+	com/pixelmed/validate/DicomSRDescriptionsSource.xml \
+	com/pixelmed/validate/PixelMedContextGroupsSource.xml \
+	com/pixelmed/validate/DicomIODDescriptionsSource.xml \
+	com/pixelmed/validate/CheckSRContentItemsUsed.xsl \
+	com/pixelmed/validate/CommonDicomIODValidationRules.xsl \
+	com/pixelmed/validate/CommonDicomSRValidationRules.xsl
 
 WEBSTARTJAIFILES = \
 	webstart/jai-imageio/early-access/1.1/linux-i586/clibwrapper_jiio.jar \
@@ -167,11 +209,12 @@ WEBSTARTJAIFILES = \
 
 WEBSTARTFILES = \
 	webstart/pixelmed.jar \
-	webstart/commons-codec-1.3.jar \
+	webstart/pixelmed_imageio.jar \
+	webstart/${COMMONSCODECJARFILENAME} \
 	webstart/commons-net-ftp-2.0.jar \
 	webstart/hsqldb.jar \
 	webstart/jmdns.jar \
-	webstart/excalibur-bzip2-1.0.jar \
+	webstart/${COMMONSCOMPRESSJARFILENAME} \
 	webstart/vecmath1.2-1.14.jar \
 	webstart/icons/ConvertAmicasJPEG2000FilesetToDicom.png \
 	webstart/icons/DicomCleaner.png \
@@ -207,13 +250,22 @@ SOURCERELEASEFILES = \
 	${SUBDIRS}
 
 DEPENDENCYRELEASEFILESWITHOUTREADME = \
-	lib/additional/commons-codec-1.3.jar \
+	lib/additional/pixelmed_codec.jar \
+	lib/additional/pixelmed_imageio.jar \
+	${COMMONSCODECADDITIONALJAR} \
 	lib/additional/commons-net-ftp-2.0.jar \
-	lib/additional/excalibur-bzip2-1.0.jar \
+	${COMMONSCOMPRESSADDITIONALJAR} \
 	lib/additional/hsqldb.jar \
 	lib/additional/vecmath1.2-1.14.jar \
 	lib/additional/jmdns.jar \
 	lib/additional/aiviewer.jar \
+	lib/additional/javax.json-1.0.4.jar \
+	lib/additional/javax.json-api-1.0.jar \
+	lib/additional/slf4j-api-1.7.13.jar \
+	lib/additional/slf4j-simple-1.7.13.jar \
+	lib/additional/opencsv-2.4.jar \
+	lib/additional/saxon-he-12.5.jar \
+	lib/additional/xmlresolver-5.2.2.jar \
 	lib/junit/junit-4.8.1.jar \
 	LICENSES
 
@@ -222,22 +274,21 @@ DEPENDENCYRELEASEFILES = \
 	README
 
 DICOMCLEANERDEPENDENCYRELEASEFILES = \
-	lib/additional/commons-codec-1.3.jar \
-	lib/additional/excalibur-bzip2-1.0.jar \
+	lib/additional/pixelmed_imageio.jar \
+	${COMMONSCODECADDITIONALJAR} \
+	${COMMONSCOMPRESSADDITIONALJAR} \
 	lib/additional/hsqldb.jar \
 	lib/additional/vecmath1.2-1.14.jar \
 	lib/additional/jmdns.jar \
-	LICENSES/excalibur.LICENSE.txt \
 	LICENSES/hsqldb_lic.txt
 
 DOSEUTILITYDEPENDENCYRELEASEFILES = \
-	lib/additional/commons-codec-1.3.jar \
+	${COMMONSCODECADDITIONALJAR} \
 	lib/additional/commons-net-ftp-2.0.jar \
-	lib/additional/excalibur-bzip2-1.0.jar \
+	${COMMONSCOMPRESSADDITIONALJAR} \
 	lib/additional/hsqldb.jar \
 	lib/additional/vecmath1.2-1.14.jar \
 	lib/additional/jmdns.jar \
-	LICENSES/excalibur.LICENSE.txt \
 	LICENSES/hsqldb_lic.txt
 
 WINDOWSJIIORELEASEFILES = \
@@ -246,8 +297,8 @@ WINDOWSJIIORELEASEFILES = \
 	windows/lib/clib_jiio_util.dll \
 	windows/lib/clibwrapper_jiio.jar \
 	windows/lib/jai_imageio.jar \
-	windows/lib/LICENSE-jai_imageio.txt \
-	windows/lib/THIRDPARTYLICENSEREADME-jai_imageio.txt
+	LICENSES/LICENSE-jai_imageio.txt \
+	LICENSES/THIRD-PARTY-LICENSE-README-jai_imageio.txt
 
 JAVADOCRELEASEFILES = \
 	${JAVADOCFILES}
@@ -276,52 +327,60 @@ MACAPPS = \
 
 MACAPPRELEASEFILES = \
 	DicomImageViewer.app/Contents/Info.plist \
-	DicomImageViewer.app/Contents/MacOS/JavaApplicationStub \
+	DicomImageViewer.app/Contents/MacOS/JavaAppLauncher \
 	DicomImageViewer.app/Contents/PkgInfo \
 	DicomImageViewer.app/Contents/Resources/DicomImageViewer.icns \
-	DicomImageViewer.app/Contents/Resources/Java/pixelmed.jar \
-	DicomImageViewer.app/Contents/Resources/Java/hsqldb.jar \
-	DicomImageViewer.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-	DicomImageViewer.app/Contents/Resources/Java/vecmath1.2-1.14.jar \
-	DicomImageViewer.app/Contents/Resources/Java/commons-codec-1.3.jar \
-	DicomImageViewer.app/Contents/Resources/Java/jai_imageio.jar \
-	DicomImageViewer.app/Contents/Resources/Java/jmdns.jar \
+	DicomImageViewer.app/Contents/Java/pixelmed.jar \
+	DicomImageViewer.app/Contents/Java/pixelmed_imageio.jar \
+	DicomImageViewer.app/Contents/Java/hsqldb.jar \
+	DicomImageViewer.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+	DicomImageViewer.app/Contents/Java/vecmath1.2-1.14.jar \
+	DicomImageViewer.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+	DicomImageViewer.app/Contents/Java/jai_imageio.jar \
+	DicomImageViewer.app/Contents/Java/jmdns.jar \
 	DicomCleaner.app/Contents/Info.plist \
-	DicomCleaner.app/Contents/MacOS/JavaApplicationStub \
+	DicomCleaner.app/Contents/MacOS/JavaAppLauncher \
 	DicomCleaner.app/Contents/PkgInfo \
 	DicomCleaner.app/Contents/Resources/DicomCleaner.icns \
-	DicomCleaner.app/Contents/Resources/Java/commons-codec-1.3.jar \
-	DicomCleaner.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-	DicomCleaner.app/Contents/Resources/Java/hsqldb.jar \
-	DicomCleaner.app/Contents/Resources/Java/jmdns.jar \
-	DicomCleaner.app/Contents/Resources/Java/pixelmed.jar \
-	DoseUtility.app/Contents/Resources/Java/pixelmed.jar \
-	DoseUtility.app/Contents/Resources/Java/hsqldb.jar \
-	DoseUtility.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-	DoseUtility.app/Contents/Resources/Java/commons-codec-1.3.jar \
-	DoseUtility.app/Contents/Resources/Java/commons-net-ftp-2.0.jar \
-	DoseUtility.app/Contents/Resources/Java/jmdns.jar \
-	DoseUtility.app/Contents/Resources/Java/jai_imageio.jar \
+	DicomCleaner.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+	DicomCleaner.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+	DicomCleaner.app/Contents/Java/hsqldb.jar \
+	DicomCleaner.app/Contents/Java/jmdns.jar \
+	DicomCleaner.app/Contents/Java/pixelmed.jar \
+	DicomCleaner.app/Contents/Java/pixelmed_imageio.jar \
+	DoseUtility.app/Contents/Info.plist \
+	DoseUtility.app/Contents/MacOS/JavaAppLauncher \
+	DoseUtility.app/Contents/PkgInfo \
 	DoseUtility.app/Contents/Resources/DoseUtility.icns \
-	DoseUtility.app/Contents/MacOS/JavaApplicationStub
+	DoseUtility.app/Contents/Java/pixelmed.jar \
+	DoseUtility.app/Contents/Java/pixelmed_imageio.jar \
+	DoseUtility.app/Contents/Java/hsqldb.jar \
+	DoseUtility.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+	DoseUtility.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+	DoseUtility.app/Contents/Java/commons-net-ftp-2.0.jar \
+	DoseUtility.app/Contents/Java/jmdns.jar \
+	DoseUtility.app/Contents/Java/jai_imageio.jar
 
 MACAPPECGRELEASEFILES = \
 	ECGViewer.app/Contents/Info.plist \
-	ECGViewer.app/Contents/MacOS/JavaApplicationStub \
+	ECGViewer.app/Contents/MacOS/JavaAppLauncher \
 	ECGViewer.app/Contents/PkgInfo \
 	ECGViewer.app/Contents/Resources/GenericJavaApp.icns \
-	ECGViewer.app/Contents/Resources/Java/pixelmed.jar \
-	ECGViewer.app/Contents/Resources/Java/commons-codec-1.3.jar
+	ECGViewer.app/Contents/Java/pixelmed.jar \
+	ECGViewer.app/Contents/Java/${COMMONSCODECJARFILENAME}
 
 TESTSCPECGRESULTFILES = \
 	testresults/scpecg
 
-.SUFFIXES:	.class .java
+PATHTOROOT = .
 
-.java.class:
-	javac -O -encoding "UTF8" $<
+include Makefile.common.mk
 
-pixelmed.jar:
+generateicons:
+	(cd icons; make all)
+
+pixelmed.jar:	generateicons
+	(cd com/pixelmed/slf4j; make all)
 	(cd com/pixelmed/utils; make all)
 	(cd com/pixelmed/dicom; make all)
 	(cd com/pixelmed/geometry; make all)
@@ -351,13 +410,14 @@ pixelmed.jar:
 		com/pixelmed/event/*.class \
 		com/pixelmed/display/event/*.class \
 		com/pixelmed/geometry/*.class \
-		com/pixelmed/dicom/*.class com/pixelmed/dicom/*.dat \
+		com/pixelmed/dicom/*.class com/pixelmed/dicom/*.dat com/pixelmed/dicom/*.xml com/pixelmed/dicom/*.icc \
 		com/pixelmed/validate/*.class \
 		com/pixelmed/validate/CommonDicomIODValidationRules.xsl com/pixelmed/validate/DicomIODDescriptionsCompiled.xsl \
 		com/pixelmed/validate/CommonDicomSRValidationRules.xsl com/pixelmed/validate/DicomSRDescriptionsCompiled.xsl com/pixelmed/validate/CheckSRContentItemsUsed.xsl \
 		com/pixelmed/validate/DicomContextGroupsSource.xml \
 		com/pixelmed/utils/*.class \
 		com/pixelmed/network/*.class \
+		com/pixelmed/network/*.properties \
 		com/pixelmed/database/*.class \
 		com/pixelmed/query/*.class \
 		com/pixelmed/scpecg/*.class \
@@ -373,6 +433,7 @@ pixelmed.jar:
 		com/pixelmed/doseocr/OCR_Glyphs_DoseScreen.xml \
 		com/pixelmed/test/*.class \
 		com/pixelmed/ftp/*.class \
+		com/pixelmed/slf4j/*.class \
 		apple/dts/samplecode/osxadapter/*.class
 
 webstart:	${WEBSTARTFILES}
@@ -449,119 +510,215 @@ webstart/icons/WatchFolderAndSend.ico:	icons/WatchFolderAndSend.ico
 webstart/pixelmed.jar:	pixelmed.jar
 	mkdir -p webstart
 	cp $< $@
+	jar ufm $@ webstart/Manifest.txt
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
-webstart/commons-codec-1.3.jar:	lib/additional/commons-codec-1.3.jar
+webstart/pixelmed_imageio.jar:	lib/additional/pixelmed_imageio.jar
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
+
+webstart/${COMMONSCODECJARFILENAME}:	${COMMONSCODECADDITIONALJAR}
+	mkdir -p webstart
+	cp $< $@
+	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/commons-net-ftp-2.0.jar:	lib/additional/commons-net-ftp-2.0.jar
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/hsqldb.jar:	lib/additional/hsqldb.jar
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jmdns.jar:	lib/additional/jmdns.jar
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
-webstart/excalibur-bzip2-1.0.jar:	lib/additional/excalibur-bzip2-1.0.jar
+webstart/${COMMONSCOMPRESSJARFILENAME}:	${COMMONSCOMPRESSADDITIONALJAR}
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/vecmath1.2-1.14.jar:	lib/additional/vecmath1.2-1.14.jar
 	mkdir -p webstart
 	cp $< $@
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart.jaifiles:	${WEBSTARTJAIFILES}
+
+# remove the previous signatures else error about expired certificates, per http://stackoverflow.com/questions/8176166/invalid-sha1-signature-file-digest
 
 webstart/jai-imageio/early-access/1.1/linux-i586/clibwrapper_jiio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/linux-i586/clibwrapper_jiio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/linux-i586/jai_imageio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/linux-i586/jai_imageio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/linux-i586/libclib_jiio.so.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/linux-i586/libclib_jiio.so.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-i586/clibwrapper_jiio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-i586/clibwrapper_jiio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-i586/jai_imageio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-i586/jai_imageio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-i586/libclib_jiio.so.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-i586/libclib_jiio.so.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-sparc/clibwrapper_jiio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-sparc/clibwrapper_jiio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-sparc/jai_imageio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-sparc/jai_imageio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-sparc/libclib_jiio.so.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-sparc/libclib_jiio.so.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-sparc/libclib_jiio_vis.so.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-sparc/libclib_jiio_vis.so.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/solaris-sparc/libclib_jiio_vis2.so.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/solaris-sparc/libclib_jiio_vis2.so.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/windows-i586/clib_jiio.dll.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/windows-i586/clib_jiio.dll.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/windows-i586/clib_jiio_sse2.dll.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/windows-i586/clib_jiio_sse2.dll.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/windows-i586/clib_jiio_util.dll.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/windows-i586/clib_jiio_util.dll.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/windows-i586/clibwrapper_jiio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/windows-i586/clibwrapper_jiio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/jai-imageio/early-access/1.1/windows-i586/jai_imageio.jar:	webstart/download.java.net/media/jai-imageio/webstart/early-access/1.1/windows-i586/jai_imageio.jar
 	mkdir -p `dirname $@`
 	cp $< $@
+	rm -rf unjar
+	mkdir unjar
+	(cd unjar; jar -xf "../$<"; rm -f META-INF/*.SF; rm -f META-INF/*.DSA; rm -f META-INF/*.RSA; jar -cf "../$@" *)
+	rm -r unjar
 	jarsigner -keystore ${PIXELMEDCODESIGNERKEYSTORE} ${PIXELMEDCODESIGNEROPTIONS} $@ ${PIXELMEDCODESIGNERALIAS}
+	jarsigner -verify $@
 
 webstart/sample.com.pixelmed.display.DicomImageViewer.properties:	sample.com.pixelmed.display.DicomImageViewer.properties
 	cp $< $@
@@ -572,185 +729,205 @@ webstart/sample.com.pixelmed.display.DicomCleaner.properties:	sample.com.pixelme
 macapps:	${MACAPPS}
 
 ECGViewer_app:	\
-		ECGViewer.app/Contents/Resources/Java/pixelmed.jar \
-		ECGViewer.app/Contents/Resources/Java/commons-codec-1.3.jar \
-		ECGViewer.app/Contents/MacOS/JavaApplicationStub
-	cp -r ECGViewer.app /Users/$${USER}/Applications/
+		ECGViewer.app/Contents/Java/pixelmed.jar \
+		ECGViewer.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+		ECGViewer.app/Contents/MacOS/JavaAppLauncher
+	rm -rf $${HOME}/Applications/ECGViewer.app
+	cp -r ECGViewer.app $${HOME}/Applications/
 
-ECGViewer.app/Contents/Resources/Java/pixelmed.jar:	pixelmed.jar
-	mkdir -p ECGViewer.app/Contents/Resources/Java
+ECGViewer.app/Contents/Java/pixelmed.jar:	pixelmed.jar
+	mkdir -p ECGViewer.app/Contents/Java
 	cp $< $@
 	
-ECGViewer.app/Contents/Resources/Java/commons-codec-1.3.jar:	lib/additional/commons-codec-1.3.jar
-	mkdir -p ECGViewer.app/Contents/Resources/Java
+ECGViewer.app/Contents/Java/${COMMONSCODECJARFILENAME}:	${COMMONSCODECADDITIONALJAR}
+	mkdir -p ECGViewer.app/Contents/Java
 	cp $< $@
 
-ECGViewer.app/Contents/MacOS/JavaApplicationStub:	/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+ECGViewer.app/Contents/MacOS/JavaAppLauncher:
 	mkdir -p ECGViewer.app/Contents/MacOS
 	if [ -f $@ ]; then chmod u+w $@; fi
-	cp $< $@
+	cp $${HOME}/Distributions/java/JavaAppLauncher $@
 
 DicomImageViewer_app:	\
-		DicomImageViewer.app/Contents/Resources/Java/pixelmed.jar \
-		DicomImageViewer.app/Contents/Resources/Java/hsqldb.jar \
-		DicomImageViewer.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-		DicomImageViewer.app/Contents/Resources/Java/vecmath1.2-1.14.jar \
-		DicomImageViewer.app/Contents/Resources/Java/commons-codec-1.3.jar \
-		DicomImageViewer.app/Contents/Resources/Java/jai_imageio.jar \
-		DicomImageViewer.app/Contents/Resources/Java/jmdns.jar \
+		DicomImageViewer.app/Contents/Java/pixelmed.jar \
+		DicomImageViewer.app/Contents/Java/pixelmed_imageio.jar \
+		DicomImageViewer.app/Contents/Java/hsqldb.jar \
+		DicomImageViewer.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+		DicomImageViewer.app/Contents/Java/vecmath1.2-1.14.jar \
+		DicomImageViewer.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+		DicomImageViewer.app/Contents/Java/jai_imageio.jar \
+		DicomImageViewer.app/Contents/Java/jmdns.jar \
 		DicomImageViewer.app/Contents/Resources/DicomImageViewer.icns \
-		DicomImageViewer.app/Contents/MacOS/JavaApplicationStub
-	cp -r DicomImageViewer.app /Users/$${USER}/Applications/
+		DicomImageViewer.app/Contents/MacOS/JavaAppLauncher
+	rm -rf $${HOME}/Applications/DicomImageViewer.app
+	cp -r DicomImageViewer.app $${HOME}/Applications/
 
-DicomImageViewer.app/Contents/Resources/Java/pixelmed.jar:	pixelmed.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/pixelmed.jar:	pixelmed.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/hsqldb.jar:	lib/additional/hsqldb.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/pixelmed_imageio.jar:	lib/additional/pixelmed_imageio.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar:	lib/additional/excalibur-bzip2-1.0.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/hsqldb.jar:	lib/additional/hsqldb.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/vecmath1.2-1.14.jar:	lib/additional/vecmath1.2-1.14.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME}:	${COMMONSCOMPRESSADDITIONALJAR}
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/commons-codec-1.3.jar:	lib/additional/commons-codec-1.3.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/vecmath1.2-1.14.jar:	lib/additional/vecmath1.2-1.14.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/jai_imageio.jar:	lib/additional/jai_imageio.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/${COMMONSCODECJARFILENAME}:	${COMMONSCODECADDITIONALJAR}
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
-DicomImageViewer.app/Contents/Resources/Java/jmdns.jar:	lib/additional/jmdns.jar
-	mkdir -p DicomImageViewer.app/Contents/Resources/Java
+DicomImageViewer.app/Contents/Java/jai_imageio.jar:	lib/additional/jai_imageio.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
+	cp $< $@
+
+DicomImageViewer.app/Contents/Java/jmdns.jar:	lib/additional/jmdns.jar
+	mkdir -p DicomImageViewer.app/Contents/Java
 	cp $< $@
 
 DicomImageViewer.app/Contents/Resources/DicomImageViewer.icns:	icons/DicomImageViewer.icns
 	mkdir -p DicomImageViewer.app/Contents/Resources
 	cp $< $@
 
-DicomImageViewer.app/Contents/MacOS/JavaApplicationStub:	/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+DicomImageViewer.app/Contents/MacOS/JavaAppLauncher:
 	mkdir -p DicomImageViewer.app/Contents/MacOS
 	if [ -f $@ ]; then chmod u+w $@; fi
-	cp $< $@
+	cp $${HOME}/Distributions/java/JavaAppLauncher $@
 
 DicomCleaner_app:	\
-		DicomCleaner.app/Contents/Resources/Java/pixelmed.jar \
-		DicomCleaner.app/Contents/Resources/Java/hsqldb.jar \
-		DicomCleaner.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-		DicomCleaner.app/Contents/Resources/Java/commons-codec-1.3.jar \
-		DicomCleaner.app/Contents/Resources/Java/jmdns.jar \
-		DicomCleaner.app/Contents/Resources/Java/jai_imageio.jar \
+		DicomCleaner.app/Contents/Java/pixelmed.jar \
+		DicomCleaner.app/Contents/Java/pixelmed_imageio.jar \
+		DicomCleaner.app/Contents/Java/hsqldb.jar \
+		DicomCleaner.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+		DicomCleaner.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+		DicomCleaner.app/Contents/Java/jmdns.jar \
+		DicomCleaner.app/Contents/Java/jai_imageio.jar \
 		DicomCleaner.app/Contents/Resources/DicomCleaner.icns \
-		DicomCleaner.app/Contents/MacOS/JavaApplicationStub
-	cp -r DicomCleaner.app /Users/$${USER}/Applications/
+		DicomCleaner.app/Contents/MacOS/JavaAppLauncher
+	rm -rf $${HOME}/Applications/DicomCleaner.app
+	cp -r DicomCleaner.app $${HOME}/Applications/
 
-DicomCleaner.app/Contents/Resources/Java/pixelmed.jar:	pixelmed.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/pixelmed.jar:	pixelmed.jar
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 
-DicomCleaner.app/Contents/Resources/Java/hsqldb.jar:	lib/additional/hsqldb.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/pixelmed_imageio.jar:	lib/additional/pixelmed_imageio.jar
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 
-DicomCleaner.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar:	lib/additional/excalibur-bzip2-1.0.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/hsqldb.jar:	lib/additional/hsqldb.jar
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 
-DicomCleaner.app/Contents/Resources/Java/commons-codec-1.3.jar:	lib/additional/commons-codec-1.3.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME}:	${COMMONSCOMPRESSADDITIONALJAR}
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 
-DicomCleaner.app/Contents/Resources/Java/jmdns.jar:	lib/additional/jmdns.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/${COMMONSCODECJARFILENAME}:	${COMMONSCODECADDITIONALJAR}
+	mkdir -p DicomCleaner.app/Contents/Java
+	cp $< $@
+
+DicomCleaner.app/Contents/Java/jmdns.jar:	lib/additional/jmdns.jar
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 	
-DicomCleaner.app/Contents/Resources/Java/jai_imageio.jar:	linux/lib/jai_imageio.jar
-	mkdir -p DicomCleaner.app/Contents/Resources/Java
+DicomCleaner.app/Contents/Java/jai_imageio.jar:	linux/lib/jai_imageio.jar
+	mkdir -p DicomCleaner.app/Contents/Java
 	cp $< $@
 
 DicomCleaner.app/Contents/Resources/DicomCleaner.icns:	icons/DicomCleaner.icns
 	mkdir -p DicomCleaner.app/Contents/Resources
 	cp $< $@
 
-DicomCleaner.app/Contents/MacOS/JavaApplicationStub:	/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+DicomCleaner.app/Contents/MacOS/JavaAppLauncher:
 	mkdir -p DicomCleaner.app/Contents/MacOS
 	if [ -f $@ ]; then chmod u+w $@; fi
-	cp $< $@
+	cp $${HOME}/Distributions/java/JavaAppLauncher $@
 
 DoseUtility_app:	\
-		DoseUtility.app/Contents/Resources/Java/pixelmed.jar \
-		DoseUtility.app/Contents/Resources/Java/hsqldb.jar \
-		DoseUtility.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar \
-		DoseUtility.app/Contents/Resources/Java/commons-codec-1.3.jar \
-		DoseUtility.app/Contents/Resources/Java/commons-net-ftp-2.0.jar \
-		DoseUtility.app/Contents/Resources/Java/jmdns.jar \
-		DoseUtility.app/Contents/Resources/Java/jai_imageio.jar \
+		DoseUtility.app/Contents/Java/pixelmed.jar \
+		DoseUtility.app/Contents/Java/pixelmed_imageio.jar \
+		DoseUtility.app/Contents/Java/hsqldb.jar \
+		DoseUtility.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME} \
+		DoseUtility.app/Contents/Java/${COMMONSCODECJARFILENAME} \
+		DoseUtility.app/Contents/Java/commons-net-ftp-2.0.jar \
+		DoseUtility.app/Contents/Java/jmdns.jar \
+		DoseUtility.app/Contents/Java/jai_imageio.jar \
 		DoseUtility.app/Contents/Resources/DoseUtility.icns \
-		DoseUtility.app/Contents/MacOS/JavaApplicationStub
-	cp -r DoseUtility.app /Users/$${USER}/Applications/
+		DoseUtility.app/Contents/MacOS/JavaAppLauncher
+	rm -rf $${HOME}/Applications/DoseUtility.app
+	cp -r DoseUtility.app $${HOME}/Applications/
 
-DoseUtility.app/Contents/Resources/Java/pixelmed.jar:	pixelmed.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/pixelmed.jar:	pixelmed.jar
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
-DoseUtility.app/Contents/Resources/Java/hsqldb.jar:	lib/additional/hsqldb.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/pixelmed_imageio.jar:	lib/additional/pixelmed_imageio.jar
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
-DoseUtility.app/Contents/Resources/Java/excalibur-bzip2-1.0.jar:	lib/additional/excalibur-bzip2-1.0.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/hsqldb.jar:	lib/additional/hsqldb.jar
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
-DoseUtility.app/Contents/Resources/Java/commons-codec-1.3.jar:	lib/additional/commons-codec-1.3.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/${COMMONSCOMPRESSJARFILENAME}:	${COMMONSCOMPRESSADDITIONALJAR}
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
-DoseUtility.app/Contents/Resources/Java/commons-net-ftp-2.0.jar:	lib/additional/commons-net-ftp-2.0.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/${COMMONSCODECJARFILENAME}:	${COMMONSCODECADDITIONALJAR}
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
-DoseUtility.app/Contents/Resources/Java/jmdns.jar:	lib/additional/jmdns.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+DoseUtility.app/Contents/Java/commons-net-ftp-2.0.jar:	lib/additional/commons-net-ftp-2.0.jar
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
-	
-DoseUtility.app/Contents/Resources/Java/jai_imageio.jar:	linux/lib/jai_imageio.jar
-	mkdir -p DoseUtility.app/Contents/Resources/Java
+
+DoseUtility.app/Contents/Java/jmdns.jar:	lib/additional/jmdns.jar
+	mkdir -p DoseUtility.app/Contents/Java
+	cp $< $@
+
+DoseUtility.app/Contents/Java/jai_imageio.jar:	linux/lib/jai_imageio.jar
+	mkdir -p DoseUtility.app/Contents/Java
 	cp $< $@
 
 DoseUtility.app/Contents/Resources/DoseUtility.icns:	icons/DoseUtility.icns
 	mkdir -p DoseUtility.app/Contents/Resources
 	cp $< $@
 
-DoseUtility.app/Contents/MacOS/JavaApplicationStub:	/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+DoseUtility.app/Contents/MacOS/JavaAppLauncher:
 	mkdir -p DoseUtility.app/Contents/MacOS
 	if [ -f $@ ]; then chmod u+w $@; fi
-	cp $< $@
+	cp $${HOME}/Distributions/java/JavaAppLauncher $@
 
 changelog:
 	rm -f CHANGES
-	cvsps -u -q | egrep -v '^(PatchSet|Author:|Branch:|Tag:|Members:|Log:)' | fgrep -v '*** empty log message ***' | grep -v '^[ ]*$$' | sed -e 's/:[0-9.]*->[0-9.]*//' -e 's/:INITIAL->[0-9.]*//' -e 's/^Date: \([0-9][0-9][0-9][0-9]\/[0-9][0-9]\/[0-9][0-9]\) [0-9:]*$$/\1/' >CHANGES
+	cvsps -b HEAD -u -q | egrep -v '^(PatchSet|Author:|Branch:|Tag:|Members:|Log:)' | fgrep -v '*** empty log message ***' | grep -v '^[ ]*$$' | sed -e 's/:[0-9.]*->[0-9.]*//' -e 's/:INITIAL->[0-9.]*//' -e 's/^Date: \([0-9][0-9][0-9][0-9]\/[0-9][0-9]\/[0-9][0-9]\) [0-9:]*$$/\1/' >CHANGES
 	bzip2 <CHANGES >CHANGES.bz2
 	
 clean:	cleanallexceptjar cleanapp webstart.clean windows.clean
 	rm -f pixelmed.jar
 
 cleanapp:
-	rm -f DicomImageViewer.app/Contents/Resources/Java/*.jar
+	rm -f DicomImageViewer.app/Contents/Java/*.jar
 	rm -f DicomImageViewer.app/Contents/Resources/DicomImageViewer.icns
-	rm -f DicomCleaner.app/Contents/Resources/Java/*.jar
+	rm -f DicomCleaner.app/Contents/Java/*.jar
 	rm -f DicomCleaner.app/Contents/Resources/DicomCleaner.icns
-	rm -f DoseUtility.app/Contents/Resources/Java/*.jar
+	rm -f DoseUtility.app/Contents/Java/*.jar
 	rm -f DoseUtility.app/Contents/Resources/DoseUtility.icns
-	rm -f ECGViewer.app/Contents/Resources/Java/*.jar
+	rm -f ECGViewer.app/Contents/Java/*.jar
 	rm -f ECGViewer.app/Contents/Resources/ECGViewer.icns
 
 cleanallexceptjar:	cleansubdirs
+	(cd icons; make clean)
 	rm -f *~ *.class .exclude.list
 
 cleansubdirs:
@@ -761,10 +938,15 @@ cleansubdirs:
 		fi; \
 	done
 
+archivelocalizations: clean .exclude.list
+	export COPYFILE_DISABLE=true; \
+	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
+	${TAR} -cv -X .exclude.list -f - ${LOCALIZATIONFILES} | ${COMPRESS} > pixelmedjavadicom_localizations_archive.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
+
 archivesource: clean .exclude.list
 	export COPYFILE_DISABLE=true; \
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
-	${TAR} -cv -X .exclude.list -f - Makefile ${ADDITIONALFILES} ${SUBDIRS} | ${COMPRESS} > pixelmedjavadicom_source_archive.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
+	${TAR} -cv -X .exclude.list -f - ${ADDITIONALFILES} ${SUBDIRS} | ${COMPRESS} > pixelmedjavadicom_source_archive.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
 
 archivejavadoc: .exclude.list #javadoc
 	export COPYFILE_DISABLE=true; \
@@ -776,7 +958,8 @@ archivedoxygen: .exclude.list #doxygen
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
 	${TAR} -cv -X .exclude.list -f - ${DOXYGENFILES} | ${COMPRESS} > pixelmedjavadicom_javadoc_archive.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
 
-releaseall:	changelog sourcerelease javadocrelease doxygenrelease binaryrelease macapprelease macappecgrelease dependencyrelease otherdocrelease executablerelease
+# without doxygenrelease
+releaseall:	changelog sourcerelease javadocrelease binaryrelease macapprelease macappecgrelease dependencyrelease otherdocrelease executablerelease
 
 binaryrelease: cleanallexceptjar .exclude.list pixelmed.jar #javadoc doxygen
 	export COPYFILE_DISABLE=true; \
@@ -793,7 +976,7 @@ dependencyrelease:	.exclude.list
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
 	${TAR} -cv -X .exclude.list -f - ${DEPENDENCYRELEASEFILES} | ${COMPRESS} > pixelmedjavadicom_dependencyrelease.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
 
-sourcerelease: clean .exclude.list #clean javadoc doxygen
+sourcerelease: clean .exclude.list generateicons # javadoc doxygen
 	export COPYFILE_DISABLE=true; \
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
 	${TAR} -cv -X .exclude.list -f - ${SOURCERELEASEFILES} | ${COMPRESS} > pixelmedjavadicom_sourcerelease.`date '+%Y%m%d'`.tar.${COMPRESSEXT}
@@ -826,12 +1009,12 @@ archivescpecgtestresults:
 archiveosiriswork2:
 	export COPYFILE_DISABLE=true; \
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
-	${TAR} -cvf - /Users/$${USER}/dctool.support/images/dicom/sr/osiris_work2 | ${COMPRESS} > osiris_work2.tar.${COMPRESSEXT}
+	${TAR} -cvf - $${HOME}/dctool.support/images/dicom/sr/osiris_work2 | ${COMPRESS} > osiris_work2.tar.${COMPRESSEXT}
 
 archivetests:
 	export COPYFILE_DISABLE=true; \
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true; \
-	${TAR} -cvf - /Users/$${USER}/dctool.support/images/dicom/sr/mytests | ${COMPRESS} > mytests.tar.${COMPRESSEXT}
+	${TAR} -cvf - $${HOME}/dctool.support/images/dicom/sr/mytests | ${COMPRESS} > mytests.tar.${COMPRESSEXT}
 
 .exclude.list:	Makefile
 	echo "Making .exclude.list"
@@ -871,7 +1054,7 @@ DicomCleanerAssumingJREInstalled.zip: DicomCleanerAssumingJREInstalled.bat pixel
 DicomCleanerWithOwnJRE.zip: DicomCleanerWithOwnJRE.bat pixelmed.jar windows.jre .exclude.list
 	rm -rf $@
 	cp DicomCleanerWithOwnJRE.bat DicomCleaner.bat
-	zip -r $@ DicomCleaner.bat windows/jre6 pixelmed.jar ${DICOMCLEANERDEPENDENCYRELEASEFILES} -x@.exclude.list
+	zip -r $@ DicomCleaner.bat windows/jre pixelmed.jar ${DICOMCLEANERDEPENDENCYRELEASEFILES} -x@.exclude.list
 	rm  DicomCleaner.bat
 	
 DicomCleanerMac.zip:	DicomCleaner_app
@@ -887,7 +1070,7 @@ DoseUtilityAssumingJREInstalled.zip: DoseUtilityAssumingJREInstalled.bat pixelme
 DoseUtilityWithOwnJRE.zip: DoseUtilityWithOwnJRE.bat pixelmed.jar windows.jre .exclude.list
 	rm -rf $@
 	cp DoseUtilityWithOwnJRE.bat DoseUtility.bat
-	zip -r $@ DoseUtility.bat windows/jre6 pixelmed.jar ${DOSEUTILITYDEPENDENCYRELEASEFILES} -x@.exclude.list
+	zip -r $@ DoseUtility.bat windows/jre pixelmed.jar ${DOSEUTILITYDEPENDENCYRELEASEFILES} -x@.exclude.list
 	rm  DoseUtility.bat
 	
 DoseUtilityMac.zip:	DoseUtility_app
@@ -909,14 +1092,15 @@ windows.lib:
 	fi
 
 # used to link to "http://www.junit.org/apidocs/" but this no longer works ... use version-specific "http://javasourcecode.org/html/open-source/junit/junit-4.8.1/" instead
+# used to link to "http://jpedal.org/javadoc/" but this no longer works ... tried archive.org copy ("http://web.archive.org/web/20121002020430/http://jpedal.org/javadoc/") instead but gives "error fetching" ... see also possibly related "http://javadoc.idrsolutions.com/" (does not respond), "https://domaingang.com/domain-law/jpedal-org-complainant-gets-domain-back-after-it-lapsed-via-the-udrp-process/"
 javadoc:
 	rm -rf docs/javadoc
 	javadoc \
-		-classpath .:lib/additional/excalibur-bzip2-1.0.jar:lib/additional/hsqldb.jar:lib/additional/vecmath1.2-1.14.jar:lib/additional/commons-codec-1.3.jar:lib/additional/commons-net-ftp-2.0.jar:lib/additional/jmdns.jar:lib/additional/jpedalSTD.jar:lib/junit/junit-4.8.1.jar \
-		-link http://download.oracle.com/javase/1.5.0/docs/api/ \
-		-link http://jpedal.org/javadoc/ \
+		-nodeprecated \
+		-classpath .:${SLF4JCOMPILEADDITIONALJAR}:${COMMONSCOMPRESSADDITIONALJAR}:${DATABASEADDITIONALJARS}:${VECMATHADDITIONALJAR}:${COMMONSCODECADDITIONALJAR}:${FTPADDITIONALJARS}:${NETWORKADDITIONALJARS}:${JPEDALADDITIONALJAR}:${JUNITJAR}:${JSONADDITIONALJAR}:${CSVADDITIONALJARS} \
+		-link https://docs.oracle.com/javase/8/docs/api/ \
 		-link http://www.hsqldb.org/doc/src/ \
-		-link http://javasourcecode.org/html/open-source/junit/junit-4.8.1/ \
+		-link http://www.slf4j.org/api \
 		-protected -d docs/javadoc \
 		-encoding "UTF8" \
 		${SUBPACKAGES}
@@ -925,7 +1109,7 @@ doxygen:
 	rm -rf docs/doxygen
 	doxygen Doxyfile
 
-docs/supportedstoragesopclasses.txt:	com/pixelmed/dicom/SOPClass.java /Users/$${USER}/work/dicom3tools/libsrc/standard/sopcl.tpl Makefile
+docs/supportedstoragesopclasses.txt:	com/pixelmed/dicom/SOPClass.java $${HOME}/work/dicom3tools/libsrc/standard/sopcl.tpl Makefile
 	if [ -f docs/supportedstoragesopclasses.txt ]; then \
 		rm -f docs/supportedstoragesopclasses.txt.old; \
 		mv docs/supportedstoragesopclasses.txt docs/supportedstoragesopclasses.txt.old; \
@@ -935,7 +1119,7 @@ docs/supportedstoragesopclasses.txt:	com/pixelmed/dicom/SOPClass.java /Users/$${
 			-e '/};/,$$d' \
 			-e 's/^[^A-Za-z]*//' \
 			-e 's/,//' \
-		| xargs -I % grep % /Users/$${USER}/work/dicom3tools/libsrc/standard/sopcl.tpl \
+		| xargs -I % grep % $${HOME}/work/dicom3tools/libsrc/standard/sopcl.tpl \
 		| sed -e 's/^.*Desc="\([^"]*\)".*Uid="\([0-9.]*\)".*$$/\1:\2/' \
 		| awk -F: '{print $$1 "\t" $$2}' \
 		>docs/supportedstoragesopclasses.txt

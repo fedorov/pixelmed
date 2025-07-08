@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,7 +22,7 @@ import javax.swing.tree.*;
  */
 public abstract class ContentItemWithValue extends ContentItem {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemWithValue.java,v 1.1 2013/01/23 23:04:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemWithValue.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
 	
 	/***/
 	protected String valueType;
@@ -59,13 +59,15 @@ public abstract class ContentItemWithValue extends ContentItem {
 	 * the {@link com.pixelmed.dicom.ContentItemFactory ContentItemFactory}.</p>
 	 *
 	 * @param	p					the parent
-	 * @param	valueType
+	 * @param	valueType			value type
 	 * @param	relationshipType	added only if not null or zero length
-	 * @param	conceptName
-	 * @throws	DicomException
+	 * @param	conceptName			coded concept name
+	 * @param	observationDateTime	Observation DateTime, if any
+	 * @param	observationUID		Observation UID, if any
+	 * @throws	DicomException		if error in DICOM encoding
 	 */
-	protected ContentItemWithValue(ContentItem p,String valueType,String relationshipType,CodedSequenceItem conceptName) throws DicomException {
-		super(p,relationshipType);
+	protected ContentItemWithValue(ContentItem p,String valueType,String relationshipType,CodedSequenceItem conceptName,String observationDateTime,String observationUID) throws DicomException {
+		super(p,relationshipType,observationDateTime,observationUID);
 		this.valueType = valueType;
 		{ Attribute a = new CodeStringAttribute(TagFromName.ValueType); a.addValue(valueType); list.put(a); }
 		this.conceptName = conceptName;
@@ -74,6 +76,21 @@ public abstract class ContentItemWithValue extends ContentItem {
 		}
 	}
 	
+	/**
+	 * <p>Construct a content item of a specified type and relationship, creating a new {@link com.pixelmed.dicom.AttributeList AttributeList}, and add it as a child of the specified parent.</p>
+	 *
+	 * <p>The constructor is protected. Instances of specific types of content items should normally be created by using
+	 * the {@link com.pixelmed.dicom.ContentItemFactory ContentItemFactory}.</p>
+	 *
+	 * @param	p					the parent
+	 * @param	valueType			value type
+	 * @param	relationshipType	added only if not null or zero length
+	 * @param	conceptName			coded concept name
+	 * @throws	DicomException		if error in DICOM encoding
+	 */
+	protected ContentItemWithValue(ContentItem p,String valueType,String relationshipType,CodedSequenceItem conceptName) throws DicomException {
+		this(p,valueType,relationshipType,conceptName,null/*observationDateTime*/,null/*observationUID*/);
+	}
 	/**
 	 * <p>Get the value type of this content item.</p>
 	 *
@@ -138,21 +155,14 @@ public abstract class ContentItemWithValue extends ContentItem {
 		return
 		  (relationshipType == null ? "" : relationshipType) + ": "
 		+ (valueType == null || valueType.length() == 0 ? "" : (valueType + ": "))
+		+ (observationUID == null || observationUID.length() == 0 ? "" : ("[" + observationUID + "] "))
+		+ (observationDateTime == null || observationDateTime.length() == 0 ? "" : ("[" + observationDateTime + "] "))
 		+ (conceptName == null ? "" : conceptName.getCodeMeaning())
 		;
 	}
 
 	// Convenience methods
 		
-	/**
-	 * Test if the coded concept name of the content item matches the specified code value and coding scheme designator.
-	 *
-	 * This is more robust than checking code meaning, which may have synomyms, and there is no need to also test code meaning.
-	 *
-	 * @param	csdWanted
-	 * @param	cvWanted
-	 * @return					true if matches
-	 */
 	public boolean contentItemNameMatchesCodeValueAndCodingSchemeDesignator(String cvWanted,String csdWanted) {
 		boolean isMatch = false;
 		if (conceptName != null) {

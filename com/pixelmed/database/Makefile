@@ -29,9 +29,6 @@ all:	${OBJS}
 
 include ${PATHTOROOT}/Makefile.common.mk
 
-.java.class:
-	javac ${JAVACOPTIONS} -classpath ${PATHTOROOT}:${PATHTOADDITIONAL}/hsqldb.jar -sourcepath ${PATHTOROOT} $<
-
 archive:
 	tar -cvf - Makefile *.java | gzip -best > ${PATHTOROOT}/database.`date '+%Y%m%d'`.tar.gz
 
@@ -58,12 +55,12 @@ test.datetime:	DateTimeRangeMatch.class
 	java -cp ${PATHTOROOT} com.pixelmed.database.DateTimeRangeMatch
 
 rebuilddatabase:	RebuildDatabaseFromInstanceFiles.class
-	rm -f ${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.database.*
+	rm -f $${HOME}/.com.pixelmed.display.DicomImageViewer.database.*
 	java -Xmx512m -cp ${PATHTOROOT}:${DATABASEADDITIONALJARS}:${DICOMADDITIONALJARS} \
 		com.pixelmed.database.RebuildDatabaseFromInstanceFiles \
 		PatientStudySeriesConcatenationInstanceModel \
-		${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.database \
-		${PATHTOHOME}/.com.pixelmed.display.DicomImageViewer.images
+		$${HOME}/.com.pixelmed.display.DicomImageViewer.database \
+		$${HOME}/.com.pixelmed.display.DicomImageViewer.images
 
 testdeletepatient:	DeleteFromDatabase.class RebuildDatabaseFromInstanceFiles.class
 	rm -rf /tmp/testdeletepatient

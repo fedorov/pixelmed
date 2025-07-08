@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.convert;
 
@@ -62,22 +62,24 @@ import com.pixelmed.utils.ScrollingTextAreaWriter;
  */
 public class ConvertAmicasJPEG2000FilesetToDicom {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/ConvertAmicasJPEG2000FilesetToDicom.java,v 1.14 2013/02/21 00:06:44 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/ConvertAmicasJPEG2000FilesetToDicom.java,v 1.26 2025/01/29 10:58:06 dclunie Exp $";
+	
+	private static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
 
 	protected String mediaDirectoryPath;
 
-	protected PrintWriter logger;
+	protected PrintWriter pwlogger;		// use name to distinguish from SLF4J use
 	
-	public void setLogger(PrintWriter logger) {
-		this.logger = logger;
+	public void setLogger(PrintWriter pwlogger) {
+		this.pwlogger = pwlogger;
 	}
 	
 	public void setLogger(OutputStream stream) {
-		this.logger = new PrintWriter(stream);
+		this.pwlogger = new PrintWriter(stream);
 	}
 	
 	public void setLogger(javax.swing.JFrame content,int width,int height) {
-		this.logger = new PrintWriter(new ScrollingTextAreaWriter(content,width,height));
+		this.pwlogger = new PrintWriter(new ScrollingTextAreaWriter(content,width,height));
 	}
 	
 	/**
@@ -114,10 +116,10 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 				mediaDirectoryPath=fileChooserThread.getCurrentDirectoryPath();
 			}
 			catch (InterruptedException e) {
-				e.printStackTrace();
+				e.printStackTrace(pwlogger);
 			}
 			catch (InvocationTargetException e) {
-				e.printStackTrace();
+				e.printStackTrace(pwlogger);
 			}
 		}
 
@@ -130,10 +132,10 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 				mediaDirectoryPath=fileChooserThread.getCurrentDirectoryPath();
 			}
 			catch (InterruptedException e) {
-				e.printStackTrace();
+				e.printStackTrace(pwlogger);
 			}
 			catch (InvocationTargetException e) {
-				e.printStackTrace();
+				e.printStackTrace(pwlogger);
 			}
 		}
 		
@@ -170,8 +172,6 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 	
 	protected SpecificCharacterSet specificCharacterSet;
 		
-	protected static DicomDictionary dictionary = new DicomDictionary();
-	
 	protected static UIDGenerator uidGenerator = new UIDGenerator();
 	
 	protected Attribute newAttribute(AttributeTag tag) throws DicomException {
@@ -272,12 +272,12 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 		addDicomAttributeFromXmlAttribute(list,TagFromName.ContentDate,"ImageDate",xmlAttributes,2,null);
 		addDicomAttributeFromXmlAttribute(list,TagFromName.ContentTime,"ImageTime",xmlAttributes,2,null);
 		addDicomAttributeFromXmlAttribute(list,TagFromName.SliceThickness,"SliceThickness",xmlAttributes,3,null);					// should be conditional on Module inclusion :(
-		addDicomAttributeFromXmlAttribute(list,TagFromName.KVP,"KVP",xmlAttributes,3,null);
-		addDicomAttributeFromXmlAttribute(list,TagFromName.RepetitionTime,"RepetitionTime",xmlAttributes,3,null);
-		addDicomAttributeFromXmlAttribute(list,TagFromName.EchoTime,"EchoTime",xmlAttributes,3,null);
-		addDicomAttributeFromXmlAttribute(list,TagFromName.EchoNumbers,"EchoNumbers",xmlAttributes,3,null);
-		addDicomAttributeFromXmlAttribute(list,TagFromName.GantryDetectorTilt,"GantryDetector",xmlAttributes,3,null);
-		addDicomAttributeFromXmlAttribute(list,TagFromName.XRayTubeCurrent,"XrayTubeCurrent",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("KVP"),"KVP",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("RepetitionTime"),"RepetitionTime",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("EchoTime"),"EchoTime",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("EchoNumbers"),"EchoNumbers",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("GantryDetectorTilt"),"GantryDetector",xmlAttributes,3,null);
+		addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("XRayTubeCurrent"),"XrayTubeCurrent",xmlAttributes,3,null);
 		addDicomAttributeFromXmlAttribute(list,TagFromName.ImagePositionPatient,"ImagePositionPt",xmlAttributes,3,null);			// should be conditional on Module inclusion :(
 		addDicomAttributeFromXmlAttribute(list,TagFromName.ImageOrientationPatient,"ImageOrientPt",xmlAttributes,3,null);			// should be conditional on Module inclusion :(
 		addDicomAttributeFromXmlAttribute(list,TagFromName.SliceLocation,"SliceLocation",xmlAttributes,3,null);						// should be conditional on Module inclusion :(
@@ -290,11 +290,11 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 		addDicomAttributeFromXmlAttribute(list,TagFromName.Laterality,"Laterality",xmlAttributes,2,null);
 		
 		if (Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID).equals(SOPClass.MRImageStorage)) {
-			addDicomAttributeFromXmlAttribute(list,TagFromName.ScanningSequence,"ScanningSequence",xmlAttributes,1,"RM");			// since we don't know, fudge it with "research mode"
-			addDicomAttributeFromXmlAttribute(list,TagFromName.SequenceVariant,"SequenceVariant",xmlAttributes,1,"NONE");
-			addDicomAttributeFromXmlAttribute(list,TagFromName.ScanOptions,"ScanOptions",xmlAttributes,2,null);
-			addDicomAttributeFromXmlAttribute(list,TagFromName.MRAcquisitionType,"MRAcquisitionType",xmlAttributes,2,null);
-			addDicomAttributeFromXmlAttribute(list,TagFromName.EchoTrainLength,"EchoTrainLength",xmlAttributes,2,null);
+			addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("ScanningSequence"),"ScanningSequence",xmlAttributes,1,"RM");			// since we don't know, fudge it with "research mode"
+			addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("SequenceVariant"),"SequenceVariant",xmlAttributes,1,"NONE");
+			addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("ScanOptions"),"ScanOptions",xmlAttributes,2,null);
+			addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("MRAcquisitionType"),"MRAcquisitionType",xmlAttributes,2,null);
+			addDicomAttributeFromXmlAttribute(list,dictionary.getTagFromName("EchoTrainLength"),"EchoTrainLength",xmlAttributes,2,null);
 		}
 
 		addDicomAttributeFromXmlAttribute(list,TagFromName.Rows,"NRows",xmlAttributes,1,null);
@@ -375,8 +375,8 @@ public class ConvertAmicasJPEG2000FilesetToDicom {
 		}
 		FileMetaInformation.addFileMetaInformation(imageList,TransferSyntax.ExplicitVRLittleEndian,storingAETitle);
 		File outputFullPath = new File(dicomOutputFolder,Attribute.getSingleStringValueOrNull(imageList,TagFromName.SOPInstanceUID)+".dcm");
-logger.println("Converting \""+fullInputFilePath+"\" -> \""+outputFullPath+"\"");
-logger.flush();
+pwlogger.println("Converting \""+fullInputFilePath+"\" -> \""+outputFullPath+"\"");
+pwlogger.flush();
 		imageList.write(outputFullPath,TransferSyntax.ExplicitVRLittleEndian,true,true);
 	}
 
@@ -387,8 +387,8 @@ logger.flush();
 	 * @param	dicomOutputFolder	the path name to where to write the DICOM files
 	 */
 	public void convertAmicasFiles(String pathName,String dicomOutputFolder) throws IOException, DicomException, ParserConfigurationException, SAXException {
-logger.println("Looking for amicas-patients folder.");
-logger.flush();
+pwlogger.println("Looking for amicas-patients folder.");
+pwlogger.flush();
 		if (pathName != null) {
 			File path = new File(pathName);
 			File amicasPatientsFolder = null;		// look for amicas-patients here or in root folder of here, with various case permutations
@@ -417,12 +417,12 @@ logger.flush();
 				}
 			}
 			if (amicasPatientsFolder == null) {
-logger.println("No amicas-patients folder - nothing to do.");
-logger.flush();
+pwlogger.println("No amicas-patients folder - nothing to do.");
+pwlogger.flush();
 			}
 			else {
-logger.println("Searching for patients.");
-logger.flush();
+pwlogger.println("Searching for patients.");
+pwlogger.flush();
 //System.err.println("Found amicas-patients folder at: "+amicasPatientsFolder);
 				File[] patientFolders = amicasPatientsFolder.listFiles(onlyDirectoriesFileFilter);
 				for (File patientFolder: patientFolders) {
@@ -482,7 +482,7 @@ logger.flush();
 												createDicomImageFileFromAmicasImageFile(amicasPatientsFolder,objectFile,dicomOutputFolder,storingAETitle,patientList,studyList,seriesList,imageList);
 											}
 											catch (Exception e) {
-												logger.println(e);
+												pwlogger.println(e);
 											}
 										}
 									}
@@ -494,8 +494,8 @@ logger.flush();
 				}
 			}
 		}
-logger.println("Done.");
-logger.flush();
+pwlogger.println("Done.");
+pwlogger.flush();
 	}
 		
 	/**
@@ -524,7 +524,7 @@ logger.flush();
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

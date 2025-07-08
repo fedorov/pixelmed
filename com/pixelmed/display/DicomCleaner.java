@@ -1,74 +1,6 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.Vector;
-
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-
-import javax.swing.border.Border;
-
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-
-import javax.swing.tree.TreePath;
-
-import javax.imageio.ImageIO;
 
 import com.pixelmed.database.DatabaseInformationModel;
 import com.pixelmed.database.DatabaseTreeBrowser;
@@ -105,8 +37,80 @@ import com.pixelmed.query.QueryTreeModel;
 import com.pixelmed.query.QueryTreeRecord;
 import com.pixelmed.query.StudyRootQueryInformationModel;
 
+import com.pixelmed.utils.CapabilitiesAvailable;
 import com.pixelmed.utils.CopyStream;
 import com.pixelmed.utils.MessageLogger;
+import com.pixelmed.utils.StringUtilities;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.Vector;
+
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+
+import javax.swing.border.Border;
+
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+
+import javax.swing.tree.TreePath;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an application for importing or retrieving DICOM studies,
@@ -114,23 +118,173 @@ import com.pixelmed.utils.MessageLogger;
  * sending them elsewhere.</p>
  * 
  * <p>It is configured by use of a properties file that resides in the user's
- * home directory in <code>.com.pixelmed.display.DicomCleaner.properties</code>.</p>
- * 
- * <p>It supports import and network retrieval of uncompressed, deflate and bzip compressed,
- * and baseline JPEG compressed images (but not yet other encapsulated compressed pixel data).</p>
- * 
+ * home directory in <code>.com.pixelmed.display.DicomCleaner.properties</code>.
+ * The properties allow control over the user interface elements that are displayed
+ * and record the settings changed by the user when the application closes.</p>
+ *
+ * <p>For a description of the network configuration properties, see {@link com.pixelmed.network.NetworkApplicationProperties NetworkApplicationProperties}.</p>
+ *
+ * <p>The properties that are specific to the application, and their default values, are as follows</p>
+ *
+ * <p><code>Application.Allow.ChangeDatesAndTimes=true</code> - display the change dates and times panel</p>
+ * <p><code>Application.Allow.CheckBox.AcceptAnyTransferSyntax=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.AddContributingEquipment=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.AggregateAgesOver89=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.CleanUIDs=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.HierarchicalExport=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveCharacteristics=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveClinicalTrialAttributes=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveAllStructuredContent=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveUnsafeStructuredContent=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveDescriptions=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveDeviceIdentity=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveIdentity=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveInstitutionIdentity=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemovePrivate=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveProtocolName=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveSeriesDescriptions=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.ZipExport=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.NetworkConfiguration=true</code> - display the Configure button</p>
+ * <p><code>Application.Allow.UserQuery=true</code> - display the query/retrieve buttons, results panel and keys panel</p>
+ * <p><code>Application.CheckBox.IsSelected.AcceptAnyTransferSyntax=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.AddContributingEquipment=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.AggregateAgesOver89=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.CleanUIDs=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.HierarchicalExport=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.ModifyDates=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveCharacteristics=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveClinicalTrialAttributes=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveAllStructuredContent=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveUnsafeStructuredContent=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveDescriptions=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveDeviceIdentity=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveIdentity=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveInstitutionIdentity=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemovePrivate=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveProtocolName=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveSeriesDescriptions=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.ReplaceAccessionNumber=true</code> - selection status ofthe checkbox </p>
+ * <p><code>Application.CheckBox.IsSelected.ReplacePatientID=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.ReplacePatientBirthDate=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.ReplacePatientName=true</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.ZipExport=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.ModifyDatesEpoch=20000101</code> - text value of the dates epoch</p>
+ * <p><code>Application.ReplacementText.AccessionNumber=</code> - text value of the Accession Number replacement field</p>
+ * <p><code>Application.ReplacementText.PatientID=NOID</code> - text value of Patient ID replacement field</p>
+ * <p><code>Application.ReplacementText.PatientBirthDate=19700101</code> - text value of Patient Birth Date replacement field</p>
+ * <p><code>Application.ReplacementText.PatientName=NAME^NONE</code> - text value of Patient Name replacement field</p>
+ * <p><code>Application.RandomReplacementPatientNamePrefix=Anon^</code> - prefix for random value of Patient Name replacement field</p>
+ * <p><code>Application.RandomReplacementPatientIDLength=16</code> - length for zero padded random value of Patient ID (and Patient Name suffix) replacement field</p>
+ * <p><code>Application.RandomReplacementAccessionNumberLength=16</code> - length for zero padded random value of Accession Number replacement field</p>
+ * <p><code>Application.DialogLogger.showDateTime=true</code> - prepend log entries with a time stamp</p>
+ * <p><code>Application.DialogLogger.dateTimeFormat=yyyy-MM-dd'T'HH:mm:ss.SSSZ</code> - the format for the time stamp in java.text.SimpleDateFormat format (if absent, milliseconds since starting)</p>
+ *
  * @author	dclunie
  */
 public class DicomCleaner extends ApplicationFrame {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomCleaner.java,v 1.102 2025/01/29 10:58:07 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomCleaner.java,v 1.52 2013/03/23 13:45:48 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomCleaner.class);
 
 	protected static String resourceBundleName  = "com.pixelmed.display.DicomCleaner";
 	protected static String propertiesFileName  = ".com.pixelmed.display.DicomCleaner.properties";
 	
 	protected static String propertyName_DicomCurrentlySelectedStorageTargetAE = "Dicom.CurrentlySelectedStorageTargetAE";
 	protected static String propertyName_DicomCurrentlySelectedQueryTargetAE = "Dicom.CurrentlySelectedQueryTargetAE";
+	
+	protected static String propertyName_AllowUserQuery = "Application.Allow.UserQuery";
+	
+	protected static String propertyName_AllowNetworkConfiguration = "Application.Allow.NetworkConfiguration";
+	
+	protected static String propertyName_AllowChangeDatesAndTimes = "Application.Allow.ChangeDatesAndTimes";
+
+	protected static String propertyName_AllowRemoveIdentityCheckBox = "Application.Allow.CheckBox.RemoveIdentity";
+	protected static String propertyName_AllowRemoveDescriptionsCheckBox = "Application.Allow.CheckBox.RemoveDescriptions";
+	protected static String propertyName_AllowRemoveSeriesDescriptionsCheckBox = "Application.Allow.CheckBox.RemoveSeriesDescriptions";
+	protected static String propertyName_AllowRemoveProtocolNameCheckBox = "Application.Allow.CheckBox.RemoveProtocolName";
+	protected static String propertyName_AllowRemoveCharacteristicsCheckBox = "Application.Allow.CheckBox.RemoveCharacteristics";
+	protected static String propertyName_AllowRemoveDeviceIdentityCheckBox = "Application.Allow.CheckBox.RemoveDeviceIdentity";
+	protected static String propertyName_AllowRemoveInstitutionIdentityCheckBox = "Application.Allow.CheckBox.RemoveInstitutionIdentity";
+	protected static String propertyName_AllowCleanUIDsCheckBox = "Application.Allow.CheckBox.CleanUIDs";
+	protected static String propertyName_AllowRemovePrivateCheckBox = "Application.Allow.CheckBox.RemovePrivate";
+	protected static String propertyName_AllowAddContributingEquipmentCheckBox = "Application.Allow.CheckBox.AddContributingEquipment";
+	protected static String propertyName_AllowRemoveClinicalTrialAttributesCheckBox = "Application.Allow.CheckBox.RemoveClinicalTrialAttributes";
+	protected static String propertyName_AllowRemoveAllStructuredContentCheckBox = "Application.Allow.CheckBox.RemoveAllStructuredContent";
+	protected static String propertyName_AllowRemoveUnsafeStructuredContentCheckBox = "Application.Allow.CheckBox.RemoveUnsafeStructuredContent";
+	protected static String propertyName_AllowZipExportCheckBox = "Application.Allow.CheckBox.ZipExport";
+	protected static String propertyName_AllowHierarchicalExportCheckBox = "Application.Allow.CheckBox.HierarchicalExport";
+	protected static String propertyName_AllowAcceptAnyTransferSyntaxCheckBox = "Application.Allow.CheckBox.AcceptAnyTransferSyntax";
+	protected static String propertyName_AllowAggregateAgesOver89CheckBox = "Application.Allow.CheckBox.AggregateAgesOver89";	// (001325)
+
+	protected static String propertyName_ReplacementTextPatientName = "Application.ReplacementText.PatientName";
+	protected static String propertyName_ReplacementTextPatientID = "Application.ReplacementText.PatientID";
+	protected static String propertyName_ReplacementTextPatientBirthDate = "Application.ReplacementText.PatientBirthDate";
+	protected static String propertyName_ReplacementTextAccessionNumber = "Application.ReplacementText.AccessionNumber";
+
+	protected static String propertyName_ShowDateTime = "Application.DialogLogger.showDateTime";
+	protected static String propertyName_DateTimeFormat = "Application.DialogLogger.dateTimeFormat";
+
+	protected static String propertyName_CheckBoxReplacePatientNameIsSelected = "Application.CheckBox.IsSelected.ReplacePatientName";
+	protected static String propertyName_CheckBoxReplacePatientIDIsSelected = "Application.CheckBox.IsSelected.ReplacePatientID";
+	protected static String propertyName_CheckBoxReplacePatientBirthDateIsSelected = "Application.CheckBox.IsSelected.ReplacePatientBirthDate";
+	protected static String propertyName_CheckBoxReplaceAccessionNumberIsSelected = "Application.CheckBox.IsSelected.ReplaceAccessionNumber";
+
+	protected static String propertyName_CheckBoxModifyDatesIsSelected = "Application.CheckBox.IsSelected.ModifyDates";
+	
+	protected static String propertyName_ModifyDatesEpoch = "Application.ModifyDatesEpoch";
+	
+	protected static String propertyName_CheckBoxRemoveIdentityIsSelected = "Application.CheckBox.IsSelected.RemoveIdentity";
+	protected static String propertyName_CheckBoxRemoveDescriptionsIsSelected = "Application.CheckBox.IsSelected.RemoveDescriptions";
+	protected static String propertyName_CheckBoxRemoveSeriesDescriptionsIsSelected = "Application.CheckBox.IsSelected.RemoveSeriesDescriptions";
+	protected static String propertyName_CheckBoxRemoveProtocolNameIsSelected = "Application.CheckBox.IsSelected.RemoveProtocolName";
+	protected static String propertyName_CheckBoxRemoveCharacteristicsIsSelected = "Application.CheckBox.IsSelected.RemoveCharacteristics";
+	protected static String propertyName_CheckBoxRemoveDeviceIdentityIsSelected = "Application.CheckBox.IsSelected.RemoveDeviceIdentity";
+	protected static String propertyName_CheckBoxRemoveInstitutionIdentityIsSelected = "Application.CheckBox.IsSelected.RemoveInstitutionIdentity";
+	protected static String propertyName_CheckBoxCleanUIDsIsSelected = "Application.CheckBox.IsSelected.CleanUIDs";
+	protected static String propertyName_CheckBoxRemovePrivateIsSelected = "Application.CheckBox.IsSelected.RemovePrivate";
+	protected static String propertyName_CheckBoxAddContributingEquipmentIsSelected = "Application.CheckBox.IsSelected.AddContributingEquipment";
+	protected static String propertyName_CheckBoxRemoveClinicalTrialAttributesIsSelected = "Application.CheckBox.IsSelected.RemoveClinicalTrialAttributes";
+	protected static String propertyName_CheckBoxRemoveAllStructuredContentIsSelected = "Application.CheckBox.IsSelected.RemoveAllStructuredContentAttributes";
+	protected static String propertyName_CheckBoxRemoveUnsafeStructuredContentIsSelected = "Application.CheckBox.IsSelected.RemoveUnsafeStructuredContentAttributes";
+	protected static String propertyName_CheckBoxZipExportIsSelected = "Application.CheckBox.IsSelected.ZipExport";
+	protected static String propertyName_CheckBoxHierarchicalExportIsSelected = "Application.CheckBox.IsSelected.HierarchicalExport";
+	protected static String propertyName_CheckBoxAcceptAnyTransferSyntaxIsSelected = "Application.CheckBox.IsSelected.AcceptAnyTransferSyntax";
+	protected static String propertyName_CheckBoxAggregateAgesOver89IsSelected = "Application.CheckBox.IsSelected.AggregateAgesOver89";	// (001325)
+
+	protected static String propertyName_RandomReplacementPatientNamePrefix     = "Application.RandomReplacementPatientNamePrefix";
+	protected static String propertyName_RandomReplacementPatientIDLength       = "Application.RandomReplacementPatientIDLength";
+	protected static String propertyName_RandomReplacementAccessionNumberLength = "Application.RandomReplacementAccessionNumberLength";
+	
+	protected static boolean default_CheckBoxReplacePatientNameIsSelected = true;
+	protected static boolean default_CheckBoxReplacePatientIDIsSelected = true;
+	protected static boolean default_CheckBoxReplacePatientBirthDateIsSelected = false;
+	protected static boolean default_CheckBoxReplaceAccessionNumberIsSelected = true;
+	
+	protected static boolean default_CheckBoxModifyDatesIsSelected = false;
+
+	protected static boolean default_CheckBoxRemoveIdentityIsSelected = true;
+	protected static boolean default_CheckBoxRemoveDescriptionsIsSelected = false;
+	protected static boolean default_CheckBoxRemoveSeriesDescriptionsIsSelected = false;
+	protected static boolean default_CheckBoxRemoveProtocolNameIsSelected = false;
+	protected static boolean default_CheckBoxRemoveCharacteristicsIsSelected = false;
+	protected static boolean default_CheckBoxRemoveDeviceIdentityIsSelected = false;
+	protected static boolean default_CheckBoxRemoveInstitutionIdentityIsSelected = false;
+	protected static boolean default_CheckBoxCleanUIDsIsSelected = true;
+	protected static boolean default_CheckBoxRemovePrivateIsSelected = true;
+	protected static boolean default_CheckBoxAddContributingEquipmentIsSelected = true;
+	protected static boolean default_CheckBoxRemoveClinicalTrialAttributesIsSelected = false;
+	protected static boolean default_CheckBoxRemoveAllStructuredContentIsSelected = false;
+	protected static boolean default_CheckBoxRemoveUnsafeStructuredContentIsSelected = false;
+	protected static boolean default_CheckBoxZipExportIsSelected = false;
+	protected static boolean default_CheckBoxHierarchicalExportIsSelected = false;
+	protected static boolean default_CheckBoxAcceptAnyTransferSyntaxIsSelected = false;
+	protected static boolean default_CheckBoxAggregateAgesOver89IsSelected = false;
+
+	protected static boolean default_ShowDateTime = false;
+	protected static String default_DateTimeFormat = null;
+	
+	protected static int default_RandomReplacementPatientIDLength = 16;
+	protected static int default_RandomReplacementAccessionNumberLength = 16;
 	
 	protected static String rootNameForDicomInstanceFilesOnInterchangeMedia = "DICOM";
 	protected static String filePrefixForDicomInstanceFilesOnInterchangeMedia = "I";
@@ -141,9 +295,11 @@ public class DicomCleaner extends ApplicationFrame {
 	protected static int textFieldLengthForQueryPatientName = 16;
 	protected static int textFieldLengthForQueryPatientID = 10;
 	protected static int textFieldLengthForQueryStudyDate = 8;
+	protected static int textFieldLengthForQueryAccessionNumber = 10;
 
 	protected static int textFieldLengthForReplacementPatientName = 16;
 	protected static int textFieldLengthForReplacementPatientID = 10;
+	protected static int textFieldLengthForReplacementPatientBirthDate = 8;
 	protected static int textFieldLengthForReplacementAccessionNumber = 10;
 	protected static int textFieldLengthForModifyDates = 8;
 
@@ -166,22 +322,33 @@ public class DicomCleaner extends ApplicationFrame {
 	protected JCheckBox removePrivateCheckBox;
 	protected JCheckBox addContributingEquipmentCheckBox;
 	protected JCheckBox removeClinicalTrialAttributesCheckBox;
+	protected JCheckBox removeAllStructuredContentCheckBox;
+	protected JCheckBox removeUnsafeStructuredContentCheckBox;
 	protected JCheckBox zipExportCheckBox;
 	protected JCheckBox hierarchicalExportCheckBox;
+	protected JCheckBox acceptAnyTransferSyntaxCheckBox;
+	protected JCheckBox aggregateAgesOver89CheckBox;
 
 	protected JCheckBox replacePatientNameCheckBox;
 	protected JCheckBox replacePatientIDCheckBox;
+	protected JCheckBox replacePatientBirthDateCheckBox;
 	protected JCheckBox replaceAccessionNumberCheckBox;
 	protected JCheckBox modifyDatesCheckBox;
 	
 	protected JTextField replacementPatientNameTextField;
 	protected JTextField replacementPatientIDTextField;
+	protected JTextField replacementPatientBirthDateTextField;
 	protected JTextField replacementAccessionNumberTextField;
 	protected JTextField modifyDatesTextField;
 
 	protected JTextField queryFilterPatientNameTextField;
 	protected JTextField queryFilterPatientIDTextField;
 	protected JTextField queryFilterStudyDateTextField;
+	protected JTextField queryFilterAccessionNumberTextField;
+
+	protected String randomReplacementPatientNamePrefix;
+	protected int randomReplacementPatientIDLength;
+	protected int randomReplacementAccessionNumberLength;
 	
 	protected SafeProgressBarUpdaterThread progressBarUpdater;
 	
@@ -202,84 +369,6 @@ public class DicomCleaner extends ApplicationFrame {
 
 	protected String ourCalledAETitle;		// set when reading network properties; used not just in StorageSCP, but also when creating exported meta information headers
 	
-	protected static boolean haveScannedForCodecs = false;
-
-	protected static boolean haveCheckedForJPEGLosslessCodec = false;
-	protected static boolean haveFoundJPEGLosslessCodec = false;
-	
-	protected boolean haveJPEGLosslessCodec() {
-		if (!haveCheckedForJPEGLosslessCodec) {
-			if (!haveScannedForCodecs) {
-System.err.println("DicomCleaner.haveJPEGLosslessCodec(): Scanning for ImageIO plugin codecs");
-				ImageIO.scanForPlugins();
-				haveScannedForCodecs=true;
-			}
-			haveFoundJPEGLosslessCodec = false;
-			String readerWanted="jpeg-lossless";
-			try {
-				javax.imageio.ImageReader reader =  (javax.imageio.ImageReader)(javax.imageio.ImageIO.getImageReadersByFormatName(readerWanted).next());
-				if (reader != null) {
-System.err.println("DicomCleaner.haveJPEGLosslessCodec(): Found jpeg-lossless reader");
-					haveFoundJPEGLosslessCodec = true;
-					try {
-//System.err.println("DicomCleaner.haveJPEGLosslessCodec(): Calling dispose() on reader");
-						reader.dispose();
-					}
-					catch (Exception e) {
-						e.printStackTrace(System.err);
-					}
-				}
-				else {
-System.err.println("DicomCleaner.haveJPEGLosslessCodec(): No jpeg-lossless reader");
-				}
-			}
-			catch (Exception e) {
-System.err.println("DicomCleaner.haveJPEGLosslessCodec(): No jpeg-lossless reader");
-				haveFoundJPEGLosslessCodec = false;
-			}
-			haveCheckedForJPEGLosslessCodec = true;
-		}
-		return haveFoundJPEGLosslessCodec;
-	}
-	
-	protected static boolean haveCheckedForJPEG2000Part1Codec = false;
-	protected static boolean haveFoundJPEG2000Part1Codec = false;
-	
-	protected boolean haveJPEG2000Part1Codec() {
-		if (!haveCheckedForJPEG2000Part1Codec) {
-			if (!haveScannedForCodecs) {
-System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): Scanning for ImageIO plugin codecs");
-				ImageIO.scanForPlugins();
-				haveScannedForCodecs=true;
-			}
-			haveFoundJPEG2000Part1Codec = false;
-			String readerWanted="JPEG2000";
-			try {
-				javax.imageio.ImageReader reader =  (javax.imageio.ImageReader)(javax.imageio.ImageIO.getImageReadersByFormatName(readerWanted).next());
-				if (reader != null) {
-System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): Found JPEG2000 reader");
-					haveFoundJPEG2000Part1Codec = true;
-					try {
-//System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): Calling dispose() on reader");
-						reader.dispose();
-					}
-					catch (Exception e) {
-						e.printStackTrace(System.err);
-					}
-				}
-				else {
-System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
-				}
-			}
-			catch (Exception e) {
-System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
-				haveFoundJPEG2000Part1Codec = false;
-			}
-			haveCheckedForJPEG2000Part1Codec = true;
-		}
-		return haveFoundJPEG2000Part1Codec;
-	}
-	
 	protected void setCurrentRemoteQueryInformationModel(String remoteAEForQuery) {
 		currentRemoteQueryInformationModel=null;
 		String stringForTitle="";
@@ -296,10 +385,9 @@ System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
 				String                        queryHost = presentationAddress.getHostname();
 				int			      queryPort = presentationAddress.getPort();
 				String                       queryModel = networkApplicationInformation.getApplicationEntityMap().getQueryModel(queryCalledAETitle);
-				int                     queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
 				
 				if (NetworkApplicationProperties.isStudyRootQueryModel(queryModel) || queryModel == null) {
-					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle,queryDebugLevel);
+					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle);
 					stringForTitle=":"+remoteAEForQuery;
 				}
 				else {
@@ -307,7 +395,7 @@ System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
 				}
 			}
 			catch (Exception e) {		// if an AE's property has no value, or model not supported
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Setting remote query target failed ",e);
 			}
 		}
 	}
@@ -366,7 +454,7 @@ System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
 					srcDatabasePanel.validate();
 					new File(dicomFileName).deleteOnExit();
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to insert {} received from {} in {} into database",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
@@ -380,7 +468,7 @@ System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
 	/**
 	 * <p>Start DICOM storage listener for populating source database.</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void activateStorageSCP() throws DicomException, IOException {
 		// Start up DICOM association listener in background for receiving images and responding to echoes ...
@@ -389,16 +477,16 @@ System.err.println("DicomCleaner.haveJPEG2000Part1Codec(): No JPEG2000 reader");
 				int port = networkApplicationProperties.getListeningPort();
 				ourCalledAETitle = networkApplicationProperties.getCalledAETitle();
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Starting up DICOM association listener on port "+port+" AET "+ourCalledAETitle));
-System.err.println("Starting up DICOM association listener on port "+port+" AET "+ourCalledAETitle);
-				int storageSCPDebugLevel = networkApplicationProperties.getStorageSCPDebugLevel();
-				int queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
-				storageSOPClassSCPDispatcher = new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER,new OurReceivedObjectHandler(),
-					srcDatabase == null ? null : srcDatabase.getQueryResponseGeneratorFactory(queryDebugLevel),
-					srcDatabase == null ? null : srcDatabase.getRetrieveResponseGeneratorFactory(queryDebugLevel),
+				slf4jlogger.info("Starting up DICOM association listener on port {} AET {}",port,ourCalledAETitle);
+				storageSOPClassSCPDispatcher = new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,
+					networkApplicationProperties.getAcceptorMaximumLengthReceived(),networkApplicationProperties.getAcceptorSocketReceiveBufferSize(),networkApplicationProperties.getAcceptorSocketSendBufferSize(),
+					savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER,new OurReceivedObjectHandler(),
+					null/*AssociationStatusHandler*/,
+					srcDatabase == null ? null : srcDatabase.getQueryResponseGeneratorFactory(),
+					srcDatabase == null ? null : srcDatabase.getRetrieveResponseGeneratorFactory(),
 					networkApplicationInformation,
 					new OurPresentationContextSelectionPolicy(),
-					false/*secureTransport*/,
-					storageSCPDebugLevel);
+					false/*secureTransport*/);
 				new Thread(storageSOPClassSCPDispatcher).start();
 			}
 		}
@@ -415,9 +503,9 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	// so will work by decompressing during attribute list read for cleaning
 
 	class OurTransferSyntaxSelectionPolicy extends TransferSyntaxSelectionPolicy {
-		public LinkedList applyTransferSyntaxSelectionPolicy(LinkedList presentationContexts,int associationNumber,int debugLevel) {
+		public LinkedList applyTransferSyntaxSelectionPolicy(LinkedList presentationContexts,int associationNumber) {
 //System.err.println("DicomCleaner.OurTransferSyntaxSelectionPolicy.applyTransferSyntaxSelectionPolicy(): offered "+presentationContexts);
-			boolean canUseBzip = PresentationContextListFactory.haveBzip2Support();
+			boolean canUseBzip = CapabilitiesAvailable.haveBzip2Support();
 			ListIterator pcsi = presentationContexts.listIterator();
 			while (pcsi.hasNext()) {
 				PresentationContext pc = (PresentationContext)(pcsi.next());
@@ -431,6 +519,9 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				boolean foundJPEGLosslessSV1 = false;
 				boolean foundJPEG2000 = false;
 				boolean foundJPEG2000Lossless = false;
+				boolean foundJPEGLSLossless = false;
+				boolean foundJPEGLSNearLossless = false;
+				String lastRecognized = null;
 				List tsuids = pc.getTransferSyntaxUIDs();
 				ListIterator tsuidsi = tsuids.listIterator();
 				while (tsuidsi.hasNext()) {
@@ -446,12 +537,16 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1)) foundJPEGLosslessSV1 = true;
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEG2000)) foundJPEG2000 = true;
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless)) foundJPEG2000Lossless = true;
+						else if (transferSyntaxUID.equals(TransferSyntax.JPEGLS)) foundJPEGLSLossless = true;
+						else if (transferSyntaxUID.equals(TransferSyntax.JPEGNLS)) foundJPEGLSNearLossless = true;
+						else if (new TransferSyntax(transferSyntaxUID).isRecognized()) lastRecognized = transferSyntaxUID;
 					}
 				}
 				// discard old list and make a new one ...
 				pc.newTransferSyntaxUIDs();
 				// Policy is prefer bzip then deflate compressed then explicit (little then big) then implicit,
 				// then supported image compression transfer syntaxes in the following order and ignore anything else
+				// unless the acceptAnyTransferSyntaxCheckBox is selected, in which case the last recognized transfer syntax in the offered list will be used
 				// with the intent of having the sender decompress the image compression transfer syntaxes if it provided multiple choices.
 				// must only support ONE in response
 				if (foundBzipped && canUseBzip) {
@@ -472,17 +567,26 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				else if (foundJPEGBaseline) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGBaseline);
 				}
-				else if (foundJPEGLossless && haveJPEGLosslessCodec()) {
+				else if (foundJPEGLossless && CapabilitiesAvailable.haveJPEGLosslessCodec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGLossless);
 				}
-				else if (foundJPEGLosslessSV1 && haveJPEGLosslessCodec()) {
+				else if (foundJPEGLosslessSV1 && CapabilitiesAvailable.haveJPEGLosslessCodec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGLosslessSV1);
 				}
-				else if (foundJPEG2000 && haveJPEG2000Part1Codec()) {
+				else if (foundJPEG2000 && CapabilitiesAvailable.haveJPEG2000Part1Codec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEG2000);
 				}
-				else if (foundJPEG2000Lossless && haveJPEG2000Part1Codec()) {
+				else if (foundJPEG2000Lossless && CapabilitiesAvailable.haveJPEG2000Part1Codec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEG2000Lossless);
+				}
+				else if (foundJPEGLSLossless && CapabilitiesAvailable.haveJPEGLSCodec()) {
+					pc.addTransferSyntaxUID(TransferSyntax.JPEGLS);
+				}
+				else if (foundJPEGLSNearLossless && CapabilitiesAvailable.haveJPEGLSCodec()) {
+					pc.addTransferSyntaxUID(TransferSyntax.JPEGNLS);
+				}
+				else if (acceptAnyTransferSyntaxCheckBox.isSelected() && lastRecognized != null) {
+					pc.addTransferSyntaxUID(lastRecognized);
 				}
 				else {
 					pc.setResultReason((byte)4);				// transfer syntaxes not supported (provider rejection)
@@ -499,7 +603,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	 * <p>Neither will persist when the application is closed, so in memory databases
 	 *  only are used and instances live in the temporary filesystem.</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void activateTemporaryDatabases() throws DicomException {
 		srcDatabase = new PatientStudySeriesConcatenationInstanceModel("mem:src",null,resourceBundle.getString("DatabaseRootTitleForOriginal"));
@@ -591,7 +695,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						}
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Failed to delete local copy of file ",e);
 						logger.sendLn("Failed to delete local copy of file "+fileName);
 					}
 				}
@@ -619,7 +723,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				purgeFilesAndDatabaseInformation(currentDestinationDatabaseSelections,logger,progressBarUpdater,0,1);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Purging failed ",e);
 			}
 			srcDatabasePanel.removeAll();
 			dstDatabasePanel.removeAll();
@@ -628,7 +732,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				new OurDestinationDatabaseTreeBrowser(dstDatabase,dstDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh source database browser failed ",e);
 			}
 			srcDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -645,21 +749,22 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				activeThread.start();
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Purging failed ",e);
 			}
 		}
 	}
 		
-	protected void copyFromOriginalToCleanedPerformingAction(Vector paths,Date earliestDateInSet,MessageLogger logger,SafeProgressBarUpdaterThread progressBarUpdater) throws DicomException, IOException {
+	protected boolean copyFromOriginalToCleanedPerformingAction(Vector paths,Date earliestDateInSet,MessageLogger logger,SafeProgressBarUpdaterThread progressBarUpdater) throws DicomException, IOException {
+		boolean success = true;
 		if (paths != null) {
 			Date epochForDateModification = null;
 			if (modifyDatesCheckBox.isSelected()) {
 				try {
 					epochForDateModification = DateTimeAttribute.getDateFromFormattedString(modifyDatesTextField.getText().trim());		// assumes 0 time and UTC if not specified
-System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): epochForDateModification "+epochForDateModification);
+slf4jlogger.info("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): epochForDateModification {}",epochForDateModification);
 				}
 				catch (java.text.ParseException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Could not get system epoch ",e);
 					epochForDateModification = new Date(0);		// use system epoch if failed; better than to not modify them at all when requested to
 				}
 			}
@@ -669,155 +774,179 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 				if (dicomFileName != null) {
 //System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): doing file "+dicomFileName);
 					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaning "+dicomFileName));
-					// do not log it yet ... wait till we have output file name
+					try {
+						// do not log it yet ... wait till we have output file name
 //long startTime = System.currentTimeMillis();
-					File file = new File(dicomFileName);
-					DicomInputStream i = new DicomInputStream(file);
-					AttributeList list = new AttributeList();
+						File file = new File(dicomFileName);
+						DicomInputStream i = new DicomInputStream(file);
+						AttributeList list = new AttributeList();
 //long currentTime = System.currentTimeMillis();
 //System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): reading AttributeList took = "+(currentTime-startTime)+" ms");
 //startTime=currentTime;
-					list.read(i);
-					i.close();
+						list.setDecompressPixelData(false);
+						list.read(i);
+						i.close();
 
-					list.removeGroupLengthAttributes();
-					list.correctDecompressedImagePixelModule();
-					list.insertLossyImageCompressionHistoryIfDecompressed();
-					list.removeMetaInformationHeaderAttributes();
+						list.removeGroupLengthAttributes();
+						// did not decompress, so do not need to change ImagePixelModule attributes or insert lossy compression history
+
+						String outputTransferSyntaxUID = Attribute.getSingleStringValueOrDefault(list,TagFromName.TransferSyntaxUID,TransferSyntax.ExplicitVRLittleEndian);	// covers missing or empty case (001136)
+						if (outputTransferSyntaxUID.equals(TransferSyntax.ImplicitVRLittleEndian)) {
+							outputTransferSyntaxUID = TransferSyntax.ExplicitVRLittleEndian;
+						}
+
+						list.removeMetaInformationHeaderAttributes();
 					
-					if (removeClinicalTrialAttributesCheckBox.isSelected()) {
-						ClinicalTrialsAttributes.removeClinicalTrialsAttributes(list);
-					}
-					if (removeIdentityCheckBox.isSelected()) {
-						ClinicalTrialsAttributes.removeOrNullIdentifyingAttributes(list,
-							ClinicalTrialsAttributes.HandleUIDs.keep,
-							!removeDescriptionsCheckBox.isSelected(),
-							!removeSeriesDescriptionsCheckBox.isSelected(),
-							!removeProtocolNameCheckBox.isSelected(),
-							!removeCharacteristicsCheckBox.isSelected(),
-							!removeDeviceIdentityCheckBox.isSelected(),
-							!removeInstitutionIdentityCheckBox.isSelected(),
-							modifyDatesCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleDates.modify : ClinicalTrialsAttributes.HandleDates.keep,epochForDateModification,earliestDateInSet);
-					}
-					if (replacePatientNameCheckBox.isSelected()) {
-						String newName = replacementPatientNameTextField.getText().trim();
-						{ AttributeTag tag = TagFromName.PatientName; list.remove(tag); Attribute a = new PersonNameAttribute(tag); a.addValue(newName); list.put(tag,a); }
-					}
-					if (replacePatientIDCheckBox.isSelected()) {
-						String newID = replacementPatientIDTextField.getText().trim();
-						{ AttributeTag tag = TagFromName.PatientID; list.remove(tag); Attribute a = new LongStringAttribute(tag); a.addValue(newID); list.put(tag,a); }
-					}
-					if (replaceAccessionNumberCheckBox.isSelected()) {
-						String newAccessionNumber = replacementAccessionNumberTextField.getText().trim();
-						{ AttributeTag tag = TagFromName.AccessionNumber; list.remove(tag); Attribute a = new ShortStringAttribute(tag); a.addValue(newAccessionNumber); list.put(tag,a); }
-					}
+						if (removeClinicalTrialAttributesCheckBox.isSelected()) {
+							ClinicalTrialsAttributes.removeClinicalTrialsAttributes(list);
+						}
+						if (removeIdentityCheckBox.isSelected()) {
+							ClinicalTrialsAttributes.removeOrNullIdentifyingAttributes(list,
+								ClinicalTrialsAttributes.HandleUIDs.keep,
+								!removeDescriptionsCheckBox.isSelected(),
+								!removeSeriesDescriptionsCheckBox.isSelected(),
+								!removeProtocolNameCheckBox.isSelected(),
+								!removeCharacteristicsCheckBox.isSelected(),
+								!removeDeviceIdentityCheckBox.isSelected(),
+								!removeInstitutionIdentityCheckBox.isSelected(),
+								modifyDatesCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleDates.modify : ClinicalTrialsAttributes.HandleDates.keep,epochForDateModification,earliestDateInSet,
+								removeAllStructuredContentCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleStructuredContent.remove : (removeUnsafeStructuredContentCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleStructuredContent.modify : ClinicalTrialsAttributes.HandleStructuredContent.keep),
+								aggregateAgesOver89CheckBox.isSelected());	// (001325)
+						}
+						if (replacePatientNameCheckBox.isSelected()) {
+							String newName = replacementPatientNameTextField.getText().trim();
+							{ AttributeTag tag = TagFromName.PatientName; list.remove(tag); Attribute a = new PersonNameAttribute(tag); a.addValue(newName); list.put(tag,a); }
+						}
+						if (replacePatientIDCheckBox.isSelected()) {
+							String newID = replacementPatientIDTextField.getText().trim();
+							{ AttributeTag tag = TagFromName.PatientID; list.remove(tag); Attribute a = new LongStringAttribute(tag); a.addValue(newID); list.put(tag,a); }
+						}
+						if (replacePatientBirthDateCheckBox.isSelected()) {
+							String newBirthDate = replacementPatientBirthDateTextField.getText().trim();
+							{ AttributeTag tag = TagFromName.PatientBirthDate; list.remove(tag); Attribute a = new DateAttribute(tag); a.addValue(newBirthDate); list.put(tag,a); }
+						}
+						if (replaceAccessionNumberCheckBox.isSelected()) {
+							String newAccessionNumber = replacementAccessionNumberTextField.getText().trim();
+							{ AttributeTag tag = TagFromName.AccessionNumber; list.remove(tag); Attribute a = new ShortStringAttribute(tag); a.addValue(newAccessionNumber); list.put(tag,a); }
+						}
 					
-					if (removePrivateCheckBox.isSelected()) {
-						list.removeUnsafePrivateAttributes();
-						{
-							Attribute a = list.get(TagFromName.DeidentificationMethod);
-							if (a != null) {
-								a.addValue("Unsafe private removed");
+						if (removePrivateCheckBox.isSelected()) {
+							list.removeUnsafePrivateAttributes();
+							{
+								Attribute a = list.get(TagFromName.DeidentificationMethod);
+								if (a != null) {
+									a.addValue("Unsafe private removed");
+								}
+							}
+							{
+								SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
+								if (a != null) {
+									a.addItem(new CodedSequenceItem("113111","DCM","Retain Safe Private Option").getAttributeList());
+								}
 							}
 						}
-						{
-							SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
-							if (a != null) {
-								a.addItem(new CodedSequenceItem("113111","DCM","Retain Safe Private Option").getAttributeList());
+						else {
+							{
+								Attribute a = list.get(TagFromName.DeidentificationMethod);
+								if (a != null) {
+									a.addValue("All private retained");
+								}
+							}
+							{
+								SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
+								if (a != null) {
+									a.addItem(new CodedSequenceItem("210002","99PMP","Retain all private elements").getAttributeList());
+								}
 							}
 						}
-					}
-					else {
-						{
-							Attribute a = list.get(TagFromName.DeidentificationMethod);
-							if (a != null) {
-								a.addValue("All private retained");
+						if (cleanUIDsCheckBox.isSelected()) {
+							ClinicalTrialsAttributes.remapUIDAttributes(list);
+							{
+								Attribute a = list.get(TagFromName.DeidentificationMethod);
+								if (a != null) {
+									a.addValue("UIDs remapped");
+								}
 							}
-						}
-						{
-							SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
-							if (a != null) {
-								a.addItem(new CodedSequenceItem("210002","99PMP","Retain all private elements").getAttributeList());
-							}
-						}
-					}
-					if (cleanUIDsCheckBox.isSelected()) {
-						ClinicalTrialsAttributes.remapUIDAttributes(list);
-						{
-							Attribute a = list.get(TagFromName.DeidentificationMethod);
-							if (a != null) {
-								a.addValue("UIDs remapped");
-							}
-						}
-						// remove the default Retain UIDs added by ClinicalTrialsAttributes.removeOrNullIdentifyingAttributes() with the ClinicalTrialsAttributes.HandleUIDs.keep option
-						{
-							SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
-							if (a != null) {
-								Iterator<SequenceItem> it = a.iterator();
-								while (it.hasNext()) {
-									SequenceItem item = it.next();
-									if (item != null) {
-										CodedSequenceItem testcsi = new CodedSequenceItem(item.getAttributeList());
-										if (testcsi != null) {
-											String cv = testcsi.getCodeValue();
-											String csd = testcsi.getCodingSchemeDesignator();
-											if (cv != null && cv.equals("113110") && csd != null && csd.equals("DCM")) {	// "Retain UIDs Option"
-												it.remove();
+							// remove the default Retain UIDs added by ClinicalTrialsAttributes.removeOrNullIdentifyingAttributes() with the ClinicalTrialsAttributes.HandleUIDs.keep option
+							{
+								SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
+								if (a != null) {
+									Iterator<SequenceItem> it = a.iterator();
+									while (it.hasNext()) {
+										SequenceItem item = it.next();
+										if (item != null) {
+											CodedSequenceItem testcsi = new CodedSequenceItem(item.getAttributeList());
+											if (testcsi != null) {
+												String cv = testcsi.getCodeValue();
+												String csd = testcsi.getCodingSchemeDesignator();
+												if (cv != null && cv.equals("113110") && csd != null && csd.equals("DCM")) {	// "Retain UIDs Option"
+													it.remove();
+												}
 											}
 										}
 									}
 								}
 							}
-						}
-						{
-							SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
-							if (a != null) {
-								a.addItem(new CodedSequenceItem("210001","99PMP","Remap UIDs").getAttributeList());
+							{
+								SequenceAttribute a = (SequenceAttribute)(list.get(TagFromName.DeidentificationMethodCodeSequence));
+								if (a != null) {
+									a.addItem(new CodedSequenceItem("210001","99PMP","Remap UIDs").getAttributeList());
+								}
 							}
 						}
-					}
-					if (addContributingEquipmentCheckBox.isSelected()) {
-						ClinicalTrialsAttributes.addContributingEquipmentSequence(list,
-							true,
-							new CodedSequenceItem("109104","DCM","De-identifying Equipment"),	// per CP 892
-							"PixelMed",														// Manufacturer
-							null,															// Institution Name
-							null,															// Institutional Department Name
-							null		,													// Institution Address
-							ourCalledAETitle,												// Station Name
-							"DicomCleaner",													// Manufacturer's Model Name
-							null,															// Device Serial Number
-							getBuildDate(),													// Software Version(s)
-							"Cleaned");
-					}
-					FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,ourCalledAETitle);
-					list.insertSuitableSpecificCharacterSetForAllStringValues();	// E.g., may have de-identified Kanji name and need new character set
+						if (addContributingEquipmentCheckBox.isSelected()) {
+							ClinicalTrialsAttributes.addContributingEquipmentSequence(list,
+								true,
+								new CodedSequenceItem("109104","DCM","De-identifying Equipment"),	// per CP 892
+								"PixelMed",														// Manufacturer
+								null,															// Institution Name
+								null,															// Institutional Department Name
+								null		,													// Institution Address
+								ourCalledAETitle,												// Station Name
+								"DicomCleaner",													// Manufacturer's Model Name
+								null,															// Device Serial Number
+								getBuildDate(),													// Software Version(s)
+								"Cleaned");
+						}
+//System.err.println("Writing outputTransferSyntaxUID = "+outputTransferSyntaxUID);
+						FileMetaInformation.addFileMetaInformation(list,outputTransferSyntaxUID,ourCalledAETitle);
+						list.insertSuitableSpecificCharacterSetForAllStringValues();	// E.g., may have de-identified Kanji name and need new character set
 //currentTime = System.currentTimeMillis();
 //System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): cleaning AttributeList took = "+(currentTime-startTime)+" ms");
 //startTime=currentTime;
-					File cleanedFile = File.createTempFile("clean",".dcm");
-					cleanedFile.deleteOnExit();
-					list.write(cleanedFile);
+						File cleanedFile = File.createTempFile("clean",".dcm");
+						cleanedFile.deleteOnExit();
+						list.write(cleanedFile,outputTransferSyntaxUID,true/*useMeta*/,true/*useBufferedStream*/);
 //currentTime = System.currentTimeMillis();
 //System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): writing AttributeList took = "+(currentTime-startTime)+" ms");
 //startTime=currentTime;
-					logger.sendLn("Cleaned "+dicomFileName+" into "+cleanedFile.getCanonicalPath());
-					dstDatabase.insertObject(list,cleanedFile.getCanonicalPath(),DatabaseInformationModel.FILE_COPIED);
+						logger.sendLn("Cleaned "+dicomFileName+" into "+cleanedFile.getCanonicalPath());
+						dstDatabase.insertObject(list,cleanedFile.getCanonicalPath(),DatabaseInformationModel.FILE_COPIED);
 //currentTime = System.currentTimeMillis();
 //System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): inserting cleaned object in database took = "+(currentTime-startTime)+" ms");
 //startTime=currentTime;
+					}
+					catch (Exception e) {
+						System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): while cleaning "+dicomFileName);
+						slf4jlogger.error("Cleaning failed for "+dicomFileName,e);
+						logger.sendLn("Cleaning failed for "+dicomFileName+" because "+e.toString());
+						success = false;
+					}
 				}
 				SafeProgressBarUpdaterThread.updateProgressBar(progressBarUpdater,j+1);
 			}
 		}
+		return success;
 	}
 	
 	protected static Date findEarliestDate(Map<String,Date> earliestDatesIndexedBySourceFilePath,Vector<String> sourceFilePathSelections) {
 		Date earliestSoFar = null;
-		for (String path : sourceFilePathSelections) {
-			Date candidate = earliestDatesIndexedBySourceFilePath.get(path);
-			if (candidate != null && (earliestSoFar == null || candidate.before(earliestSoFar))) {
-				earliestSoFar = candidate;
+		if (sourceFilePathSelections != null) {	// (000978)
+			for (String path : sourceFilePathSelections) {
+				Date candidate = earliestDatesIndexedBySourceFilePath.get(path);
+				if (candidate != null && (earliestSoFar == null || candidate.before(earliestSoFar))) {
+					earliestSoFar = candidate;
+				}
 			}
 		}
 		return earliestSoFar;
@@ -840,19 +969,23 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 			cursorChanger.setWaitCursor();
 			logger.sendLn("Cleaning started");
 			SafeProgressBarUpdaterThread.startProgressBar(progressBarUpdater);
+			long startTime = System.currentTimeMillis();
 			Date earliestDateInSet = findEarliestDate(earliestDatesIndexedBySourceFilePath,sourceFilePathSelections);
 			try {
-				copyFromOriginalToCleanedPerformingAction(sourceFilePathSelections,earliestDateInSet,logger,progressBarUpdater);
+				if (!copyFromOriginalToCleanedPerformingAction(sourceFilePathSelections,earliestDateInSet,logger,progressBarUpdater)) {
+					ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaning (partially) failed: "));
+				}
 			} catch (Exception e) {
-				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaned failed: "+e));
-				e.printStackTrace(System.err);
+				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaning failed: "+e));
+				slf4jlogger.error("Cleaning failed ",e);
 			}
+			slf4jlogger.info("CleanWorker.run(): cleaning time = {}",(System.currentTimeMillis() - startTime));
 			dstDatabasePanel.removeAll();
 			try {
 				new OurDestinationDatabaseTreeBrowser(dstDatabase,dstDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh destination database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh destination database browser failed ",e);
 			}
 			dstDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -869,42 +1002,53 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 				activeThread.start();
 
 			} catch (Exception e) {
-				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaned failed: "+e));
-				e.printStackTrace(System.err);
+				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Cleaning failed: "+e));
+				slf4jlogger.error("Cleaning failed ",e);
 			}
 		}
 	}
 	
 	protected class OurMediaImporter extends MediaImporter {
-		public OurMediaImporter(MessageLogger logger,JProgressBar progressBar) {
+		boolean acceptAnyTransferSyntax;
+		
+		public OurMediaImporter(MessageLogger logger,JProgressBar progressBar,boolean acceptAnyTransferSyntax) {
 			super(logger,progressBar);
+			this.acceptAnyTransferSyntax = acceptAnyTransferSyntax;
 		}
 		
 		protected void doSomethingWithDicomFileOnMedia(String mediaFileName) {
 			try {
+				logger.sendLn("Importing DICOM file: "+mediaFileName);
 				importFileIntoDatabase(srcDatabase,mediaFileName,DatabaseInformationModel.FILE_REFERENCED,earliestDatesIndexedBySourceFilePath);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Importing DICOM file {} failed",mediaFileName,e);
 			}
 		}
 		
-		protected boolean canUseBzip = PresentationContextListFactory.haveBzip2Support();
+		protected boolean canUseBzip = CapabilitiesAvailable.haveBzip2Support();
 
 		// override base class isOKToImport(), which rejects unsupported compressed transfer syntaxes
 		
 		protected boolean isOKToImport(String sopClassUID,String transferSyntaxUID) {
+			slf4jlogger.debug("isOKToImport(): transferSyntaxUID {}",transferSyntaxUID);
+			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("isOKToImport(): {}",(transferSyntaxUID != null && transferSyntaxUID.length() > 0) ? new TransferSyntax(transferSyntaxUID).dump() : "");
+			slf4jlogger.debug("isOKToImport(): sopClassUID {}",sopClassUID);
+			slf4jlogger.debug("isOKToImport(): isImageStorage {}",SOPClass.isImageStorage(sopClassUID));
 			return sopClassUID != null
 				&& (SOPClass.isImageStorage(sopClassUID) || (SOPClass.isNonImageStorage(sopClassUID) && ! SOPClass.isDirectory(sopClassUID)))
-				&& transferSyntaxUID != null
-				&& (transferSyntaxUID.equals(TransferSyntax.ImplicitVRLittleEndian)
+				&& (transferSyntaxUID == null	/* missing from meta information or no meta information, so assume EVRLE is OK (001136) */
+				 || (acceptAnyTransferSyntax && new TransferSyntax(transferSyntaxUID).isRecognized())
+				 || transferSyntaxUID.equals(TransferSyntax.ImplicitVRLittleEndian)
 				 || transferSyntaxUID.equals(TransferSyntax.ExplicitVRLittleEndian)
 				 || transferSyntaxUID.equals(TransferSyntax.ExplicitVRBigEndian)
 				 || transferSyntaxUID.equals(TransferSyntax.DeflatedExplicitVRLittleEndian)
-				 || (transferSyntaxUID.equals(TransferSyntax.DeflatedExplicitVRLittleEndian) && canUseBzip)
+				 || (transferSyntaxUID.equals(TransferSyntax.PixelMedBzip2ExplicitVRLittleEndian) && canUseBzip)
+				 || transferSyntaxUID.equals(TransferSyntax.RLE)
 				 || transferSyntaxUID.equals(TransferSyntax.JPEGBaseline)
-				 || haveJPEGLosslessCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLossless) || transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1))
-				 || haveJPEG2000Part1Codec() && (transferSyntaxUID.equals(TransferSyntax.JPEG2000) || transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless))
+				 || CapabilitiesAvailable.haveJPEGLosslessCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLossless) || transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1))
+				 || CapabilitiesAvailable.haveJPEG2000Part1Codec() && (transferSyntaxUID.equals(TransferSyntax.JPEG2000) || transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless))
+				 || CapabilitiesAvailable.haveJPEGLSCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLS) || transferSyntaxUID.equals(TransferSyntax.JPEGNLS))
 				);
 		}
 	}
@@ -918,7 +1062,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 		String pathName;
 		
 		ImportWorker(String pathName,DatabaseInformationModel srcDatabase,JPanel srcDatabasePanel) {
-			importer = new OurMediaImporter(logger,progressBarUpdater.getProgressBar());
+			importer = new OurMediaImporter(logger,progressBarUpdater.getProgressBar(),acceptAnyTransferSyntaxCheckBox.isSelected());
 			this.srcDatabase=srcDatabase;
 			this.srcDatabasePanel=srcDatabasePanel;
 			this.pathName=pathName;
@@ -932,14 +1076,14 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 				importer.importDicomFiles(pathName);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Importing failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Importing failed ",e);
 			}
 			srcDatabasePanel.removeAll();
 			try {
 				new OurSourceDatabaseTreeBrowser(srcDatabase,srcDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh source database browser failed ",e);
 			}
 			srcDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -970,7 +1114,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 				}
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Importing failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Importing failed ",e);
 			}
 		}
 	}
@@ -1071,7 +1215,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Export failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Export failed ",e);
 			}
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
 			logger.sendLn("Export complete");
@@ -1096,7 +1240,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 					}
 					catch (Exception e) {
 						ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Export failed: "+e));
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Export failed ",e);
 					}
 				}
 				// else user cancelled operation in JOptionPane.showInputDialog() so gracefully do nothing
@@ -1130,12 +1274,20 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 		String calledAETitle;
 		String callingAETitle;
 		SetOfDicomFiles setOfDicomFiles;
+		int ourMaximumLengthReceived;
+		int socketReceiveBufferSize;
+		int socketSendBufferSize;
 		
-		SendWorker(String hostname,int port,String calledAETitle,String callingAETitle,SetOfDicomFiles setOfDicomFiles) {
+		SendWorker(String hostname,int port,String calledAETitle,String callingAETitle,
+				int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize,
+				SetOfDicomFiles setOfDicomFiles) {
 			this.hostname=hostname;
 			this.port=port;
 			this.calledAETitle=calledAETitle;
 			this.callingAETitle=callingAETitle;
+			this.ourMaximumLengthReceived=ourMaximumLengthReceived;
+			this.socketReceiveBufferSize=socketReceiveBufferSize;
+			this.socketSendBufferSize=socketSendBufferSize;
 			this.setOfDicomFiles=setOfDicomFiles;
 		}
 
@@ -1145,13 +1297,14 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 			try {
 				int nFiles = setOfDicomFiles.size();
 				SafeProgressBarUpdaterThread.updateProgressBar(progressBarUpdater,0,nFiles);
-				new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,setOfDicomFiles,0/*compressionLevel*/,
-					new OurMultipleInstanceTransferStatusHandler(nFiles,logger,progressBarUpdater),
-					0/*debugLevel*/);
+				new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,
+					ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,
+					setOfDicomFiles,0/*compressionLevel*/,
+					new OurMultipleInstanceTransferStatusHandler(nFiles,logger,progressBarUpdater));
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Send failed: "+e));
 				logger.sendLn("Send failed");
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Send failed ",e);
 			}
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
 			logger.sendLn("Send complete");
@@ -1165,7 +1318,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 			if (currentDestinationFilePathSelections != null && currentDestinationFilePathSelections.size() > 0) {
 				Properties properties = getProperties();
 				String ae = properties.getProperty(propertyName_DicomCurrentlySelectedStorageTargetAE);
-				ae = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName("Select destination","Send ...",ae);
+				ae = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(resourceBundle.getString("sendSelectMessage"),resourceBundle.getString("sendSelectDialogTitle")+" ...",ae);
 				if (ae != null && networkApplicationProperties != null) {
 					try {
 						String                   callingAETitle = networkApplicationProperties.getCallingAETitle();
@@ -1173,12 +1326,15 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 						PresentationAddress presentationAddress = networkApplicationInformation.getApplicationEntityMap().getPresentationAddress(calledAETitle);
 						String                         hostname = presentationAddress.getHostname();
 						int                                port = presentationAddress.getPort();
+						int            ourMaximumLengthReceived = networkApplicationProperties.getInitiatorMaximumLengthReceived();
+						int             socketReceiveBufferSize = networkApplicationProperties.getInitiatorSocketReceiveBufferSize();
+						int                socketSendBufferSize = networkApplicationProperties.getInitiatorSocketSendBufferSize();
 						
 						SetOfDicomFiles setOfDicomFiles = new SetOfDicomFiles(currentDestinationFilePathSelections);
-						new Thread(new SendWorker(hostname,port,calledAETitle,callingAETitle,setOfDicomFiles)).start();
+						new Thread(new SendWorker(hostname,port,calledAETitle,callingAETitle,ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,setOfDicomFiles)).start();
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 				// else user cancelled operation in JOptionPane.showInputDialog() so gracefully do nothing
@@ -1189,8 +1345,8 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 	
 	protected class OurDicomImageBlackout extends DicomImageBlackout {
 	
-		OurDicomImageBlackout(String title,String dicomFileNames[],int burnedinflag,String ourAETitle) {
-			super(title,dicomFileNames,(DicomImageBlackout.StatusNotificationHandler)null,burnedinflag);
+		OurDicomImageBlackout(String dicomFileNames[],int burnedinflag,String ourAETitle) {
+			super(dicomFileNames,(DicomImageBlackout.StatusNotificationHandler)null,burnedinflag);
 			statusNotificationHandler = new ApplicationStatusChangeEventNotificationHandler();
 			this.ourAETitle=ourAETitle;
 		}
@@ -1220,10 +1376,10 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 						for (int j=0; j< nFiles; ++j) {
 							fileNames[j] = (String)(currentDestinationFilePathSelections.get(j));
 						}
-						new OurDicomImageBlackout("Dicom Image Blackout",fileNames,DicomImageBlackout.BurnedInAnnotationFlagAction.ADD_AS_NO_IF_SAVED,ourCalledAETitle);
+						new OurDicomImageBlackout(fileNames,DicomImageBlackout.BurnedInAnnotationFlagAction.ADD_AS_NO_IF_SAVED,ourCalledAETitle);
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Dicom Image Blackout failed ",e);
 					}
 				}
 			}
@@ -1280,7 +1436,7 @@ System.err.println("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): ep
 					}
 				}
 			}
-System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missing currentRemoteQuerySelectionLevel to be "+currentRemoteQuerySelectionLevel);
+slf4jlogger.info("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missing currentRemoteQuerySelectionLevel to be {}",currentRemoteQuerySelectionLevel);
 		}
 	}
 
@@ -1289,7 +1445,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 		 * @param	q
 		 * @param	m
 		 * @param	content
-		 * @exception	DicomException
+		 * @throws	DicomException
 		 */
 		OurQueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,Container content) throws DicomException {
 			super(q,m,content);
@@ -1332,7 +1488,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Query to "+localName+" failed "+e));
 				logger.sendLn("Query to "+localName+" ("+calledAET+") failed due to"+ e);
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			logger.sendLn("Query to "+localName+" ("+calledAET+") complete");
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done querying  "+localName));
@@ -1345,7 +1501,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 			//new QueryRetrieveDialog("DicomCleaner Query",400,512);
 			Properties properties = getProperties();
 			String ae = properties.getProperty(propertyName_DicomCurrentlySelectedQueryTargetAE);
-			ae = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName("Select remote system","Query ...",ae);
+			ae = showInputDialogToSelectNetworkTargetByLocalApplicationEntityName(resourceBundle.getString("querySelectMessage"),resourceBundle.getString("querySelectDialogTitle")+" ...",ae);
 			remoteQueryRetrievePanel.removeAll();
 			if (ae != null) {
 				setCurrentRemoteQueryInformationModel(ae);
@@ -1365,10 +1521,18 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 							filter.put(t,a);
 						}
 						{
-							AttributeTag t = TagFromName.PatientID; Attribute a = new ShortStringAttribute(t,specificCharacterSet);
+							AttributeTag t = TagFromName.PatientID; Attribute a = new LongStringAttribute(t,specificCharacterSet);
 							String patientID = queryFilterPatientIDTextField.getText().trim();
 							if (patientID != null && patientID.length() > 0) {
 								a.addValue(patientID);
+							}
+							filter.put(t,a);
+						}
+						{
+							AttributeTag t = TagFromName.AccessionNumber; Attribute a = new ShortStringAttribute(t,specificCharacterSet);
+							String accessionNumber = queryFilterAccessionNumberTextField.getText().trim();
+							if (accessionNumber != null && accessionNumber.length() > 0) {
+								a.addValue(accessionNumber);
 							}
 							filter.put(t,a);
 						}
@@ -1411,7 +1575,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 						activeThread.start();
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Query to {} failed",ae,e);
 						ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Query to "+ae+" failed"));
 					}
 				}
@@ -1430,7 +1594,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 			}
 			// else do nothing, since no unique key to specify what to retrieve
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Retrieve failed ",e);
 		}
 	}
 	
@@ -1505,11 +1669,12 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 				new NetworkApplicationConfigurationDialog(DicomCleaner.this.getContentPane(),networkApplicationInformation,networkApplicationProperties);
 				// should now save properties to file
 				networkApplicationProperties.getProperties(getProperties());
+				updatePropertiesWithUIState();
 				storeProperties("Edited and saved from user interface");
 				//getProperties().store(System.err,"Bla");
 				activateStorageSCP();
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Configure failed ",e);
 			}
 		}
 	}
@@ -1523,7 +1688,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 					activeThread.interrupt();
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Cancel failed ",e);
 			}
 		}
 	}
@@ -1538,7 +1703,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 					modifyDatesTextField.setText(newYear+"0101");
 				}
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Earliest year failed ",e);
 			}
 		}
 	}
@@ -1556,21 +1721,89 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 		}
 	}
 	
+	protected class RandomReplacementActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent event) {
+			long newID = (long)(Math.random()*Math.pow(10,randomReplacementPatientIDLength));
+			String newIDString = StringUtilities.zeroPadPositiveInteger(Long.toString(newID),randomReplacementPatientIDLength);
+			replacementPatientIDTextField.setText(newIDString);
+			replacementPatientNameTextField.setText(randomReplacementPatientNamePrefix+newIDString);
+
+			int newYear = (int)(Math.random()*40 + 1970);
+			String newYearString = Integer.toString(newYear)+"0101";
+			replacementPatientBirthDateTextField.setText(newYearString);
+
+			long newAccessionNumber = (long)(Math.random()*Math.pow(10,randomReplacementAccessionNumberLength));
+			replacementAccessionNumberTextField.setText(StringUtilities.zeroPadPositiveInteger(Long.toString(newAccessionNumber),randomReplacementAccessionNumberLength));
+		}
+	}
 	
+	protected class DefaultReplacementActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent event) {
+			replacementPatientIDTextField.setText(resourceBundle.getString("defaultReplacementPatientID"));
+			replacementPatientBirthDateTextField.setText(resourceBundle.getString("defaultReplacementPatientBirthDate"));
+			replacementPatientNameTextField.setText(resourceBundle.getString("defaultReplacementPatientName"));
+			replacementAccessionNumberTextField.setText(resourceBundle.getString("defaultReplacementAccessionNumber"));
+		}
+	}
+	
+	private void updatePropertiesWithUIState() {
+		Properties properties = getProperties();
+
+		properties.setProperty(propertyName_CheckBoxReplacePatientNameIsSelected,Boolean.toString(replacePatientNameCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxReplacePatientIDIsSelected,Boolean.toString(replacePatientIDCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxReplacePatientBirthDateIsSelected,Boolean.toString(replacePatientBirthDateCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxReplaceAccessionNumberIsSelected,Boolean.toString(replaceAccessionNumberCheckBox.isSelected()));
+
+		properties.setProperty(propertyName_ReplacementTextPatientName,replacementPatientNameTextField.getText().trim());
+		properties.setProperty(propertyName_ReplacementTextPatientID,replacementPatientIDTextField.getText().trim());
+		properties.setProperty(propertyName_ReplacementTextPatientBirthDate,replacementPatientBirthDateTextField.getText().trim());
+		properties.setProperty(propertyName_ReplacementTextAccessionNumber,replacementAccessionNumberTextField.getText().trim());
+		
+		properties.setProperty(propertyName_CheckBoxModifyDatesIsSelected,Boolean.toString(modifyDatesCheckBox.isSelected()));
+		
+		properties.setProperty(propertyName_ModifyDatesEpoch,modifyDatesTextField.getText().trim());
+		
+		properties.setProperty(propertyName_CheckBoxRemoveIdentityIsSelected,Boolean.toString(removeIdentityCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveDescriptionsIsSelected,Boolean.toString(removeDescriptionsCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveSeriesDescriptionsIsSelected,Boolean.toString(removeSeriesDescriptionsCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveProtocolNameIsSelected,Boolean.toString(removeProtocolNameCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveCharacteristicsIsSelected,Boolean.toString(removeCharacteristicsCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveDeviceIdentityIsSelected,Boolean.toString(removeDeviceIdentityCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveInstitutionIdentityIsSelected,Boolean.toString(removeInstitutionIdentityCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxCleanUIDsIsSelected,Boolean.toString(cleanUIDsCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemovePrivateIsSelected,Boolean.toString(removePrivateCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxAddContributingEquipmentIsSelected,Boolean.toString(addContributingEquipmentCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveClinicalTrialAttributesIsSelected,Boolean.toString(removeClinicalTrialAttributesCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveAllStructuredContentIsSelected,Boolean.toString(removeAllStructuredContentCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveUnsafeStructuredContentIsSelected,Boolean.toString(removeUnsafeStructuredContentCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxZipExportIsSelected,Boolean.toString(zipExportCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxHierarchicalExportIsSelected,Boolean.toString(hierarchicalExportCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxAcceptAnyTransferSyntaxIsSelected,Boolean.toString(acceptAnyTransferSyntaxCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxAggregateAgesOver89IsSelected,Boolean.toString(aggregateAgesOver89CheckBox.isSelected()));
+	}
 	
 	public DicomCleaner() throws DicomException, IOException {
+		this(null/*pathName*/);
+	}
+	
+	public DicomCleaner(String pathName) throws DicomException, IOException {
 		super(null,propertiesFileName);
+System.err.println("default Locale="+Locale.getDefault());
+		
 		resourceBundle = ResourceBundle.getBundle(resourceBundleName);
 		setTitle(resourceBundle.getString("applicationTitle"));
+
+		Properties properties = getProperties();
+System.err.println("properties="+properties);
 
 		activateTemporaryDatabases();
 		savedImagesFolder = new File(System.getProperty("java.io.tmpdir"));
 		
 		try {
-			networkApplicationProperties = new NetworkApplicationProperties(getProperties(),true/*addPublicStorageSCPsIfNoRemoteAEsConfigured*/);
+			networkApplicationProperties = new NetworkApplicationProperties(properties,true/*addPublicStorageSCPsIfNoRemoteAEsConfigured*/);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Fetching network application properties failed ",e);
 			networkApplicationProperties = null;
 		}
 		{
@@ -1581,7 +1814,9 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 		}
 		activateStorageSCP();
 
-		logger = new DialogMessageLogger("DicomCleaner Log",512,384,false/*exitApplicationOnClose*/,false/*visible*/);
+		logger = new DialogMessageLogger("DicomCleaner Log",512,384,false/*exitApplicationOnClose*/,false/*visible*/,
+			getBooleanPropertyOrDefaultAndAddIt(propertyName_ShowDateTime,false),
+			getPropertyOrDefaultAndAddIt(propertyName_DateTimeFormat,""));
 		
 		cursorChanger = new SafeCursorChanger(this);
 
@@ -1589,234 +1824,352 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
 //System.err.println("DicomCleaner.ShutdownHook.run()");
+				try {
+					updatePropertiesWithUIState();
+					storeProperties("Edited and saved from user interface");
+				}
+				catch (Exception e) {
+					slf4jlogger.error("Storing properties during shutdown failed ",e);
+				}
 				if (networkApplicationInformation != null && networkApplicationInformation instanceof NetworkApplicationInformationFederated) {
 					((NetworkApplicationInformationFederated)networkApplicationInformation).removeAllSources();
 				}
 //System.err.print(TransferMonitor.report());
 			}
 		});
+		
+		boolean allowUserQuery                             = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowUserQuery,true);
+
+		boolean allowNetworkConfiguration				   = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowNetworkConfiguration,true);
+
+		boolean allowChangeDatesAndTimes                   = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowChangeDatesAndTimes,true);
+
+		boolean allowRemoveIdentityCheckBox                = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveIdentityCheckBox,true);
+		boolean allowRemoveDescriptionsCheckBox            = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveDescriptionsCheckBox,true);
+		boolean allowRemoveSeriesDescriptionsCheckBox      = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveSeriesDescriptionsCheckBox,true);
+		boolean allowRemoveProtocolNameCheckBox            = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveProtocolNameCheckBox,true);
+		boolean allowRemoveCharacteristicsCheckBox         = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveCharacteristicsCheckBox,true);
+		boolean allowRemoveDeviceIdentityCheckBox          = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveDeviceIdentityCheckBox,true);
+		boolean allowRemoveInstitutionIdentityCheckBox     = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveInstitutionIdentityCheckBox,true);
+		boolean allowCleanUIDsCheckBox                     = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowCleanUIDsCheckBox,true);
+		boolean allowRemovePrivateCheckBox                 = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemovePrivateCheckBox,true);
+		boolean allowAddContributingEquipmentCheckBox      = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowAddContributingEquipmentCheckBox,true);
+		boolean allowRemoveClinicalTrialAttributesCheckBox = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveClinicalTrialAttributesCheckBox,true);
+		boolean allowRemoveAllStructuredContentCheckBox    = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveAllStructuredContentCheckBox,true);
+		boolean allowRemoveUnsafeStructuredContentCheckBox = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveUnsafeStructuredContentCheckBox,true);
+		boolean allowZipExportCheckBox                     = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowZipExportCheckBox,true);
+		boolean allowHierarchicalExportCheckBox            = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowHierarchicalExportCheckBox,true);
+		boolean allowAcceptAnyTransferSyntaxCheckBox       = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowAcceptAnyTransferSyntaxCheckBox,true);
+		boolean allowAggregateAgesOver89CheckBox	       = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowAggregateAgesOver89CheckBox,true);
+		
+		randomReplacementPatientNamePrefix = getPropertyOrDefaultAndAddIt(propertyName_RandomReplacementPatientNamePrefix,resourceBundle.getString("defaultRandomReplacementPatientNamePrefix"));
+		randomReplacementPatientIDLength = getIntegerPropertyOrDefaultAndAddIt(propertyName_RandomReplacementPatientIDLength,default_RandomReplacementPatientIDLength);
+		randomReplacementAccessionNumberLength = getIntegerPropertyOrDefaultAndAddIt(propertyName_RandomReplacementAccessionNumberLength,default_RandomReplacementAccessionNumberLength);
 
 		srcDatabasePanel = new JPanel();
 		dstDatabasePanel = new JPanel();
-		remoteQueryRetrievePanel = new JPanel();
+		remoteQueryRetrievePanel = allowUserQuery ? new JPanel() : null;
 
 		srcDatabasePanel.setLayout(new GridLayout(1,1));
 		dstDatabasePanel.setLayout(new GridLayout(1,1));
-		remoteQueryRetrievePanel.setLayout(new GridLayout(1,1));
+		if (allowUserQuery) remoteQueryRetrievePanel.setLayout(new GridLayout(1,1));
 		
 		DatabaseTreeBrowser srcDatabaseTreeBrowser = new OurSourceDatabaseTreeBrowser(srcDatabase,srcDatabasePanel);
 		DatabaseTreeBrowser dstDatabaseTreeBrowser = new OurDestinationDatabaseTreeBrowser(dstDatabase,dstDatabasePanel);
 
 		Border panelBorder = BorderFactory.createEtchedBorder();
-
-		JSplitPane pairOfLocalDatabaseBrowserPanes = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,srcDatabasePanel,dstDatabasePanel);
-		pairOfLocalDatabaseBrowserPanes.setOneTouchExpandable(true);
-		pairOfLocalDatabaseBrowserPanes.setResizeWeight(0.5);
 		
-		JSplitPane remoteAndLocalBrowserPanes = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,remoteQueryRetrievePanel,pairOfLocalDatabaseBrowserPanes);
-		remoteAndLocalBrowserPanes.setOneTouchExpandable(true);
-		remoteAndLocalBrowserPanes.setResizeWeight(0.4);		// you would think 0.33 would be equal, but it isn't
+		JSplitPane panesToUseForMainPanel = null;
+		{
+			JSplitPane pairOfLocalDatabaseBrowserPanes = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,srcDatabasePanel,dstDatabasePanel);
+			pairOfLocalDatabaseBrowserPanes.setOneTouchExpandable(true);
+			pairOfLocalDatabaseBrowserPanes.setResizeWeight(0.5);
+		
+			JSplitPane remoteAndLocalBrowserPanes = null;
+			if (allowUserQuery) {
+				remoteAndLocalBrowserPanes = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,remoteQueryRetrievePanel,pairOfLocalDatabaseBrowserPanes);
+				remoteAndLocalBrowserPanes.setOneTouchExpandable(true);
+				remoteAndLocalBrowserPanes.setResizeWeight(0.4);		// you would think 0.33 would be equal, but it isn't
+			}
+		
+			panesToUseForMainPanel = remoteAndLocalBrowserPanes == null ? pairOfLocalDatabaseBrowserPanes : remoteAndLocalBrowserPanes;
+		}
 		
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		buttonPanel.setBorder(panelBorder);
 		
-		JButton configureButton = new JButton(resourceBundle.getString("configureButtonLabelText"));
-		configureButton.setToolTipText(resourceBundle.getString("configureButtonToolTipText"));
-		buttonPanel.add(configureButton);
-		configureButton.addActionListener(new ConfigureActionListener());
+		if (allowNetworkConfiguration) {
+			JButton configureButton = new JButton(resourceBundle.getString("configureButtonLabelText"));
+			configureButton.setToolTipText(resourceBundle.getString("configureButtonToolTipText"));
+			buttonPanel.add(configureButton);
+			configureButton.addActionListener(new ConfigureActionListener());
+		}
 		
-		JButton logButton = new JButton(resourceBundle.getString("logButtonLabelText"));
-		logButton.setToolTipText(resourceBundle.getString("logButtonToolTipText"));
-		buttonPanel.add(logButton);
-		logButton.addActionListener(new LogActionListener());
+		{
+			JButton logButton = new JButton(resourceBundle.getString("logButtonLabelText"));
+			logButton.setToolTipText(resourceBundle.getString("logButtonToolTipText"));
+			buttonPanel.add(logButton);
+			logButton.addActionListener(new LogActionListener());
+		}
 		
-		JButton queryButton = new JButton(resourceBundle.getString("queryButtonLabelText"));
-		queryButton.setToolTipText(resourceBundle.getString("queryButtonToolTipText"));
-		buttonPanel.add(queryButton);
-		queryButton.addActionListener(new QueryActionListener());
+		if (allowUserQuery) {
+			JButton queryButton = new JButton(resourceBundle.getString("queryButtonLabelText"));
+			queryButton.setToolTipText(resourceBundle.getString("queryButtonToolTipText"));
+			buttonPanel.add(queryButton);
+			queryButton.addActionListener(new QueryActionListener());
+		}
 		
-		JButton retrieveButton = new JButton(resourceBundle.getString("retrieveButtonLabelText"));
-		retrieveButton.setToolTipText(resourceBundle.getString("retrieveButtonToolTipText"));
-		buttonPanel.add(retrieveButton);
-		retrieveButton.addActionListener(new RetrieveActionListener());
+		if (allowUserQuery) {
+			JButton retrieveButton = new JButton(resourceBundle.getString("retrieveButtonLabelText"));
+			retrieveButton.setToolTipText(resourceBundle.getString("retrieveButtonToolTipText"));
+			buttonPanel.add(retrieveButton);
+			retrieveButton.addActionListener(new RetrieveActionListener());
+		}
 		
-		JButton importButton = new JButton(resourceBundle.getString("importButtonLabelText"));
-		importButton.setToolTipText(resourceBundle.getString("importButtonToolTipText"));
-		buttonPanel.add(importButton);
-		importButton.addActionListener(new ImportActionListener());
+		{
+			JButton importButton = new JButton(resourceBundle.getString("importButtonLabelText"));
+			importButton.setToolTipText(resourceBundle.getString("importButtonToolTipText"));
+			buttonPanel.add(importButton);
+			importButton.addActionListener(new ImportActionListener());
+		}
 		
-		JButton cleanButton = new JButton(resourceBundle.getString("cleanButtonLabelText"));
-		cleanButton.setToolTipText(resourceBundle.getString("cleanButtonToolTipText"));
-		buttonPanel.add(cleanButton);
-		cleanButton.addActionListener(new CleanActionListener());
+		{
+			JButton cleanButton = new JButton(resourceBundle.getString("cleanButtonLabelText"));
+			cleanButton.setToolTipText(resourceBundle.getString("cleanButtonToolTipText"));
+			buttonPanel.add(cleanButton);
+			cleanButton.addActionListener(new CleanActionListener());
+		}
 		
-		JButton blackoutButton = new JButton(resourceBundle.getString("blackoutButtonLabelText"));
-		blackoutButton.setToolTipText(resourceBundle.getString("blackoutButtonToolTipText"));
-		buttonPanel.add(blackoutButton);
-		blackoutButton.addActionListener(new BlackoutActionListener());
+		{
+			JButton blackoutButton = new JButton(resourceBundle.getString("blackoutButtonLabelText"));
+			blackoutButton.setToolTipText(resourceBundle.getString("blackoutButtonToolTipText"));
+			buttonPanel.add(blackoutButton);
+			blackoutButton.addActionListener(new BlackoutActionListener());
+		}
 		
-		JButton exportButton = new JButton(resourceBundle.getString("exportButtonLabelText"));
-		exportButton.setToolTipText(resourceBundle.getString("exportButtonToolTipText"));
-		buttonPanel.add(exportButton);
-		exportButton.addActionListener(new ExportActionListener());
+		{
+			JButton exportButton = new JButton(resourceBundle.getString("exportButtonLabelText"));
+			exportButton.setToolTipText(resourceBundle.getString("exportButtonToolTipText"));
+			buttonPanel.add(exportButton);
+			exportButton.addActionListener(new ExportActionListener());
+		}
 		
-		JButton sendButton = new JButton(resourceBundle.getString("sendButtonLabelText"));
-		sendButton.setToolTipText(resourceBundle.getString("sendButtonToolTipText"));
-		buttonPanel.add(sendButton);
-		sendButton.addActionListener(new SendActionListener());
+		{
+			JButton sendButton = new JButton(resourceBundle.getString("sendButtonLabelText"));
+			sendButton.setToolTipText(resourceBundle.getString("sendButtonToolTipText"));
+			buttonPanel.add(sendButton);
+			sendButton.addActionListener(new SendActionListener());
+		}
 		
-		JButton purgeButton = new JButton(resourceBundle.getString("purgeButtonLabelText"));
-		purgeButton.setToolTipText(resourceBundle.getString("purgeButtonToolTipText"));
-		buttonPanel.add(purgeButton);
-		purgeButton.addActionListener(new PurgeActionListener());
+		{
+			JButton purgeButton = new JButton(resourceBundle.getString("purgeButtonLabelText"));
+			purgeButton.setToolTipText(resourceBundle.getString("purgeButtonToolTipText"));
+			buttonPanel.add(purgeButton);
+			purgeButton.addActionListener(new PurgeActionListener());
+		}
 		
 		//JButton cancelButton = new JButton(resourceBundle.getString("cancelButtonLabelText"));
 		//cancelButton.setToolTipText(resourceBundle.getString("cancelButtonToolTipText"));
 		//buttonPanel.add(cancelButton);
 		//cancelButton.addActionListener(new CancelActionListener());
 		
-		JPanel queryFilterTextEntryPanel = new JPanel();
-		queryFilterTextEntryPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		queryFilterTextEntryPanel.setBorder(panelBorder);
+		JPanel queryFilterTextEntryPanel = null;
+		if (allowUserQuery) {
+			queryFilterTextEntryPanel = new JPanel();
+			queryFilterTextEntryPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+			queryFilterTextEntryPanel.setBorder(panelBorder);
 
-		JLabel queryIntroduction = new JLabel(resourceBundle.getString("queryIntroductionLabelText"));
-		queryFilterTextEntryPanel.add(queryIntroduction);
+			JLabel queryIntroduction = new JLabel(resourceBundle.getString("queryIntroductionLabelText")+" -");
+			queryFilterTextEntryPanel.add(queryIntroduction);
 
-		JLabel queryFilterPatientNameLabel = new JLabel(resourceBundle.getString("queryPatientNameLabelText"));
-		queryFilterPatientNameLabel.setToolTipText(resourceBundle.getString("queryPatientNameToolTipText"));
-		queryFilterTextEntryPanel.add(queryFilterPatientNameLabel);
-		queryFilterPatientNameTextField = new JTextField("",textFieldLengthForQueryPatientName);
-		queryFilterTextEntryPanel.add(queryFilterPatientNameTextField);
+			JLabel queryFilterPatientNameLabel = new JLabel(resourceBundle.getString("queryPatientNameLabelText")+":");
+			queryFilterPatientNameLabel.setToolTipText(resourceBundle.getString("queryPatientNameToolTipText"));
+			queryFilterTextEntryPanel.add(queryFilterPatientNameLabel);
+			queryFilterPatientNameTextField = new JTextField("",textFieldLengthForQueryPatientName);
+			queryFilterTextEntryPanel.add(queryFilterPatientNameTextField);
 		
-		JLabel queryFilterPatientIDLabel = new JLabel(resourceBundle.getString("queryPatientIDLabelText"));
-		queryFilterPatientIDLabel.setToolTipText(resourceBundle.getString("queryPatientIDToolTipText"));
-		queryFilterTextEntryPanel.add(queryFilterPatientIDLabel);
-		queryFilterPatientIDTextField = new JTextField("",textFieldLengthForQueryPatientID);
-		queryFilterTextEntryPanel.add(queryFilterPatientIDTextField);
+			JLabel queryFilterPatientIDLabel = new JLabel(resourceBundle.getString("queryPatientIDLabelText")+":");
+			queryFilterPatientIDLabel.setToolTipText(resourceBundle.getString("queryPatientIDToolTipText"));
+			queryFilterTextEntryPanel.add(queryFilterPatientIDLabel);
+			queryFilterPatientIDTextField = new JTextField("",textFieldLengthForQueryPatientID);
+			queryFilterTextEntryPanel.add(queryFilterPatientIDTextField);
 		
-		JLabel queryFilterStudyDateLabel = new JLabel(resourceBundle.getString("queryStudyDateLabelText"));
-		queryFilterStudyDateLabel.setToolTipText(resourceBundle.getString("queryStudyDateToolTipText"));
-		queryFilterTextEntryPanel.add(queryFilterStudyDateLabel);
-		queryFilterStudyDateTextField = new JTextField("",textFieldLengthForQueryStudyDate);
-		queryFilterTextEntryPanel.add(queryFilterStudyDateTextField);
+			JLabel queryFilterStudyDateLabel = new JLabel(resourceBundle.getString("queryStudyDateLabelText")+":");
+			queryFilterStudyDateLabel.setToolTipText(resourceBundle.getString("queryStudyDateToolTipText"));
+			queryFilterTextEntryPanel.add(queryFilterStudyDateLabel);
+			queryFilterStudyDateTextField = new JTextField("",textFieldLengthForQueryStudyDate);
+			queryFilterTextEntryPanel.add(queryFilterStudyDateTextField);
+		
+			JLabel queryFilterAccessionNumberLabel = new JLabel(resourceBundle.getString("queryAccessionNumberLabelText")+":");
+			queryFilterAccessionNumberLabel.setToolTipText(resourceBundle.getString("queryAccessionNumberToolTipText"));
+			queryFilterTextEntryPanel.add(queryFilterAccessionNumberLabel);
+			queryFilterAccessionNumberTextField = new JTextField("",textFieldLengthForQueryAccessionNumber);
+			queryFilterTextEntryPanel.add(queryFilterAccessionNumberTextField);
+		
+		}
 		
 		JPanel newTextEntryPanel = new JPanel();
-		newTextEntryPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		newTextEntryPanel.setBorder(panelBorder);
+		{
+			newTextEntryPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+			newTextEntryPanel.setBorder(panelBorder);
 		
-		JLabel replacementIntroduction = new JLabel(resourceBundle.getString("replacementIntroductionLabelText"));
-		newTextEntryPanel.add(replacementIntroduction);
+			JLabel replacementIntroduction = new JLabel(resourceBundle.getString("replacementIntroductionLabelText")+" -");
+			newTextEntryPanel.add(replacementIntroduction);
 
-		replacePatientNameCheckBox = new JCheckBox(resourceBundle.getString("replacementPatientNameLabelText"));
-		replacePatientNameCheckBox.setSelected(true);
-		replacePatientNameCheckBox.setToolTipText(resourceBundle.getString("replacementPatientNameToolTipText"));
-		newTextEntryPanel.add(replacePatientNameCheckBox);
-		replacementPatientNameTextField = new JTextField(resourceBundle.getString("defaultReplacementPatientName"),textFieldLengthForReplacementPatientName);
-		newTextEntryPanel.add(replacementPatientNameTextField);
+			replacePatientNameCheckBox = new JCheckBox(resourceBundle.getString("replacementPatientNameLabelText")+":");
+			replacePatientNameCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxReplacePatientNameIsSelected,default_CheckBoxReplacePatientNameIsSelected));
+			replacePatientNameCheckBox.setToolTipText(resourceBundle.getString("replacementPatientNameToolTipText"));
+			newTextEntryPanel.add(replacePatientNameCheckBox);
+			replacementPatientNameTextField = new JTextField(getPropertyOrDefaultAndAddIt(propertyName_ReplacementTextPatientName,resourceBundle.getString("defaultReplacementPatientName")),textFieldLengthForReplacementPatientName);
+			newTextEntryPanel.add(replacementPatientNameTextField);
 		
-		replacePatientIDCheckBox = new JCheckBox(resourceBundle.getString("replacementPatientIDLabelText"));
-		replacePatientIDCheckBox.setSelected(true);
-		replacePatientIDCheckBox.setToolTipText(resourceBundle.getString("replacementPatientIDToolTipText"));
-		newTextEntryPanel.add(replacePatientIDCheckBox);
-		replacementPatientIDTextField = new JTextField(resourceBundle.getString("defaultReplacementPatientID"),textFieldLengthForReplacementPatientID);
-		newTextEntryPanel.add(replacementPatientIDTextField);
+			replacePatientIDCheckBox = new JCheckBox(resourceBundle.getString("replacementPatientIDLabelText")+":");
+			replacePatientIDCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxReplacePatientIDIsSelected,default_CheckBoxReplacePatientIDIsSelected));
+			replacePatientIDCheckBox.setToolTipText(resourceBundle.getString("replacementPatientIDToolTipText"));
+			newTextEntryPanel.add(replacePatientIDCheckBox);
+			replacementPatientIDTextField = new JTextField(getPropertyOrDefaultAndAddIt(propertyName_ReplacementTextPatientID,resourceBundle.getString("defaultReplacementPatientID")),textFieldLengthForReplacementPatientID);
+			newTextEntryPanel.add(replacementPatientIDTextField);
 		
-		replaceAccessionNumberCheckBox = new JCheckBox(resourceBundle.getString("replacementAccessionNumberLabelText"));
-		replaceAccessionNumberCheckBox.setSelected(true);
-		replaceAccessionNumberCheckBox.setToolTipText(resourceBundle.getString("replacementAccessionNumberToolTipText"));
-		newTextEntryPanel.add(replaceAccessionNumberCheckBox);
-		replacementAccessionNumberTextField = new JTextField(resourceBundle.getString("defaultReplacementAccessionNumber"),textFieldLengthForReplacementAccessionNumber);
-		newTextEntryPanel.add(replacementAccessionNumberTextField);
-		
+			replacePatientBirthDateCheckBox = new JCheckBox(resourceBundle.getString("replacementPatientBirthDateLabelText")+":");
+			replacePatientBirthDateCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxReplacePatientBirthDateIsSelected,default_CheckBoxReplacePatientBirthDateIsSelected));
+			replacePatientBirthDateCheckBox.setToolTipText(resourceBundle.getString("replacementPatientBirthDateToolTipText"));
+			newTextEntryPanel.add(replacePatientBirthDateCheckBox);
+			replacementPatientBirthDateTextField = new JTextField(getPropertyOrDefaultAndAddIt(propertyName_ReplacementTextPatientBirthDate,resourceBundle.getString("defaultReplacementPatientBirthDate")),textFieldLengthForReplacementPatientBirthDate);
+			newTextEntryPanel.add(replacementPatientBirthDateTextField);
 
-		JPanel modifyDatesPanel = new JPanel();
-		modifyDatesPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		modifyDatesPanel.setBorder(panelBorder);
+			replaceAccessionNumberCheckBox = new JCheckBox(resourceBundle.getString("replacementAccessionNumberLabelText")+":");
+			replaceAccessionNumberCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxReplaceAccessionNumberIsSelected,default_CheckBoxReplaceAccessionNumberIsSelected));
+			replaceAccessionNumberCheckBox.setToolTipText(resourceBundle.getString("replacementAccessionNumberToolTipText"));
+			newTextEntryPanel.add(replaceAccessionNumberCheckBox);
+			replacementAccessionNumberTextField = new JTextField(getPropertyOrDefaultAndAddIt(propertyName_ReplacementTextAccessionNumber,resourceBundle.getString("defaultReplacementAccessionNumber")),textFieldLengthForReplacementAccessionNumber);
+			newTextEntryPanel.add(replacementAccessionNumberTextField);
+			
+			JButton randomReplacementButton = new JButton(resourceBundle.getString("randomReplacementButtonLabelText"));
+			randomReplacementButton.setToolTipText(resourceBundle.getString("randomReplacementButtonToolTipText"));
+			newTextEntryPanel.add(randomReplacementButton);
+			randomReplacementButton.addActionListener(new RandomReplacementActionListener());
 		
-		JLabel modifyDatesIntroduction = new JLabel(resourceBundle.getString("modifyDatesIntroductionLabelText"));
-		modifyDatesPanel.add(modifyDatesIntroduction);
-
-		modifyDatesCheckBox = new JCheckBox(resourceBundle.getString("modifyDatesLabelText"));
-		modifyDatesCheckBox.setSelected(false);
+			JButton defaultReplacementButton = new JButton(resourceBundle.getString("defaultReplacementButtonLabelText"));
+			defaultReplacementButton.setToolTipText(resourceBundle.getString("defaultReplacementButtonToolTipText"));
+			newTextEntryPanel.add(defaultReplacementButton);
+			defaultReplacementButton.addActionListener(new DefaultReplacementActionListener());
+		}
+		
+		// The checkbox and textfield are created and given values even if not allowed for display, since the they are used during processing
+		modifyDatesCheckBox = new JCheckBox(resourceBundle.getString("modifyDatesLabelText")+":");
+		modifyDatesCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxModifyDatesIsSelected,default_CheckBoxModifyDatesIsSelected));
 		modifyDatesCheckBox.setToolTipText(resourceBundle.getString("modifyDatesToolTipText"));
-		modifyDatesPanel.add(modifyDatesCheckBox);
-		modifyDatesTextField = new JTextField(resourceBundle.getString("defaultModifyDatesEpoch"),textFieldLengthForModifyDates);
-		modifyDatesPanel.add(modifyDatesTextField);
 
-		JButton earliestYearButton = new JButton(resourceBundle.getString("earliestYearButtonLabelText"));
-		earliestYearButton.setToolTipText(resourceBundle.getString("earliestYearButtonToolTipText"));
-		modifyDatesPanel.add(earliestYearButton);
-		earliestYearButton.addActionListener(new EarliestYearActionListener());
+		modifyDatesTextField = new JTextField(getPropertyOrDefaultAndAddIt(propertyName_ModifyDatesEpoch,resourceBundle.getString("defaultModifyDatesEpoch")),textFieldLengthForModifyDates);
+
+		JPanel modifyDatesPanel = null;
+		if (allowChangeDatesAndTimes) {
+			modifyDatesPanel = new JPanel();
+			modifyDatesPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+			modifyDatesPanel.setBorder(panelBorder);
 		
-		JButton randomYearButton = new JButton(resourceBundle.getString("randomYearButtonLabelText"));
-		randomYearButton.setToolTipText(resourceBundle.getString("randomYearButtonToolTipText"));
-		modifyDatesPanel.add(randomYearButton);
-		randomYearButton.addActionListener(new RandomYearActionListener());
+			JLabel modifyDatesIntroduction = new JLabel(resourceBundle.getString("modifyDatesIntroductionLabelText")+" -");
+			modifyDatesPanel.add(modifyDatesIntroduction);
+
+			modifyDatesPanel.add(modifyDatesCheckBox);
 		
-		JButton defaultYearButton = new JButton(resourceBundle.getString("defaultYearButtonLabelText"));
-		defaultYearButton.setToolTipText(resourceBundle.getString("defaultYearButtonToolTipText"));
-		modifyDatesPanel.add(defaultYearButton);
-		defaultYearButton.addActionListener(new DefaultYearActionListener());
+			modifyDatesPanel.add(modifyDatesTextField);
+
+			JButton earliestYearButton = new JButton(resourceBundle.getString("earliestYearButtonLabelText"));
+			earliestYearButton.setToolTipText(resourceBundle.getString("earliestYearButtonToolTipText"));
+			modifyDatesPanel.add(earliestYearButton);
+			earliestYearButton.addActionListener(new EarliestYearActionListener());
 		
+			JButton randomYearButton = new JButton(resourceBundle.getString("randomYearButtonLabelText"));
+			randomYearButton.setToolTipText(resourceBundle.getString("randomYearButtonToolTipText"));
+			modifyDatesPanel.add(randomYearButton);
+			randomYearButton.addActionListener(new RandomYearActionListener());
+		
+			JButton defaultYearButton = new JButton(resourceBundle.getString("defaultYearButtonLabelText"));
+			defaultYearButton.setToolTipText(resourceBundle.getString("defaultYearButtonToolTipText"));
+			modifyDatesPanel.add(defaultYearButton);
+			defaultYearButton.addActionListener(new DefaultYearActionListener());
+		}
 
 		JPanel checkBoxPanel = new JPanel();
 		checkBoxPanel.setLayout(new GridLayout(0,4));	// number of rows is ignored if number of columns is not 0
 		checkBoxPanel.setBorder(panelBorder);
-				
+
+		// The checkboxes are created and given values even if not allowed for display, since the checkbox value is used during processing
+		
 		removeIdentityCheckBox = new JCheckBox(resourceBundle.getString("removeIdentityLabelText"));
-		removeIdentityCheckBox.setSelected(true);
-		checkBoxPanel.add(removeIdentityCheckBox);
+		removeIdentityCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveIdentityIsSelected,default_CheckBoxRemoveIdentityIsSelected));
+		if (allowRemoveIdentityCheckBox) checkBoxPanel.add(removeIdentityCheckBox);
 			
 		removeDescriptionsCheckBox = new JCheckBox(resourceBundle.getString("removeDescriptionsLabelText"));
-		removeDescriptionsCheckBox.setSelected(false);
-		checkBoxPanel.add(removeDescriptionsCheckBox);
+		removeDescriptionsCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveDescriptionsIsSelected,default_CheckBoxRemoveDescriptionsIsSelected));
+		if (allowRemoveDescriptionsCheckBox) checkBoxPanel.add(removeDescriptionsCheckBox);
 		
 		removeSeriesDescriptionsCheckBox = new JCheckBox(resourceBundle.getString("removeSeriesDescriptionsLabelText"));
-		removeSeriesDescriptionsCheckBox.setSelected(false);
-		checkBoxPanel.add(removeSeriesDescriptionsCheckBox);
+		removeSeriesDescriptionsCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveSeriesDescriptionsIsSelected,default_CheckBoxRemoveSeriesDescriptionsIsSelected));
+		if (allowRemoveSeriesDescriptionsCheckBox) checkBoxPanel.add(removeSeriesDescriptionsCheckBox);
 	
 		removeProtocolNameCheckBox = new JCheckBox(resourceBundle.getString("removeProtocolNameLabelText"));
-		removeProtocolNameCheckBox.setSelected(false);
-		checkBoxPanel.add(removeProtocolNameCheckBox);
+		removeProtocolNameCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveProtocolNameIsSelected,default_CheckBoxRemoveProtocolNameIsSelected));
+		if (allowRemoveProtocolNameCheckBox) checkBoxPanel.add(removeProtocolNameCheckBox);
 
 		removeCharacteristicsCheckBox = new JCheckBox(resourceBundle.getString("removeCharacteristicsLabelText"));
-		removeCharacteristicsCheckBox.setSelected(false);
-		checkBoxPanel.add(removeCharacteristicsCheckBox);
+		removeCharacteristicsCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveCharacteristicsIsSelected,default_CheckBoxRemoveCharacteristicsIsSelected));
+		if (allowRemoveCharacteristicsCheckBox) checkBoxPanel.add(removeCharacteristicsCheckBox);
 
 		cleanUIDsCheckBox = new JCheckBox(resourceBundle.getString("cleanUIDsLabelText"));
-		cleanUIDsCheckBox.setSelected(true);
-		checkBoxPanel.add(cleanUIDsCheckBox);
+		cleanUIDsCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxCleanUIDsIsSelected,default_CheckBoxCleanUIDsIsSelected));
+		if (allowCleanUIDsCheckBox) checkBoxPanel.add(cleanUIDsCheckBox);
 		
 		removePrivateCheckBox = new JCheckBox(resourceBundle.getString("removePrivateLabelText"));
-		removePrivateCheckBox.setSelected(true);
-		checkBoxPanel.add(removePrivateCheckBox);
+		removePrivateCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemovePrivateIsSelected,default_CheckBoxRemovePrivateIsSelected));
+		if (allowRemovePrivateCheckBox) checkBoxPanel.add(removePrivateCheckBox);
 		
 		removeDeviceIdentityCheckBox = new JCheckBox(resourceBundle.getString("removeDeviceIdentityLabelText"));
-		removeDeviceIdentityCheckBox.setSelected(false);
-		checkBoxPanel.add(removeDeviceIdentityCheckBox);
+		removeDeviceIdentityCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveDeviceIdentityIsSelected,default_CheckBoxRemoveDeviceIdentityIsSelected));
+		if (allowRemoveDeviceIdentityCheckBox) checkBoxPanel.add(removeDeviceIdentityCheckBox);
 		
 		removeInstitutionIdentityCheckBox = new JCheckBox(resourceBundle.getString("removeInstitutionIdentityLabelText"));
-		removeInstitutionIdentityCheckBox.setSelected(false);
-		checkBoxPanel.add(removeInstitutionIdentityCheckBox);
-	
-		removeClinicalTrialAttributesCheckBox = new JCheckBox(resourceBundle.getString("removeClinicalTrialAttributesLabelText"));
-		removeClinicalTrialAttributesCheckBox.setSelected(false);
-		checkBoxPanel.add(removeClinicalTrialAttributesCheckBox);
+		removeInstitutionIdentityCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveInstitutionIdentityIsSelected,default_CheckBoxRemoveInstitutionIdentityIsSelected));
+		if (allowRemoveInstitutionIdentityCheckBox) checkBoxPanel.add(removeInstitutionIdentityCheckBox);
 		
+		removeClinicalTrialAttributesCheckBox = new JCheckBox(resourceBundle.getString("removeClinicalTrialAttributesLabelText"));
+		removeClinicalTrialAttributesCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveClinicalTrialAttributesIsSelected,default_CheckBoxRemoveClinicalTrialAttributesIsSelected));
+		if (allowRemoveClinicalTrialAttributesCheckBox) checkBoxPanel.add(removeClinicalTrialAttributesCheckBox);
+		
+		removeAllStructuredContentCheckBox = new JCheckBox(resourceBundle.getString("removeAllStructuredContentLabelText"));
+		removeAllStructuredContentCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveAllStructuredContentIsSelected,default_CheckBoxRemoveAllStructuredContentIsSelected));
+		if (allowRemoveAllStructuredContentCheckBox) checkBoxPanel.add(removeAllStructuredContentCheckBox);
+		
+		removeUnsafeStructuredContentCheckBox = new JCheckBox(resourceBundle.getString("removeUnsafeStructuredContentLabelText"));
+		removeUnsafeStructuredContentCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveUnsafeStructuredContentIsSelected,default_CheckBoxRemoveUnsafeStructuredContentIsSelected));
+		if (allowRemoveUnsafeStructuredContentCheckBox) checkBoxPanel.add(removeUnsafeStructuredContentCheckBox);
+
 		addContributingEquipmentCheckBox = new JCheckBox(resourceBundle.getString("addContributingEquipmentLabelText"));
-		addContributingEquipmentCheckBox.setSelected(true);
-		checkBoxPanel.add(addContributingEquipmentCheckBox);
+		addContributingEquipmentCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxAddContributingEquipmentIsSelected,default_CheckBoxAddContributingEquipmentIsSelected));
+		if (allowAddContributingEquipmentCheckBox) checkBoxPanel.add(addContributingEquipmentCheckBox);
 			
 		zipExportCheckBox = new JCheckBox(resourceBundle.getString("zipExportLabelText"));
-		zipExportCheckBox.setSelected(false);
-		checkBoxPanel.add(zipExportCheckBox);
+		zipExportCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxZipExportIsSelected,default_CheckBoxZipExportIsSelected));
+		if (allowZipExportCheckBox) checkBoxPanel.add(zipExportCheckBox);
 			
 		hierarchicalExportCheckBox = new JCheckBox(resourceBundle.getString("hierarchicalExportLabelText"));
-		hierarchicalExportCheckBox.setSelected(false);
+		hierarchicalExportCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxHierarchicalExportIsSelected,default_CheckBoxHierarchicalExportIsSelected));
 		hierarchicalExportCheckBox.setToolTipText(resourceBundle.getString("hierarchicalExportToolTipText"));
-		checkBoxPanel.add(hierarchicalExportCheckBox);
+		if (allowHierarchicalExportCheckBox) checkBoxPanel.add(hierarchicalExportCheckBox);
 			
+		acceptAnyTransferSyntaxCheckBox = new JCheckBox(resourceBundle.getString("acceptAnyTransferSyntaxLabelText"));
+		acceptAnyTransferSyntaxCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxAcceptAnyTransferSyntaxIsSelected,default_CheckBoxAcceptAnyTransferSyntaxIsSelected));
+		acceptAnyTransferSyntaxCheckBox.setToolTipText(resourceBundle.getString("acceptAnyTransferSyntaxToolTipText"));
+		if (allowAcceptAnyTransferSyntaxCheckBox) checkBoxPanel.add(acceptAnyTransferSyntaxCheckBox);
+		
+		// (001325)
+		aggregateAgesOver89CheckBox = new JCheckBox(resourceBundle.getString("aggregateAgesOver89CheckBoxLabelText"));
+		aggregateAgesOver89CheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxAggregateAgesOver89IsSelected,default_CheckBoxAggregateAgesOver89IsSelected));
+		aggregateAgesOver89CheckBox.setToolTipText(resourceBundle.getString("aggregateAgesOver89CheckBoxToolTipText"));
+		if (allowAggregateAgesOver89CheckBox) checkBoxPanel.add(aggregateAgesOver89CheckBox);
+
 		JPanel statusBarPanel = new JPanel();
 		{
 			GridBagLayout statusBarPanelLayout = new GridBagLayout();
@@ -1851,14 +2204,14 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 			GridBagLayout mainPanelLayout = new GridBagLayout();
 			mainPanel.setLayout(mainPanelLayout);
 			{
-				GridBagConstraints remoteAndLocalBrowserPanesConstraints = new GridBagConstraints();
-				remoteAndLocalBrowserPanesConstraints.gridx = 0;
-				remoteAndLocalBrowserPanesConstraints.gridy = 0;
-				remoteAndLocalBrowserPanesConstraints.weightx = 1;
-				remoteAndLocalBrowserPanesConstraints.weighty = 1;
-				remoteAndLocalBrowserPanesConstraints.fill = GridBagConstraints.BOTH;
-				mainPanelLayout.setConstraints(remoteAndLocalBrowserPanes,remoteAndLocalBrowserPanesConstraints);
-				mainPanel.add(remoteAndLocalBrowserPanes);
+				GridBagConstraints panesToUseForMainPanelConstraints = new GridBagConstraints();
+				panesToUseForMainPanelConstraints.gridx = 0;
+				panesToUseForMainPanelConstraints.gridy = 0;
+				panesToUseForMainPanelConstraints.weightx = 1;
+				panesToUseForMainPanelConstraints.weighty = 1;
+				panesToUseForMainPanelConstraints.fill = GridBagConstraints.BOTH;
+				mainPanelLayout.setConstraints(panesToUseForMainPanel,panesToUseForMainPanelConstraints);
+				mainPanel.add(panesToUseForMainPanel);
 			}
 			{
 				GridBagConstraints buttonPanelConstraints = new GridBagConstraints();
@@ -1868,7 +2221,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 				mainPanelLayout.setConstraints(buttonPanel,buttonPanelConstraints);
 				mainPanel.add(buttonPanel);
 			}
-			{
+			if (queryFilterTextEntryPanel != null) {
 				GridBagConstraints queryFilterTextEntryPanelConstraints = new GridBagConstraints();
 				queryFilterTextEntryPanelConstraints.gridx = 0;
 				queryFilterTextEntryPanelConstraints.gridy = 2;
@@ -1884,7 +2237,7 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 				mainPanelLayout.setConstraints(newTextEntryPanel,newTextEntryPanelConstraints);
 				mainPanel.add(newTextEntryPanel);
 			}
-			{
+			if (modifyDatesPanel != null) {
 				GridBagConstraints modifyDatesPanelConstraints = new GridBagConstraints();
 				modifyDatesPanelConstraints.gridx = 0;
 				modifyDatesPanelConstraints.gridy = 4;
@@ -1913,19 +2266,27 @@ System.err.println("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missi
 		content.add(mainPanel);
 		pack();
 		setVisible(true);
+		
+		if (pathName != null && pathName.length() > 0) {
+			new Thread(new ImportWorker(pathName,srcDatabase,srcDatabasePanel)).start();
+		}
 	}
 
 	/**
 	 * <p>The method to invoke the application.</p>
 	 *
-	 * @param	arg	none
+	 * @param	arg	optionally, a single path to a DICOM file or folder to search for importable DICOM files
 	 */
 	public static void main(String arg[]) {
 		try {
-			new DicomCleaner();
+			String pathName = null;
+			if (arg.length > 0) {
+				pathName = arg[0];
+			}
+			new DicomCleaner(pathName);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

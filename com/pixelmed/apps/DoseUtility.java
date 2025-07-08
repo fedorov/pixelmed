@@ -1,6 +1,67 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.database.DatabaseTreeBrowser;
+import com.pixelmed.database.DatabaseTreeRecord;
+import com.pixelmed.database.MinimalPatientStudySeriesInstanceModel;
+//import com.pixelmed.database.PatientStudySeriesConcatenationInstanceModel;
+
+import com.pixelmed.dicom.*;
+
+import com.pixelmed.event.ApplicationEventDispatcher;
+
+import com.pixelmed.display.event.StatusChangeEvent;
+
+import com.pixelmed.display.ApplicationFrame;
+import com.pixelmed.display.DialogMessageLogger;
+import com.pixelmed.display.DicomBrowser;
+import com.pixelmed.display.SafeCursorChanger;
+import com.pixelmed.display.SafeFileChooser;
+import com.pixelmed.display.SafeProgressBarUpdaterThread;
+
+import com.pixelmed.dose.CTDose;
+import com.pixelmed.dose.CTIrradiationEventDataFromImages;
+
+import com.pixelmed.doseocr.ExposureDoseSequence;
+import com.pixelmed.doseocr.GenerateRadiationDoseStructuredReport;
+import com.pixelmed.doseocr.OCR;
+import com.pixelmed.doseocr.RenderedDoseReport;
+
+import com.pixelmed.ftp.FTPApplicationProperties;
+import com.pixelmed.ftp.FTPClientApplicationConfigurationDialog;
+import com.pixelmed.ftp.FTPFileSender;
+import com.pixelmed.ftp.FTPRemoteHost;
+import com.pixelmed.ftp.FTPRemoteHostInformation;
+
+import com.pixelmed.network.UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy;
+import com.pixelmed.network.DicomNetworkException;
+import com.pixelmed.network.MultipleInstanceTransferStatusHandler;
+import com.pixelmed.network.MultipleInstanceTransferStatusHandlerWithFileName;
+import com.pixelmed.network.NetworkApplicationConfigurationDialog;
+import com.pixelmed.network.NetworkApplicationInformation;
+import com.pixelmed.network.NetworkApplicationInformationFederated;
+import com.pixelmed.network.NetworkApplicationProperties;
+import com.pixelmed.network.PresentationAddress;
+import com.pixelmed.network.PresentationContext;
+import com.pixelmed.network.PresentationContextListFactory;
+import com.pixelmed.network.ReceivedObjectHandler;
+import com.pixelmed.network.StorageSOPClassSCPDispatcher;
+import com.pixelmed.network.StorageSOPClassSCU;
+import com.pixelmed.network.TransferSyntaxSelectionPolicy;
+
+import com.pixelmed.query.QueryInformationModel;
+import com.pixelmed.query.QueryTreeBrowser;
+import com.pixelmed.query.QueryTreeModel;
+import com.pixelmed.query.QueryTreeRecord;
+import com.pixelmed.query.StudyRootQueryInformationModel;
+
+import com.pixelmed.utils.CapabilitiesAvailable;
+import com.pixelmed.utils.CopyStream;
+import com.pixelmed.utils.MessageLogger;
+
+import com.pixelmed.validate.DicomSRValidator;
 
 //import apple.dts.samplecode.osxadapter.OSXAdapter;
 
@@ -65,67 +126,8 @@ import javax.swing.event.TreeSelectionListener;
 
 import javax.swing.tree.TreePath;
 
-import javax.imageio.ImageIO;
-
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.database.DatabaseTreeBrowser;
-import com.pixelmed.database.DatabaseTreeRecord;
-import com.pixelmed.database.MinimalPatientStudySeriesInstanceModel;
-//import com.pixelmed.database.PatientStudySeriesConcatenationInstanceModel;
-
-import com.pixelmed.dicom.*;
-
-import com.pixelmed.event.ApplicationEventDispatcher;
-
-import com.pixelmed.display.event.StatusChangeEvent;
-
-import com.pixelmed.display.ApplicationFrame;
-import com.pixelmed.display.DialogMessageLogger;
-import com.pixelmed.display.DicomBrowser;
-import com.pixelmed.display.SafeCursorChanger;
-import com.pixelmed.display.SafeFileChooser;
-import com.pixelmed.display.SafeProgressBarUpdaterThread;
-
-import com.pixelmed.dose.CTDose;
-import com.pixelmed.dose.CTIrradiationEventDataFromImages;
-
-import com.pixelmed.doseocr.ExposureDoseSequence;
-import com.pixelmed.doseocr.GenerateRadiationDoseStructuredReport;
-import com.pixelmed.doseocr.OCR;
-import com.pixelmed.doseocr.RenderedDoseReport;
-
-import com.pixelmed.ftp.FTPApplicationProperties;
-import com.pixelmed.ftp.FTPClientApplicationConfigurationDialog;
-import com.pixelmed.ftp.FTPFileSender;
-import com.pixelmed.ftp.FTPRemoteHost;
-import com.pixelmed.ftp.FTPRemoteHostInformation;
-
-import com.pixelmed.network.UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy;
-import com.pixelmed.network.DicomNetworkException;
-import com.pixelmed.network.MultipleInstanceTransferStatusHandler;
-import com.pixelmed.network.MultipleInstanceTransferStatusHandlerWithFileName;
-import com.pixelmed.network.NetworkApplicationConfigurationDialog;
-import com.pixelmed.network.NetworkApplicationInformation;
-import com.pixelmed.network.NetworkApplicationInformationFederated;
-import com.pixelmed.network.NetworkApplicationProperties;
-import com.pixelmed.network.PresentationAddress;
-import com.pixelmed.network.PresentationContext;
-import com.pixelmed.network.PresentationContextListFactory;
-import com.pixelmed.network.ReceivedObjectHandler;
-import com.pixelmed.network.StorageSOPClassSCPDispatcher;
-import com.pixelmed.network.StorageSOPClassSCU;
-import com.pixelmed.network.TransferSyntaxSelectionPolicy;
-
-import com.pixelmed.query.QueryInformationModel;
-import com.pixelmed.query.QueryTreeBrowser;
-import com.pixelmed.query.QueryTreeModel;
-import com.pixelmed.query.QueryTreeRecord;
-import com.pixelmed.query.StudyRootQueryInformationModel;
-
-import com.pixelmed.utils.CopyStream;
-import com.pixelmed.utils.MessageLogger;
-
-import com.pixelmed.validate.DicomSRValidator;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an application for retrieving dose information about DICOM studies of patients.</p>
@@ -138,9 +140,9 @@ import com.pixelmed.validate.DicomSRValidator;
  * @author	dclunie
  */
 public class DoseUtility extends ApplicationFrame {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DoseUtility.java,v 1.66 2025/01/29 10:58:05 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DoseUtility.java,v 1.49 2013/01/25 13:55:45 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(StorageSOPClassSCU.class);
 
 	protected static String propertiesFileName  = ".com.pixelmed.apps.DoseUtility.properties";
 	
@@ -256,84 +258,6 @@ public class DoseUtility extends ApplicationFrame {
 	
 	protected static DicomSRValidator validator;
 	
-	protected static boolean haveScannedForCodecs = false;
-
-	protected static boolean haveCheckedForJPEGLosslessCodec = false;
-	protected static boolean haveFoundJPEGLosslessCodec = false;
-	
-	protected boolean haveJPEGLosslessCodec() {
-		if (!haveCheckedForJPEGLosslessCodec) {
-			if (!haveScannedForCodecs) {
-//System.err.println("DoseUtility.haveJPEGLosslessCodec(): Scanning for ImageIO plugin codecs");
-				ImageIO.scanForPlugins();
-				haveScannedForCodecs=true;
-			}
-			haveFoundJPEGLosslessCodec = false;
-			String readerWanted="jpeg-lossless";
-			try {
-				javax.imageio.ImageReader reader =  (javax.imageio.ImageReader)(javax.imageio.ImageIO.getImageReadersByFormatName(readerWanted).next());
-				if (reader != null) {
-//System.err.println("DoseUtility.haveJPEGLosslessCodec(): Found jpeg-lossless reader");
-					haveFoundJPEGLosslessCodec = true;
-					try {
-//System.err.println("DoseUtility.haveJPEGLosslessCodec(): Calling dispose() on reader");
-						reader.dispose();
-					}
-					catch (Exception e) {
-						e.printStackTrace(System.err);
-					}
-				}
-				else {
-//System.err.println("DoseUtility.haveJPEGLosslessCodec(): No jpeg-lossless reader");
-				}
-			}
-			catch (Exception e) {
-//System.err.println("DoseUtility.haveJPEGLosslessCodec(): No jpeg-lossless reader");
-				haveFoundJPEGLosslessCodec = false;
-			}
-			haveCheckedForJPEGLosslessCodec = true;
-		}
-		return haveFoundJPEGLosslessCodec;
-	}
-	
-	protected static boolean haveCheckedForJPEG2000Part1Codec = false;
-	protected static boolean haveFoundJPEG2000Part1Codec = false;
-	
-	protected boolean haveJPEG2000Part1Codec() {
-		if (!haveCheckedForJPEG2000Part1Codec) {
-			if (!haveScannedForCodecs) {
-//System.err.println("DoseUtility.haveJPEG2000Part1Codec(): Scanning for ImageIO plugin codecs");
-				ImageIO.scanForPlugins();
-				haveScannedForCodecs=true;
-			}
-			haveFoundJPEG2000Part1Codec = false;
-			String readerWanted="JPEG2000";
-			try {
-				javax.imageio.ImageReader reader =  (javax.imageio.ImageReader)(javax.imageio.ImageIO.getImageReadersByFormatName(readerWanted).next());
-				if (reader != null) {
-//System.err.println("DoseUtility.haveJPEG2000Part1Codec(): Found JPEG2000 reader");
-					haveFoundJPEG2000Part1Codec = true;
-					try {
-//System.err.println("DoseUtility.haveJPEG2000Part1Codec(): Calling dispose() on reader");
-						reader.dispose();
-					}
-					catch (Exception e) {
-						e.printStackTrace(System.err);
-					}
-				}
-				else {
-//System.err.println("DoseUtility.haveJPEG2000Part1Codec(): No JPEG2000 reader");
-				}
-			}
-			catch (Exception e) {
-//System.err.println("DoseUtility.haveJPEG2000Part1Codec(): No JPEG2000 reader");
-				haveFoundJPEG2000Part1Codec = false;
-			}
-			haveCheckedForJPEG2000Part1Codec = true;
-		}
-		return haveFoundJPEG2000Part1Codec;
-	}
-	
 	protected void setCurrentRemoteQueryInformationModel(String remoteAEForQuery) {
 		currentRemoteQueryInformationModel=null;
 		String stringForTitle="";
@@ -350,10 +274,9 @@ public class DoseUtility extends ApplicationFrame {
 				String                        queryHost = presentationAddress.getHostname();
 				int			      queryPort = presentationAddress.getPort();
 				String                       queryModel = networkApplicationInformation.getApplicationEntityMap().getQueryModel(queryCalledAETitle);
-				int                     queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
 				
 				if (NetworkApplicationProperties.isStudyRootQueryModel(queryModel) || queryModel == null) {
-					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle,queryDebugLevel);
+					currentRemoteQueryInformationModel=new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle);
 					stringForTitle=":"+remoteAEForQuery;
 				}
 				else {
@@ -361,7 +284,7 @@ public class DoseUtility extends ApplicationFrame {
 				}
 			}
 			catch (Exception e) {		// if an AE's property has no value, or model not supported
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -410,7 +333,7 @@ public class DoseUtility extends ApplicationFrame {
 					srcDatabasePanel.validate();
 					new File(dicomFileName).deleteOnExit();
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to insert {} received from {} in {} into database",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
@@ -424,7 +347,7 @@ public class DoseUtility extends ApplicationFrame {
 	/**
 	 * <p>Start DICOM storage listener for populating source database.</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void activateStorageSCP() throws DicomException, IOException {
 		// Start up DICOM association listener in background for receiving images and responding to echoes ...
@@ -433,16 +356,16 @@ public class DoseUtility extends ApplicationFrame {
 				int port = networkApplicationProperties.getListeningPort();
 				ourCalledAETitle = networkApplicationProperties.getCalledAETitle();
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Starting up DICOM association listener on port "+port+" AET "+ourCalledAETitle));
-System.err.println("Starting up DICOM association listener on port "+port+" AET "+ourCalledAETitle);
-				int storageSCPDebugLevel = networkApplicationProperties.getStorageSCPDebugLevel();
-				int queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
-				storageSOPClassSCPDispatcher = new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER,new OurReceivedObjectHandler(),
-					srcDatabase == null ? null : srcDatabase.getQueryResponseGeneratorFactory(queryDebugLevel),
-					srcDatabase == null ? null : srcDatabase.getRetrieveResponseGeneratorFactory(queryDebugLevel),
+slf4jlogger.info("Starting up DICOM association listener on port "+port+" AET "+ourCalledAETitle);
+				storageSOPClassSCPDispatcher = new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,
+					networkApplicationProperties.getAcceptorMaximumLengthReceived(),networkApplicationProperties.getAcceptorSocketReceiveBufferSize(),networkApplicationProperties.getAcceptorSocketSendBufferSize(),
+					savedImagesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER,new OurReceivedObjectHandler(),
+					null/*AssociationStatusHandler*/,
+					srcDatabase == null ? null : srcDatabase.getQueryResponseGeneratorFactory(),
+					srcDatabase == null ? null : srcDatabase.getRetrieveResponseGeneratorFactory(),
 					networkApplicationInformation,
 					new OurPresentationContextSelectionPolicy(),
-					false/*secureTransport*/,
-					storageSCPDebugLevel);
+					false/*secureTransport*/);
 				new Thread(storageSOPClassSCPDispatcher).start();
 			}
 		}
@@ -459,9 +382,9 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	// so will work by decompressing during attribute list read for cleaning
 
 	class OurTransferSyntaxSelectionPolicy extends TransferSyntaxSelectionPolicy {
-		public LinkedList applyTransferSyntaxSelectionPolicy(LinkedList presentationContexts,int associationNumber,int debugLevel) {
+		public LinkedList applyTransferSyntaxSelectionPolicy(LinkedList presentationContexts,int associationNumber) {
 //System.err.println("DoseUtility.OurTransferSyntaxSelectionPolicy.applyTransferSyntaxSelectionPolicy(): offered "+presentationContexts);
-			boolean canUseBzip = PresentationContextListFactory.haveBzip2Support();
+			boolean canUseBzip = CapabilitiesAvailable.haveBzip2Support();
 			ListIterator pcsi = presentationContexts.listIterator();
 			while (pcsi.hasNext()) {
 				PresentationContext pc = (PresentationContext)(pcsi.next());
@@ -475,6 +398,8 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				boolean foundJPEGLosslessSV1 = false;
 				boolean foundJPEG2000 = false;
 				boolean foundJPEG2000Lossless = false;
+				boolean foundJPEGLSLossless = false;
+				boolean foundJPEGLSNearLossless = false;
 				List tsuids = pc.getTransferSyntaxUIDs();
 				ListIterator tsuidsi = tsuids.listIterator();
 				while (tsuidsi.hasNext()) {
@@ -490,6 +415,8 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1)) foundJPEGLosslessSV1 = true;
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEG2000)) foundJPEG2000 = true;
 						else if (transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless)) foundJPEG2000Lossless = true;
+						else if (transferSyntaxUID.equals(TransferSyntax.JPEGLS)) foundJPEGLSLossless = true;
+						else if (transferSyntaxUID.equals(TransferSyntax.JPEGNLS)) foundJPEGLSNearLossless = true;
 					}
 				}
 				// discard old list and make a new one ...
@@ -516,17 +443,23 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				else if (foundJPEGBaseline) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGBaseline);
 				}
-				else if (foundJPEGLossless && haveJPEGLosslessCodec()) {
+				else if (foundJPEGLossless && CapabilitiesAvailable.haveJPEGLosslessCodec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGLossless);
 				}
-				else if (foundJPEGLosslessSV1 && haveJPEGLosslessCodec()) {
+				else if (foundJPEGLosslessSV1 && CapabilitiesAvailable.haveJPEGLosslessCodec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEGLosslessSV1);
 				}
-				else if (foundJPEG2000 && haveJPEG2000Part1Codec()) {
+				else if (foundJPEG2000 && CapabilitiesAvailable.haveJPEG2000Part1Codec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEG2000);
 				}
-				else if (foundJPEG2000Lossless && haveJPEG2000Part1Codec()) {
+				else if (foundJPEG2000Lossless && CapabilitiesAvailable.haveJPEG2000Part1Codec()) {
 					pc.addTransferSyntaxUID(TransferSyntax.JPEG2000Lossless);
+				}
+				else if (foundJPEGLSLossless && CapabilitiesAvailable.haveJPEGLSCodec()) {
+					pc.addTransferSyntaxUID(TransferSyntax.JPEGLS);
+				}
+				else if (foundJPEGLSNearLossless && CapabilitiesAvailable.haveJPEGLSCodec()) {
+					pc.addTransferSyntaxUID(TransferSyntax.JPEGNLS);
 				}
 				else {
 					pc.setResultReason((byte)4);				// transfer syntaxes not supported (provider rejection)
@@ -543,7 +476,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	 * <p>Will not persist when the application is closed, so in memory database
 	 *  is used and instances live in the temporary filesystem.</p>
 	 *
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	protected void activateTemporaryDatabases() throws DicomException {
 		//srcDatabase = new PatientStudySeriesConcatenationInstanceModel("mem:src",localDatabaseServerName,localDatabaseName);
@@ -641,7 +574,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						}
 					}
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -693,7 +626,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						}
 					}
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -744,7 +677,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				}
 				catch (Exception e) {
 					if (showDetailedLogCheckBox.isSelected()) { logger.sendLn(e.toString()); }
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 			}
 		}
@@ -844,7 +777,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				}
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Reporting failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Reporting failed",e);
 			}
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
 			logger.sendLn("Reporting complete");
@@ -861,7 +794,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Reporting failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Reporting failed",e);
 			}
 		}
 	}
@@ -916,7 +849,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						}
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Failed to delete local copy of file {}",fileName,e);
 						logger.sendLn("Failed to delete local copy of file "+fileName);
 					}
 				}
@@ -943,14 +876,14 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				purgeFilesAndDatabaseInformation(databaseSelections,logger,progressBarUpdater,0,1);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Purging failed",e);
 			}
 			srcDatabasePanel.removeAll();
 			try {
 				new OurSourceDatabaseTreeBrowser(srcDatabase,srcDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh source database browser failed",e);
 			}
 			srcDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -968,7 +901,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Purging failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Purging failed",e);
 			}
 		}
 	}
@@ -1122,14 +1055,14 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				generateDoseSR(srcDatabase,databaseSelections,logger,progressBarUpdater,0,1);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Generating SR failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Generating SR failed",e);
 			}
 			srcDatabasePanel.removeAll();
 			try {
 				new OurSourceDatabaseTreeBrowser(srcDatabase,srcDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh source database browser failed",e);
 			}
 			srcDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -1147,7 +1080,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Generating SR failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Generating SR failed",e);
 			}
 		}
 	}
@@ -1185,7 +1118,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("View failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("View failed",e);
 			}
 		}
 	}
@@ -1241,7 +1174,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 					}
 					catch (Exception e) {
 						if (showDetailedLogCheckBox.isSelected()) { logger.sendLn(e.toString()); }
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Validation failed",e);
 					}
 					SafeProgressBarUpdaterThread.updateProgressBar(progressBarUpdater,++count);
 				}
@@ -1261,7 +1194,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Validation failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Validation failed",e);
 			}
 		}
 	}
@@ -1294,8 +1227,13 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 		int port;
 		String calledAETitle;
 		String callingAETitle;
+		int ourMaximumLengthReceived;
+		int socketReceiveBufferSize;
+		int socketSendBufferSize;
 		
-		SendWorker(DatabaseTreeRecord[] databaseSelections,DatabaseInformationModel srcDatabase,JPanel srcDatabasePanel,String hostname,int port,String calledAETitle,String callingAETitle) {
+		SendWorker(DatabaseTreeRecord[] databaseSelections,DatabaseInformationModel srcDatabase,JPanel srcDatabasePanel,
+				String hostname,int port,String calledAETitle,String callingAETitle,
+				int ourMaximumLengthReceived,int socketReceiveBufferSize,int socketSendBufferSize) {
 			this.databaseSelections=databaseSelections;
 			this.srcDatabase=srcDatabase;
 			this.srcDatabasePanel=srcDatabasePanel;
@@ -1303,6 +1241,9 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 			this.port=port;
 			this.calledAETitle=calledAETitle;
 			this.callingAETitle=callingAETitle;
+			this.ourMaximumLengthReceived=ourMaximumLengthReceived;
+			this.socketReceiveBufferSize=socketReceiveBufferSize;
+			this.socketSendBufferSize=socketSendBufferSize;
 		}
 
 		public void run() {
@@ -1327,13 +1268,14 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				if (nFiles > 0) {
 					SafeProgressBarUpdaterThread.startProgressBar(progressBarUpdater,nFiles);
 					try {
-						new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,setOfDicomFiles,0/*compressionLevel*/,
-											   new OurMultipleInstanceTransferStatusHandler(nFiles,showDetailedLogCheckBox.isSelected() ? logger : null,progressBarUpdater),
-											   networkApplicationProperties == null ? 0 : networkApplicationProperties.getStorageSCUDebugLevel());
+						new StorageSOPClassSCU(hostname,port,calledAETitle,callingAETitle,
+							ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize,
+							setOfDicomFiles,0/*compressionLevel*/,
+							new OurMultipleInstanceTransferStatusHandler(nFiles,showDetailedLogCheckBox.isSelected() ? logger : null,progressBarUpdater));
 					}
 					catch (Exception e) {
 						if (showDetailedLogCheckBox.isSelected()) { logger.sendLn(e.toString()); }
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Send failed",e);
 					}
 				}
 				else {
@@ -1360,13 +1302,16 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 					PresentationAddress presentationAddress = networkApplicationInformation.getApplicationEntityMap().getPresentationAddress(calledAETitle);
 					String                         hostname = presentationAddress.getHostname();
 					int                                port = presentationAddress.getPort();
+					int            ourMaximumLengthReceived = networkApplicationProperties.getInitiatorMaximumLengthReceived();
+					int             socketReceiveBufferSize = networkApplicationProperties.getInitiatorSocketReceiveBufferSize();
+					int                socketSendBufferSize = networkApplicationProperties.getInitiatorSocketSendBufferSize();
 
-					activeThread = new Thread(new SendWorker(currentDatabaseTreeRecordSelections,srcDatabase,srcDatabasePanel,hostname,port,calledAETitle,callingAETitle));
+					activeThread = new Thread(new SendWorker(currentDatabaseTreeRecordSelections,srcDatabase,srcDatabasePanel,hostname,port,calledAETitle,callingAETitle,ourMaximumLengthReceived,socketReceiveBufferSize,socketSendBufferSize));
 					activeThread.start();
 				}
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Send to remote DICOM network host failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Send to remote DICOM network host failed",e);
 			}
 		}
 	}
@@ -1431,14 +1376,12 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 		DatabaseInformationModel srcDatabase;
 		JPanel srcDatabasePanel;
 		FTPRemoteHost remoteHost;
-		int debugLevel;
 		
-		RegistryWorker(DatabaseTreeRecord[] databaseSelections,DatabaseInformationModel srcDatabase,JPanel srcDatabasePanel,FTPRemoteHost remoteHost,int debugLevel) {
+		RegistryWorker(DatabaseTreeRecord[] databaseSelections,DatabaseInformationModel srcDatabase,JPanel srcDatabasePanel,FTPRemoteHost remoteHost) {
 			this.databaseSelections=databaseSelections;
 			this.srcDatabase=srcDatabase;
 			this.srcDatabasePanel=srcDatabasePanel;
 			this.remoteHost=remoteHost;
-			this.debugLevel=debugLevel;
 		}
 
 		public void run() {
@@ -1463,11 +1406,11 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						actualPaths = deidentifyFiles(actualPaths);
 					}
 					String[] fileNamesToSend = (String[])(actualPaths.toArray(new String[actualPaths.size()]));
-					new FTPFileSender(remoteHost,fileNamesToSend,true/*generate random remote file names*/,debugLevel,showDetailedLogCheckBox.isSelected() ? logger : null,progressBarUpdater.getProgressBar());
+					new FTPFileSender(remoteHost,fileNamesToSend,true/*generate random remote file names*/,showDetailedLogCheckBox.isSelected() ? logger : null,progressBarUpdater.getProgressBar());
 				}
 				catch (Exception e) {
 					if (showDetailedLogCheckBox.isSelected()) { logger.sendLn(e.toString()); }
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Send to registry failed",e);
 				}
 			}
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -1503,14 +1446,13 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				if (registryName != null) {
 					FTPRemoteHost remoteHost = ftpRemoteHostInformation.getRemoteHost(registryName);
 					if (remoteHost != null) {
-						int ftpClientDebugLevel = ftpApplicationProperties == null ? 0 : ftpApplicationProperties.getClientDebugLevel();
-						activeThread = new Thread(new RegistryWorker(currentDatabaseTreeRecordSelections,srcDatabase,srcDatabasePanel,remoteHost,ftpClientDebugLevel));
+						activeThread = new Thread(new RegistryWorker(currentDatabaseTreeRecordSelections,srcDatabase,srcDatabasePanel,remoteHost));
 						activeThread.start();
 					}
 				}
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Send to registry failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Send to registry failed",e);
 			}
 		}
 	}
@@ -1524,11 +1466,11 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				importFileIntoDatabase(srcDatabase,mediaFileName,DatabaseInformationModel.FILE_REFERENCED);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Failed to import {} into database",mediaFileName,e);
 			}
 		}
 		
-		protected boolean canUseBzip = PresentationContextListFactory.haveBzip2Support();
+		protected boolean canUseBzip = CapabilitiesAvailable.haveBzip2Support();
 
 		// override base class isOKToImport(), which rejects unsupported compressed transfer syntaxes
 		
@@ -1541,9 +1483,11 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				 || transferSyntaxUID.equals(TransferSyntax.ExplicitVRBigEndian)
 				 || transferSyntaxUID.equals(TransferSyntax.DeflatedExplicitVRLittleEndian)
 				 || (transferSyntaxUID.equals(TransferSyntax.DeflatedExplicitVRLittleEndian) && canUseBzip)
+				 || transferSyntaxUID.equals(TransferSyntax.RLE)
 				 || transferSyntaxUID.equals(TransferSyntax.JPEGBaseline)
-				 || haveJPEGLosslessCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLossless) || transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1))
-				 || haveJPEG2000Part1Codec() && (transferSyntaxUID.equals(TransferSyntax.JPEG2000) || transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless))
+				 || CapabilitiesAvailable.haveJPEGLosslessCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLossless) || transferSyntaxUID.equals(TransferSyntax.JPEGLosslessSV1))
+				 || CapabilitiesAvailable.haveJPEG2000Part1Codec() && (transferSyntaxUID.equals(TransferSyntax.JPEG2000) || transferSyntaxUID.equals(TransferSyntax.JPEG2000Lossless))
+				 || CapabilitiesAvailable.haveJPEGLSCodec() && (transferSyntaxUID.equals(TransferSyntax.JPEGLS) || transferSyntaxUID.equals(TransferSyntax.JPEGNLS))
 				);
 		}
 	}
@@ -1570,14 +1514,14 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				importer.importDicomFiles(pathName);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Importing failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Importing failed",e);
 			}
 			srcDatabasePanel.removeAll();
 			try {
 				new OurSourceDatabaseTreeBrowser(srcDatabase,srcDatabasePanel);
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Refresh source database browser failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Refresh source database browser failed",e);
 			}
 			srcDatabasePanel.validate();
 			SafeProgressBarUpdaterThread.endProgressBar(progressBarUpdater);
@@ -1606,7 +1550,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				}
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Importing failed: "+e));
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Importing failed",e);
 			}
 		}
 	}
@@ -1620,7 +1564,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	//			new Thread(new ImportWorker(path,srcDatabase,srcDatabasePanel)).start();
 	//		} catch (Exception e) {
 	//			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Importing failed: "+e));
-	//			e.printStackTrace(System.err);
+	//			slf4jlogger.error("",e);
 	//		}
 	//}
 
@@ -1695,7 +1639,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 		 * @param	q
 		 * @param	m
 		 * @param	content
-		 * @exception	DicomException
+		 * @throws	DicomException
 		 */
 		OurQueryTreeBrowser(QueryInformationModel q,QueryTreeModel m,Container content) throws DicomException {
 			super(q,m,content);
@@ -1738,7 +1682,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 			} catch (Exception e) {
 				ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Query to "+localName+" failed "+e));
 				if (showDetailedLogCheckBox.isSelected()) { logger.sendLn("Query to "+localName+" ("+calledAET+") failed due to"+ e); }
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Query to {} failed",calledAET,e);
 			}
 			if (showDetailedLogCheckBox.isSelected()) { logger.sendLn("Query to "+localName+" ("+calledAET+") complete"); }
 			ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Done querying  "+localName));
@@ -1820,7 +1764,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 						activeThread.start();
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("Query to {} failed",ae,e);
 						ApplicationEventDispatcher.getApplicationEventDispatcher().processEvent(new StatusChangeEvent("Query to "+ae+" failed"));
 					}
 				}
@@ -1839,7 +1783,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 			}
 			// else do nothing, since no unique key to specify what to retrieve
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("Retrieve failed",e);
 		}
 	}
 	
@@ -1988,7 +1932,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 				//getProperties().store(System.err,"Bla");
 				activateStorageSCP();
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Configure failed",e);
 			}
 		}
 	}
@@ -2011,7 +1955,7 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 	//			OSXAdapter.setFileHandler(this, getClass().getDeclaredMethod("osxFileHandler", new Class[] { String.class }));
 	//		} catch (NoSuchMethodException e) {
 	//			// trap it, since we don't want to fail just because we cannot register events
-	//			e.printStackTrace();
+	//			slf4jlogger.error("",e);
 	//		}
 	//	}
 	//}
@@ -2289,18 +2233,18 @@ System.err.println("Starting up DICOM association listener on port "+port+" AET 
 		try {
 			String osName = System.getProperty("os.name");
 			if (osName != null && osName.toLowerCase(java.util.Locale.US).startsWith("windows")) {	// see "http://lopica.sourceforge.net/os.html" for list of values
-System.err.println("DoseUtility.main(): detected Windows - using Windows LAF");
+				System.err.println("DoseUtility.main(): detected Windows - using Windows LAF");	// no need to use SLF4J since command line utility/test
 				javax.swing.UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		try {
 			new DoseUtility("Dose Utility");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

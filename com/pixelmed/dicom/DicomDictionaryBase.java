@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,8 +18,7 @@ import java.util.Iterator;
  * @author	dclunie
  */
 public abstract class DicomDictionaryBase {
-
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDictionaryBase.java,v 1.7 2008/08/22 20:25:23 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDictionaryBase.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
 
 	protected TreeSet tagList;
 	protected HashMap valueRepresentationsByTag;
@@ -167,7 +166,7 @@ public abstract class DicomDictionaryBase {
 
 		try {
 			DicomDictionaryBase dictionary = new DicomDictionary();
-			System.err.println(new String(dictionary.getValueRepresentationFromTag(TagFromName.PixelRepresentation)));
+			System.err.println(new String(dictionary.getValueRepresentationFromTag(TagFromName.PixelRepresentation)));	// no need to use SLF4J since command line utility/test
 			System.err.println(new String(dictionary.getValueRepresentationFromTag(new AttributeTag(0x0028,0x0103))));
 			
 			System.err.println(dictionary.getInformationEntityFromTag(TagFromName.PatientName));
@@ -183,7 +182,7 @@ public abstract class DicomDictionaryBase {
 			System.err.println(dictionary.getFullNameFromTag(TagFromName.PixelRepresentation));
 		} catch (Exception e) {
 			System.err.println(e);
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

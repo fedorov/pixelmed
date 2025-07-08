@@ -1,10 +1,13 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 import com.pixelmed.dicom.*;
 
 import java.util.LinkedList;
 import java.io.IOException;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements the SCU role of C-FIND SOP Classes.</p>
@@ -14,7 +17,7 @@ import java.io.IOException;
  * association. Any identifiers received are handled by the supplied
  * {@link com.pixelmed.network.IdentifierHandler IdentifierHandler}.</p>
  *
- * <p>Debugging messages with a varying degree of verbosity can be activated.</p>
+ * <p>Debugging messages with a varying degree of verbosity can be activated by using SLF4J properties.</p>
  *
  * <p>For example:</p>
  * <pre>
@@ -27,7 +30,7 @@ try {
     new FindSOPClassSCU("theirhost","104","FINDSCP","FINDSCU",SOPClass.StudyRootQueryRetrieveInformationModelFind,identifier,new IdentifierHandler(),1);
 }
 catch (Exception e) {
-    e.printStackTrace(System.err);
+    slf4jlogger.error("",e);
 }
  * </pre>
  *
@@ -36,12 +39,9 @@ catch (Exception e) {
  * @author	dclunie
  */
 public class FindSOPClassSCU extends SOPClass {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/FindSOPClassSCU.java,v 1.37 2025/01/29 10:58:08 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/FindSOPClassSCU.java,v 1.24 2013/04/27 01:23:50 dclunie Exp $";
-
-	/***/
-	private int debugLevel;
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(FindSOPClassSCU.class);
 
 	/***/
 	private class CFindResponseHandler extends CompositeResponseHandler {
@@ -50,10 +50,9 @@ public class FindSOPClassSCU extends SOPClass {
 
 		/**
 		 * @param	identifierHandler
-		 * @param	debugLevel
 		 */
-		CFindResponseHandler(IdentifierHandler identifierHandler,int debugLevel) {
-			super(debugLevel);
+		CFindResponseHandler(IdentifierHandler identifierHandler) {
+			super();
 			this.identifierHandler=identifierHandler;
 			allowData=true;
 		}
@@ -62,8 +61,7 @@ public class FindSOPClassSCU extends SOPClass {
 		 * @param	list
 		 */
 		protected void evaluateStatusAndSetSuccess(AttributeList list) {
-if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.evaluateStatusAndSetSuccess:");
-if (debugLevel > 1) System.err.println(list);
+			slf4jlogger.debug("evaluateStatusAndSetSuccess:\n{}",list);
 			// could check all sorts of things, like:
 			// - AffectedSOPClassUID is what we sent
 			// - CommandField is 0x8020 C-Find-RSP
@@ -73,7 +71,7 @@ if (debugLevel > 1) System.err.println(list);
 			//
 			// for now just treat success or warning as success (and absence as failure)
 			status = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Status,0xffff);
-if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.evaluateStatusAndSetSuccess: status = 0x"+Integer.toHexString(status));
+			slf4jlogger.debug("CFindResponseHandler.evaluateStatusAndSetSuccess: status = 0x{}",Integer.toHexString(status));
 			// possible statuses at this point are:
 			// A700 Refused - Out of Resources	
 			// A900 Failed - Identifier does not match SOP Class	
@@ -86,7 +84,7 @@ if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.eva
 			success = status == 0x0000;	// success
 			
 			if (status != 0xFF00 && status != 0xFF01) {
-if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.evaluateStatusAndSetSuccess: status no longer pending, so stop");
+				slf4jlogger.debug("CFindResponseHandler.evaluateStatusAndSetSuccess: status no longer pending, so stop");
 				setDone(true);
 			}
 		}
@@ -95,39 +93,45 @@ if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.eva
 		 * @param	list
 		 */
 		protected void makeUseOfDataSet(AttributeList list) {
-if (debugLevel > 1) System.err.println("FindSOPClassSCU.CFindResponseHandler.makeUseOfDataSet:");
-if (debugLevel > 1) System.err.print(list);
+			slf4jlogger.debug("CFindResponseHandler.makeUseOfDataSet:\n,{}",list);
 			try {
 				identifierHandler.doSomethingWithIdentifier(list);
 			}
 			catch (DicomException e) {
 				// do not stop ... other identifiers may be OK
-				e.printStackTrace(System.err);
+				slf4jlogger.error("Ignoring exception",e);
 			}
 		}
 	}
-
+	
 	/**
-	 * @param	hostname		their hostname or IP address
-	 * @param	port			their port
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #getSuitableAssociation(String,int,String,String,String)} instead.
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port
 	 * @param	calledAETitle		their AE Title
 	 * @param	callingAETitle		our AE Title
 	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
-	 * @param	identifier		the list of matching and return keys
-	 * @param	identifierHandler	the handler to use for each returned identifier
-	 * @param	debugLevel		zero for no debugging messages, higher values more verbose messages
-	 * @exception	IOException
-	 * @exception	DicomException
-	 * @exception	DicomNetworkException
+	 * @param	debugLevel			ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
 	 */
-	public FindSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
-			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
-			int debugLevel) throws DicomNetworkException, DicomException, IOException {
-		this.debugLevel=debugLevel;
-		
-if (debugLevel > 1) System.err.println("FindSOPClassSCU(): request identifier");
-if (debugLevel > 1) System.err.print(identifier);
-
+	public static Association getSuitableAssociation(String hostname,int port,String calledAETitle,String callingAETitle,String affectedSOPClass,int debugLevel) throws DicomNetworkException, DicomException, IOException {
+		slf4jlogger.warn("Debug level supplied as argument ignored");
+		return getSuitableAssociation(hostname,port,calledAETitle,callingAETitle,affectedSOPClass);
+	}
+	
+	/**
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port
+	 * @param	calledAETitle		their AE Title
+	 * @param	callingAETitle		our AE Title
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public static Association getSuitableAssociation(String hostname,int port,String calledAETitle,String callingAETitle,String affectedSOPClass) throws DicomNetworkException, DicomException, IOException {
 		LinkedList presentationContexts = new LinkedList();
 		{
 			LinkedList tslist = new LinkedList();
@@ -138,31 +142,135 @@ if (debugLevel > 1) System.err.print(identifier);
 		presentationContexts.add(new PresentationContext((byte)0x03,affectedSOPClass,TransferSyntax.ImplicitVRLittleEndian));
 		presentationContexts.add(new PresentationContext((byte)0x05,affectedSOPClass,TransferSyntax.ExplicitVRLittleEndian));
 
-		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,false,debugLevel);
-if (debugLevel > 1) System.err.println(association);
+		Association association = AssociationFactory.createNewAssociation(hostname,port,calledAETitle,callingAETitle,presentationContexts,null,false);
+		slf4jlogger.debug(association.toString());
+		return association;
+	}
+
+	/**
+	 * @param	association			the already established Association to use
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @param	identifier			the list of matching and return keys
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 * @throws	AReleaseException
+	 */
+	public void performFind(Association association,String affectedSOPClass,AttributeList identifier) throws DicomNetworkException, DicomException, IOException, AReleaseException {
+		slf4jlogger.debug("request identifier\n{}",identifier);
+
 		// Decide which presentation context we are going to use ...
 		byte usePresentationContextID = association.getSuitablePresentationContextID(affectedSOPClass);
-if (debugLevel > 1) System.err.println("Using context ID "+usePresentationContextID);
+		slf4jlogger.debug("Using context ID {}",usePresentationContextID);
 		byte cFindRequestCommandMessage[] = new CFindRequestCommandMessage(affectedSOPClass).getBytes();
 		byte cFindIdentifier[] = new IdentifierMessage(identifier,association.getTransferSyntaxForPresentationContextID(usePresentationContextID)).getBytes();
-		CFindResponseHandler responseHandler = new CFindResponseHandler(identifierHandler,debugLevel);
-		association.setReceivedDataHandler(responseHandler);
 		// for some reason association.send(usePresentationContextID,cFindRequestCommandMessage,cFindIdentifier) fails with Oldenburg imagectn
 		// so send the command and the identifier separately ...
 		// (was probably because wasn't setting the last fragment flag on the command in Association.send() DAC. 2004/06/10)
 		// (see [bugs.mrmf] (000114) Failing to set last fragment on command when sending command and data in same PDU)
 		association.send(usePresentationContextID,cFindRequestCommandMessage,null);
 		association.send(usePresentationContextID,null,cFindIdentifier);
-if (debugLevel > 1) System.err.println("FindSOPClassSCU: waiting for PDUs");
+		slf4jlogger.debug("waiting for PDUs");
+		association.waitForPDataPDUsUntilHandlerReportsDone();
+		slf4jlogger.debug("got PDU");
+		// State 6
+	}
+
+	/**
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #FindSOPClassSCU(Association,String,AttributeList,IdentifierHandler)} instead.
+	 * @param	association			the already established Association to use
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @param	identifier			the list of matching and return keys
+	 * @param	identifierHandler	the handler to use for each returned identifier
+	 * @param	debugLevel			ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public FindSOPClassSCU(Association association,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
+			int debugLevel) throws DicomNetworkException, DicomException, IOException {
+		this(association,affectedSOPClass,identifier,identifierHandler);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * @param	association			the already established Association to use
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @param	identifier			the list of matching and return keys
+	 * @param	identifierHandler	the handler to use for each returned identifier
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public FindSOPClassSCU(Association association,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler
+			) throws DicomNetworkException, DicomException, IOException {
+		CFindResponseHandler responseHandler = new CFindResponseHandler(identifierHandler);
+		association.setReceivedDataHandler(responseHandler);
 		try {
-			association.waitForPDataPDUsUntilHandlerReportsDone();
-if (debugLevel > 1) System.err.println("FindSOPClassSCU: got PDU, now releasing association");
+			performFind(association,affectedSOPClass,identifier);
+			// State 6
+		}
+		catch (AReleaseException e) {
+			// State 1
+			// the other end released and didn't wait for us to do it
+			association = null;
+		}
+		if (!responseHandler.wasSuccessful()) {
+			throw new DicomNetworkException("C-FIND reports failure status 0x"+Integer.toString(responseHandler.getStatus()&0xFFFF,16));
+		}
+	}
+
+	/**
+	 * @deprecated					SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #FindSOPClassSCU(String,int,String,String,String,AttributeList,IdentifierHandler)} instead.
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port
+	 * @param	calledAETitle		their AE Title
+	 * @param	callingAETitle		our AE Title
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @param	identifier			the list of matching and return keys
+	 * @param	identifierHandler	the handler to use for each returned identifier
+	 * @param	debugLevel			ignored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public FindSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler,
+			int debugLevel) throws DicomNetworkException, DicomException, IOException {
+		this(hostname,port,calledAETitle,callingAETitle,affectedSOPClass,identifier,identifierHandler);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+	
+	/**
+	 * @param	hostname			their hostname or IP address
+	 * @param	port				their port
+	 * @param	calledAETitle		their AE Title
+	 * @param	callingAETitle		our AE Title
+	 * @param	affectedSOPClass	the SOP Class defining which query model, e.g. {@link com.pixelmed.dicom.SOPClass#StudyRootQueryRetrieveInformationModelFind SOPClass.StudyRootQueryRetrieveInformationModelFind}
+	 * @param	identifier			the list of matching and return keys
+	 * @param	identifierHandler	the handler to use for each returned identifier
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public FindSOPClassSCU(String hostname,int port,String calledAETitle,String callingAETitle,
+			String affectedSOPClass,AttributeList identifier,IdentifierHandler identifierHandler
+			) throws DicomNetworkException, DicomException, IOException {
+		Association association = getSuitableAssociation(hostname,port,calledAETitle,callingAETitle,affectedSOPClass);
+		CFindResponseHandler responseHandler = new CFindResponseHandler(identifierHandler);
+		association.setReceivedDataHandler(responseHandler);
+		try {
+			performFind(association,affectedSOPClass,identifier);
+			slf4jlogger.debug("releasing association");
 			// State 6
 			association.release();
 		}
 		catch (AReleaseException e) {
 			// State 1
 			// the other end released and didn't wait for us to do it
+			association = null;
 		}
 		if (!responseHandler.wasSuccessful()) {
 			throw new DicomNetworkException("C-FIND reports failure status 0x"+Integer.toString(responseHandler.getStatus()&0xFFFF,16));
@@ -173,10 +281,9 @@ if (debugLevel > 1) System.err.println("FindSOPClassSCU: got PDU, now releasing 
 	 * <p>For testing, establish an association to the specified AE and perform a study root query (send a C-FIND request),
 	 * for all studies.</p>
 	 *
-	 * @param	arg	array of four or five strings - their hostname, their port, their AE Title, our AE Title, and optionally an integer debug level
+	 * @param	arg	array of four strings - their hostname, their port, their AE Title, our AE Title
 	 */
 	public static void main(String arg[]) {
-		int debugLevel = arg.length > 4 ? Integer.parseInt(arg[4]) : 1;
 		try {
 			SpecificCharacterSet specificCharacterSet = new SpecificCharacterSet((String[])null);
 			AttributeList identifier = new AttributeList();
@@ -210,10 +317,10 @@ if (debugLevel > 1) System.err.println("FindSOPClassSCU: got PDU, now releasing 
 				identifier.putNewAttribute(TagFromName.InstanceNumber);
 			}
 			
-			new FindSOPClassSCU(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],SOPClass.StudyRootQueryRetrieveInformationModelFind,identifier,new IdentifierHandler(),debugLevel);
+			new FindSOPClassSCU(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3],SOPClass.StudyRootQueryRetrieveInformationModelFind,identifier,new IdentifierHandler());
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 			System.exit(0);
 		}
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -17,7 +17,7 @@ import java.util.GregorianCalendar;
  * @author	dclunie
  */
 public class DateUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/DateUtilities.java,v 1.3 2012/06/28 18:36:13 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/DateUtilities.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
 
 	private DateUtilities() {}
 	
@@ -32,8 +32,8 @@ public class DateUtilities {
 	 *
 	 * @param	earlierDate						for example, the date of birth
 	 * @param	laterDate						for example, the current date
-	 * @exception	ParseException				if one of the dates is not in the correct form
-	 * @exception	IllegalArgumentException	if the later date is earlier than the earlier date
+	 * @throws	ParseException				if one of the dates is not in the correct form
+	 * @throws	IllegalArgumentException	if the later date is earlier than the earlier date
 	 */
 	public static String getAgeBetweenAsDICOMAgeString(String earlierDate,String laterDate) throws ParseException, IllegalArgumentException {
 		yyyymmddFormat.setLenient(false);
@@ -49,7 +49,7 @@ public class DateUtilities {
 	 *
 	 * @param	earlierDate						for example, the date of birth
 	 * @param	laterDate						for example, the current date
-	 * @exception	IllegalArgumentException	if the later date is earlier than the earlier date
+	 * @throws	IllegalArgumentException	if the later date is earlier than the earlier date
 	 */
 	public static String getAgeBetweenAsDICOMAgeString(Date earlierDate,Date laterDate) throws IllegalArgumentException {
 		Calendar earlier = new GregorianCalendar();
@@ -66,7 +66,7 @@ public class DateUtilities {
 	 *
 	 * @param	earlierDate						for example, the date of birth
 	 * @param	laterDate						for example, the current date
-	 * @exception	IllegalArgumentException	if the later date is earlier than the earlier date
+	 * @throws	IllegalArgumentException	if the later date is earlier than the earlier date
 	 */
 	public static String getAgeBetweenAsDICOMAgeString(Calendar earlierDate,Calendar laterDate) throws IllegalArgumentException {
 		if (laterDate.before(earlierDate)) {

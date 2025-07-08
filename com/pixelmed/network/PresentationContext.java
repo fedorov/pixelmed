@@ -1,6 +1,9 @@
-/* Copyright (c) 2001-2004, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
+
+import com.pixelmed.dicom.SOPClassDescriptions;
+import com.pixelmed.dicom.TransferSyntaxFromName;
 
 import java.util.List;
 import java.util.ListIterator;
@@ -14,7 +17,7 @@ import java.lang.StringBuffer;
 public class PresentationContext {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/PresentationContext.java,v 1.11 2004/11/11 11:28:32 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/PresentationContext.java,v 1.22 2025/01/29 10:58:08 dclunie Exp $";
 
 	/***/
 	private byte identifier;
@@ -173,7 +176,9 @@ public class PresentationContext {
 		StringBuffer sb = new StringBuffer();
 		sb.append("Presentation Context ID: 0x");
 		sb.append(Integer.toHexString(identifier&0xff));
-		sb.append(" (result 0x");
+		sb.append(" (");
+		sb.append(identifier&0xff);
+		sb.append(" dec) (result 0x");
 		sb.append(Integer.toHexString(resultReason&0xff));
 		sb.append(" - ");
 		if (resultReason == 0) {
@@ -197,13 +202,24 @@ public class PresentationContext {
 		sb.append(")\n");
 		sb.append("\tAbstract Syntax:\n\t\t");
 		sb.append(abstractSyntaxUID);
+		if (abstractSyntaxUID != null && abstractSyntaxUID.length() > 0) {
+			sb.append(" (");
+			sb.append(SOPClassDescriptions.getKeywordFromUID(abstractSyntaxUID));
+			sb.append(")");
+		}
 		sb.append("\n");
 		sb.append("\tTransfer Syntax(es):");
 
 		ListIterator i = transferSyntaxUIDs.listIterator();
 		while (i.hasNext()) {
 			sb.append("\n\t\t");
-			sb.append((String)i.next());
+			String transferSyntaxUID = (String)i.next();
+			sb.append(transferSyntaxUID);
+			if (transferSyntaxUID != null && transferSyntaxUID.length() > 0) {
+				sb.append(" (");
+				sb.append(TransferSyntaxFromName.getKeywordFromUID(transferSyntaxUID));
+				sb.append(")");
+			}
 		}
 
 		sb.append("\n");

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,10 +21,10 @@ import java.io.*;
 public class DicomOutputStream extends BinaryOutputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomOutputStream.java,v 1.8 2003/10/19 17:39:59 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomOutputStream.java,v 1.20 2025/01/29 10:58:06 dclunie Exp $";
 
 	/***/
-	private static final byte preamble[] = new byte[128];
+	private static final byte defaultPreamble[] = new byte[128];
 	/***/
 	private static final byte DICM[] = "DICM".getBytes();
 	
@@ -43,13 +43,29 @@ public class DicomOutputStream extends BinaryOutputStream {
 	/**
 	 * @param	metaTransferSyntaxUID
 	 * @param	dataTransferSyntaxUID
-	 * @exception	IOException
+	 * @throws	IOException		if an I/O error occurs
 	 */
-	private void initializeTransferSyntax(String metaTransferSyntaxUID,String dataTransferSyntaxUID) throws IOException { 
+	//private void initializeTransferSyntax(String metaTransferSyntaxUID,String dataTransferSyntaxUID) throws IOException {
+	//	initializeTransferSyntax(String metaTransferSyntaxUID,String dataTransferSyntaxUID,null/*use default preamble*/);
+	//}
+
+	/**
+	 * @param	metaTransferSyntaxUID
+	 * @param	dataTransferSyntaxUID
+	 * @param	preamble		128 bytes to use as preamble, otherwise null to use default of all zero bytes
+	 * @throws	IOException		if an I/O error occurs
+	 */
+	private void initializeTransferSyntax(String metaTransferSyntaxUID,String dataTransferSyntaxUID,byte[] preamble) throws IOException {
 		transferSyntaxToWriteMetaHeader = metaTransferSyntaxUID == null ? null : new TransferSyntax(metaTransferSyntaxUID);
 		   transferSyntaxToWriteDataSet = dataTransferSyntaxUID == null ? null : new TransferSyntax(dataTransferSyntaxUID);
 
 		if (transferSyntaxToWriteMetaHeader != null) {
+			if (preamble == null) {
+				preamble = defaultPreamble;
+			}
+			else if (preamble.length != 128) {
+				throw new IOException("Supplied preamble must be exactly 128 bytes long - was "+preamble.length+" bytes");
+			}
 			write(preamble,0,128);
 			write(DICM,0,4);
 			setWritingMetaHeader();
@@ -65,16 +81,31 @@ public class DicomOutputStream extends BinaryOutputStream {
 	/**
 	 * <p>Construct a stream to write DICOM data sets to the supplied stream.</p>
 	 *
+	 * <p>If the metaTransferSyntaxUID is not null, a 128 byte preamble of all zeroes plus "DICM" will also be written.</p>
+	 *
+	 * @param	o			the output stream to write to
+	 * @param	metaTransferSyntaxUID	use this transfer syntax for the meta information header (may be null)
+	 * @param	dataTransferSyntaxUID	use this transfer syntax for the data set
+	 * @throws	IOException		if an I/O error occurs
+	 */
+	public DicomOutputStream(OutputStream o,String metaTransferSyntaxUID,String dataTransferSyntaxUID) throws IOException {
+		this(o,metaTransferSyntaxUID,dataTransferSyntaxUID,null/*use default preamble*/);
+	}
+
+	/**
+	 * <p>Construct a stream to write DICOM data sets to the supplied stream.</p>
+	 *
 	 * <p>If the metaTransferSyntaxUID is not null, a 128 byte preamble plus "DICM" will also be written.</p>
 	 *
 	 * @param	o			the output stream to write to
 	 * @param	metaTransferSyntaxUID	use this transfer syntax for the meta information header (may be null)
 	 * @param	dataTransferSyntaxUID	use this transfer syntax for the data set
-	 * @exception	IOException
+	 * @param	preamble		128 bytes to use as preamble, otherwise null to use default of all zero bytes
+	 * @throws	IOException		if an I/O error occurs
 	 */
-	public DicomOutputStream(OutputStream o,String metaTransferSyntaxUID,String dataTransferSyntaxUID) throws IOException {
+	public DicomOutputStream(OutputStream o,String metaTransferSyntaxUID,String dataTransferSyntaxUID,byte[] preamble) throws IOException {
 		super(o,false);
-		initializeTransferSyntax(metaTransferSyntaxUID,dataTransferSyntaxUID);
+		initializeTransferSyntax(metaTransferSyntaxUID,dataTransferSyntaxUID,preamble);
 	}
 
 	/**

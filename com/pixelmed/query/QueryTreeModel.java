@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
@@ -12,6 +12,9 @@ import java.io.File;
 import com.pixelmed.dicom.AttributeList;
 import com.pixelmed.dicom.DicomException;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>The {@link com.pixelmed.query.QueryTreeModel QueryTreeModel} class implements a
  * {@link javax.swing.tree.TreeModel TreeModel} to abstract the contents of a query response as
@@ -22,9 +25,9 @@ import com.pixelmed.dicom.DicomException;
  * @author	dclunie
  */
 public class QueryTreeModel implements TreeModel {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeModel.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeModel.java,v 1.8 2008/06/30 15:12:57 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryTreeModel.class);
 
 	// Our nodes are all instances of QueryTreeRecord ...
 
@@ -102,15 +105,32 @@ public class QueryTreeModel implements TreeModel {
 	 *
 	 * <p>The contents are added as required by actually performing queries as nodes are expanded.</p>
 	 *
-	 * @param	q		the query information model to build the tree from
-	 * @param	filter		the query request identifier as a list of DICOM attributes
-	 * @param	debugLevel	0 is no debugging (silent), > 0 more verbose levels of debugging
-	 * @exception	DicomException	thrown if there are problems building the tree
+	 * @deprecated				SLF4J is now used instead of debugLevel parameters to control debugging - use {@link #QueryTreeModel(QueryInformationModel,AttributeList)} instead.
+	 * @param	q				the query information model to build the tree from
+	 * @param	filter			the query request identifier as a list of DICOM attributes
+	 * @param	debugLevel		unused
+	 * @throws	DicomException	thrown if there are problems building the tree
 	 */
 	public QueryTreeModel(QueryInformationModel q,AttributeList filter,int debugLevel) throws DicomException {
+		this(q,filter);
+		slf4jlogger.warn("Debug level supplied as constructor argument ignored");
+	}
+
+	/**
+	 * <p>Construct a tree model with a root node on top.</p>
+	 *
+	 * <p>The root node is the name of the called AET in the query information model.</p>
+	 *
+	 * <p>The contents are added as required by actually performing queries as nodes are expanded.</p>
+	 *
+	 * @param	q				the query information model to build the tree from
+	 * @param	filter			the query request identifier as a list of DICOM attributes
+	 * @throws	DicomException	thrown if there are problems building the tree
+	 */
+	public QueryTreeModel(QueryInformationModel q,AttributeList filter) throws DicomException {
 		if (q != null) {
 			String aet = q.getCalledAETitle();
-			root = new QueryTreeRecord(q,filter,null,(aet == null ? "Remote database" : aet),null,null,null,debugLevel);	// we create our own (empty) root on top
+			root = new QueryTreeRecord(q,filter,null,(aet == null ? "Remote database" : aet),null,null,null);	// we create our own (empty) root on top
 		}
 	}
 

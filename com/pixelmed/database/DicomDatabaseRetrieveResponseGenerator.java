@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2006, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -36,13 +36,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerator {
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
-	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseRetrieveResponseGenerator.java,v 1.4 2007/09/27 18:48:08 dclunie Exp $";
+class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerator {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DicomDatabaseRetrieveResponseGenerator.java,v 1.17 2025/01/29 10:58:06 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomDatabaseRetrieveResponseGenerator.class);
 	
-	/***/
-	private int debugLevel;
 	/***/
 	private DatabaseInformationModel databaseInformationModel;
 	/***/
@@ -67,7 +68,7 @@ class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerato
 				offendingElement.addValue(offendingElementValue);
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		this.errorComment = errorComment;
@@ -89,9 +90,8 @@ class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerato
 	private String          sopInstanceUIDColumnName;
 	private String       transferSyntaxUIDColumnName;
 
-	DicomDatabaseRetrieveResponseGenerator(DatabaseInformationModel databaseInformationModel,int debugLevel) {
+	DicomDatabaseRetrieveResponseGenerator(DatabaseInformationModel databaseInformationModel) {
 //System.err.println("DicomDatabaseRetrieveResponseGenerator():");
-		this.debugLevel=debugLevel;
 		this.databaseInformationModel=databaseInformationModel;
 
 		dicomFiles = null;
@@ -147,7 +147,7 @@ class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerato
 				b.append(DicomDatabaseInformationModel.getQuotedEscapedSingleStringValueOrNull(a));
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 				success = false;		// partially extended buffer will be invalid at this point
 			}
 		}
@@ -162,7 +162,7 @@ class DicomDatabaseRetrieveResponseGenerator implements RetrieveResponseGenerato
 		boolean success = true;
 		StringBuffer b = new StringBuffer();
 		if (queryRetrieveLevel == null) {
-if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.buildSelectStatementForLevelAndModelFromUniqueKeysInRequestIdentifier(): missing required QueryRetrieveLevel in C-MOVE request identifier");
+			slf4jlogger.debug("buildSelectStatementForLevelAndModelFromUniqueKeysInRequestIdentifier(): missing required QueryRetrieveLevel in C-MOVE request identifier");
 			success=false;
 			setErrorStatus(ResponseStatus.IdentifierDoesNotMatchSOPClass,TagFromName.QueryRetrieveLevel,"Missing retrieve level");
 		}
@@ -294,11 +294,11 @@ if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.b
 	}
 	
 	public void performRetrieve(String retrieveSOPClassUID,AttributeList requestIdentifier,boolean relational) {
-if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.performRetrieve(): request:\n"+requestIdentifier.toString());
+		slf4jlogger.debug("performRetrieve(): request:\n"+requestIdentifier.toString());
 		this.requestIdentifier=requestIdentifier;
 		String queryRetrieveLevel =  Attribute.getSingleStringValueOrNull(requestIdentifier,TagFromName.QueryRetrieveLevel);
 		String query = buildSelectStatementForLevelAndModelFromUniqueKeysInRequestIdentifier(retrieveSOPClassUID,queryRetrieveLevel,requestIdentifier,offendingElement);
-if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.performRetrieve(): query: "+query);
+		slf4jlogger.debug("performRetrieve(): query: {}",query);
 		if (query != null) {
 			try {
 				Statement databaseStatement = databaseInformationModel.createStatement();
@@ -313,12 +313,23 @@ if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.p
 							resultSet.getString(transferSyntaxUIDColumnName)
 						);
 					}
+					if (dicomFiles.isEmpty()) {	// (001127)
+						dicomFiles = null;
+						setErrorStatus(ResponseStatus.UnableToProcess,null,"No matching instances");
+					}
+					else {
+						status = ResponseStatus.Success;
+					}
+				}
+				else {
+					setErrorStatus(ResponseStatus.UnableToProcess,null,"Query returned no result set");
 				}
 				databaseStatement.close();
-				status = ResponseStatus.Success;	// success
 			}
 			catch (SQLException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("performRetrieve(): request:\n"+requestIdentifier.toString());
+				slf4jlogger.error("performRetrieve(): query: {}",query);
+				slf4jlogger.error("performRetrieve(): ",e);
 				dicomFiles = null;
 				setErrorStatus(ResponseStatus.UnableToProcess,null,e.getMessage());
 			}
@@ -329,7 +340,7 @@ if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.p
 				status = ResponseStatus.IdentifierDoesNotMatchSOPClass;	// should already have been set earlier together with offending element and error comment already set earlier
 			}
 		}
-if (debugLevel > 0) System.err.println("DicomDatabaseRetrieveResponseGenerator.performRetrieve(): query performed - status 0x"+Integer.toHexString(status));
+		slf4jlogger.debug("performRetrieve(): query performed - status 0x"+Integer.toHexString(status));
 	}
 	
 	public SetOfDicomFiles getDicomFiles() { return dicomFiles; }

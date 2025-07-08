@@ -1,6 +1,9 @@
-/* Copyright (c) 2004-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,22 +13,24 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.SeriesListRequestHandler SeriesListRequestHandler} creates a response to an HHTP request for
+ * <p>The {@link SeriesListRequestHandler SeriesListRequestHandler} creates a response to an HHTP request for
  * a list of series for a specified study.</p>
  *
  * @author	dclunie
  */
 class SeriesListRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/SeriesListRequestHandler.java,v 1.6 2011/04/04 14:47:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/SeriesListRequestHandler.java,v 1.18 2025/01/29 10:58:10 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SeriesListRequestHandler.class);
 
 	protected String requestTypeToUseForInstances;
 	
-	protected SeriesListRequestHandler(String stylesheetPath,String requestTypeToUseForInstances,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	protected SeriesListRequestHandler(String stylesheetPath,String requestTypeToUseForInstances) {
+		super(stylesheetPath);
 		this.requestTypeToUseForInstances = requestTypeToUseForInstances;
 	}
 
@@ -34,13 +39,16 @@ class SeriesListRequestHandler extends RequestHandler {
 			int returnValue = 0;
 			String si1 = (String)(((Map)o1).get("SERIESNUMBER"));
 			String si2 = (String)(((Map)o2).get("SERIESNUMBER"));
+			if (si1 == null) si1="";
+			if (si2 == null) si2="";
 			try {
-				int i1 = Integer.parseInt(si1);
-				int i2 = Integer.parseInt(si2);
+				int i1 = si1.length() > 0 ? Integer.parseInt(si1) : 0;
+				int i2 = si2.length() > 0 ? Integer.parseInt(si2) : 0;
 				returnValue = i1 - i2;
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
+				returnValue = si1.compareTo(si2);
 			}
 			return returnValue;
 		}
@@ -132,8 +140,8 @@ class SeriesListRequestHandler extends RequestHandler {
 			sendHeaderAndBodyText(out,responseBody,"series.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("SeriesListRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

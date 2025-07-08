@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -45,8 +45,22 @@ public class TestFloatFormatterLocaleEffect extends TestCase {
 		double value2 = -56356.457457d;
 		double value3 = 0d;
 		double value4 = 7.45345345e-21d;
+		double value5 = 86.0;
 		
+		String expectValue1 = "39.76";
+		String expectValue2 = "-56356.457457";
+		String expectValue3 = "0";
+		String expectValue4 = ".745345345E-20";	// this is what we actually seem to get - note the case change as well as the position of the decimal point
+		String expectValue5 = "86";
+
 		{
+
+			assertEquals(Locale.getDefault().toString(),expectValue1,FloatFormatter.toStringOfFixedMaximumLength(value1,16,false/*allowNonNumbers*/));
+			assertEquals(Locale.getDefault().toString(),expectValue2,FloatFormatter.toStringOfFixedMaximumLength(value2,16,false/*allowNonNumbers*/));
+			assertEquals(Locale.getDefault().toString(),expectValue3,FloatFormatter.toStringOfFixedMaximumLength(value3,16,false/*allowNonNumbers*/));
+			assertEquals(Locale.getDefault().toString(),expectValue4,FloatFormatter.toStringOfFixedMaximumLength(value4,16,false/*allowNonNumbers*/));
+			assertEquals(Locale.getDefault().toString(),expectValue5,FloatFormatter.toStringOfFixedMaximumLength(value5,16,false/*allowNonNumbers*/));
+
 			// NB. Just FloatFormatter.toString() would fail because of round-trip precision issues, that are nothing to do with Locale decimal point character
 			// FYI. FloatFormatter.toStringOfFixedMaximumLength(n,16,false) is the method invoked, for example, in DecimalString.addValue(double)
 			
@@ -54,6 +68,7 @@ public class TestFloatFormatterLocaleEffect extends TestCase {
 			assertEquals("Default",value2,Double.valueOf(FloatFormatter.toStringOfFixedMaximumLength(value2,16,false/*allowNonNumbers*/,Locale.US)).doubleValue());
 			assertEquals("Default",value3,Double.valueOf(FloatFormatter.toStringOfFixedMaximumLength(value3,16,false/*allowNonNumbers*/,Locale.US)).doubleValue());
 			assertEquals("Default",value4,Double.valueOf(FloatFormatter.toStringOfFixedMaximumLength(value4,16,false/*allowNonNumbers*/,Locale.US)).doubleValue());
+			assertEquals("Default",value5,Double.valueOf(FloatFormatter.toStringOfFixedMaximumLength(value5,16,false/*allowNonNumbers*/,Locale.US)).doubleValue());
 		}
 	}
 	

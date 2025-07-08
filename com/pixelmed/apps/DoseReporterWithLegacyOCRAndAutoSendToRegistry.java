@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -72,6 +72,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * <p>A class to wait for incoming dose screen images and SRs and send them to pre-configured registry.</p>
  *
@@ -91,8 +94,9 @@ import java.util.StringTokenizer;
  * @author	dclunie
  */
 public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DoseReporterWithLegacyOCRAndAutoSendToRegistry.java,v 1.28 2025/01/29 10:58:05 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DoseReporterWithLegacyOCRAndAutoSendToRegistry.java,v 1.14 2012/11/24 01:01:06 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DoseReporterWithLegacyOCRAndAutoSendToRegistry.class);
 	
 	protected static String defaultPropertiesFileName = ".com.pixelmed.apps.DoseReporterWithLegacyOCRAndAutoSendToRegistry.properties";
 	
@@ -105,8 +109,6 @@ public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
 	protected static String propertyName_RetainGeneratedRDSRFiles                                     = "Application.RetainGeneratedRDSRFiles";
 	protected static String propertyName_RetainDeidentifiedFiles                                      = "Application.RetainDeidentifiedFiles";
 	protected static String propertyName_RemoteAEsForQuery                                            = "Application.RemoteAEsForQuery";
-	protected static String propertyName_ApplicationDebugLevel                                        = "Application.DebugLevel";
-	protected static String propertyName_OCRDebugLevel                                                = "OCR.DebugLevel";
 
 	protected static String propertyDelimitersForTokenizer_RemoteAEsForQuery = ", ";
 
@@ -143,10 +145,6 @@ public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
 	
 	protected FTPRemoteHost remoteHost;
 	
-	protected int ftpClientDebugLevel;
-	protected int ocrDebugLevel;
-	protected int applicationDebugLevel;
-
 	protected String buildDate = getBuildDate();
 	
 	protected File savedImagesFolder;
@@ -182,7 +180,7 @@ public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
 			buildDate = (new BufferedReader(new InputStreamReader(DoseReporterWithLegacyOCRAndAutoSendToRegistry.class.getResourceAsStream("/BUILDDATE")))).readLine();
 		}
 		catch (IOException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return buildDate;
 	}
@@ -190,7 +188,7 @@ public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
 	/**
 	 * <p>Load properties.</p>
 	 *
-	 * @exception	IOException	thrown if properties file is missing
+	 * @throws	IOException	thrown if properties file is missing
 	 */
 	protected void loadProperties(String propertiesFileName) throws IOException {
 		properties = new Properties(/*defaultProperties*/);
@@ -201,7 +199,7 @@ public class DoseReporterWithLegacyOCRAndAutoSendToRegistry {
 	
 	// largely copied from DoseUtility - should be refactored :(
 	protected String deidentifyFile(String dicomFileName) throws DicomException, IOException {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deidentifyFile(): doing file "+dicomFileName);
+				slf4jlogger.trace("deidentifyFile(): doing file {}",dicomFileName);
 		File file = new File(dicomFileName);
 		DicomInputStream i = new DicomInputStream(file);
 		AttributeList list = new AttributeList();
@@ -235,7 +233,7 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 		list.insertSuitableSpecificCharacterSetForAllStringValues();	// E.g., may have de-identified Kanji name and need new character set
 		File deidentifiedFile = File.createTempFile("clean",".dcm");
 		String deidentifiedFileName = deidentifiedFile.getCanonicalPath();
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deidentifyFile(): deidentified file is "+deidentifiedFileName);
+				slf4jlogger.trace("deidentifyFile(): deidentified file is {}",deidentifiedFileName);
 		if (!retainDeidentifiedFiles) {
 			deidentifiedFile.deleteOnExit();	// will be explicitly deleted anyway by caller, but just in case
 		}
@@ -246,18 +244,18 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 	protected void sendFileToRegistry(String fileName) throws DicomException, IOException, NoSuchAlgorithmException, Exception {
 		String deidentifiedFileName = deidentifyFile(fileName);
 		String[] fileNamesToSend = { deidentifiedFileName };
-		new FTPFileSender(remoteHost,fileNamesToSend,true/*generate random remote file names*/,ftpClientDebugLevel,null/*logger*/,null/*progressBar*/);
+		new FTPFileSender(remoteHost,fileNamesToSend,true/*generate random remote file names*/,null/*logger*/,null/*progressBar*/);
 		// any reason to fail will throw exception, and will only get here to set success if no exception is thrown
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFileToRegistry(): successful send of deidentified version of "+fileName);
+		slf4jlogger.debug("sendFileToRegistry(): successful send of deidentified version of {}",fileName);
 		if (!retainDeidentifiedFiles) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFileToRegistry(): deleting deidentified file "+deidentifiedFileName);
+			slf4jlogger.trace("sendFileToRegistry(): deleting deidentified file {}",deidentifiedFileName);
 			try {
 				if (!new File(deidentifiedFileName).delete()) {
 					throw new DicomException("Failed to delete deidentified file that we sent to registry "+deidentifiedFileName);
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -269,24 +267,24 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 		}
 		try {
 			sendFileToRegistry(candidateFile.fileName);
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFileToRegistry(): setting instance has been sent flag for "+candidateFile.localPrimaryKeyValue+" "+candidateFile.fileName);
+				slf4jlogger.trace("sendFileToRegistry(): setting instance has been sent flag for "+candidateFile.localPrimaryKeyValue+" "+candidateFile.fileName);
 			databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,candidateFile.localPrimaryKeyValue,instanceHasBeenSentToRegistryColumnName,"TRUE");
 			candidateFile.instanceHasBeenSent = true;	// don't think this is necessary, since it won't be used again this pass, but just in case
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	
 	protected void sendFilesToRegistry(Set<CandidateFile> setOfSRFiles) throws DicomException, IOException, NoSuchAlgorithmException, Exception {
 		for (CandidateFile candidateFile : setOfSRFiles) {
 			if (!candidateFile.instanceHasBeenSent) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): attempting to send = "+candidateFile.fileName);
+				slf4jlogger.trace("sendFilesToRegistry(): attempting to send = "+candidateFile.fileName);
 				sendFileToRegistry(candidateFile);		// if any send fails and throws exception, the remainder will not be processed
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): sending was successful = "+candidateFile.fileName);
+				slf4jlogger.trace("sendFilesToRegistry(): sending was successful = "+candidateFile.fileName);
 			}
 			else {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): already sent so not sending again = "+candidateFile.fileName);
+				slf4jlogger.trace("sendFilesToRegistry(): already sent so not sending again = "+candidateFile.fileName);
 			}
 		}
 	}
@@ -299,11 +297,11 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 			String ctDoseSRFileName = ctDoseSRFile.getCanonicalPath();
 			ctDose.write(ctDoseSRFileName,ourCalledAETitle,this.getClass().getCanonicalName());	// has side effect of updating list returned by ctDose.getAttributeList(); uncool :(
 			try {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.makeSRFileAndSendFileToRegistry(): sending our own newly created SR file = "+ctDoseSRFileName);
+				slf4jlogger.debug("makeSRFileAndSendFileToRegistry(): sending our own newly created SR file = {}",ctDoseSRFileName);
 				sendFileToRegistry(ctDoseSRFileName);
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 			if (ctDoseSRFile != null) {
 				if (retainGeneratedRDSRFiles) {
@@ -318,13 +316,13 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 						}
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	
@@ -335,11 +333,11 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 	protected void deleteFilesAndDatabaseRecords(Set<CandidateFile> setOfFiles) throws DicomException, IOException {
 		Set<String> seriesToDeleteIfEmpty = new HashSet<String>();
 		for (CandidateFile candidateFile : setOfFiles) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndDatabaseRecords(): deleting file "+candidateFile.fileName);
+				slf4jlogger.trace("deleteFilesAndDatabaseRecords(): deleting file "+candidateFile.fileName);
 			if (!new File(candidateFile.fileName).delete()) {
 				throw new DicomException("Failed to delete file "+candidateFile.fileName);
 			}
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndDatabaseRecords(): deleting database instance "+candidateFile.localPrimaryKeyValue);
+				slf4jlogger.trace("deleteFilesAndDatabaseRecords(): deleting database instance "+candidateFile.localPrimaryKeyValue);
 			databaseInformationModel.deleteRecord(InformationEntity.INSTANCE,candidateFile.localPrimaryKeyValue);
 			if (candidateFile.localParentReference != null && candidateFile.localParentReference.length() > 0) {
 				seriesToDeleteIfEmpty.add(candidateFile.localParentReference);
@@ -348,22 +346,22 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 		for (String seriesLocalPrimaryKeyValue : seriesToDeleteIfEmpty) {
 			List<Map<String,String>> childInstances = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(InformationEntity.INSTANCE,seriesLocalPrimaryKeyValue);
 			if (childInstances == null || childInstances.isEmpty()) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndDatabaseRecords(): pruning empty series = "+seriesLocalPrimaryKeyValue);
+				slf4jlogger.trace("deleteFilesAndDatabaseRecords(): pruning empty series = {}",seriesLocalPrimaryKeyValue);
 				databaseInformationModel.deleteRecord(InformationEntity.SERIES,seriesLocalPrimaryKeyValue);
 			}
 			else {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndDatabaseRecords(): surprisingly, series is not empty after deletion of instances = "+seriesLocalPrimaryKeyValue);
+				slf4jlogger.trace("deleteFilesAndDatabaseRecords(): surprisingly, series is not empty after deletion of instances = {}",seriesLocalPrimaryKeyValue);
 			}
 		}
 	}
 	
 	protected void deleteFilesAndSetDatabaseRecordsToReferenced(Set<CandidateFile> setOfFiles) throws DicomException, IOException {
 		for (CandidateFile candidateFile : setOfFiles) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndSetDatabaseRecordsToReferenced(): deleting file "+candidateFile.fileName);
+				slf4jlogger.trace("deleteFilesAndSetDatabaseRecordsToReferenced(): deleting file "+candidateFile.fileName);
 			if (!new File(candidateFile.fileName).delete()) {
 				throw new DicomException("Failed to delete file "+candidateFile.fileName);
 			}
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.deleteFilesAndSetDatabaseRecordsToReferenced(): deleting database instance "+candidateFile.localPrimaryKeyValue);
+				slf4jlogger.trace("deleteFilesAndSetDatabaseRecordsToReferenced(): deleting database instance "+candidateFile.localPrimaryKeyValue);
 			databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,candidateFile.localPrimaryKeyValue,instanceLocalFileReferenceTypeColumnName,DatabaseInformationModel.FILE_REFERENCED);
 			databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,candidateFile.localPrimaryKeyValue,instanceLocalFileNameColumnName,"NULL");
 		}
@@ -385,12 +383,12 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 
 		CandidateFile(String localPrimaryKeyValue) throws DicomException {
 			this.localPrimaryKeyValue = localPrimaryKeyValue;	// Don't forget this ! Needed to use for later database updates of instanceHasBeenSent status
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+				slf4jlogger.trace("CandidateFile(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 			Map<String,String> record = databaseInformationModel.findAllAttributeValuesForSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue);
 			localParentReference = record.get(instanceLocalParentReferenceColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): localParentReference = "+localParentReference);
+				slf4jlogger.trace("CandidateFile(): localParentReference = {}",localParentReference);
 			fileName = record.get(databaseInformationModel.getLocalFileNameColumnName(InformationEntity.INSTANCE));
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): fileName = "+fileName);
+				slf4jlogger.trace("CandidateFile(): fileName = {}",fileName);
 
 			String insertionTimeString = record.get(databaseInformationModel.getLocalRecordInsertionTimeColumnName(InformationEntity.INSTANCE));
 			if (insertionTimeString == null) {
@@ -401,35 +399,35 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 					insertionTime = Long.parseLong(insertionTimeString);
 				}
 				catch (NumberFormatException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 					insertionTime = 0;	// lowest value possible
 				}
 			}
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): insertionTime = "+insertionTime);
+				slf4jlogger.trace("CandidateFile(): insertionTime = {}",insertionTime);
 
 			sopClassUID = record.get(sopClassUIDColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): sopClassUID = "+sopClassUID);
+				slf4jlogger.trace("CandidateFile(): sopClassUID = {}",sopClassUID);
 			instanceCreatorUID = record.get(instanceCreatorUIDColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): instanceCreatorUID = "+instanceCreatorUID);
+				slf4jlogger.trace("CandidateFile(): instanceCreatorUID = {}",instanceCreatorUID);
 			sourceApplicationEntityTitle = record.get(sourceApplicationEntityTitleColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): sourceApplicationEntityTitle = "+sourceApplicationEntityTitle);
+				slf4jlogger.trace("CandidateFile(): sourceApplicationEntityTitle = {}",sourceApplicationEntityTitle);
 
 			manufacturer = record.get(manufacturerColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): manufacturer = "+manufacturer);
+				slf4jlogger.trace("CandidateFile(): manufacturer = {}",manufacturer);
 			imageType = record.get(imageTypeColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): imageType = "+imageType);
+				slf4jlogger.trace("CandidateFile(): imageType = {}",imageType);
 
 			String instanceHasBeenSentValue = record.get(instanceHasBeenSentToRegistryColumnName);
 			instanceHasBeenSent = instanceHasBeenSentValue != null && instanceHasBeenSentValue.toUpperCase(java.util.Locale.US).equals("TRUE");
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): instanceHasBeenSent = "+instanceHasBeenSent);
+				slf4jlogger.trace("CandidateFile(): instanceHasBeenSent = {}",instanceHasBeenSent);
 
 			String isRadiationDoseSRValue = record.get(instanceIsRadiationDoseSRColumnName);
 			isRadiationDoseSR = isRadiationDoseSRValue != null && isRadiationDoseSRValue.toUpperCase(java.util.Locale.US).equals("TRUE");
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): isRadiationDoseSR = "+isRadiationDoseSR);
+				slf4jlogger.trace("CandidateFile(): isRadiationDoseSR = {}",isRadiationDoseSR);
 
 			String isRadiationDoseScreenValue = record.get(instanceIsRadiationDoseScreenColumnName);
 			isRadiationDoseScreen = isRadiationDoseScreenValue != null && isRadiationDoseScreenValue.toUpperCase(java.util.Locale.US).equals("TRUE");
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.CandidateFile(): isRadiationDoseScreen = "+isRadiationDoseScreen);
+				slf4jlogger.trace("CandidateFile(): isRadiationDoseScreen = {}",isRadiationDoseScreen);
 		}
 
 		boolean isOKToOCR() {
@@ -448,18 +446,18 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 	}
 	
 	protected long findCandidateFilesToSendToRegistry(InformationEntity ie,String localPrimaryKeyValue,Set<CandidateFile> setOfOriginalSRFiles,Set<CandidateFile> setOfLegacyOCRSRFiles,Set<CandidateFile> setOfDoseScreenFiles,long mostRecentInsertionTime) throws DicomException {
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): mostRecentInsertionTime on entry = "+mostRecentInsertionTime);
+				slf4jlogger.trace("findCandidateFilesToSendToRegistry(): mostRecentInsertionTime on entry = {}",mostRecentInsertionTime);
 		if (ie == InformationEntity.INSTANCE) {
 			CandidateFile candidateFile = new CandidateFile(localPrimaryKeyValue);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): mostRecentInsertionTime = "+mostRecentInsertionTime);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): candidateFile.insertionTime = "+candidateFile.insertionTime);
+				slf4jlogger.trace("findCandidateFilesToSendToRegistry(): mostRecentInsertionTime = {}",mostRecentInsertionTime);
+				slf4jlogger.trace("findCandidateFilesToSendToRegistry(): candidateFile.insertionTime = "+candidateFile.insertionTime);
 			if (candidateFile.insertionTime > mostRecentInsertionTime) {
 				mostRecentInsertionTime = candidateFile.insertionTime;
 			}
 			if (candidateFile.isOKToSendToRegistry()) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): is RDSR fileName = "+candidateFile.fileName);
+				slf4jlogger.debug("findCandidateFilesToSendToRegistry(): is RDSR fileName = "+candidateFile.fileName);
 				if (candidateFile.wasLocallyCreated()) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): was legacy extracted RDSR fileName = "+candidateFile.fileName);
+				slf4jlogger.debug("findCandidateFilesToSendToRegistry(): was legacy extracted RDSR fileName = "+candidateFile.fileName);
 					setOfLegacyOCRSRFiles.add(candidateFile);
 				}
 				else {
@@ -467,11 +465,11 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 				}	
 			}
 			else if (candidateFile.isOKToOCR()) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): is dose screen fileName = "+candidateFile.fileName);
+				slf4jlogger.debug("findCandidateFilesToSendToRegistry(): is dose screen fileName = "+candidateFile.fileName);
 				setOfDoseScreenFiles.add(candidateFile);
 			}
 			else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): is not RDSR or dose screen fileName = "+candidateFile.fileName);
+				slf4jlogger.debug("findCandidateFilesToSendToRegistry(): is not RDSR or dose screen fileName = "+candidateFile.fileName);
 			}
 		}
 		else {
@@ -479,9 +477,9 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 			List<Map<String,String>> returnedRecords = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedParent(childIE,localPrimaryKeyValue);
 			for (Map<String,String> record : returnedRecords) {
 				String childLocalPrimaryKeyValue = record.get(databaseInformationModel.getLocalPrimaryKeyColumnName(childIE));
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): mostRecentInsertionTime before recursing = "+mostRecentInsertionTime);
+				slf4jlogger.trace("findCandidateFilesToSendToRegistry(): mostRecentInsertionTime before recursing = {}",mostRecentInsertionTime);
 				mostRecentInsertionTime = findCandidateFilesToSendToRegistry(childIE,childLocalPrimaryKeyValue,setOfOriginalSRFiles,setOfLegacyOCRSRFiles,setOfDoseScreenFiles,mostRecentInsertionTime);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.findCandidateFilesToSendToRegistry(): mostRecentInsertionTime after recursing = "+mostRecentInsertionTime);
+				slf4jlogger.trace("findCandidateFilesToSendToRegistry(): mostRecentInsertionTime after recursing = {}",mostRecentInsertionTime);
 			}
 		}
 		return mostRecentInsertionTime;
@@ -495,12 +493,12 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 		long mostRecentInsertionTime = findCandidateFilesToSendToRegistry(InformationEntity.STUDY,studyLocalPrimaryKeyValue,setOfOriginalSRFiles,setOfLegacyOCRSRFiles,setOfDoseScreenFiles,0l);
 		
 		long currentTimeMillis = System.currentTimeMillis();
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): currentTimeMillis = "+currentTimeMillis);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): mostRecentInsertionTime = "+mostRecentInsertionTime);
+		slf4jlogger.trace("findSuitableSRFilesAndSendThemToRegistry(): currentTimeMillis = {}",currentTimeMillis);
+		slf4jlogger.trace("findSuitableSRFilesAndSendThemToRegistry(): mostRecentInsertionTime = {}",mostRecentInsertionTime);
 		long secondsSinceMostRecentInsertion = (currentTimeMillis - mostRecentInsertionTime) / 1000;
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): secondsSinceMostRecentInsertion = "+secondsSinceMostRecentInsertion);
+		slf4jlogger.trace("findSuitableSRFilesAndSendThemToRegistry(): secondsSinceMostRecentInsertion = {}",secondsSinceMostRecentInsertion);
 		if (secondsSinceMostRecentInsertion > intervalAfterLastInstanceReceivedToWaitBeforeProcessingStudy) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): processing, since old enough");
+		slf4jlogger.debug("findSuitableSRFilesAndSendThemToRegistry(): processing, since old enough");
 
 			// prefer to send original manufacturer's files, if any, else ours that already exist, if any
 			if (setOfOriginalSRFiles.isEmpty()) {
@@ -511,11 +509,10 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 						for (CandidateFile cf : setOfDoseScreenFiles) {
 							fileNames.add(cf.fileName);
 						}
-						OCR ocr = new OCR(fileNames,ocrDebugLevel);
-//System.err.print(ocr);
-						CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,ocrDebugLevel,null/*eventDataFromImages*/,true/*buildSR*/);
+						OCR ocr = new OCR(fileNames);
+						CTDose ctDose = ocr.getCTDoseFromOCROfDoseScreen(ocr,null/*eventDataFromImages*/,true/*buildSR*/);
 						if (ctDose != null) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): sending our newly OCRd legacy extracted SR file (made from "+fileNames.size()+" screens)");
+							slf4jlogger.debug("findSuitableSRFilesAndSendThemToRegistry(): sending our newly OCRd legacy extracted SR file (made from {} screens)",fileNames.size());
 							makeSRFileAndSendFileToRegistry(ctDose);
 							if (!retainSourceFilesUsedForSRGeneration) {
 								try {
@@ -523,19 +520,19 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 								}
 								catch (Exception e) {
 									// trap this, since do not want cleanup to interfere
-									e.printStackTrace(System.err);
+									slf4jlogger.error("",e);
 								}
 							}
 						}
 					}
 				}
 				else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): sending our previously created legacy extracted SR files");
+					slf4jlogger.debug("findSuitableSRFilesAndSendThemToRegistry(): sending our previously created legacy extracted SR files");
 					sendFilesToRegistry(setOfLegacyOCRSRFiles);
 				}
 			}
 			else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): sending manufacturer's SR files");
+				slf4jlogger.debug("findSuitableSRFilesAndSendThemToRegistry(): sending manufacturer's SR files");
 				sendFilesToRegistry(setOfOriginalSRFiles);
 			}
 
@@ -547,7 +544,7 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 					}
 					catch (Exception e) {
 						// trap this, since do not want cleanup to interfere with falling through to setting processed to true
-						e.printStackTrace(System.err);
+						slf4jlogger.error("",e);
 					}
 				}
 			}
@@ -555,9 +552,8 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 			processed = true;	// will be set if there was nothing to be sent, or anything to be sent was sent without exceptions
 		}
 		else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.sendFilesToRegistry(): not processing, since too recent");
+			slf4jlogger.debug("findSuitableSRFilesAndSendThemToRegistry(): not processing, since too recent");
 		}
-		
 		return processed;
 	}
 
@@ -565,25 +561,25 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 		public void run() {
 			boolean interrupted = false;
 			while (!interrupted) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchDatabaseAndSendToRegistry.run(): Starting or waking up WatchDatabaseAndSendToRegistry ...");
+				slf4jlogger.trace("WatchDatabaseAndSendToRegistry.run(): Starting or waking up WatchDatabaseAndSendToRegistry ...");
 				try {
 					List<Map<String,String>> returnedRecords = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntity(InformationEntity.STUDY);
 					{
 						for (Map<String,String> record : returnedRecords) {
-							if (applicationDebugLevel > 2) {
-								System.err.println("STUDY:");
+							if (slf4jlogger.isTraceEnabled()) {
+								slf4jlogger.trace("STUDY:");
 								for (String key : record.keySet()) {
-									System.err.println("\t"+key+" = "+record.get(key));
+									slf4jlogger.trace("\t{} = {}",key,record.get(key));
 								}
 							}
 							String studyLocalPrimaryKeyValue = record.get(databaseInformationModel.getLocalPrimaryKeyColumnName(InformationEntity.STUDY));
 							String studyHasBeenProcessedValue = record.get(studyHasBeenProcessedColumnName);
 							boolean studyHasBeenProcessed = studyHasBeenProcessedValue != null && studyHasBeenProcessedValue.toUpperCase(java.util.Locale.US).equals("TRUE");
 							if (studyHasBeenProcessed) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchDatabaseAndSendToRegistry.run(): Already processed "+record.get(studyInstanceUIDColumnName));
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchDatabaseAndSendToRegistry.run(): Already processed {}",record.get(studyInstanceUIDColumnName));
 							}
 							else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchDatabaseAndSendToRegistry.run(): Processing "+record.get(studyInstanceUIDColumnName));
+								if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("WatchDatabaseAndSendToRegistry.run(): Processing {}",record.get(studyInstanceUIDColumnName));
 								try {
 									if(findSuitableSRFilesAndSendThemToRegistry(studyLocalPrimaryKeyValue)) {
 										// returned true (success) only if ALL selected files were successfully sent
@@ -591,7 +587,7 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 									}
 								}
 								catch (Exception e) {
-									e.printStackTrace(System.err);
+									slf4jlogger.error("",e);
 									// do not set study processed to true, since failure may be transient and can try again next time
 								}
 							}
@@ -599,14 +595,14 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 					}
 					
 
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchDatabaseAndSendToRegistry.run(): sleeping for "+sleepTimeBetweenPassesToProcessReceivedFiles+" seconds");
+				slf4jlogger.trace("WatchDatabaseAndSendToRegistry.run(): sleeping for "+sleepTimeBetweenPassesToProcessReceivedFiles+" seconds");
 					Thread.currentThread().sleep(sleepTimeBetweenPassesToProcessReceivedFiles*1000);	// configured value is in seconds, sleep() parameter is in milliseconds
 				}
 				catch (DicomException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 				catch (InterruptedException e) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchDatabaseAndSendToRegistry.run(): interrupted: "+e);
+				slf4jlogger.trace("WatchDatabaseAndSendToRegistry.run(): interrupted: {}",e);
 					interrupted = true;		// currently this shouldn't happen; i.e., no other thread will interrupt this one whilst sleeping (?)
 				}
 			}
@@ -614,13 +610,13 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 	}
 	
 	protected void setSelectedDatabaseRecordIsRadiationDoseSR(String filename) throws DicomException {
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseSR.run(): filename: "+filename);
+				slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseSR.run(): filename: {}",filename);
 		ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(
 			InformationEntity.INSTANCE,instanceLocalFileNameColumnName,filename);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseSR.run(): records.size() = "+records.size());
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseSR.run(): records.size() = "+records.size());
 		for (Map<String,String> record : records) {	// should only be one
 			String localPrimaryKeyValue = record.get(instanceLocalPrimaryKeyColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseSR.run(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+			slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseSR.run(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 			if (localPrimaryKeyValue != null && localPrimaryKeyValue.length() > 0) {
 				databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue,instanceIsRadiationDoseSRColumnName,"TRUE");
 			}
@@ -628,13 +624,13 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 	}
 	
 	protected void setSelectedDatabaseRecordIsRadiationDoseScreen(String filename) throws DicomException {
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseScreen.run(): filename: "+filename);
+				slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseScreen.run(): filename: {}",filename);
 		ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(
 			InformationEntity.INSTANCE,instanceLocalFileNameColumnName,filename);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseScreen.run(): records.size() = "+records.size());
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseScreen.run(): records.size() = "+records.size());
 		for (Map<String,String> record : records) {	// should only be one
 			String localPrimaryKeyValue = record.get(instanceLocalPrimaryKeyColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsRadiationDoseScreen.run(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+			slf4jlogger.trace("setSelectedDatabaseRecordIsRadiationDoseScreen.run(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 			if (localPrimaryKeyValue != null && localPrimaryKeyValue.length() > 0) {
 				databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue,instanceIsRadiationDoseScreenColumnName,"TRUE");
 			}
@@ -642,13 +638,13 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 	}
 	
 	protected void setSelectedDatabaseRecordIsExposureDoseSequence(String filename) throws DicomException {
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsExposureDoseSequence.run(): filename: "+filename);
+		slf4jlogger.trace("setSelectedDatabaseRecordIsExposureDoseSequence.run(): filename: {}",filename);
 		ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(
 			InformationEntity.INSTANCE,instanceLocalFileNameColumnName,filename);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsExposureDoseSequence.run(): records.size() = "+records.size());
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("setSelectedDatabaseRecordIsExposureDoseSequence.run(): records.size() = "+records.size());
 		for (Map<String,String> record : records) {	// should only be one
 			String localPrimaryKeyValue = record.get(instanceLocalPrimaryKeyColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordIsExposureDoseSequence.run(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+			slf4jlogger.trace("setSelectedDatabaseRecordIsExposureDoseSequence.run(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 			if (localPrimaryKeyValue != null && localPrimaryKeyValue.length() > 0) {
 				databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue,instanceIsExposureDoseSequenceColumnName,"TRUE");
 			}
@@ -656,13 +652,13 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 	}
 	
 	protected void setSelectedDatabaseRecordHasBeenSentToRegistry(String filename) throws DicomException {
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordHasBeenSentToRegistry.run(): filename: "+filename);
+		slf4jlogger.trace("setSelectedDatabaseRecordHasBeenSentToRegistry.run(): filename: {}",filename);
 		ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedKeyValue(
 			InformationEntity.INSTANCE,instanceLocalFileNameColumnName,filename);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordHasBeenSentToRegistry.run(): records.size() = "+records.size());
+		if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("setSelectedDatabaseRecordHasBeenSentToRegistry.run(): records.size() = "+records.size());
 		for (Map<String,String> record : records) {	// should only be one
 			String localPrimaryKeyValue = record.get(instanceLocalPrimaryKeyColumnName);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.setSelectedDatabaseRecordHasBeenSentToRegistry.run(): localPrimaryKeyValue = "+localPrimaryKeyValue);
+			slf4jlogger.trace("setSelectedDatabaseRecordHasBeenSentToRegistry.run(): localPrimaryKeyValue = {}",localPrimaryKeyValue);
 			if (localPrimaryKeyValue != null && localPrimaryKeyValue.length() > 0) {
 				databaseInformationModel.updateSelectedRecord(InformationEntity.INSTANCE,localPrimaryKeyValue,instanceHasBeenSentToRegistryColumnName,"TRUE");
 			}
@@ -679,7 +675,7 @@ if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndA
 		
 		public void run() {
 			try {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): receivedFileName = "+receivedFileName);
+				slf4jlogger.trace("ReceivedFileProcessor.run(): receivedFileName = {}",receivedFileName);
 				FileInputStream fis = new FileInputStream(receivedFileName);
 				DicomInputStream i = new DicomInputStream(new BufferedInputStream(fis));
 				AttributeList list = new AttributeList();
@@ -691,19 +687,19 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 				// compare this logic with DoseUtility and LegacyRadiationDoseOCRDicomForwardingService ... should refactor :(
 				String sopClassUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SOPClassUID);
 				if (sopClassUID.equals(SOPClass.XRayRadiationDoseSRStorage)) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): is RDSR SOP Class");
+				slf4jlogger.debug("ReceivedFileProcessor.run(): is RDSR SOP Class");
 					keepReceivedFile = true;			// save it to send to registry later
 					setSelectedDatabaseRecordIsRadiationDoseSR(receivedFileName);
 				}
 				else if (list.isSRDocument() && SOPClass.isStructuredReport(sopClassUID)) {	// e.g., an old Enhanced SOP Class GE RDSR with the right template
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): is SR SOP Class");
+				slf4jlogger.debug("ReceivedFileProcessor.run(): is SR SOP Class");
 					boolean srIsWanted = false;
 					CodedSequenceItem documentTitle = CodedSequenceItem.getSingleCodedSequenceItemOrNull(list,TagFromName.ConceptNameCodeSequence);
 					if (documentTitle != null) {
 						String csd = documentTitle.getCodingSchemeDesignator();
 						String cv = documentTitle.getCodeValue();
 						if (csd != null && csd.equals("DCM") && cv != null && cv.equals("113701")) {	// X-Ray Radiation Dose Report
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): is SR SOP Class with X-Ray Radiation Dose Report document title");
+				slf4jlogger.debug("ReceivedFileProcessor.run(): is SR SOP Class with X-Ray Radiation Dose Report document title");
 							keepReceivedFile = true;			// save it to send to registry later
 							databaseInformationModel.insertObject(list,receivedFileName,DatabaseInformationModel.FILE_COPIED);			// save it to send to registry later
 							setSelectedDatabaseRecordIsRadiationDoseSR(receivedFileName);
@@ -712,33 +708,33 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 				}
 				else {
 					if (OCR.isDoseScreenInstance(list)) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): isDoseScreenInstance - adding to database for deferred OCR");
+				slf4jlogger.debug("ReceivedFileProcessor.run(): isDoseScreenInstance - adding to database for deferred OCR");
 						// do NOT process it yet ... need to wait until we have entire series for multi-page screens
 						keepReceivedFile = true;			// save it to OCR and send to registry later
 						databaseInformationModel.insertObject(list,receivedFileName,DatabaseInformationModel.FILE_COPIED);				// save it to send to registry later
 						setSelectedDatabaseRecordIsRadiationDoseScreen(receivedFileName);
 					}
 					else if (ExposureDoseSequence.isPhilipsDoseScreenInstance(list)) {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): isPhilipsDoseScreenInstance");
+				slf4jlogger.debug("ReceivedFileProcessor.run(): isPhilipsDoseScreenInstance");
 						if (retainSourceFilesUsedForSRGeneration) {
 							keepReceivedFile = true;
 							databaseInformationModel.insertObject(list,receivedFileName,DatabaseInformationModel.FILE_COPIED);
 							setSelectedDatabaseRecordIsExposureDoseSequence(receivedFileName);
 						}
-						CTDose ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,ocrDebugLevel,null/*eventDataFromImages*/,true/*buildSR*/);
+						CTDose ctDose = ExposureDoseSequence.getCTDoseFromExposureDoseSequence(list,null/*eventDataFromImages*/,true/*buildSR*/);
 						if (ctDose != null) {
 							// created SR file needs to survive restart of application or reboot of machine
 							AttributeList ctDoseList = ctDose.getAttributeList();
 							File ctDoseSRFile = storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedImagesFolder,Attribute.getSingleStringValueOrDefault(ctDoseList,TagFromName.SOPInstanceUID,"1.1.1.1"));
 							String ctDoseSRFileName = ctDoseSRFile.getCanonicalPath();
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): adding our own newly created SR file = "+ctDoseSRFileName);
+				slf4jlogger.debug("ReceivedFileProcessor.run(): adding our own newly created SR file = {}",ctDoseSRFileName);
 							ctDose.write(ctDoseSRFileName,ourCalledAETitle,this.getClass().getCanonicalName());	// has side effect of updating list returned by ctDose.getAttributeList(); uncool :(
 							databaseInformationModel.insertObject(ctDoseList,ctDoseSRFileName,DatabaseInformationModel.FILE_COPIED);	// save newly created SR to send to registry later
 							setSelectedDatabaseRecordIsRadiationDoseSR(ctDoseSRFileName);
 						}
 					}
 					else {
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.ReceivedFileProcessor.run(): received file that we couldn't extract from "+receivedFileName);
+				slf4jlogger.debug("ReceivedFileProcessor.run(): received file that we couldn't extract from {}",receivedFileName);
 						// do nothing ... will be deleted ... would want to keep if CT SOP Class and wanted to process acquired slices for irradiation events
 					}
 				}
@@ -752,7 +748,7 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 	}
@@ -765,18 +761,18 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 		 * @param	dicomFileName
 		 * @param	transferSyntax
 		 * @param	callingAETitle
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String dicomFileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
 			if (dicomFileName != null) {
-if (applicationDebugLevel > 0) System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+transferSyntax);
+				slf4jlogger.debug("Received: "+dicomFileName+" from "+callingAETitle+" in "+transferSyntax);
 				try {
 					new Thread(new ReceivedFileProcessor(dicomFileName)).start();		// on separate thread, else will block and the C-STORE response will be delayed
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to process {} received from {} in {}",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
@@ -789,21 +785,21 @@ if (applicationDebugLevel > 0) System.err.println("Received: "+dicomFileName+" f
 		if (uid != null) {
 			ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedUID(InformationEntity.INSTANCE,uid);
 			haveIt = !records.isEmpty();
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have INSTANCE "+uid);
+				slf4jlogger.trace("alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have INSTANCE "+uid);
 		}
 		else {
 			uid = Attribute.getSingleStringValueOrNull(uniqueKeys,TagFromName.SeriesInstanceUID);
 			if (uid != null) {
 				ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedUID(InformationEntity.SERIES,uid);
 				haveIt = !records.isEmpty();
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have SERIES "+uid);
+				slf4jlogger.trace("alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have SERIES "+uid);
 			}
 			else {
 				uid = Attribute.getSingleStringValueOrNull(uniqueKeys,TagFromName.StudyInstanceUID);
 				if (uid != null) {
 					ArrayList<Map<String,String>> records = databaseInformationModel.findAllAttributeValuesForAllRecordsForThisInformationEntityWithSpecifiedUID(InformationEntity.STUDY,uid);
 					haveIt = !records.isEmpty();
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have STUDY "+uid);
+				slf4jlogger.trace("alreadyHaveIt(): Do "+(haveIt ? "" : "not ")+"have STUDY "+uid);
 				}
 			}
 		}
@@ -815,13 +811,13 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 			long millisecondsBackwardsFromTodayToQuery = daysBackwardsFromTodayToQuery * millisecondsPerDay;
 			boolean interrupted = false;
 			while (!interrupted) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): Starting or waking up ... ");
+				slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): Starting or waking up ... ");
 				try {
 					long currentTime = System.currentTimeMillis();
 					long earliestTimeToGoBack = currentTime - millisecondsBackwardsFromTodayToQuery;
 					for (long time = currentTime; time >= earliestTimeToGoBack; time -= millisecondsPerDay) {
 						String studyDateToQueryFor = new SimpleDateFormat("yyyyMMdd").format(new Date(time));
-if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): Query for all studies dated "+studyDateToQueryFor+" on "+remoteAEsForQuery);
+						slf4jlogger.debug("WatchRemoteAEsForNewDoseInformation.run(): Query for all studies dated "+studyDateToQueryFor+" on "+remoteAEsForQuery);
 						for (String remoteAEForQuery : remoteAEsForQuery) {
 							QueryInformationModel remoteQueryInformationModel = null;
 							// copied from DoseUtility.setCurrentRemoteQueryInformationModel() ... should refactor :(
@@ -839,20 +835,19 @@ if (applicationDebugLevel > 0) System.err.println("DoseReporterWithLegacyOCRAndA
 										String                        queryHost = presentationAddress.getHostname();
 										int			      queryPort = presentationAddress.getPort();
 										String                       queryModel = networkApplicationInformation.getApplicationEntityMap().getQueryModel(queryCalledAETitle);
-										int                     queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
 				
 										if (NetworkApplicationProperties.isStudyRootQueryModel(queryModel) || queryModel == null) {
-											remoteQueryInformationModel = new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle,queryDebugLevel);
+											remoteQueryInformationModel = new StudyRootQueryInformationModel(queryHost,queryPort,queryCalledAETitle,queryCallingAETitle);
 										}
 										else {
 											throw new Exception("For remote query AE <"+remoteAEForQuery+">, query model "+queryModel+" not supported");
 										}
 
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): Performing query on "+remoteQueryInformationModel+" ...");
+										slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): Performing query on {} ...",remoteQueryInformationModel);
 
 									}
 									catch (Exception e) {		// if an AE's property has no value, or model not supported
-										e.printStackTrace(System.err);
+										slf4jlogger.error("",e);
 									}
 								}
 							}
@@ -874,7 +869,7 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 									{ AttributeTag t = TagFromName.SOPClassUID; Attribute a = new UniqueIdentifierAttribute(t); filter.put(t,a); }
 							
 									QueryTreeModel treeModel = remoteQueryInformationModel.performHierarchicalQuery(filter);
-if (applicationDebugLevel > 2) System.err.print("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): Query result=\n"+treeModel);
+									if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): Query result=\n{}",treeModel.toString());
 
 									List<QueryTreeRecord> records = DoseUtility.findDoseSeriesRecordsInQueryTree((QueryTreeRecord)(treeModel.getRoot()),new ArrayList<QueryTreeRecord>());
 									{
@@ -884,9 +879,9 @@ if (applicationDebugLevel > 2) System.err.print("DoseReporterWithLegacyOCRAndAut
 												AttributeList uniqueKeys = r.getUniqueKeys();
 												Attribute uniqueKey      = r.getUniqueKey();
 												AttributeList queryIdentifier = r.getAllAttributesReturnedInIdentifier();
-if (applicationDebugLevel > 2) System.err.print  ("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): uniqueKeys:\n"+uniqueKeys);
-if (applicationDebugLevel > 2) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): uniqueKey: "+uniqueKey);
-if (applicationDebugLevel > 2) System.err.print  ("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): queryIdentifier:\n"+queryIdentifier);
+												if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): uniqueKeys:\n{}",uniqueKeys.toString());
+												if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): uniqueKey: {}",uniqueKey.toString());
+												if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): queryIdentifier:\n{}",queryIdentifier.toString());
 												String retrieveAE        = DoseUtility.getQueryRetrieveAEFromIdentifier(queryIdentifier,remoteQueryInformationModel);
 												String localName         = networkApplicationInformation.getLocalNameFromApplicationEntityTitle(retrieveAE);
 												String level             = DoseUtility.getQueryRetrieveLevel(queryIdentifier,uniqueKey);
@@ -897,11 +892,11 @@ if (applicationDebugLevel > 2) System.err.print  ("DoseReporterWithLegacyOCRAndA
 														AttributeList retrieveIdentifier = new AttributeList();
 														retrieveIdentifier.putAll(uniqueKeys);
 														{ AttributeTag t = TagFromName.QueryRetrieveLevel; Attribute a = new CodeStringAttribute(t); a.addValue(level); retrieveIdentifier.put(t,a); }
-if (applicationDebugLevel > 1) System.err.print("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): retrieveIdentifier:\n"+retrieveIdentifier);
+														if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): retrieveIdentifier:\n{}",retrieveIdentifier);
 														remoteQueryInformationModel.performHierarchicalMoveFrom(retrieveIdentifier,retrieveAE);
 													}
 													else {
-if (applicationDebugLevel > 1) System.err.print("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): already have it so not retrieving again:\n"+uniqueKeys);
+														if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): already have it so not retrieving again:\n{}",uniqueKeys.toString());
 													}
 												}
 												// else do nothing, since no unique key to specify what to retrieve
@@ -910,16 +905,16 @@ if (applicationDebugLevel > 1) System.err.print("DoseReporterWithLegacyOCRAndAut
 									}
 								}
 								catch (Exception e) {
-									e.printStackTrace(System.err);
+									slf4jlogger.error("",e);
 								}
 							}
 						}
 					}
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): sleeping for "+sleepTimeBetweenPassesToQueryRemoteAEs+" seconds");
+					slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): sleeping for {} seconds",sleepTimeBetweenPassesToQueryRemoteAEs);
 					Thread.currentThread().sleep(sleepTimeBetweenPassesToQueryRemoteAEs*1000);	// configured value is in seconds, sleep() parameter is in milliseconds
 				}
 				catch (InterruptedException e) {
-if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndAutoSendToRegistry.WatchRemoteAEsForNewDoseInformation.run(): interrupted: "+e);
+					slf4jlogger.trace("WatchRemoteAEsForNewDoseInformation.run(): interrupted: {}",e);
 					interrupted = true;		// currently this shouldn't happen; i.e., no other thread will interrupt this one whilst sleeping (?)
 				}
 			}
@@ -953,9 +948,6 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 	public DoseReporterWithLegacyOCRAndAutoSendToRegistry(String propertiesFileName) throws DicomException, DicomNetworkException, IOException, InterruptedException, FTPException {
 		loadProperties(propertiesFileName);		// do NOT trap exception; we must have properties
 
-		applicationDebugLevel = Integer.valueOf(properties.getProperty(propertyName_ApplicationDebugLevel,"0")).intValue();
-		ocrDebugLevel = Integer.valueOf(properties.getProperty(propertyName_OCRDebugLevel,"0")).intValue();
-
 		retainDeidentifiedFiles              = Boolean.parseBoolean(properties.getProperty(propertyName_RetainDeidentifiedFiles,              defaultRetainDeidentifiedFiles));
 		retainGeneratedRDSRFiles             = Boolean.parseBoolean(properties.getProperty(propertyName_RetainGeneratedRDSRFiles,             defaultRetainGeneratedRDSRFiles));
 		retainSourceFilesUsedForSRGeneration = Boolean.parseBoolean(properties.getProperty(propertyName_RetainSourceFilesUsedForSRGeneration, defaultRetainSourceFilesUsedForSRGeneration));
@@ -983,7 +975,6 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 		FTPApplicationProperties ftpApplicationProperties = new FTPApplicationProperties(properties);
 		String registryName = properties.getProperty(propertyName_SelectedDoseRegistry);
 		remoteHost = ftpApplicationProperties.getFTPRemoteHostInformation().getRemoteHost(registryName);
-		ftpClientDebugLevel = ftpApplicationProperties.getClientDebugLevel();
 
 		networkApplicationProperties = new NetworkApplicationProperties(properties,true/*addPublicStorageSCPsIfNoRemoteAEsConfigured*/);
 		networkApplicationInformation = new NetworkApplicationInformationFederated();
@@ -1003,17 +994,17 @@ if (applicationDebugLevel > 1) System.err.println("DoseReporterWithLegacyOCRAndA
 		}
 
 		// Start up DICOM association listener in background for receiving images and responding to echoes and queries and retrieves ...
-if (applicationDebugLevel > 1) System.err.println("Starting up DICOM association listener ...");
+				slf4jlogger.trace("Starting up DICOM association listener ...");
 		{
 			int port = networkApplicationProperties.getListeningPort();
-			int storageSCPDebugLevel = networkApplicationProperties.getStorageSCPDebugLevel();
-			int queryDebugLevel = networkApplicationProperties.getQueryDebugLevel();
-			new Thread(new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,savedImagesFolder,storedFilePathStrategy,new OurReceivedObjectHandler(),
-					this.databaseInformationModel.getQueryResponseGeneratorFactory(queryDebugLevel),
-					this.databaseInformationModel.getRetrieveResponseGeneratorFactory(queryDebugLevel),
+			new Thread(new StorageSOPClassSCPDispatcher(port,ourCalledAETitle,
+					networkApplicationProperties.getAcceptorMaximumLengthReceived(),networkApplicationProperties.getAcceptorSocketReceiveBufferSize(),networkApplicationProperties.getAcceptorSocketSendBufferSize(),
+					savedImagesFolder,storedFilePathStrategy,new OurReceivedObjectHandler(),
+					this.databaseInformationModel.getQueryResponseGeneratorFactory(),
+					this.databaseInformationModel.getRetrieveResponseGeneratorFactory(),
 					networkApplicationInformation,
-					false/*secureTransport*/,
-					storageSCPDebugLevel)).start();
+					false/*secureTransport*/
+					)).start();
 		}
 		
 		new Thread(new WatchDatabaseAndSendToRegistry()).start();
@@ -1031,7 +1022,7 @@ if (applicationDebugLevel > 1) System.err.println("Starting up DICOM association
 			new DoseReporterWithLegacyOCRAndAutoSendToRegistry(propertiesFileName);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);	// use SLF4J since may be used as a background service
 			System.exit(0);
 		}
 	}

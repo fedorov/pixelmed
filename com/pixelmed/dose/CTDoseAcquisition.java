@@ -1,12 +1,16 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dose;
 
 import com.pixelmed.dicom.*;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class CTDoseAcquisition {
-	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDoseAcquisition.java,v 1.32 2013/02/01 13:53:20 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dose/CTDoseAcquisition.java,v 1.44 2025/01/29 10:58:08 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(CTDoseAcquisition.class);
 	
 	protected String scopeUID;						// assume Acquisition and Series Number uniqueness only within this scope
 	protected boolean seriesOrAcquisitionNumberIsSeries;
@@ -67,11 +71,11 @@ public class CTDoseAcquisition {
 					CTDIvol = ((ContentItemFactory.NumericContentItem)meanCTDIvol).getNumericValue();
 				}
 				else {
-					System.err.println("CT Dose Acquisition Mean CTDIvol units are not mGy - ignoring value");		// do not throw exception, since want to parse rest of content
+					slf4jlogger.warn("CT Dose Acquisition Mean CTDIvol units are not mGy - ignoring value");		// do not throw exception, since want to parse rest of content
 				}
 			}
 			else {
-				System.err.println("CT Dose Acquisition Mean CTDIvol not found");		// do not throw exception, since want to parse rest of content
+				slf4jlogger.warn("CT Dose Acquisition Mean CTDIvol not found");		// do not throw exception, since want to parse rest of content
 			}
 
 			ContentItem doseLengthProduct =  dose.getNamedChild("DCM","113838");	// "DLP"
@@ -81,11 +85,11 @@ public class CTDoseAcquisition {
 					DLP = ((ContentItemFactory.NumericContentItem)doseLengthProduct).getNumericValue();
 				}
 				else {
-					System.err.println("CT Dose Acquisition DLP units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
+					slf4jlogger.warn("CT Dose Acquisition DLP units are not mGy.cm - ignoring value");		// do not throw exception, since want to parse rest of content
 				}
 			}
 			else {
-				System.err.println("CT Dose Acquisition DLP not found");		// do not throw exception, since want to parse rest of content
+				slf4jlogger.warn("CT Dose Acquisition DLP not found");		// do not throw exception, since want to parse rest of content
 			}
 
 			ContentItem pt = dose.getNamedChild("DCM","113835");					// "CTDIw Phantom Type"
@@ -191,7 +195,7 @@ public class CTDoseAcquisition {
 			&& ((oda.getPhantomType() == null && this.getPhantomType() == null) || (oda.getPhantomType().equals(this.getPhantomType())));
 		}
 		catch (NumberFormatException e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 		return isMatch;
 	}
@@ -245,7 +249,7 @@ public class CTDoseAcquisition {
 				}
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return formatted;
@@ -265,7 +269,7 @@ public class CTDoseAcquisition {
 //System.err.println("CTDoseAcquisition.getDLPFromRangeAndCTDIvol(): returns formatted string "+formatted+" for "+Double.toString(dlpFromRangeAndCTDIvol));	
 			}
 			catch (NumberFormatException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return formatted;
@@ -401,10 +405,10 @@ public class CTDoseAcquisition {
 	public ContentItem getStructuredReportFragment(ContentItem root) throws DicomException {
 		if (entireBodyDefaultAnatomy == null) {
 			try {
-				entireBodyDefaultAnatomy = new CodedSequenceItem("T-D0010","SRT","Entire body");
+				entireBodyDefaultAnatomy = new CodedSequenceItem("38266002","SCT","Entire body");
 			}
 			catch (DicomException e) {
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 		return getStructuredReportFragment(root,entireBodyDefaultAnatomy);
@@ -437,6 +441,13 @@ public class CTDoseAcquisition {
 				cif.new CodeContentItem(contentItemFragment,"CONTAINS",new CodedSequenceItem("123014","DCM","Target Region"),targetRegion);
 			}
 			{
+				// scanType is never null, but it may be unknown
+				CodedSequenceItem ctat = scanType.getCodedSequenceItem();
+				if (ctat != null) {
+					cif.new CodeContentItem(contentItemFragment,"CONTAINS",new CodedSequenceItem("113820","DCM","CT Acquisition Type"),ctat);
+				}
+			}
+			{
 				String irradiationEventUID = acquisitionParameters == null ? null : acquisitionParameters.getIrradiationEventUID();
 				cif.new UIDContentItem(contentItemFragment,"CONTAINS",new CodedSequenceItem("113769","DCM","Irradiation Event UID"),(irradiationEventUID == null ? new UIDGenerator().getNewUID() : irradiationEventUID));
 			}
@@ -444,13 +455,6 @@ public class CTDoseAcquisition {
 				ContentItem irel = cif.new TextContentItem(contentItemFragment,"CONTAINS",new CodedSequenceItem("113605","DCM","Irradiation Event Label"),seriesOrAcquisitionNumber);
 				cif.new CodeContentItem(irel,"HAS CONCEPT MOD",new CodedSequenceItem("113606","DCM","Label Type"),
 					(seriesOrAcquisitionNumberIsSeries ? new CodedSequenceItem("113607","DCM","Series Number") : new CodedSequenceItem("113608","DCM","Acquisition Number")));
-			}
-			{
-				// scanType is never null, but it may be unknown
-				CodedSequenceItem ctat = scanType.getCodedSequenceItem();
-				if (ctat != null) {
-					cif.new CodeContentItem(contentItemFragment,"CONTAINS",new CodedSequenceItem("113820","DCM","CT Acquisition Type"),ctat);
-				}
 			}
 			if (acquisitionParameters != null) {
 				acquisitionParameters.getStructuredReportFragment(contentItemFragment);
@@ -471,7 +475,7 @@ public class CTDoseAcquisition {
 						String derivedScanningLengthInMM = getScanningLengthFromDLPAndCTDIVol();
 						String scanRangeScanningLengthInMM = scanRange == null ? null : scanRange.getAbsoluteRange();
 						if (derivedScanningLengthInMM == null || derivedScanningLengthInMM.length() == 0) {
-System.err.println("CTDoseAcquisition.getStructuredReportFragment(): using scanning length from scan range ("+scanRangeScanningLengthInMM+"), since cannot derive from DLP and CTDIvol");
+							slf4jlogger.info("CTDoseAcquisition.getStructuredReportFragment(): using scanning length from scan range ({}), since cannot derive from DLP and CTDIvol",scanRangeScanningLengthInMM);
 							scanningLengthInMM = scanRangeScanningLengthInMM;
 						}
 						else if (scanRangeScanningLengthInMM == null || scanRangeScanningLengthInMM.length() == 0) {
@@ -487,12 +491,12 @@ System.err.println("CTDoseAcquisition.getStructuredReportFragment(): using scann
 									scanningLengthInMM = derivedScanningLengthInMM;
 								}
 								else {
-System.err.println("CTDoseAcquisition.getStructuredReportFragment(): using scanning length from scan range ("+scanRangeScanningLengthInMM+"), since greater than DLP and CTDIvol derived ("+derivedScanningLengthInMM+")");
+									slf4jlogger.info("CTDoseAcquisition.getStructuredReportFragment(): using scanning length from scan range ({}), since greater than DLP and CTDIvol derived ({})",scanRangeScanningLengthInMM,derivedScanningLengthInMM);
 									scanningLengthInMM = scanRangeScanningLengthInMM;
 								}
 							}
 							catch (NumberFormatException e) {
-								e.printStackTrace(System.err);
+								slf4jlogger.error("",e);
 							}
 						}
 						

@@ -1,8 +1,11 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
 import javax.vecmath.*;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>A class to describe the spatial geometry of an entire volume of contiguous cross-sectional image slices.</p>
@@ -15,8 +18,9 @@ import javax.vecmath.*;
  * @author	dclunie
  */
 public class GeometryOfVolume {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/GeometryOfVolume.java,v 1.29 2025/01/29 10:58:08 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/GeometryOfVolume.java,v 1.15 2013/10/16 15:49:53 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(GeometryOfVolume.class);
 
 	/***/
 	protected GeometryOfSlice[] frames;
@@ -159,9 +163,9 @@ public class GeometryOfVolume {
 				N = i;
 			}
 		}
-System.err.println("maxRowIndex = "+R);
-System.err.println("maxColumnIndex = "+C);
-System.err.println("maxNormalIndex = "+N);
+		slf4jlogger.debug("maxRowIndex = {}",R);
+		slf4jlogger.debug("maxColumnIndex = {}",C);
+		slf4jlogger.debug("maxNormalIndex = {}",N);
 	}
 	
 	/**
@@ -210,7 +214,7 @@ System.err.println("maxNormalIndex = "+N);
 			offsets[1] += 0.5;
 		}
 		else {
-System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regularly sampled volume");
+			slf4jlogger.warn("Cannot look up 2D coordinate from 3D coordinate if not regularly sampled volume");
 			offsets[0] = Double.NaN;
 			offsets[1] = Double.NaN;
 			offsets[2] = Double.NaN;
@@ -267,14 +271,31 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 	
 	
 	/***/
+	protected boolean areParallel;
+	
+	/**
+	 * <p>Are all the frames in the set of frames parallel ?</p>
+	 *
+	 * @return	true if all frames have the same orientation
+	 */
+	public final boolean areAllSlicesParallel() { return areParallel; }
+	
+	/***/
 	protected boolean isVolume;
 	
 	/**
-	 * <p>Is the set of frames regularly sampled along the frame dimension ?</p>
+	 * <p>Is the set of frames regularly sampled along the frame dimension?</p>
 	 *
 	 * @return	true if same spacing between centers of frames and position monotonically increasing
 	 */
 	public final boolean isVolumeSampledRegularlyAlongFrameDimension() { return isVolume; }
+	
+	/**
+	 * <p>Is the geometry of each frame available?</p>
+	 *
+	 * @return	true if per-slice geometry of each frame is available
+	 */
+	public final boolean hasFrameInformation() { return frames != null; }
 	
 	/**
 	 * <p>Check if the set of frames regularly sampled along the frame dimension.</p>
@@ -284,6 +305,7 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 	 */
 	public final void checkAndSetVolumeSampledRegularlyAlongFrameDimension() {
 //System.err.println("GeometryOfVolume.checkAndSetVolumeSampledRegularlyAlongFrameDimension():");
+		areParallel = true;
 		if (frames != null && frames.length > 1) {
 			// check to see if we are actually a volume
 			// - more than one slice
@@ -312,7 +334,8 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 						lastDistanceAlongNormal=currentDistanceAlongNormal;
 					}
 					else {
-						success=false;		// not parallel
+						areParallel = false;
+						success=false;
 //System.err.println("GeometryOfVolume.checkAndSetVolumeSampledRegularlyAlongFrameDimension(): not parallel");
 						break;
 					}
@@ -327,7 +350,7 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 				}
 			}
 			else {
-				// not parallel
+				areParallel = false;
 //System.err.println("GeometryOfVolume.checkAndSetVolumeSampledRegularlyAlongFrameDimension(): not parallel");
 			}
 		}
@@ -355,9 +378,40 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 	/**
 	 * <p>Get the letter representation of the orientation of the rows of this slice.</p>
 	 *
+	 * <p>For bipeds, L or R, A or P, H or F.</p>
+	 *
+	 * <p>For quadrupeds, Le or Rt, V or D, Cr or Cd (with lower case; use toUpperCase() to produce valid CodeString for PatientOrientation).</p>
+	 *
 	 * @param	frame	the offset along the frames from first frame, zero being no offset
-	 * @return	a string rendering of the row orientation, L or R, A or P, H or F,
-	 *		more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 * @param	quadruped	true if subject is a quadruped rather than a biped
+	 * @return	a string rendering of the row orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 */
+	public final String getRowOrientation(int frame,boolean quadruped) {
+		return frames != null && frame < frames.length ? frames[frame].getRowOrientation(quadruped) : "";
+	}
+
+	/**
+	 * <p>Get the letter representation of the orientation of the columns of this slice.</p>
+	 *
+	 * <p>For bipeds, L or R, A or P, H or F.</p>
+	 *
+	 * <p>For quadrupeds, Le or Rt, V or D, Cr or Cd (with lower case; use toUpperCase() to produce valid CodeString for PatientOrientation).</p>
+	 *
+	 * @param	frame	the offset along the frames from first frame, zero being no offset
+	 * @param	quadruped	true if subject is a quadruped rather than a biped
+	 * @return	a string rendering of the column orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 */
+	public final String getColumnOrientation(int frame,boolean quadruped) {
+		return frames != null && frame < frames.length ? frames[frame].getColumnOrientation(quadruped) : "";
+	}
+
+	/**
+	 * <p>Get the letter representation of the orientation of the rows of this slice.</p>
+	 *
+	 * <p>Assumes a biped rather than a quadruped, so returns L or R, A or P, H or F.</p>
+	 *
+	 * @param	frame	the offset along the frames from first frame, zero being no offset
+	 * @return	a string rendering of the row orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
 	 */
 	public final String getRowOrientation(int frame) {
 		return frames != null && frame < frames.length ? frames[frame].getRowOrientation() : "";
@@ -366,9 +420,10 @@ System.err.println("Cannot look up 2D coordinate from 3D coordinate if not regul
 	/**
 	 * <p>Get the letter representation of the orientation of the columns of this slice.</p>
 	 *
+	 * <p>Assumes a biped rather than a quadruped, so returns L or R, A or P, H or F.</p>
+	 *
 	 * @param	frame	the offset along the frames from first frame, zero being no offset
-	 * @return	a string rendering of the column orientation, L or R, A or P, H or F,
-	 *		more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
+	 * @return	a string rendering of the column orientation, more than one letter if oblique to the orthogonal axes, or empty string (not null) if fails
 	 */
 	public final String getColumnOrientation(int frame) {
 		return frames != null && frame < frames.length ? frames[frame].getColumnOrientation() : "";

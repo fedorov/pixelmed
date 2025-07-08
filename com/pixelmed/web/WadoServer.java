@@ -1,14 +1,6 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.OutputStream;
 
 import com.pixelmed.database.DatabaseInformationModel;
 import com.pixelmed.database.PatientStudySeriesConcatenationInstanceModel;
@@ -20,8 +12,19 @@ import com.pixelmed.network.DicomNetworkException;
 import com.pixelmed.network.ReceivedObjectHandler;
 import com.pixelmed.network.StorageSOPClassSCPDispatcher;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
- * <p>The {@link com.pixelmed.web.WadoServer WadoServer} implements an HTTP server that responds to WADO GET requests
+ * <p>The {@link WadoServer WadoServer} implements an HTTP server that responds to WADO GET requests
  * as defined by DICOM PS 3.18 (ISO 17432), which provides a standard web (http) interface through which to retrieve DICOM objects either
  * as DICOM files or as derived JPEG images.</p>
  *
@@ -36,7 +39,9 @@ import com.pixelmed.network.StorageSOPClassSCPDispatcher;
  * @author	dclunie
  */
 public class WadoServer extends HttpServer {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoServer.java,v 1.21 2013/01/26 15:14:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoServer.java,v 1.33 2025/01/29 10:58:10 dclunie Exp $";
+
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(WadoServer.class);
 
 	private DatabaseInformationModel databaseInformationModel;
 	
@@ -49,7 +54,7 @@ public class WadoServer extends HttpServer {
 				String requestType = request.getRequestType();
 				if (requestType != null && requestType.equals("WADO")) {
 					if (wadoRequestHandler == null) {
-						wadoRequestHandler = new WadoRequestHandler(null,webServerDebugLevel);
+						wadoRequestHandler = new WadoRequestHandler(null);
 					}
 					wadoRequestHandler.generateResponseToGetRequest(databaseInformationModel,null,null,request,null,out);
 				}
@@ -58,8 +63,8 @@ public class WadoServer extends HttpServer {
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("WadoServer.WADOWorker.generateResponseToGetRequest(): Sending 404 Not Found");
+				slf4jlogger.error("",e);
+				slf4jlogger.debug("WADOWorker.generateResponseToGetRequest(): Sending 404 Not Found");
 				RequestHandler.send404NotFound(out,e.getMessage());
 			}
 		}
@@ -76,14 +81,14 @@ if (webServerDebugLevel > 0) System.err.println("WadoServer.WADOWorker.generateR
 		 * @param	dicomFileName
 		 * @param	transferSyntax
 		 * @param	callingAETitle
-		 * @exception	IOException
-		 * @exception	DicomException
-		 * @exception	DicomNetworkException
+		 * @throws	IOException
+		 * @throws	DicomException
+		 * @throws	DicomNetworkException
 		 */
 		public void sendReceivedObjectIndication(String dicomFileName,String transferSyntax,String callingAETitle)
 				throws DicomNetworkException, DicomException, IOException {
 			if (dicomFileName != null) {
-if (webServerDebugLevel > 0) System.err.println("Received: "+dicomFileName+" from "+callingAETitle+" in "+transferSyntax);
+				slf4jlogger.debug("Received: {} from {} in {}",dicomFileName,callingAETitle,transferSyntax);
 				try {
 					FileInputStream fis = new FileInputStream(dicomFileName);
 					DicomInputStream i = new DicomInputStream(new BufferedInputStream(fis));
@@ -93,26 +98,26 @@ if (webServerDebugLevel > 0) System.err.println("Received: "+dicomFileName+" fro
 					fis.close();
 					databaseInformationModel.insertObject(list,dicomFileName,DatabaseInformationModel.FILE_COPIED);
 				} catch (Exception e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("Unable to insert {} received from {} in {} into database",dicomFileName,callingAETitle,transferSyntax,e);
 				}
 			}
 
 		}
 	}
 	
-	public WadoServer(String dataBaseFileName,String savedImagesFolderName,int dicomPort,String calledAETitle,int storageSCPDebugLevel,int wadoPort,int webServerDebugLevel) {
-		super(webServerDebugLevel);
+	public WadoServer(String dataBaseFileName,String savedImagesFolderName,int dicomPort,String calledAETitle,int wadoPort) {
+		super();
 		try {
 			databaseInformationModel = new PatientStudySeriesConcatenationInstanceModel(dataBaseFileName);
 			File savedImagesFolder = new File(savedImagesFolderName);
 			if (!savedImagesFolder.exists()) {
 				savedImagesFolder.mkdirs();
 			}
-			new Thread(new StorageSOPClassSCPDispatcher(dicomPort,calledAETitle,savedImagesFolder,new OurReceivedObjectHandler(),null,null,null,false,storageSCPDebugLevel)).start();
+			new Thread(new StorageSOPClassSCPDispatcher(dicomPort,calledAETitle,savedImagesFolder,new OurReceivedObjectHandler(),null,null,null,false)).start();
 			super.initializeThreadPool(wadoPort);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			slf4jlogger.error("",e);
 		}
 	}
 	
@@ -122,10 +127,8 @@ if (webServerDebugLevel > 0) System.err.println("Received: "+dicomFileName+" fro
 		String savedImagesFolderName = "/tmp/testwadoimages";
 		int dicomPort = 4007;
 		String calledAETitle = "WADOTEST";
-		int storageSCPDebugLevel = 0;
-		int webServerDebugLevel = 0;
 		int wadoPort = 7091;
-		new Thread(new WadoServer(dataBaseFileName,savedImagesFolderName,dicomPort,calledAETitle,storageSCPDebugLevel,wadoPort,webServerDebugLevel)).start();
+		new Thread(new WadoServer(dataBaseFileName,savedImagesFolderName,dicomPort,calledAETitle,wadoPort)).start();
 	}
 }
 

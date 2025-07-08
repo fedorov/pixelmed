@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,7 +22,7 @@ import java.io.File;
 public class AttributeTree implements TreeModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTree.java,v 1.6 2005/06/10 13:25:55 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTree.java,v 1.18 2025/01/29 10:58:06 dclunie Exp $";
 
 	// Our nodes are all instances of AttributeTreeRecord ...
 
@@ -36,57 +36,32 @@ public class AttributeTree implements TreeModel {
 
 	// Methods for TreeModel
 
-	/**
-	 * @param	node
-	 * @param	index
-	 */
 	public Object getChild(Object node,int index) {
 		return ((AttributeTreeRecord)node).getChildAt(index);
 	}
 
-	/**
-	 * @param	parent
-	 * @param	child
-	 */
 	public int getIndexOfChild(Object parent, Object child) {
 		return ((AttributeTreeRecord)parent).getIndex((AttributeTreeRecord)child);
 	}
 
-	/***/
 	public Object getRoot() { return root; }
 
-	/**
-	 * @param	parent
-	 */
 	public int getChildCount(Object parent) {
 		return ((AttributeTreeRecord)parent).getChildCount();
 	}
 
-	/**
-	 * @param	node
-	 */
 	public boolean isLeaf(Object node) {
 		return ((AttributeTreeRecord)node).getChildCount() == 0;
 	}
 
-	/**
-	 * @param	path
-	 * @param	newValue
-	 */
 	public void valueForPathChanged(TreePath path, Object newValue) {
 	}
 
-	/**
-	 * @param	tml
-	 */
 	public void addTreeModelListener(TreeModelListener tml) {
 		if (listeners == null) listeners = new Vector();
 		listeners.addElement(tml);
 	}
 
-	/**
-	 * @param	tml
-	 */
 	public void removeTreeModelListener(TreeModelListener tml) {
 		if (listeners == null) listeners.removeElement(tml);
 	}
@@ -100,11 +75,11 @@ public class AttributeTree implements TreeModel {
 	 *
 	 * <p>Calls itself recursively to add attribute lists in items of any sequence attributes encountered.</p>
 	 *
-	 * @param	parent		the parent to which the new nodes are added as children
-	 * @param	list		the list whose attributes to add
-	 * @param	dictionary	the dictionary in which to look up the attribute names
-	 * @return			the first node at this level of the tree added (if any)
-	 * @exception	DicomException
+	 * @param	parent				the parent to which the new nodes are added as children
+	 * @param	list				the list whose attributes to add
+	 * @param	dictionary			the dictionary in which to look up the attribute names
+	 * @return						the first node at this level of the tree added (if any)
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	private AttributeTreeRecord processAttributeList(AttributeTreeRecord parent,AttributeList list,DicomDictionary dictionary) throws DicomException {
 		AttributeTreeRecord first = null;
@@ -138,7 +113,7 @@ public class AttributeTree implements TreeModel {
 	 * <p>Construct an entire tree of attributes from an attribute list.</p>
 	 *
 	 * @param	list		the list whose attributes to add
-	 * @exception	DicomException
+	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public AttributeTree(AttributeList list) throws DicomException {
 		if (list != null) {
@@ -177,8 +152,8 @@ public class AttributeTree implements TreeModel {
 	/**
 	 * <p>Walk the sub-tree starting at the specified node and set the sort order.</p>
 	 *
-	 * @param	node	the node that roots the sub-tree
-	 * @return		the attributes in the tree as a string
+	 * @param	node		the node that roots the sub-tree
+	 * @param	sortByName	the sort order
 	 */
 	private void walkTreeAndSetSortOrder(AttributeTreeRecord node,boolean sortByName) {
 		node.setSortByName(sortByName);

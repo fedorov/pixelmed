@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2013, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -9,9 +9,14 @@ import java.awt.Cursor;
 
 import java.lang.reflect.InvocationTargetException;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 public class SafeCursorChanger {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SafeCursorChanger.java,v 1.1 2013/01/20 20:30:37 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SafeCursorChanger.java,v 1.12 2025/01/29 10:58:07 dclunie Exp $";
 	
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(SafeCursorChanger.class);
+
 	protected Cursor was;
 	protected Component component;
 	
@@ -55,10 +60,10 @@ public class SafeCursorChanger {
 				was = getter.getCursor();
 			}
 			catch (InterruptedException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 			catch (InvocationTargetException e) {
-				e.printStackTrace();
+				slf4jlogger.error("",e);
 			}
 		}
 	}

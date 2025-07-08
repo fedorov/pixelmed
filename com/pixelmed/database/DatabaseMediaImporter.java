@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2010, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -21,12 +21,16 @@ import com.pixelmed.dicom.TagFromName;
 import com.pixelmed.utils.CopyStream;
 import com.pixelmed.utils.MessageLogger;
 
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
+
 /**
  * @author	dclunie
  */
 public class DatabaseMediaImporter extends MediaImporter {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseMediaImporter.java,v 1.16 2025/01/29 10:58:06 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseMediaImporter.java,v 1.4 2010/11/27 13:54:13 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(DatabaseMediaImporter.class);
 
 	protected File savedInstancesFolder;
 	protected DatabaseInformationModel databaseInformationModel;
@@ -58,7 +62,7 @@ public class DatabaseMediaImporter extends MediaImporter {
 	 * @param	mediaFileName	the fully qualified path name to a DICOM file
 	 */
 	protected void doSomethingWithDicomFileOnMedia(String mediaFileName) {
-//System.err.println("DatabaseMediaImporter:doSomethingWithDicomFile(): "+mediaFileName);
+		slf4jlogger.debug("doSomethingWithDicomFileOnMedia(): {}",mediaFileName);
 		try {
 			DicomInputStream i = new DicomInputStream(new BufferedInputStream(new FileInputStream(mediaFileName)));
 			AttributeList list = new AttributeList();
@@ -70,11 +74,11 @@ public class DatabaseMediaImporter extends MediaImporter {
 				throw new DicomException("Cannot get SOP Instance UID to make file name for local copy when inserting into database");
 			}
 			String localCopyFileName=storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedInstancesFolder,sopInstanceUID).getPath();
-//System.err.println("DatabaseMediaImporter.doSomethingWithDicomFileOnMedia(): uid = "+sopInstanceUID+" path ="+localCopyFileName);
+			slf4jlogger.debug("doSomethingWithDicomFileOnMedia(): uid = {}  path = {}",sopInstanceUID,localCopyFileName);
 			CopyStream.copy(mediaFileName,localCopyFileName);
 			databaseInformationModel.insertObject(list,localCopyFileName,DatabaseInformationModel.FILE_COPIED);
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

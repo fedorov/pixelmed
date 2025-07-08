@@ -1,6 +1,9 @@
-/* Copyright (c) 2004-2011, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
+
+import com.pixelmed.database.DatabaseInformationModel;
+import com.pixelmed.dicom.InformationEntity;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,31 +13,31 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.pixelmed.database.DatabaseInformationModel;
-import com.pixelmed.dicom.InformationEntity;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>The {@link com.pixelmed.web.PatientListRequestHandler PatientListRequestHandler} creates a response to an HTTP request for
+ * <p>The {@link PatientListRequestHandler PatientListRequestHandler} creates a response to an HTTP request for
  * a list of all patients.</p>
  *
  * @author	dclunie
  */
 class PatientListRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/PatientListRequestHandler.java,v 1.7 2011/04/04 14:47:15 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/PatientListRequestHandler.java,v 1.19 2025/01/29 10:58:09 dclunie Exp $";
 
-	protected PatientListRequestHandler(String stylesheetPath,int webServerDebugLevel) {
-		super(stylesheetPath,webServerDebugLevel);
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(PatientListRequestHandler.class);
+
+	protected PatientListRequestHandler(String stylesheetPath) {
+		super(stylesheetPath);
 	}
 
 	private class CompareDatabaseAttributesByPatientID implements Comparator {
 		public int compare(Object o1,Object o2) {
-			int returnValue = 0;
 			String si1 = (String)(((Map)o1).get("PATIENTID"));
 			String si2 = (String)(((Map)o2).get("PATIENTID"));
-			if (si1 != null && si2 != null) {
-				returnValue = si1.compareTo(si2);
-			}
-			return returnValue;
+			if (si1 == null) si1="";
+			if (si2 == null) si2="";
+			return si1.compareTo(si2);
 		}
 	}
 	
@@ -85,8 +88,8 @@ class PatientListRequestHandler extends RequestHandler {
 			sendHeaderAndBodyText(out,responseBody,"patients.html","text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-if (webServerDebugLevel > 0) System.err.println("PatientListRequestHandler.generateResponseToGetRequest(): Sending 404 Not Found");
+			slf4jlogger.error("",e);
+			slf4jlogger.debug("generateResponseToGetRequest(): Sending 404 Not Found");
 			send404NotFound(out,e.getMessage());
 		}
 	}

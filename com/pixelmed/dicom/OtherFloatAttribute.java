@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2003, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class OtherFloatAttribute extends Attribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherFloatAttribute.java,v 1.8 2008/02/21 04:45:04 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherFloatAttribute.java,v 1.21 2025/01/29 10:58:07 dclunie Exp $";
 
 	private float[] values;
 
@@ -38,8 +38,8 @@ public class OtherFloatAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherFloatAttribute(AttributeTag t,long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -52,8 +52,8 @@ public class OtherFloatAttribute extends Attribute {
 	 * @param	t			the tag of the attribute
 	 * @param	vl			the value length of the attribute
 	 * @param	i			the input stream
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public OtherFloatAttribute(AttributeTag t,Long vl,DicomInputStream i) throws IOException, DicomException {
 		super(t);
@@ -63,8 +63,8 @@ public class OtherFloatAttribute extends Attribute {
 	/**
 	 * @param	vl
 	 * @param	i
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	private void doCommonConstructorStuff(long vl,DicomInputStream i) throws IOException, DicomException {
 		values=null;
@@ -80,15 +80,15 @@ public class OtherFloatAttribute extends Attribute {
 
 	/**
 	 * @param	o
-	 * @exception	IOException
-	 * @exception	DicomException
+	 * @throws	IOException
+	 * @throws	DicomException
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		if (values != null && values.length > 0) {
 			o.writeFloat(values,values.length);
 			if (getVL() != values.length*4) {
-				throw new DicomException("Internal error - float array length ("+values.length*2+") not equal to expected VL("+getVL()+")");
+				throw new DicomException("Internal error - float array length ("+values.length*4+") not equal to expected VL("+getVL()+")");
 			}
 		}
 	}
@@ -103,16 +103,36 @@ public class OtherFloatAttribute extends Attribute {
 
 	/**
 	 * @param	v
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public void setValues(float[] v) throws DicomException {
 		values=v;
 		valueMultiplicity=1;		// different from normal value types where VM is size of array
 		valueLength=v.length*4;
 	}
+	
+	/**
+	 * @param	v
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public void setValues(byte[] v,boolean big) throws DicomException {
+		int floatLength = v.length/4;
+		float[] floatValues = new float[floatLength];
+		int j = 0;
+		for (int i=0; i<floatLength; ++i) {
+			int v1 =  (int)(v[j++]&0xff);
+			int v2 =  (int)(v[j++]&0xff);
+			int v3 =  (int)(v[j++]&0xff);
+			int v4 =  (int)(v[j++]&0xff);
+			floatValues[i] =  Float.intBitsToFloat(big
+				? (((((v1 << 8) | v2) << 8) | v3) << 8) | v4
+				: (((((v4 << 8) | v3) << 8) | v2) << 8) | v1);
+		}
+		setValues(floatValues);
+	}
 
 	/**
-	 * @exception	DicomException
 	 */
 	public void removeValues() {
 		values=null;
@@ -121,9 +141,41 @@ public class OtherFloatAttribute extends Attribute {
 	}
 
 	/**
-	 * @exception	DicomException
+	 * @throws	DicomException
 	 */
 	public float[] getFloatValues() throws DicomException { return values; }
+
+	/**
+	 * @param	big
+	 * @throws	DicomException
+	 */
+	public byte[] getByteValues(boolean big) throws DicomException {
+		byte[] byteValues = null;
+		if (values != null) {
+			int floatLength = values.length;
+			byteValues = new byte[floatLength*4];
+			int j = 0;
+			if (big) {
+				for (int i=0; i<floatLength; ++i) {
+					int v = Float.floatToRawIntBits(values[i]);
+					byteValues[j++]=(byte)(v>>24);
+					byteValues[j++]=(byte)(v>>16);
+					byteValues[j++]=(byte)(v>>8);
+					byteValues[j++]=(byte)v;
+				}
+			}
+			else {
+				for (int i=0; i<floatLength; ++i) {
+					int v = Float.floatToRawIntBits(values[i]);
+					byteValues[j++]=(byte)v;
+					byteValues[j++]=(byte)(v>>8);
+					byteValues[j++]=(byte)(v>>16);
+					byteValues[j++]=(byte)(v>>24);
+				}
+			}
+		}
+		return byteValues;
+	}
 
 	/**
 	 * <p>Get the value representation of this attribute (OF).</p>

@@ -1,6 +1,10 @@
-/* Copyright (c) 2001-2012, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
+
+import com.pixelmed.display.event.*; 
+import com.pixelmed.dicom.*;
+import com.pixelmed.event.EventContext;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -12,9 +16,8 @@ import java.io.*;
 import javax.swing.*; 
 import javax.swing.event.*;
 
-import com.pixelmed.display.event.*; 
-import com.pixelmed.dicom.*;
-import com.pixelmed.event.EventContext;
+import com.pixelmed.slf4j.Logger;
+import com.pixelmed.slf4j.LoggerFactory;
 
 /**
  * <p>This class is an entire application for displaying and viewing mammography images and
@@ -32,8 +35,9 @@ import com.pixelmed.event.EventContext;
  * @author	dclunie
  */
 public class MammoImageViewer {
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/MammoImageViewer.java,v 1.92 2025/01/29 10:58:07 dclunie Exp $";
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/MammoImageViewer.java,v 1.76 2012/09/20 10:25:28 dclunie Exp $";
+	private static final Logger slf4jlogger = LoggerFactory.getLogger(MammoImageViewer.class);
 
 	protected JFrame frame;
 	protected JPanel multiPanel;
@@ -125,14 +129,6 @@ public class MammoImageViewer {
 	 * @param	list
 	 * @return			a single String value, null if cannot be obtained
 	 */
-	private static String getLaterality(AttributeList list) {
-		return Attribute.getSingleStringValueOrNull(list,TagFromName.ImageLaterality);
-	}
-	
-	/**
-	 * @param	list
-	 * @return			a single String value, null if cannot be obtained
-	 */
 	private static String getDate(AttributeList list) {
 		return Attribute.getSingleStringValueOrNull(list,TagFromName.StudyDate);
 	}
@@ -152,7 +148,7 @@ public class MammoImageViewer {
 					testDateValue = Integer.parseInt(dates[i]);
 				}
 				catch (NumberFormatException e) {
-					e.printStackTrace(System.err);
+					slf4jlogger.error("",e);
 				}
 				if (testDateValue > latestDateValue) {
 					latestDateValue = testDateValue;
@@ -187,7 +183,7 @@ public class MammoImageViewer {
 					if (!sameSide) {
 						if (lateralities[0] != null) {
 							order = new int[n];
-System.err.println("Hanging two of same view and same study with right side on left of display");
+							slf4jlogger.info("Hanging two of same view and same study with right side on left of display");
 							// hang right side on left of display
 							if (lateralities[0].equals("R")) {
 								order[0] = 0;
@@ -205,7 +201,7 @@ System.err.println("Hanging two of same view and same study with right side on l
 					if (sameSide) {
 						if (dates[0] != null && dates[1] != null) {
 							order = new int[n];
-System.err.println("Hanging two of same view and same side different study with earlier study on left of display");
+							slf4jlogger.info("Hanging two of same view and same side different study with earlier study on left of display");
 							// hang earlier study on left of display
 							if (Integer.parseInt(dates[0]) < Integer.parseInt(dates[1])) {
 								order[0] = 0;
@@ -223,7 +219,7 @@ System.err.println("Hanging two of same view and same side different study with 
 			// else different view, give up trying to hang any particular way
 		}
 		if (order == null && n == 4) {
-System.err.println("Hanging four views");
+			slf4jlogger.info("Hanging four views");
 			order = new int[n];
 			for (int i=0; i<n; ++i) {
 				order[i]=-1;
@@ -240,14 +236,14 @@ System.err.println("Hanging four views");
 					order[offset] = i;
 				}
 				else {
-System.err.println("spot "+offset+" wanted by "+i+" but already used by "+order[offset]);
+					slf4jlogger.info("spot {} wanted by {} but already used by {}",offset,i,order[offset]);
 					order = null;
 					break;
 				}
 			}
 		}
 		if (order == null && n == 8) {
-System.err.println("Hanging eight views - looking for prior and current four views");
+			slf4jlogger.info("Hanging eight views - looking for prior and current four views");
 			order = new int[n];
 			for (int i=0; i<n; ++i) {
 				order[i]=-1;
@@ -275,14 +271,14 @@ System.err.println("Hanging eight views - looking for prior and current four vie
 					order[offset] = i;
 				}
 				else {
-System.err.println("spot "+offset+" wanted by "+i+" but already used by "+order[offset]);
+					slf4jlogger.info("spot {} wanted by {} but already used by {}",offset,i,order[offset]);
 					order = null;
 					break;
 				}
 			}
 		}
 		if (order == null && n == 8) {
-System.err.println("Hanging eight views - looking for views with and without modifiers");
+			slf4jlogger.info("Hanging eight views - looking for views with and without modifiers");
 			order = new int[n];
 			for (int i=0; i<n; ++i) {
 				order[i]=-1;
@@ -307,7 +303,7 @@ System.err.println("Hanging eight views - looking for views with and without mod
 					order[offset] = i;
 				}
 				else {
-System.err.println("spot "+offset+" wanted by "+i+" but already used by "+order[offset]);
+					slf4jlogger.info("spot {} wanted by {} but already used by {}",offset,i,order[offset]);
 					order = null;
 					break;
 				}
@@ -367,7 +363,7 @@ System.err.println("spot "+offset+" wanted by "+i+" but already used by "+order[
 				String tmp = rowOrientation;
 				rowOrientation = columnOrientation;
 				columnOrientation = tmp;
-System.err.println("FlipAsNecessary(): swapping rows and columns");
+				slf4jlogger.info("FlipAsNecessary(): swapping rows and columns");
 				this.img = BufferedImageUtilities.rotateAndFlipSwappingRowsAndColumns(img);
 				//
 				// to just flip x and y use ...
@@ -383,7 +379,7 @@ System.err.println("FlipAsNecessary(): swapping rows and columns");
 				if (laterality.equals("R") && rowOrientation.indexOf("P") == -1
 				 || laterality.equals("L") && rowOrientation.indexOf("A") == -1
 				) {
-System.err.println("FlipAsNecessary(): flipping horizontally");
+					slf4jlogger.info("FlipAsNecessary(): flipping horizontally");
 					BufferedImageUtilities.flipHorizontally(img);
 					rowOrientation = invertOrientation(rowOrientation);
 					//
@@ -402,14 +398,14 @@ System.err.println("FlipAsNecessary(): flipping horizontally");
 				if (view.equals("MLO") || view.equals("ML") || view.equals("LM") || view.equals("LMO") || view.equals("SIO")) {
 					// for lateral and lateral obliques, feet are always at the bottom (axilla at the top), regardless of side
 					if (columnOrientation.indexOf("F") == -1) {
-System.err.println("FlipAsNecessary(): flipping vertically for lateral or oblique to put feet at bottom");
+						slf4jlogger.info("FlipAsNecessary(): flipping vertically for lateral or oblique to put feet at bottom");
 						flipVertically=true;
 					}
 				}
 				else {
 					// for all other views, the laterality value must be opposite to the column orientation (axilla at top)
 					if (columnOrientation.indexOf(laterality) != -1) {
-System.err.println("FlipAsNecessary(): flipping vertically to put laterality in axilla");
+						slf4jlogger.info("FlipAsNecessary(): flipping vertically to put laterality in axilla");
 						flipVertically=true;
 					}
 				}
@@ -423,7 +419,7 @@ System.err.println("FlipAsNecessary(): flipping vertically to put laterality in 
 					// 0  -1 h-1	m10 m11 m12
 					// 0  0  1		na  na  na
 					//
-System.err.println("FlipAsNecessary(): WARNING: flipping vertically but supressing coordinate transform because does not work - check CAD locations, which may be wrong");
+					slf4jlogger.info("FlipAsNecessary(): WARNING: flipping vertically but supressing coordinate transform because does not work - check CAD locations, which may be wrong");
 					//transform.concatenate(new AffineTransform(1,0,0,-1,0,img.getHeight()-1));		// :(
 				}
 			}
@@ -620,8 +616,8 @@ System.err.println("FlipAsNecessary(): WARNING: flipping vertically but supressi
 		return uid;
 	}
 	
-	private static final int crossSize = 50;	// actually just one arm of the cross
-	private static final int crossGap  = 15;	// is included in crossSize
+	private static final int crossSize = 5;	// actually just one arm of the cross
+	private static final int crossGap  = 0;	// is included in crossSize
 	
 	/**
 	 * @param	coord
@@ -679,11 +675,11 @@ System.err.println("FlipAsNecessary(): WARNING: flipping vertically but supressi
 					preDefinedShapes.add(new Ellipse2D.Float(xminorstart,ymajorstart,xminorend-xminorstart,ymajorend-ymajorstart));
 				}
 				else {
-System.err.println("addCADMarkToPreDefinedShapes(): NOT adding ELLIPSE that is not parallel to row");	// because the constructor expects a rectangular area :(
+					slf4jlogger.info("addCADMarkToPreDefinedShapes(): NOT adding ELLIPSE that is not parallel to row");	// because the constructor expects a rectangular area :(
 				}
 			}
 			else {
-System.err.println("addCADMarkToPreDefinedShapes(): NOT adding "+graphicType);
+				slf4jlogger.info("addCADMarkToPreDefinedShapes(): NOT adding {}",graphicType);
 			}
 		}
 	}
@@ -703,7 +699,7 @@ System.err.println("addCADMarkToPreDefinedShapes(): NOT adding "+graphicType);
 	
 	/**
 	 * @param		filenames
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public void loadMultiPanelFromSpecifiedFiles(String filenames[]) throws Exception {
 	
@@ -763,28 +759,28 @@ System.err.println("addCADMarkToPreDefinedShapes(): NOT adding "+graphicType);
 				list.read(distream);
 				if (list.isImage()) {
 					int i = nImages++;
-System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
+					slf4jlogger.info("IMAGE [{}] is file {} ({})",i,f,filenames[f]);
 
 					imageSOPClassUID[i] = Attribute.getSingleStringValueOrNull(list,TagFromName.SOPClassUID);
-//System.err.println("IMAGE ["+i+"] imageSOPClassUID="+imageSOPClassUID[i]);
+					slf4jlogger.debug("IMAGE [{}] imageSOPClassUID={}",i,imageSOPClassUID[i]);
 					imageSOPInstanceUID[i] = Attribute.getSingleStringValueOrNull(list,TagFromName.SOPInstanceUID);
-//System.err.println("IMAGE ["+i+"] imageSOPInstanceUID="+imageSOPInstanceUID[i]);
+					slf4jlogger.debug("IMAGE [{}] imageSOPInstanceUID={}",i,imageSOPInstanceUID[i]);
 					imageSourceSOPInstanceUID[i] = getSingleSourceImageSequenceReferencedSOPInstanceUIDOrNull(list);
-//System.err.println("IMAGE ["+i+"] imageSourceSOPInstanceUID="+imageSourceSOPInstanceUID[i]);
+					slf4jlogger.debug("IMAGE [{}] imageSourceSOPInstanceUID={}",i,imageSourceSOPInstanceUID[i]);
 
 					orientations[i] = getPatientOrientation(list);
-//System.err.println("IMAGE ["+i+"] orientation="+(orientations[i] == null && orientations[i].length == 2 ? "" : (orientations[i][0] + " " + orientations[i][1])));
+					slf4jlogger.debug("IMAGE [{}] orientation={}",i,(orientations[i] == null && orientations[i].length == 2 ? "" : (orientations[i][0] + " " + orientations[i][1])));
 					views[i] = getView(list);
-//System.err.println("IMAGE ["+i+"] view="+views[i]);
+					slf4jlogger.debug("IMAGE [{}] view={}",i,views[i]);
 					lateralityViewAndModifiers[i] = getImageLateralityViewModifierAndViewModifier(list);
-//System.err.println("IMAGE ["+i+"] lateralityViewAndModifiers="+lateralityViewAndModifiers[i]);
-//System.err.println("File "+filenames[f]+": "+lateralityViewAndModifiers[i]);
-					lateralities[i] = getLaterality(list);
-//System.err.println("IMAGE ["+i+"] laterality="+lateralities[i]);
+					slf4jlogger.debug("IMAGE [{}] lateralityViewAndModifiers={}",i,lateralityViewAndModifiers[i]);
+					slf4jlogger.debug("File {}: {}",filenames[f],lateralityViewAndModifiers[i]);
+					lateralities[i] = MammoDemographicAndTechniqueAnnotations.getLaterality(list);
+					slf4jlogger.debug("IMAGE [{}] laterality={}",i,lateralities[i]);
 					dates[i] = getDate(list);
-//System.err.println("IMAGE ["+i+"] date="+dates[i]);
+					slf4jlogger.debug("IMAGE [{}] date={}",i,dates[i]);
 					spacing[i] = new PixelSpacing(list,null,false/*preferCalibratedValue - as per current IHE mammo profile, do NOT use Pixel Spacing to override*/,true/*useMagnificationFactorIfPresent*/);
-//System.err.println("IMAGE ["+i+"] spacing="+spacing[i]);
+					slf4jlogger.debug("IMAGE [{}] spacing={}",i,spacing[i]);
 				
 					SourceImage sImg = new SourceImage(list);
 					BufferedImage img = sImg.getBufferedImage();
@@ -795,9 +791,9 @@ System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
 					FlipAsNecessary flipper = new FlipAsNecessary(img,orientations[i],views[i],lateralities[i],doNotFlipOrRotate);
 					img = flipper.getImage();
 					rowOrientations[i] = flipper.getRowOrientation();
-//System.err.println("IMAGE ["+i+"] rowOrientations="+rowOrientations[i]);
+					slf4jlogger.debug("IMAGE [{}] rowOrientations={}",i,rowOrientations[i]);
 					columnOrientations[i] = flipper.getColumnOrientation();
-//System.err.println("IMAGE ["+i+"] columnOrientations="+columnOrientations[i]);
+					slf4jlogger.debug("IMAGE [{}] columnOrientations={}",i,columnOrientations[i]);
 					coordinateTransform[i] = flipper.getTransform();
 
 					if (doNotJustify) {
@@ -860,7 +856,7 @@ System.err.println("IMAGE ["+i+"] is file "+f+" ("+filenames[f]+")");
 				}
 				else if (list.isSRDocument()) {
 					int i = nCAD++;
-System.err.println("CAD ["+i+"] is file "+f+" ("+filenames[f]+")");
+					slf4jlogger.info("CAD [{}] is file {} ({})",i,f,filenames[f]);
 					sr[i] = new StructuredReport(list);
 				}
 				else {
@@ -868,7 +864,7 @@ System.err.println("CAD ["+i+"] is file "+f+" ("+filenames[f]+")");
 				}
 			}
 			catch (Exception e) {	// FileNotFoundException,IOException,DicomException
-				e.printStackTrace(System.err);
+				slf4jlogger.error("",e);
 			}
 		}
 
@@ -954,7 +950,7 @@ System.err.println("CAD ["+i+"] is file "+f+" ("+filenames[f]+")");
 									addCADMarkToPreDefinedShapes(coord,shapes);
 								}
 								else {
-System.err.println("CAD ["+i+"] could not find match for referencedUID="+referencedUID);
+									slf4jlogger.error("CAD [{}] could not find match for referencedUID={}",i,referencedUID);
 								}
 							}
 						}
@@ -990,7 +986,7 @@ System.err.println("CAD ["+i+"] could not find match for referencedUID="+referen
 	
 	/**
 	 * @param		frame
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public MammoImageViewer(JFrame frame) throws Exception {
 		this.frame = frame;
@@ -1000,7 +996,7 @@ System.err.println("CAD ["+i+"] could not find match for referencedUID="+referen
 	/**
 	 * @param		frame
 	 * @param		filenames
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public MammoImageViewer(JFrame frame,String filenames[]) throws Exception {
 		this.frame = frame;
@@ -1010,7 +1006,7 @@ System.err.println("CAD ["+i+"] could not find match for referencedUID="+referen
 	
 	/**
 	 * @param		filenames
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	public MammoImageViewer(String filenames[]) throws Exception {
 		frame = new ApplicationFrame();
@@ -1031,7 +1027,7 @@ System.err.println("CAD ["+i+"] could not find match for referencedUID="+referen
 	}
 	
 	/**
-	 * @exception	Exception		if internal error
+	 * @throws	Exception		if internal error
 	 */
 	protected void doCommonConstructorStuff() throws Exception {
 		Container content = frame.getContentPane();
@@ -1068,7 +1064,7 @@ System.err.println("CAD ["+i+"] could not find match for referencedUID="+referen
 			new MammoImageViewer(arg);
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}
 }

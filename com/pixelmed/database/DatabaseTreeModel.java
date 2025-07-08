@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2005, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -10,7 +10,7 @@ import java.io.File;
 import com.pixelmed.dicom.*;
 
 /**
- * <p>The {@link com.pixelmed.database.DatabaseTreeModel DatabaseTreeModel} class implements a
+ * <p>The {@link DatabaseTreeModel DatabaseTreeModel} class implements a
  * {@link javax.swing.tree.TreeModel TreeModel} to abstract the contents of a database as
  * a tree in order to provide support for a {@link com.pixelmed.database.DatabaseTreeBrowser DatabaseTreeBrowser}.</p>
  *
@@ -21,7 +21,7 @@ import com.pixelmed.dicom.*;
 public class DatabaseTreeModel implements TreeModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeModel.java,v 1.13 2008/06/30 14:22:54 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeModel.java,v 1.24 2025/01/29 10:58:06 dclunie Exp $";
 
 	// Our nodes are all instances of DatabaseTreeRecord ...
 
@@ -101,7 +101,7 @@ public class DatabaseTreeModel implements TreeModel {
 	 * <p>Construct a tree model of the supplied database.</p>
 	 *
 	 * @param	d		the database information model to build the tree from
-	 * @exception	DicomException	thrown if there are problems accessing the database
+	 * @throws	DicomException	thrown if there are problems accessing the database
 	 */
 	public DatabaseTreeModel(DatabaseInformationModel d) throws DicomException {
 		if (d != null) {
