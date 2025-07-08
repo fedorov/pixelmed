@@ -2,8 +2,6 @@ name: PixelMed Java DICOM Source Sync
 
 on:
   workflow_dispatch:
-
-on:
   schedule:
     # Runs every day at 10:00 UTC (6am EDT, summer)
     - cron: '0 10 * * *'
