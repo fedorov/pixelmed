@@ -1,4 +1,4 @@
-This repository is a mirror of the Pixelmed software developed by David Clunie.
+This repository is a mirror of the Pixelmed software developed by David Clunie @dclunie.
 
 The original source code is available at
 http://www.dclunie.com/pixelmed/software/
