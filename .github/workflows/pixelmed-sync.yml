@@ -65,7 +65,7 @@ jobs:
         run: |
           shopt -s dotglob
           # Remove all files except .git and .github
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' ! -name 'README.md' -exec rm -rf {} +
           # Move new files to root
           mv ../new_release/* .
           rmdir ../new_release || true
