@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -12,7 +12,7 @@ import com.pixelmed.slf4j.Logger;
 import com.pixelmed.slf4j.LoggerFactory;
 
 /**
- * <p>A class to copy DICOM attributes from anm input stream to an output stream,
+ * <p>A class to copy DICOM attributes from an input stream to an output stream,
  * converting the encoding of the attributes between transfer syntaxes if necessary.</p>
  *
  * @see com.pixelmed.dicom.DicomInputStream
@@ -21,7 +21,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class DicomStreamCopier {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomStreamCopier.java,v 1.33 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomStreamCopier.java,v 1.35 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomStreamCopier.class);
 

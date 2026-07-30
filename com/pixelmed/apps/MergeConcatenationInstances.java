@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -47,7 +47,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class MergeConcatenationInstances {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MergeConcatenationInstances.java,v 1.5 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MergeConcatenationInstances.java,v 1.7 2026/03/17 19:39:19 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(MergeConcatenationInstances.class);
 	
@@ -107,6 +107,7 @@ public class MergeConcatenationInstances {
 						perFrameFunctionalGroupsAttributes[inConcatenationNumber-1] = newList.get(TagFromName.PerFrameFunctionalGroupsSequence);
 						concatenationFrameOffsetNumbers[inConcatenationNumber-1] = Attribute.getSingleIntegerValueOrDefault(newList,TagFromName.ConcatenationFrameOffsetNumber,-1);		// will check it was not missing later
 						numberOfFrames[inConcatenationNumber-1] = Attribute.getSingleIntegerValueOrDefault(newList,TagFromName.NumberOfFrames,0);
+						slf4jlogger.debug("File {} contains {} frames",mediaFileName,numberOfFrames[inConcatenationNumber-1]);
 						
 						String instanceTransferSyntaxUID = Attribute.getSingleStringValueOrEmptyString(newList,TagFromName.TransferSyntaxUID);
 						if (instanceTransferSyntaxUID.length() > 0) {

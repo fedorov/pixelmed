@@ -116,6 +116,7 @@
 	<DataElement><Group>0x0008</Group><Element>0x001A</Element><VR>UI</VR><VMMin>1</VMMin><VMMax>n</VMMax><Keyword>RelatedGeneralSOPClassUID</Keyword><Name>Related General SOP Class UID</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x001B</Element><VR>UI</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>OriginalSpecializedSOPClassUID</Keyword><Name>Original Specialized SOP Class UID</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x001C</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SyntheticData</Keyword><Name>Synthetic Data</Name></DataElement>
+	<DataElement><Group>0x0008</Group><Element>0x001D</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SensitiveContentCodeSequence</Keyword><Name>Sensitive Content Code Sequence</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x0020</Element><VR>DA</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>StudyDate</Keyword><Name>Study Date</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x0021</Element><VR>DA</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SeriesDate</Keyword><Name>Series Date</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x0022</Element><VR>DA</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>AcquisitionDate</Keyword><Name>Acquisition Date</Name></DataElement>
@@ -372,6 +373,12 @@
 	<DataElement><Group>0x0008</Group><Element>0x9459</Element><VR>FL</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RecommendedDisplayFrameRateInFloat</Keyword><Name>Recommended Display Frame Rate in Float</Name></DataElement>
 	<DataElement><Group>0x0008</Group><Element>0x9460</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SkipFrameRangeFlag</Keyword><Name>Skip Frame Range Flag</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0010</Element><VR>PN</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientName</Keyword><Name>Patient&apos;s Name</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0011</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PersonNamesToUseSequence</Keyword><Name>Person Names to Use Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0012</Element><VR>LT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>NameToUse</Keyword><Name>Name to Use</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0013</Element><VR>UT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>NameToUseComment</Keyword><Name>Name to Use Comment</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0014</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ThirdPersonPronounsSequence</Keyword><Name>Third Person Pronouns Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0015</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PronounCodeSequence</Keyword><Name>Pronoun Code Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0016</Element><VR>UT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PronounComment</Keyword><Name>Pronoun Comment</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0020</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientID</Keyword><Name>Patient ID</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0021</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>IssuerOfPatientID</Keyword><Name>Issuer of Patient ID</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0022</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>TypeOfPatientID</Keyword><Name>Type of Patient ID</Name></DataElement>
@@ -385,6 +392,13 @@
 	<DataElement><Group>0x0010</Group><Element>0x0034</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientDeathDateInAlternativeCalendar</Keyword><Name>Patient&apos;s Death Date in Alternative Calendar</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0035</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientAlternativeCalendar</Keyword><Name>Patient&apos;s Alternative Calendar</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0040</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientSex</Keyword><Name>Patient&apos;s Sex</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0041</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>GenderIdentitySequence</Keyword><Name>Gender Identity Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0042</Element><VR>UT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SexParametersForClinicalUseCategoryComment</Keyword><Name>Sex Parameters for Clinical Use Category Comment</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0043</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SexParametersForClinicalUseCategorySequence</Keyword><Name>Sex Parameters for Clinical Use Category Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0044</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>GenderIdentityCodeSequence</Keyword><Name>Gender Identity Code Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0045</Element><VR>UT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>GenderIdentityComment</Keyword><Name>Gender Identity Comment</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0046</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SexParametersForClinicalUseCategoryCodeSequence</Keyword><Name>Sex Parameters for Clinical Use Category Code Sequence</Name></DataElement>
+	<DataElement><Group>0x0010</Group><Element>0x0047</Element><VR>UR</VR><VMMin>1</VMMin><VMMax>n</VMMax><Keyword>SexParametersForClinicalUseCategoryReference</Keyword><Name>Sex Parameters for Clinical Use Category Reference</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0050</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientInsurancePlanCodeSequence</Keyword><Name>Patient&apos;s Insurance Plan Code Sequence</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0101</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientPrimaryLanguageCodeSequence</Keyword><Name>Patient&apos;s Primary Language Code Sequence</Name></DataElement>
 	<DataElement><Group>0x0010</Group><Element>0x0102</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PatientPrimaryLanguageModifierCodeSequence</Keyword><Name>Patient&apos;s Primary Language Modifier Code Sequence</Name></DataElement>
@@ -648,6 +662,18 @@
 	<DataElement><Group>0x0014</Group><Element>0x40A0</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ImageQualityIndicatorType</Keyword><Name>Image Quality Indicator Type</Name></DataElement>
 	<DataElement><Group>0x0014</Group><Element>0x40A1</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ImageQualityIndicatorMaterial</Keyword><Name>Image Quality Indicator Material</Name></DataElement>
 	<DataElement><Group>0x0014</Group><Element>0x40A2</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ImageQualityIndicatorSize</Keyword><Name>Image Quality Indicator Size</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4101</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>WaveDimensionsDefinitionSequence</Keyword><Name>Wave Dimensions Definition Sequence</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4102</Element><VR>US</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>WaveDimensionNumber</Keyword><Name>Wave Dimension Number</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4103</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>WaveDimensionDescription</Keyword><Name>Wave Dimension Description</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4104</Element><VR>US</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>WaveDimensionUnit</Keyword><Name>Wave Dimension Unit</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4105</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>WaveDimensionValueType</Keyword><Name>Wave Dimension Value Type</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4106</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>n</VMMax><Keyword>WaveDimensionValuesSequence</Keyword><Name>Wave Dimension Values Sequence</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4107</Element><VR>US</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ReferencedWaveDimension</Keyword><Name>Referenced Wave Dimension</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4108</Element><VR>SL</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>IntegerNumericValue</Keyword><Name>Integer Numeric Value</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x4109</Element><VR>OB</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ByteNumericValue</Keyword><Name>Byte Numeric Value</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x410A</Element><VR>OW</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ShortNumericValue</Keyword><Name>Short Numeric Value</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x410B</Element><VR>OF</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>SinglePrecisionFloatingPointNumericValue</Keyword><Name>Single Precision Floating Point Numeric Value</Name></DataElement>
+	<DataElement><Group>0x0014</Group><Element>0x410C</Element><VR>OD</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoublePrecisionFloatingPointNumericValue</Keyword><Name>Double Precision Floating Point Numeric Value</Name></DataElement>
 	<DataElement><Group>0x0014</Group><Element>0x5002</Element><VR>IS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>LINACEnergy</Keyword><Name>LINAC Energy</Name></DataElement>
 	<DataElement><Group>0x0014</Group><Element>0x5004</Element><VR>IS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>LINACOutput</Keyword><Name>LINAC Output</Name></DataElement>
 	<DataElement><Group>0x0014</Group><Element>0x5100</Element><VR>US</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ActiveAperture</Keyword><Name>Active Aperture</Name></DataElement>
@@ -1535,6 +1561,9 @@
 	<DataElement><Group>0x0018</Group><Element>0x9382</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>MaterialAttenuationSequence</Keyword><Name>Material Attenuation Sequence</Name></DataElement>
 	<DataElement><Group>0x0018</Group><Element>0x9383</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>PhotonEnergy</Keyword><Name>Photon Energy</Name></DataElement>
 	<DataElement><Group>0x0018</Group><Element>0x9384</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>XRayMassAttenuationCoefficient</Keyword><Name>X-Ray Mass Attenuation Coefficient</Name></DataElement>
+	<DataElement><Group>0x0018</Group><Element>0x9390</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>MetalArtifactReductionSequence</Keyword><Name>Metal Artifact Reduction Sequence</Name></DataElement>
+	<DataElement><Group>0x0018</Group><Element>0x9391</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>MetalArtifactReductionApplied</Keyword><Name>Metal Artifact Reduction Applied</Name></DataElement>
+	<DataElement><Group>0x0018</Group><Element>0x9392</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>MetalArtifactReductionAlgorithmIdentificationSequence</Keyword><Name>Metal Artifact Reduction Algorithm Identification Sequence</Name></DataElement>
 	<DataElement><Group>0x0018</Group><Element>0x9401</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ProjectionPixelCalibrationSequence</Keyword><Name>Projection Pixel Calibration Sequence</Name></DataElement>
 	<DataElement><Group>0x0018</Group><Element>0x9402</Element><VR>FL</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DistanceSourceToIsocenter</Keyword><Name>Distance Source to Isocenter</Name></DataElement>
 	<DataElement><Group>0x0018</Group><Element>0x9403</Element><VR>FL</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DistanceObjectToTableTop</Keyword><Name>Distance Object to Table Top</Name></DataElement>
@@ -2768,6 +2797,8 @@
 	<DataElement><Group>0x0040</Group><Element>0xA030</Element><VR>DT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>VerificationDateTime</Keyword><Name>Verification DateTime</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xA032</Element><VR>DT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ObservationDateTime</Keyword><Name>Observation DateTime</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xA033</Element><VR>DT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ObservationStartDateTime</Keyword><Name>Observation Start DateTime</Name></DataElement>
+	<DataElement><Group>0x0040</Group><Element>0xA034</Element><VR>DT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>EffectiveStartDateTime</Keyword><Name>Effective Start DateTime</Name></DataElement>
+	<DataElement><Group>0x0040</Group><Element>0xA035</Element><VR>DT</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>EffectiveStopDateTime</Keyword><Name>Effective Stop DateTime</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xA040</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ValueType</Keyword><Name>Value Type</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xA043</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ConceptNameCodeSequence</Keyword><Name>Concept Name Code Sequence</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xA047</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>MeasurementPrecisionDescriptionTrial</Keyword><Name>Measurement Precision Description (Trial)</Name></DataElement>
@@ -2905,6 +2936,7 @@
 	<DataElement><Group>0x0040</Group><Element>0xE008</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DocumentClassCodeSequence</Keyword><Name>Document Class Code Sequence</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xE010</Element><VR>UR</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RetrieveURI</Keyword><Name>Retrieve URI</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xE011</Element><VR>UI</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RetrieveLocationUID</Keyword><Name>Retrieve Location UID</Name></DataElement>
+	<DataElement><Group>0x0040</Group><Element>0xE012</Element><VR>UR</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DisplayURI</Keyword><Name>Display URI</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xE020</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>TypeOfInstances</Keyword><Name>Type of Instances</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xE021</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DICOMRetrievalSequence</Keyword><Name>DICOM Retrieval Sequence</Name></DataElement>
 	<DataElement><Group>0x0040</Group><Element>0xE022</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DICOMMediaRetrievalSequence</Keyword><Name>DICOM Media Retrieval Sequence</Name></DataElement>
@@ -2944,6 +2976,7 @@
 	<DataElement><Group>0x0044</Group><Element>0x0108</Element><VR>UI</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ReferencedAssertionUID</Keyword><Name>Referenced Assertion UID</Name></DataElement>
 	<DataElement><Group>0x0044</Group><Element>0x0109</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>ApprovalSubjectSequence</Keyword><Name>Approval Subject Sequence</Name></DataElement>
 	<DataElement><Group>0x0044</Group><Element>0x010A</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>OrganizationalRoleCodeSequence</Keyword><Name>Organizational Role Code Sequence</Name></DataElement>
+	<DataElement><Group>0x0044</Group><Element>0x0110</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RTAssertionsSequence</Keyword><Name>RT Assertions Sequence</Name></DataElement>
 	<DataElement><Group>0x0046</Group><Element>0x0012</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>LensDescription</Keyword><Name>Lens Description</Name></DataElement>
 	<DataElement><Group>0x0046</Group><Element>0x0014</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RightLensSequence</Keyword><Name>Right Lens Sequence</Name></DataElement>
 	<DataElement><Group>0x0046</Group><Element>0x0015</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>LeftLensSequence</Keyword><Name>Left Lens Sequence</Name></DataElement>
@@ -4110,6 +4143,11 @@
 	<DataElement><Group>0x3004</Group><Element>0x0012</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseValue</Keyword><Name>Dose Value</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0014</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>3</VMMax><Keyword>TissueHeterogeneityCorrection</Keyword><Name>Tissue Heterogeneity Correction</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0016</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RecommendedIsodoseLevelSequence</Keyword><Name>Recommended Isodose Level Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0020</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseUnitCodeSequence</Keyword><Name>Dose Unit Code Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0021</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RTDoseInterpretedTypeCodeSequence</Keyword><Name>RT Dose Interpreted Type Code Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0022</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RTDoseInterpretedTypeCodeModifierSequence</Keyword><Name>RT Dose Interpreted Type Code Modifier Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0023</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseRadiobiologicalInterpretationSequence</Keyword><Name>Dose Radiobiological Interpretation Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0024</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>RTDoseIntentCodeSequence</Keyword><Name>RT Dose Intent Code Sequence</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0040</Element><VR>DS</VR><VMMin>3</VMMin><VMMax>3</VMMax><Keyword>DVHNormalizationPoint</Keyword><Name>DVH Normalization Point</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0042</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHNormalizationDoseValue</Keyword><Name>DVH Normalization Dose Value</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0050</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHSequence</Keyword><Name>DVH Sequence</Name></DataElement>
@@ -4122,6 +4160,11 @@
 	<DataElement><Group>0x3004</Group><Element>0x0070</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMinimumDose</Keyword><Name>DVH Minimum Dose</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0072</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMaximumDose</Keyword><Name>DVH Maximum Dose</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0074</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMeanDose</Keyword><Name>DVH Mean Dose</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0080</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationModelSequence</Keyword><Name>Dose Calculation Model Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0081</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationAlgorithmSequence</Keyword><Name>Dose Calculation Algorithm Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0082</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>CommissioningStatus</Keyword><Name>Commissioning Status</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0083</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationModelParameterSequence</Keyword><Name>Dose Calculation Model Parameter Sequence</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x0084</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseDepositionCalculationMedium</Keyword><Name>Dose Deposition Calculation Medium</Name></DataElement>
 	<DataElement><Group>0x3006</Group><Element>0x0002</Element><VR>SH</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>StructureSetLabel</Keyword><Name>Structure Set Label</Name></DataElement>
 	<DataElement><Group>0x3006</Group><Element>0x0004</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>StructureSetName</Keyword><Name>Structure Set Name</Name></DataElement>
 	<DataElement><Group>0x3006</Group><Element>0x0006</Element><VR>ST</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>StructureSetDescription</Keyword><Name>Structure Set Description</Name></DataElement>
@@ -4646,6 +4689,8 @@
 	<DataElement><Group>0x300A</Group><Element>0x0398</Element><VR>FL</VR><VMMin>2</VMMin><VMMax>2</VMMax><Keyword>ScanningSpotSize</Keyword><Name>Scanning Spot Size</Name></DataElement>
 	<DataElement><Group>0x300A</Group><Element>0x0399</Element><VR>FL</VR><VMMin>2</VMMin><VMMax>2</VMMax><Keyword>ScanSpotSizesDelivered</Keyword><Name>Scan Spot Sizes Delivered</Name></DataElement>
 	<DataElement><Group>0x300A</Group><Element>0x039A</Element><VR>IS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>NumberOfPaintings</Keyword><Name>Number of Paintings</Name></DataElement>
+	<DataElement><Group>0x300A</Group><Element>0x039B</Element><VR>FL</VR><VMMin>1</VMMin><VMMax>n</VMMax><Keyword>ScanSpotGantryAngles</Keyword><Name>Scan Spot Gantry Angles</Name></DataElement>
+	<DataElement><Group>0x300A</Group><Element>0x039C</Element><VR>FL</VR><VMMin>1</VMMin><VMMax>n</VMMax><Keyword>ScanSpotPatientSupportAngles</Keyword><Name>Scan Spot Patient Support Angles</Name></DataElement>
 	<DataElement><Group>0x300A</Group><Element>0x03A0</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>IonToleranceTableSequence</Keyword><Name>Ion Tolerance Table Sequence</Name></DataElement>
 	<DataElement><Group>0x300A</Group><Element>0x03A2</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>IonBeamSequence</Keyword><Name>Ion Beam Sequence</Name></DataElement>
 	<DataElement><Group>0x300A</Group><Element>0x03A4</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>IonBeamLimitingDeviceSequence</Keyword><Name>Ion Beam Limiting Device Sequence</Name></DataElement>

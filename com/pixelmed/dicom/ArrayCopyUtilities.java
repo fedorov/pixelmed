@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ package com.pixelmed.dicom;
 abstract public class ArrayCopyUtilities {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ArrayCopyUtilities.java,v 1.26 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ArrayCopyUtilities.java,v 1.27 2026/03/08 15:20:34 dclunie Exp $";
 
 	/**
 	 * <p>Pack an array of byte values into an array of short.</p>

@@ -53,7 +53,7 @@ include ${PATHTOROOT}/Makefile.common.mk
 # override javac command in Makefile.common.mk to add codec to classpath, until folded into main trunk :(
 .java.class:
 	export JAVAVERSIONTARGETJARFILE=`/usr/libexec/java_home -v ${JAVAVERSIONTARGET} | tail -1`/jre/lib/rt.jar; javac ${JAVACOPTIONS} \
-		-classpath ${PATHTOROOT}:${SLF4JCOMPILEADDITIONALJAR}:${DATABASEADDITIONALJARS}:${FTPADDITIONALJARS}:${JPEGBLOCKREDACTIONJAR}:${PATHTOADDITIONAL}/javax.json-api-1.0.jar:${JIIOADDITIONALJARS} \
+		-classpath ${PATHTOROOT}:${SLF4JCOMPILEADDITIONALJAR}:${DICOMADDITIONALJARS}:${DATABASEADDITIONALJARS}:${FTPADDITIONALJARS}:${JPEGBLOCKREDACTIONJAR}:${PATHTOADDITIONAL}/javax.json-api-1.0.jar:${JIIOADDITIONALJARS} \
 		-sourcepath ${PATHTOROOT} $<
 
 archive:
@@ -83,6 +83,22 @@ testsyncget:	SynchronizeFromRemoteSCP.class
 			localhost 11112 GRAYTOO_11112 \
 			11113 LOCAL_11113 \
 			GET
+
+testsyncweb:	SynchronizeFromRemoteSCP.class
+	rm -rf /tmp/testdatabase*
+	rm -rf /tmp/testimages
+	mkdir -p /tmp/testimages
+	java -cp ${PATHTOROOT}:${DATABASEADDITIONALJARS}:${DICOMADDITIONALJARS}:${JAVAMAILADDITIONALJAR} -Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.defaultLogLevel=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.apps.SynchronizeFromRemoteSCP=trace \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicomweb.useragent.StudyServiceRetrieveTransactionUserAgent=debug \
+		com.pixelmed.apps.SynchronizeFromRemoteSCP \
+			/tmp/testdatabase \
+			/tmp/testimages \
+			https://dicomwebproxy.app/dicomWeb \
+			ALL ANY
+	// https://ihe.j4care.com:18443/dcm4chee-arc/aets/DCM4CHEE/rs
+	// https://dicomwebproxy.app/dicomWeb
 
 testrotateflip90H:	RotateFlipSetOfImages.class
 	rm -rf /tmp/testrotateflip90H

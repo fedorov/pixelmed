@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -22,7 +22,7 @@ import java.util.Set;
  * @author	dclunie
  */
 public abstract class SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.106 2025/02/12 18:15:47 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.108 2026/03/08 15:20:36 dclunie Exp $";
 
 	/***/
 	public static final String Verification = "1.2.840.10008.1.1";
@@ -1077,6 +1077,10 @@ public abstract class SOPClass {
 	public static final String EncapsulatedCDAStorage = "1.2.840.10008.5.1.4.1.1.104.2";
 	/***/
 	public static final String EncapsulatedSTLStorage = "1.2.840.10008.5.1.4.1.1.104.3";
+	/***/
+	public static final String EncapsulatedOBJStorage = "1.2.840.10008.5.1.4.1.1.104.4";
+	/***/
+	public static final String EncapsulatedMTLStorage = "1.2.840.10008.5.1.4.1.1.104.5";
 
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -1087,6 +1091,8 @@ public abstract class SOPClass {
 		       sopClassUID.equals(EncapsulatedPDFStorage)
 			|| sopClassUID.equals(EncapsulatedCDAStorage)
 			|| sopClassUID.equals(EncapsulatedSTLStorage)
+			|| sopClassUID.equals(EncapsulatedOBJStorage)
+			|| sopClassUID.equals(EncapsulatedMTLStorage)
 			|| sopClassUID.equals(PrivateDcm4cheEncapsulatedDocumentStorage)
 		);
 	}
@@ -1566,6 +1572,8 @@ public abstract class SOPClass {
 		EncapsulatedPDFStorage,
 		EncapsulatedCDAStorage,
 		EncapsulatedSTLStorage,
+		EncapsulatedOBJStorage,
+		EncapsulatedMTLStorage,
 		PrivateGEPETRawDataStorage,
 		PrivateGE3DModelStorage,
 		PrivateSiemensCSANonImageStorage,
@@ -2076,7 +2084,9 @@ public abstract class SOPClass {
 		plausibleStandardSOPClassUIDsForModality.put(
 			"M3D",
 			new String[] {
-				EncapsulatedSTLStorage
+				EncapsulatedSTLStorage,
+				EncapsulatedOBJStorage,
+				EncapsulatedMTLStorage
 			});
 	}
 	

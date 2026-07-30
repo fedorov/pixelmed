@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.scpecg;
 
@@ -14,7 +14,7 @@ import java.util.ListIterator;
  * @author	dclunie
  */
 public class HuffmanDecoder {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanDecoder.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/scpecg/HuffmanDecoder.java,v 1.21 2026/03/08 15:20:39 dclunie Exp $";
 
 	private int[] extractBitMask = { 0x80,0x40,0x20,0x10,0x08,0x04,0x02,0x01 };
 	

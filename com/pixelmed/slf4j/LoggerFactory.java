@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.slf4j;
 
@@ -22,7 +22,7 @@ package com.pixelmed.slf4j;
  * @author	dclunie
  */
 public class LoggerFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/slf4j/LoggerFactory.java,v 1.10 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/slf4j/LoggerFactory.java,v 1.11 2026/03/08 15:20:39 dclunie Exp $";
 	
 	protected static Class<?> slf4jClass = null;	// the <?> shuts up "warning: [unchecked] unchecked call to getConstructor(Class<?>...) as a member of the raw type Class"
 	static {

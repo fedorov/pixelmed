@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -17,7 +17,7 @@ import java.util.HashSet;		// for main() testing for uniqueness
 
 public class UUIDBasedOID {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/UUIDBasedOID.java,v 1.18 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/UUIDBasedOID.java,v 1.19 2026/03/08 15:20:40 dclunie Exp $";
 
 	protected static final String OID_PREFIX = "2.25";	// {joint-iso-itu-t uuid(25) <uuid-single-integer-value>}
 	protected static final String OID_PREFIX_REMOVAL_REGEX = "^"+OID_PREFIX+".";

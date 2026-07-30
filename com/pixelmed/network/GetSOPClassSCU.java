@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 import com.pixelmed.dicom.*;
@@ -68,7 +68,7 @@ catch (Exception e) {
  * @author	dclunie
  */
 public class GetSOPClassSCU extends SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/GetSOPClassSCU.java,v 1.33 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/GetSOPClassSCU.java,v 1.36 2026/03/08 15:20:38 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(GetSOPClassSCU.class);
 	
@@ -176,18 +176,18 @@ public class GetSOPClassSCU extends SOPClass {
 						// From StorageSOPClassSCP ...
 						slf4jlogger.trace("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Storing data fragment");
 						if (out == null && savedImagesFolder != null) {		// lazy opening
-							String sopInstanceUID = csrq.getAffectedSOPClassUID();
+							String sopInstanceUID = csrq.getAffectedSOPInstanceUID();	// (001442)
 							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ SOP Instance UID = {}",sopInstanceUID);
-							String sopClassUID = csrq.getAffectedSOPInstanceUID();
+							String sopClassUID = csrq.getAffectedSOPClassUID();	// (001442)
 							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ SOP Class UID = {}",sopClassUID);
 							String transferSyntax = association.getTransferSyntaxForPresentationContextID(presentationContextIDUsed);
 							slf4jlogger.info("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): C-STORE-RQ Transfer Syntax = {}",transferSyntax);
 							FileMetaInformation fmi = new FileMetaInformation(
+								sopClassUID,	// (001442)
 								sopInstanceUID,
-								sopClassUID,
 								transferSyntax,
 								association.getCalledAETitle());	// not calling, since roles reversed
-							receivedFile=storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedImagesFolder,csrq.getAffectedSOPInstanceUID());
+							receivedFile=storedFilePathStrategy.makeReliableStoredFilePathWithFoldersCreated(savedImagesFolder,sopInstanceUID);	// (001442)
 							//temporaryReceivedFile=File.createTempFile("PMP",null);
 							temporaryReceivedFile=new File(savedImagesFolder,FileUtilities.makeTemporaryFileName());
 							slf4jlogger.debug("CGetResponseOrCStoreRequestHandler.sendPDataIndication(): Receiving and storing {}",receivedFile);

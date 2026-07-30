@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -79,7 +79,7 @@ try {
  * @author	dclunie
  */
 public class XMLRepresentationOfStructuredReportObjectFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfStructuredReportObjectFactory.java,v 1.37 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfStructuredReportObjectFactory.java,v 1.39 2026/03/08 15:20:36 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(XMLRepresentationOfStructuredReportObjectFactory.class);
 
@@ -266,7 +266,12 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 				}
 				else if (contentItem instanceof ContentItemFactory.SpatialCoordinatesContentItem) {
 					String graphicType = ((ContentItemFactory.SpatialCoordinatesContentItem)contentItem).getGraphicType();
-					if (graphicType != null) {	// regardless of whether zero length or not, need node to append data to
+					slf4jlogger.debug("graphicType = {}",graphicType);
+					if (graphicType == null || graphicType.length() == 0) {	// Should not happen since ContentItemFactory should take care of this (001459)
+						graphicType = "UNKNOWN";	// regardless of whether zero length or not, need node to append data to
+						slf4jlogger.error("GraphicType missing or empty in SCOORD ContentItem - using \"{}\" as placeholder",graphicType);
+					}
+					{
 						org.w3c.dom.Node graphicTypeNode = document.createElement(graphicType.toLowerCase(Locale.US));		// Locale explicitly specified, otherwise will fail to give the desired result if the default Locale is Turkish ("tr" or "tr_TR"); see "http://docs.oracle.com/javase/6/docs/api/java/lang/String.html#toLowerCase%28%29"
 						documentNode.appendChild(graphicTypeNode);
 						float[] graphicData = ((ContentItemFactory.SpatialCoordinatesContentItem)contentItem).getGraphicData();
@@ -281,7 +286,12 @@ public class XMLRepresentationOfStructuredReportObjectFactory {
 				}
 				else if (contentItem instanceof ContentItemFactory.SpatialCoordinates3DContentItem) {
 					String graphicType = ((ContentItemFactory.SpatialCoordinates3DContentItem)contentItem).getGraphicType();
-					if (graphicType != null) {	// regardless of whether zero length or not, need node to append data to
+					slf4jlogger.debug("graphicType = {}",graphicType);
+					if (graphicType == null || graphicType.length() == 0) {	// Should not happen since ContentItemFactory should take care of this (001459)
+						graphicType = "UNKNOWN";	// regardless of whether zero length or not, need node to append data to
+						slf4jlogger.error("GraphicType missing or empty in SCOORD3D ContentItem - using \"{}\" as placeholder",graphicType);
+					}
+					{
 						org.w3c.dom.Node graphicTypeNode = document.createElement(graphicType.toLowerCase(Locale.US));		// Locale explicitly specified, otherwise will fail to give the desired result if the default Locale is Turkish ("tr" or "tr_TR"); see "http://docs.oracle.com/javase/6/docs/api/java/lang/String.html#toLowerCase%28%29"
 						documentNode.appendChild(graphicTypeNode);
 						float[] graphicData = ((ContentItemFactory.SpatialCoordinates3DContentItem)contentItem).getGraphicData();

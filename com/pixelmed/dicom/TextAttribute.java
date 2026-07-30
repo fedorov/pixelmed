@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -15,7 +15,7 @@ import java.text.NumberFormat;
 abstract public class TextAttribute extends Attribute {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TextAttribute.java,v 1.29 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TextAttribute.java,v 1.30 2026/03/08 15:20:36 dclunie Exp $";
 
 	public abstract int getMaximumLengthOfEntireValue();
 

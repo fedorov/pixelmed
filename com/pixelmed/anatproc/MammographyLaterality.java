@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -14,7 +14,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class MammographyLaterality {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/MammographyLaterality.java,v 1.12 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/MammographyLaterality.java,v 1.14 2026/05/17 08:42:43 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(MammographyLaterality.class);
 
@@ -23,9 +23,9 @@ public class MammographyLaterality {
 	private static Concept both  = new Concept("C0238767");
 	
 	// these are from CID 6023 Side from BI-RADS that is included in CID 6022 used for Side by mammo CAD
-	private static DisplayableLateralityConcept leftBreast  = new DisplayableLateralityConcept("C0222601","80248007","SRT","SNM3",null,"T-04030","Left breast",null,null,null,null);
-	private static DisplayableLateralityConcept rightBreast = new DisplayableLateralityConcept("C0222600","73056007","SRT","SNM3",null,"T-04020","Right breast",null,null,null,null);
-	private static DisplayableLateralityConcept bothBreasts = new DisplayableLateralityConcept("C0222605","63762007","SRT","SNM3",null,"T-04080","Both breasts",null,null,null,null);
+	private static DisplayableLateralityConcept leftBreast  = new DisplayableLateralityConcept("C0222601","80248007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"80248007","T-04030","Left breast",null,null,null,null);
+	private static DisplayableLateralityConcept rightBreast = new DisplayableLateralityConcept("C0222600","73056007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"73056007","T-04020","Right breast",null,null,null,null);
+	private static DisplayableLateralityConcept bothBreasts = new DisplayableLateralityConcept("C0222605","63762007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"63762007","T-04080","Both breasts",null,null,null,null);
 	
 	public static DisplayableLateralityConcept convertGenericLateralityToBreastSpecificLaterality(DisplayableLateralityConcept genericLaterality) {
 		if (genericLaterality != null) {

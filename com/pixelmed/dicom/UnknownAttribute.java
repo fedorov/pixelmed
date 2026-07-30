@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -23,7 +23,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class UnknownAttribute extends Attribute {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnknownAttribute.java,v 1.31 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnknownAttribute.java,v 1.33 2026/03/08 15:20:36 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(UnknownAttribute.class);
 	
@@ -86,6 +86,12 @@ public class UnknownAttribute extends Attribute {
 		}
 	}
 
+	public long getPaddedVL() {
+		long vl = getVL();
+		if (vl%2 != 0) ++vl;
+		return vl;
+	}
+
 	/**
 	 * @param	o
 	 * @throws	IOException
@@ -93,7 +99,14 @@ public class UnknownAttribute extends Attribute {
 	 */
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
-		o.write(originalLittleEndianByteValues);
+		if (originalLittleEndianByteValues != null && originalLittleEndianByteValues.length > 0) {	// (001460)
+			o.write(originalLittleEndianByteValues);
+			if (getVL() != originalLittleEndianByteValues.length) {
+				throw new DicomException("Internal error - byte array length ("+originalLittleEndianByteValues.length+") not equal to expected VL("+getVL()+")");
+			}
+			long npad = getPaddedVL() - originalLittleEndianByteValues.length;
+			while (npad-- > 0) o.write(0x00);
+		}
 	}
 	
 	/***/

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -62,7 +62,7 @@ import com.pixelmed.slf4j.LoggerFactory;
 public class DicomImageViewer extends ApplicationFrame implements 
 		KeyListener,MouseListener
 	{
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageViewer.java,v 1.255 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomImageViewer.java,v 1.258 2026/03/08 15:20:37 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomImageViewer.class);
 
@@ -344,6 +344,7 @@ public class DicomImageViewer extends ApplicationFrame implements
 	private SourceImageWindowingAccelerationSelectorPanel sourceImageWindowingAccelerationSelectorPanel;
 	private SourceImageGraphicDisplaySelectorPanel sourceImageGraphicDisplaySelectorPanel;
 	private SourceImageShutterSelectorPanel sourceImageShutterSelectorPanel;
+	private SourceImageApplyICCProfileSelectorPanel sourceImageApplyICCProfileSelectorPanel;
 
 	private OurBrowserPaneChangeListener ourBrowserPaneChangeListener;
 
@@ -607,6 +608,8 @@ public class DicomImageViewer extends ApplicationFrame implements
 			//sourceImageWindowingAccelerationSelectorPanel.sendEventCorrespondingToCurrentButtonState();
 			//sourceImageGraphicDisplaySelectorPanel.sendEventCorrespondingToCurrentButtonState();
 
+			sourceImageApplyICCProfileSelectorPanel.sendEventCorrespondingToCurrentButtonState();
+
 			SingleImagePanel.deconstructAllSingleImagePanelsInContainer(multiPanel);
 			SpectraPanel.deconstructAllSpectraPanelsInContainer(multiPanel);
 			multiPanel.removeAll();
@@ -731,7 +734,7 @@ public class DicomImageViewer extends ApplicationFrame implements
 		setCurrentRemoteQueryFilter(filter);
 		
 		// specific character set is established and inserted later, when text values have been entered into the filter panel
-		
+
 		{ AttributeTag t = TagFromName.PatientName; Attribute a = new PersonNameAttribute(t); filter.put(t,a); }
 		{ AttributeTag t = TagFromName.PatientID; Attribute a = new LongStringAttribute(t); filter.put(t,a); }
 
@@ -2724,6 +2727,9 @@ public class DicomImageViewer extends ApplicationFrame implements
 		
 				//sourceImageShutterSelectorPanel = new SourceImageShutterSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);
 				//tiledDisplayControlsSubSubPanel.add(sourceImageShutterSelectorPanel);
+
+				sourceImageApplyICCProfileSelectorPanel = new SourceImageApplyICCProfileSelectorPanel(null/* Apply to all contexts, not just WellKnownContext.MAINPANEL*/);		// (001443)
+				tiledDisplayControlsSubSubPanel.add(sourceImageApplyICCProfileSelectorPanel);
 			}
 		}
 		

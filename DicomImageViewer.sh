@@ -4,6 +4,11 @@ dicomfile="$*"
 
 PIXELMEDDIR=.
 
+#	-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.DicomImageViewer=debug \
+#	-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SingleImagePanel=debug \
+#	-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SourceImage=debug \
+#	-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.CompressedFrameDecoder=debug \
+
 # override new default limits added in 1.8.0_331 for xalan processor (https://www.oracle.com/java/technologies/javase/8u331-relnotes.html)
 java \
     -Djdk.xml.xpathExprGrpLimit=0 \

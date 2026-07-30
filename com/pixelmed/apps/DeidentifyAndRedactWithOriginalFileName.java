@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -12,7 +12,7 @@ import com.pixelmed.slf4j.Logger;
 import com.pixelmed.slf4j.LoggerFactory;
 
 public class DeidentifyAndRedactWithOriginalFileName extends DeidentifyAndRedact {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DeidentifyAndRedactWithOriginalFileName.java,v 1.14 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/DeidentifyAndRedactWithOriginalFileName.java,v 1.15 2026/03/08 15:20:34 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(DeidentifyAndRedactWithOriginalFileName.class);
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ package com.pixelmed.dicom;
  */
 public class ValueRepresentation {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ValueRepresentation.java,v 1.27 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ValueRepresentation.java,v 1.29 2026/03/25 15:59:29 dclunie Exp $";
 
 	/***/
 	public static byte[] AE = { 'A', 'E' };
@@ -441,7 +441,6 @@ public class ValueRepresentation {
 		    ;
 	}
 
-
 	/**
 	 * @param	vr
 	 */
@@ -450,6 +449,58 @@ public class ValueRepresentation {
 			&& !isNumberInJSON(vr)
 			&& !isSequenceVR(vr)
 			;
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isRecognized(byte[] vr) {
+		return isApplicationEntityVR(vr)
+			|| isAgeStringVR(vr)
+			|| isAttributeTagVR(vr)
+			|| isCodeStringVR(vr)
+			|| isDateVR(vr)
+			|| isDateTimeVR(vr)
+			|| isDecimalStringVR(vr)
+			|| isFloatDoubleVR(vr)
+			|| isFloatSingleVR(vr)
+			|| isIntegerStringVR(vr)
+			|| isLongStringVR(vr)
+			|| isLongTextVR(vr)
+			|| isOtherByteVR(vr)
+			|| isOtherDoubleVR(vr)
+			|| isOtherFloatVR(vr)
+			|| isOtherLongVR(vr)
+			|| isOtherVeryLongVR(vr)
+			|| isOtherWordVR(vr)
+//			|| isOtherUnspecifiedVR(vr)		// Not a real VR ... but returned by dictionary
+			|| isOtherByteOrWordVR(vr)
+			|| isPersonNameVR(vr)
+			|| isShortStringVR(vr)
+			|| isSignedLongVR(vr)
+			|| isSignedVeryLongVR(vr)
+			|| isSequenceVR(vr)
+			|| isSignedShortVR(vr)
+			|| isShortTextVR(vr)
+			|| isTimeVR(vr)
+			|| isUniqueIdentifierVR(vr)
+			|| isUnsignedLongVR(vr)
+			|| isUnsignedVeryLongVR(vr)
+			|| isUnknownVR(vr)
+			|| isUnsignedShortVR(vr)
+//			|| isUnspecifiedShortVR(vr)				// Not a real VR ... but returned by dictionary
+//			|| isUnspecifiedShortOrOtherWordVR(vr)	// Not a real VR ... but returned by dictionary
+			|| isUnlimitedCharactersVR(vr)
+			|| isUnlimitedTextVR(vr)
+			|| isUniversalResourceVR(vr)
+			;
+	}
+
+	/**
+	 * @param	vr
+	 */
+	public static final boolean isRecognized(String vr) {
+		return isRecognized(getValueRepresentationFromString(vr));
 	}
 	
 	/**

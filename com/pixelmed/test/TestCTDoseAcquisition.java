@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -159,7 +159,7 @@ public class TestCTDoseAcquisition extends TestCase {
 		CTDoseAcquisition ctDoseAcquisition = new CTDoseAcquisition(scopeUID,true/*isSeries*/,seriesNumber,ctScanType,scanRange,ctdiVol,dlp,ctPhantomType);
 		
 		String irradiationEventUID = "1.2.3.4";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
 		String exposureTimeInSeconds = "1";
@@ -234,7 +234,7 @@ public class TestCTDoseAcquisition extends TestCase {
 		CTDoseAcquisition ctDoseAcquisition = new CTDoseAcquisition(scopeUID,true/*isSeries*/,seriesNumber,CTScanType.UNKNOWN,null/*scanRange*/,ctdiVol,dlp,ctPhantomType);
 		
 		String irradiationEventUID = "1.2.3.4";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
 		String exposureTimeInSeconds = "1";
@@ -319,7 +319,7 @@ public class TestCTDoseAcquisition extends TestCase {
 		CTDoseAcquisition ctDoseAcquisition2 = new CTDoseAcquisition(scopeUID,true/*isSeries*/,seriesNumber,ctScanType,scanRange,ctdiVol,dlp,ctPhantomType);
 		
 		String irradiationEventUID = "1.2.3.4";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
 		String exposureTimeInSeconds = "1";

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -79,7 +79,7 @@ catch (IOException e) {
  * @author	dclunie
  */
 public class StorageSOPClassSCPDispatcher implements Runnable {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCPDispatcher.java,v 1.62 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCPDispatcher.java,v 1.63 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StorageSOPClassSCPDispatcher.class);
 	

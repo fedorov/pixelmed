@@ -1,9 +1,10 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 
 /**
@@ -13,11 +14,59 @@ import java.io.IOException;
  */
 public class ByteArray {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.25 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.26 2026/03/08 15:16:59 dclunie Exp $";
 
 	private ByteArray() {}
-	
+
+	private static final int BUF_SIZE = 32768;
+
+	/**
+	 * <p>Read as many bytes as are available (entire contents of the stream).</p>
+	 *
+	 * @param	InputStream
+	 * @return				the bytes that were read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+
+	// (001461)
+	public static final byte[] readFully(InputStream in) throws IOException {
+		byte[] b = null;
+		byte[] buf = new byte[BUF_SIZE];
+		while (true) {
+			int bytesReceived = in.read(buf,0,buf.length);
+//System.err.println("ByteArray.readFully(): bytesReceived = "+bytesReceived);
+			if (bytesReceived == -1) {
+				// nothing (more), so done
+				break;
+			}
+			
+			if (b == null) {
+				b = new byte[bytesReceived];
+				System.arraycopy(buf,0,b,0,bytesReceived);
+			}
+			else {
+				byte[] bnew = new byte[b.length+bytesReceived];
+				System.arraycopy(b,  0,bnew,0,       b.length);
+				System.arraycopy(buf,0,bnew,b.length,bytesReceived);
+				b = bnew;
+			}
+			
+			// do NOT stop when (bytesReceived < buf.length), since sometimes request does not fill the buffer even if not finished (e.g., from inflate) - keep going until -1
+		}
+//System.err.println("ByteArray.readFully(): finished with number of bytes = "+(b == null ? -1 : b.length));
+		return b;
+	}
+
+	/**
+	 * <p>Read as many bytes as are available (entire contents of the file).</p>
+	 *
+	 * @param	filename
+	 * @return				the bytes that were read
+	 * @throws	IOException	if an I/O error occurs
+	 */
+
 	public static final byte[] readFully(String filename) throws IOException {
+		// no point in trying to re-use readFully(InputStream in) since we know the length of the file, so (probably) more efficient not to use expanding buffer
 		byte[] b = null;
 		File file = new File(filename);
 		int length = (int)file.length();

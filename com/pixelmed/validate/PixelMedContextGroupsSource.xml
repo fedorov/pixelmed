@@ -475,7 +475,31 @@
     <definecontextgroup cid="PMP_16" name="PixelMedBreastMR" extensible="T" version="20220409">
         <contextgroupcode csd="99PMP" cv="313001" cm="Subcycle"/>
     </definecontextgroup>
-
+	
+    <definecontextgroup cid="PMP_17" name="PixelMedIDCPanopTILs" extensible="T" version="20251027">
+        <contextgroupcode csd="99PMP" cv="314001" cm="Aggressiveness score"/>
+    </definecontextgroup>
+	
+    <definecontextgroup cid="PMP_18" name="PixelMedStains" extensible="T" version="20260215">
+        <contextgroupcode csd="99PMP" cv="315001" cm="MOC-31 anti-EpCAM Immune stain"/>
+        <contextgroupcode csd="99PMP" cv="315002" cm="P63 protein Ag Immune stain"/>
+        <contextgroupcode csd="99PMP" cv="315003" cm="IRF4/MUM1 Ag Immune stain"/>
+    </definecontextgroup>
+    
+    <definecontextgroup cid="PMP_19" name="PixelMedIDCMinerva" extensible="T" version="20260328">
+        <contextgroupcode csd="99PMP" cv="316001" cm="Minerva Story"/>
+        <contextgroupcode csd="99PMP" cv="316002" cm="Stories"/>
+        <contextgroupcode csd="99PMP" cv="316003" cm="Story"/>
+        <contextgroupcode csd="99PMP" cv="316004" cm="Waypoints"/>
+        <contextgroupcode csd="99PMP" cv="316005" cm="Waypoint"/>
+        <contextgroupcode csd="99PMP" cv="316006" cm="Points of Interest"/>
+        <contextgroupcode csd="99PMP" cv="316007" cm="Point of Interest"/>
+    </definecontextgroup>
+    
+    <definecontextgroup cid="PMP_20" name="PixelMedIDCCatchAnnotations" extensible="T" version="20260409">
+        <contextgroupcode csd="99PMP" cv="316010" cm="Inflammation and/or necrosis"/>
+    </definecontextgroup>
+    
     <!-- 313nnn are defined in CP 1674 -->
 
 

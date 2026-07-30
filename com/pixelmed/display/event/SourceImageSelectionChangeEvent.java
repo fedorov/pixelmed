@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display.event;
 
@@ -15,7 +15,7 @@ import com.pixelmed.geometry.GeometryOfVolume;
  */
 public class SourceImageSelectionChangeEvent extends Event {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/SourceImageSelectionChangeEvent.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/event/SourceImageSelectionChangeEvent.java,v 1.20 2026/03/08 15:20:37 dclunie Exp $";
 
 	private SourceImage sourceImage;
 	private int index;

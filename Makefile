@@ -33,6 +33,7 @@ SUBDIRS = \
 	com/pixelmed/test \
 	com/pixelmed/ftp \
 	com/pixelmed/slf4j \
+	com/pixelmed/dicomweb \
 	apple/dts/samplecode/osxadapter
 	
 
@@ -60,6 +61,8 @@ SUBPACKAGES = \
 	com.pixelmed.test \
 	com.pixelmed.ftp \
 	com.pixelmed.slf4j \
+	com.pixelmed.dicomweb \
+	com.pixelmed.dicomweb.useragent \
 	apple.dts.samplecode.osxadapter
 
 ADDITIONALFILES = \
@@ -402,6 +405,8 @@ pixelmed.jar:	generateicons
 	(cd com/pixelmed/doseocr; make all)
 	(cd com/pixelmed/ftp; make all)
 	(cd com/pixelmed/apps; make all)
+	(cd com/pixelmed/dicomweb; make all)
+	(cd com/pixelmed/dicomweb/useragent; make all)
 	(cd com/pixelmed/test; make all)
 	date >BUILDDATE
 	jar -cvf $@ BUILDDATE COPYRIGHT \
@@ -434,7 +439,9 @@ pixelmed.jar:	generateicons
 		com/pixelmed/test/*.class \
 		com/pixelmed/ftp/*.class \
 		com/pixelmed/slf4j/*.class \
+		com/pixelmed/dicomweb/useragent/*.class \
 		apple/dts/samplecode/osxadapter/*.class
+		#com/pixelmed/dicomweb/*.class
 
 webstart:	${WEBSTARTFILES}
 

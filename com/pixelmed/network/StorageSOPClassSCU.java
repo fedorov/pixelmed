@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -42,7 +42,7 @@ find /tmp -name '*.dcm' | java -cp pixelmed.jar:lib/additional/commons-codec-1.3
  * @author	dclunie
  */
 public class StorageSOPClassSCU extends SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCU.java,v 1.73 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/StorageSOPClassSCU.java,v 1.74 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StorageSOPClassSCU.class);
 	

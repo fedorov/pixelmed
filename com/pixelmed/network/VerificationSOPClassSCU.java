@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 import com.pixelmed.dicom.TransferSyntax;
@@ -36,7 +36,7 @@ catch (Exception e) {
  * @author	dclunie
  */
 public class VerificationSOPClassSCU extends SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/VerificationSOPClassSCU.java,v 1.31 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/VerificationSOPClassSCU.java,v 1.32 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(VerificationSOPClassSCU.class);
 

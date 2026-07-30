@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -74,7 +74,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class CompareSetsOfDicomFiles {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CompareSetsOfDicomFiles.java,v 1.7 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/CompareSetsOfDicomFiles.java,v 1.8 2026/03/08 15:20:33 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompareSetsOfDicomFiles.class);
 	

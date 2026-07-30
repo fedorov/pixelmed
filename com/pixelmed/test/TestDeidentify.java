@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -346,6 +346,7 @@ public class TestDeidentify extends TestCase {
 	private static final AttributeTag graphicAnnotationSequence = TagFromName.GraphicAnnotationSequence;
 	private static final AttributeTag acquisitionContextSequence = TagFromName.AcquisitionContextSequence;
 	private static final AttributeTag contentSequence = TagFromName.ContentSequence;
+	private static final AttributeTag waveformAnnotationSequence = TagFromName.WaveformAnnotationSequence;
 
 	private void checkIsDeidentifiedproperly(AttributeList list,Set<AttributeTag> tags,Map<AttributeTag,String> identifiableValues) {
 		for (AttributeTag tag : tags) {
@@ -364,6 +365,9 @@ public class TestDeidentify extends TestCase {
 			}
 			else if (tag.equals(contentSequence)) {
 				System.err.println("Not checking contentSequence "+tag);
+			}
+			else if (tag.equals(waveformAnnotationSequence)) {
+				System.err.println("Not checking waveformAnnotationSequence "+tag);
 			}
 			else {
 				byte[] vr = dictionary.getValueRepresentationFromTag(tag);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -35,7 +35,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class FrameSet {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FrameSet.java,v 1.34 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/FrameSet.java,v 1.37 2026/05/19 15:54:29 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(FrameSet.class);
 	
@@ -104,6 +104,9 @@ public class FrameSet {
 	private static Set<AttributeTag> excludeFromGeneralPerFrameProcessingTags = new HashSet<AttributeTag>();
 	{
 		excludeFromGeneralPerFrameProcessingTags.addAll(distinguishingAttributeTags);
+		excludeFromGeneralPerFrameProcessingTags.remove(TagFromName.ProtocolName);		// do want to handle these per-frame (001464)
+		excludeFromGeneralPerFrameProcessingTags.remove(TagFromName.ConvolutionKernel);
+		
 		excludeFromGeneralPerFrameProcessingTags.add(TagFromName.AcquisitionDateTime);
 		excludeFromGeneralPerFrameProcessingTags.add(TagFromName.AcquisitionDate);
 		excludeFromGeneralPerFrameProcessingTags.add(TagFromName.AcquisitionTime);
@@ -200,7 +203,8 @@ public class FrameSet {
 		AttributeList perFrameAttributes = new AttributeList();
 		
 		for (AttributeTag tag : list.keySet()) {
-			if (! tag.isPrivate() && ! tag.isRepeatingGroup() && ! tag.isFileMetaInformationGroup() && ! tag.isGroupLength() && ! excludeFromGeneralPerFrameProcessingTags.contains(tag)) {
+			// do NOT exclude tag.isPrivate() (001465)
+			if (! tag.isRepeatingGroup() && ! tag.isFileMetaInformationGroup() && ! tag.isGroupLength() && ! excludeFromGeneralPerFrameProcessingTags.contains(tag)) {
 				Attribute a = list.get(tag);
 				{
 					perFrameAttributes.put(a);
@@ -275,8 +279,10 @@ public class FrameSet {
 	
 	private void removeSharedAttributesFromPerFrameAttributes() {
 		for (AttributeTag tag : sharedAttributes.keySet()) {
-			for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {
-				perFrameAttributes.remove(tag);
+			if (!tag.isPrivateCreator()) {
+				for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {
+					perFrameAttributes.remove(tag);
+				}
 			}
 		}
 	}
@@ -355,6 +361,51 @@ public class FrameSet {
 			sopInstanceUIDsSortedByFrameOrder.add(frame.sopInstanceUID);
 		}
 	}
+
+	// (001465)
+	private void removeUnusedPrivateCreators(AttributeList list) {
+		Set<AttributeTag> toRemove = new HashSet<AttributeTag>();
+		for (AttributeTag tag : list.keySet()) {
+			if (tag.isPrivateCreator()) {
+//System.err.println("Checking if "+tag+" is used in PFFG");
+				int group = tag.getGroup();
+				int element = tag.getElement();
+				int block = element << 8;
+				boolean used = false;
+				Iterator<Attribute> i = list.values().iterator();
+				while (i.hasNext()) {
+					Attribute a = i.next();
+					AttributeTag t = a.getTag();
+//System.err.println("Checking "+t);
+					int g = t.getGroup();
+					if (g == group) {
+						int e = t.getElement();
+						if ((e & 0xff00) == block) {
+//System.err.println("Used "+tag+" for "+t);
+							used = true;
+							break;
+						}
+					}
+				}
+				if (!used) {
+					toRemove.add(tag);
+				}
+			}
+		}
+		for (AttributeTag tag : toRemove) {
+			list.remove(tag);
+		}
+	}
+
+	private void removeUnusedPrivateCreatorsFromSharedAttributes() {
+		removeUnusedPrivateCreators(sharedAttributes);
+	}
+
+	private void removeUnusedPrivateCreatorsFromPerFrameAttributes() {
+		for (AttributeList perFrameAttributes : perFrameAttributesIndexedBySOPInstanceUID.values()) {
+			removeUnusedPrivateCreators(perFrameAttributes);
+		}
+	}
 	
 	/**
 	 * <p>Partition the {@link com.pixelmed.dicom.FrameSet FrameSet}s into shared and per-frame attributes, if not already done.</p>
@@ -366,6 +417,8 @@ public class FrameSet {
 		if (!partitioned) {
 			removeSharedAttributesThatAreNotInEveryFrame();
 			removeSharedAttributesFromPerFrameAttributes();
+			removeUnusedPrivateCreatorsFromSharedAttributes();		// (001465)
+			removeUnusedPrivateCreatorsFromPerFrameAttributes();		// (001465)
 			extractPerFrameAttributesPresentInAnyFrame();
 			extractFrameSortOrderFromPerFrameAttributes();
 			partitioned = true;

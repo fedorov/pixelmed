@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -28,7 +28,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class ContentItemFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemFactory.java,v 1.52 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ContentItemFactory.java,v 1.54 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompositeInstanceContext.class);
 	
@@ -663,6 +663,11 @@ public class ContentItemFactory {
 		public SpatialCoordinatesContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
 			graphicType=Attribute.getSingleStringValueOrDefault(list,TagFromName.GraphicType,"");
+			slf4jlogger.debug("graphicType = {}",graphicType);
+			if (graphicType == null || graphicType.length() == 0) {	// (001459)
+				graphicType = "UNKNOWN";	// else XML parser will freak out later if zero length (in XMLRepresentationOfStructuredReportObjectFactory.addContentItemsFromTreeToNode())
+				slf4jlogger.error("GraphicType missing or empty in SCOORD ContentItem - using \"{}\" as placeholder",graphicType);
+			}
 			try {
 				Attribute a = list.get(TagFromName.GraphicData);
 				if (a != null) {
@@ -781,6 +786,11 @@ public class ContentItemFactory {
 		public SpatialCoordinates3DContentItem(ContentItem parent,AttributeList list) {
 			super(parent,list);
 			graphicType=Attribute.getSingleStringValueOrDefault(list,TagFromName.GraphicType,"");
+			slf4jlogger.debug("graphicType = {}",graphicType);
+			if (graphicType == null || graphicType.length() == 0) {	// (001459)
+				graphicType = "UNKNOWN";	// else XML parser will freak out later if zero length (in XMLRepresentationOfStructuredReportObjectFactory.addContentItemsFromTreeToNode())
+				slf4jlogger.error("GraphicType missing or empty in SCOORD3D ContentItem - using \"{}\" as placeholder",graphicType);
+			}
 			try {
 				Attribute a = list.get(TagFromName.GraphicData);
 				if (a != null) {

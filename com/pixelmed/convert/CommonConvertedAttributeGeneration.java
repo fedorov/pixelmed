@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.convert;
 
@@ -14,7 +14,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 
 public class CommonConvertedAttributeGeneration {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/CommonConvertedAttributeGeneration.java,v 1.31 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/CommonConvertedAttributeGeneration.java,v 1.32 2026/03/08 15:20:34 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CommonConvertedAttributeGeneration.class);
 

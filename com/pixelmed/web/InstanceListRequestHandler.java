@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -21,7 +21,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 class InstanceListRequestHandler extends RequestHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/InstanceListRequestHandler.java,v 1.19 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/InstanceListRequestHandler.java,v 1.20 2026/03/08 15:20:40 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(InstanceListRequestHandler.class);
 

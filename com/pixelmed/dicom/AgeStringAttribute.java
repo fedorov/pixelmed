@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -18,7 +18,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class AgeStringAttribute extends StringAttribute {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AgeStringAttribute.java,v 1.25 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AgeStringAttribute.java,v 1.26 2026/03/08 15:20:34 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 4;
 	

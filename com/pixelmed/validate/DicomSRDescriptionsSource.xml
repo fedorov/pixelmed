@@ -5850,21 +5850,22 @@
 													mbpo="T">
     			<includetemplate			row="6b" tid="4019HasConceptMod" vmmin="1" vmmax="1" requiredType="U"/>
     			<includetemplate			row="7"  tid="1410" relationship="CONTAINS" vmmin="1" vmmax="n" requiredType="UC"
-											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/scoord   [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) = 1
+											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/scoord   [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) &gt; 0
 													or count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='121214' and concept/@csd='DCM']) &gt; 0"/> <!-- Actually U, but need to disambiguate from 1411: Image Region 1 and not &gt; 1 or Referenced Segmentation Frame present (Source Image for Seg or Region in Space for RTSS may be in 1410 or 1411) -->
     			<includetemplate			row="8"  tid="1411" relationship="CONTAINS" vmmin="1" vmmax="n" requiredType="UC"
-											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) &gt; 1
+											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) &gt; 0
 													or count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='121191' and concept/@csd='DCM']) &gt; 0
 													or count(container[concept/@cv='125007' and concept/@csd='DCM']/scoord3d [concept/@cv='121231' and concept/@csd='DCM']) &gt; 0
 													or count(container[concept/@cv='125007' and concept/@csd='DCM']/uidref   [concept/@cv='121232' and concept/@csd='DCM']) &gt; 0"/> <!-- Actually U, but need to disambiguate from 1410: Image Region &gt; 1 or Referenced Segment or Volume Surface or Source Series for Seg present (Source Image for Seg or Region in Space for RTSS may be in 1410 or 1411) -->
     			<includetemplate			row="9"  tid="1501" relationship="CONTAINS" vmmin="1" vmmax="n" requiredType="UC"
-											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) = 0
+											condition="count(container[concept/@cv='125007' and concept/@csd='DCM']/scoord   [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) = 0
 											       and count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='121214' and concept/@csd='DCM']) = 0
+											       
+											       and count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='111030' and concept/@csd='DCM' and @relationship='CONTAINS']) = 0
 												   and count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='121191' and concept/@csd='DCM']) = 0
 												   and count(container[concept/@cv='125007' and concept/@csd='DCM']/scoord3d [concept/@cv='121231' and concept/@csd='DCM']) = 0
-													or count(container[concept/@cv='125007' and concept/@csd='DCM']/image    [concept/@cv='121233' and concept/@csd='DCM']) = 0
-													or count(container[concept/@cv='125007' and concept/@csd='DCM']/uidref   [concept/@cv='121232' and concept/@csd='DCM']) = 0
-													or count(container[concept/@cv='125007' and concept/@csd='DCM']/composite[concept/@cv='130489' and concept/@csd='DCM']) = 0
+												   and count(container[concept/@cv='125007' and concept/@csd='DCM']/uidref   [concept/@cv='121232' and concept/@csd='DCM']) = 0
+												   
 												   and count(container[concept/@cv='125007' and concept/@csd='DCM']) &gt; 0"
 													/> <!-- Actually U, but need to disambiguate from 1410 and 1411 -->
     		</templatecontentitem>

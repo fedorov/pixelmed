@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -26,7 +26,7 @@ import com.pixelmed.utils.FloatFormatter;
 public class RealWorldValueTransform {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/RealWorldValueTransform.java,v 1.26 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/RealWorldValueTransform.java,v 1.28 2026/03/08 15:20:36 dclunie Exp $";
 		
 	private static String getQuantityFromQuantityDefinitionSequence(AttributeList list) {
 		String quantity = null;
@@ -288,7 +288,14 @@ public class RealWorldValueTransform {
 		//	slf4jlogger.error("", e);;
 		//}
 	}
-	
+
+	/**
+	 * @return	whether or not there is an actual transform
+	 */
+	public boolean hasTransform() {
+		return commonTransforms != null || arrayOfTransforms != null;
+	}
+
 	public String toString() {
 		StringBuffer buf = new StringBuffer();
 		buf.append("RealWorldValueTransforms:\n");
@@ -314,9 +321,9 @@ public class RealWorldValueTransform {
 	}
 	
 
-        private final int precisionToDisplayDouble = 4;
-        private final int maximumIntegerDigits = 8;
-        private final int maximumMaximumFractionDigits = 6;
+	private final int precisionToDisplayDouble = 4;
+	private final int maximumIntegerDigits = 8;
+	private final int maximumMaximumFractionDigits = 6;
 
 	/**
 	 * Given a stored pixel value, return a string containing a description of all

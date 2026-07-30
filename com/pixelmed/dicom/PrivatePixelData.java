@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -10,7 +10,7 @@ package com.pixelmed.dicom;
  */
 public class PrivatePixelData {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PrivatePixelData.java,v 1.14 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/PrivatePixelData.java,v 1.15 2026/03/08 15:20:36 dclunie Exp $";
 
 	public static final String pixelmedPrivateCreatorForFloatOrDoublePixelData = "PixelMed Publishing";
 	public static final int pixelmedPrivatePixelDataGroup = 0x7FE1;

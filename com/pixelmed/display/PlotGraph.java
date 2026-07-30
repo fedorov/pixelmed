@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -23,7 +23,7 @@ import javax.swing.border.*;
  * @author	dclunie
  */
 public class PlotGraph extends JComponent {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/PlotGraph.java,v 1.32 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/PlotGraph.java,v 1.33 2026/03/08 15:20:37 dclunie Exp $";
 	
 	/***/
 	protected class FloatArrayStatistics {

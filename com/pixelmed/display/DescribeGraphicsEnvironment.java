@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -12,7 +12,7 @@ import java.awt.geom.AffineTransform;
  */
 public class DescribeGraphicsEnvironment { 
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DescribeGraphicsEnvironment.java,v 1.15 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DescribeGraphicsEnvironment.java,v 1.16 2026/03/08 15:20:36 dclunie Exp $";
 	
 	public static String dumpImageCapabilities(ImageCapabilities ic,String label,String indent) {
 		StringBuffer buf = new StringBuffer();

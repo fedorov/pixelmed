@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.validate;
 
@@ -89,7 +89,7 @@ import java.util.List;
  * @author	dclunie
  */
 public class DicomSRValidator {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/DicomSRValidator.java,v 1.29 2025/02/11 19:35:51 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/validate/DicomSRValidator.java,v 1.30 2026/03/08 15:20:40 dclunie Exp $";
 
 	/***/
 	private Transformer transformerPass1;

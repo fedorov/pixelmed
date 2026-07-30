@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -66,7 +66,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum = "433";
 		String exposureTimePerRotation = "0.6";
 		String anatomyCodeMeaning = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning);
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning);
 		CTScanType scanType = CTScanType.HELICAL;
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
@@ -168,7 +168,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum = "433";
 		String exposureTimePerRotation = "0.6";
 		String anatomyCodeMeaning = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning);
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning);
 		CTScanType scanType = CTScanType.HELICAL;
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
@@ -201,7 +201,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum = "433";
 		String exposureTimePerRotation = "0.6";
 		String anatomyCodeMeaning = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning);
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning);
 		CTScanType scanType = CTScanType.HELICAL;
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
@@ -251,7 +251,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum = "433";
 		String exposureTimePerRotation = "0.6";
 		String anatomyCodeMeaning = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning);
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning);
 		CTScanType scanType = CTScanType.HELICAL;
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
@@ -290,7 +290,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum = "433";
 		String exposureTimePerRotation = "0.6";
 		String anatomyCodeMeaning = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning);
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning);
 		CTScanType scanType = CTScanType.HELICAL;
 		String acquisitionProtocol = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment = "Non-contrast thin";
@@ -373,7 +373,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum1 = "433";
 		String exposureTimePerRotation1 = "0.6";
 		String anatomyCodeMeaning1 = "Chest, Abdomen and Pelvis";
-		CodedSequenceItem anatomy1 = new CodedSequenceItem("R-FAB56","SRT",anatomyCodeMeaning1);
+		CodedSequenceItem anatomy1 = new CodedSequenceItem("416775004","SCT",anatomyCodeMeaning1);
 		CTScanType scanType1 = CTScanType.HELICAL;
 		String acquisitionProtocol1 = "5.90 CHEST+ABDOMEN+PELVIS";
 		String comment1 = "Non-contrast thin";
@@ -403,7 +403,7 @@ public class TestCTAcquisitionParameters extends TestCase {
 		String tubeCurrentMaximum2 = "275";
 		String exposureTimePerRotation2 = "0.8";
 		String anatomyCodeMeaning2 = "Chest";
-		CodedSequenceItem anatomy2 = new CodedSequenceItem("T-D3000","SRT",anatomyCodeMeaning2);
+		CodedSequenceItem anatomy2 = new CodedSequenceItem("51185008","SCT",anatomyCodeMeaning2);
 		CTScanType scanType2 = CTScanType.AXIAL;
 		String acquisitionProtocol2 = "5.80 CHEST";
 		String comment2 = " With contrast thick";

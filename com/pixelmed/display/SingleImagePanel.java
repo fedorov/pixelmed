@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -7,6 +7,7 @@ import com.pixelmed.event.Event;
 import com.pixelmed.event.EventContext;
 import com.pixelmed.event.SelfRegisteringListener;
 
+import com.pixelmed.display.event.ApplyICCProfileChangeEvent;
 import com.pixelmed.display.event.ApplyShutterChangeEvent;
 import com.pixelmed.display.event.FrameSelectionChangeEvent;
 import com.pixelmed.display.event.FrameSortOrderChangeEvent;
@@ -121,7 +122,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class SingleImagePanel extends JComponent implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanel.java,v 1.214 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanel.java,v 1.217 2026/03/08 15:20:37 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(SingleImagePanel.class);
 
@@ -146,20 +147,25 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 	Rectangle cachedWindowSize;
 	
 	public void dirty() {
+		slf4jlogger.debug("dirty()");
 		dirtySource();
 	}
 
 	public void dirtySource() {
+		slf4jlogger.debug("dirtySource()");
 		cachedResizedImage=null;
 		cachedResizedSelectedRegionImage=null;
 		cachedPreWindowedImage=null;
+		repaint(getVisibleRect());
 	}
 	
 	public void dirty(SourceImage sImg) {
+		slf4jlogger.debug("dirty(SourceImage)");
 		dirtySource(sImg);
 	}
 
 	public void dirtySource(SourceImage sImg) {
+		slf4jlogger.debug("dirtySource(SourceImage)");
 		this.sImg=sImg;
 		this.realWorldValueTransform=sImg.getRealWorldValueTransform();
 		this.modalityTransform=sImg.getModalityTransform();
@@ -169,13 +175,16 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 		cachedResizedImage=null;
 		cachedResizedSelectedRegionImage=null;
 		cachedPreWindowedImage=null;
+		repaint(getVisibleRect());
 	}
 
 	public void dirtyWindowing() {
+		slf4jlogger.debug("dirtyWindowing()");
 		cachedPreWindowedImage=null;
 	}
 
 	public void dirtyPanned() {
+		slf4jlogger.debug("dirtyPanned()");
 		cachedPreWindowedImage=null;
 		cachedResizedSelectedRegionImage=null;
 	}
@@ -669,7 +678,25 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 		slf4jlogger.debug("setWindowingAccelerationValue(): to {}",value);
 		windowingAccelerationValue = value;
 	}
+	
+	/***/
+	private boolean applyICCProfile = false;	// (001443)
+	
+	/**
+	 * <p>Turn on the application of any ICC Profile.</p>
+	 */
+	public final void setICCProfileAppliedToApplied() {
+		slf4jlogger.debug("setICCProfileAppliedToApplied()");
+		applyICCProfile = true;
+	}
 
+	/**
+	 * <p>Turn off the application of any ICC Profile.</p>
+	 */
+	public final void setICCProfileAppliedToNotApplied() {
+		slf4jlogger.debug("setICCProfileAppliedToNotApplied()");
+		applyICCProfile = false;
+	}
 
 	private boolean showOverlays = true;
 	private boolean applyShutter = true;
@@ -1046,37 +1073,63 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			int wholePixelXFromZero = (int)subPixelX;	// just truncate (not round) ... 0 becomes 0, 0.5 becomes 0, 1.0 is next pixel and becomes 1, only extreme BLHC of BLHC pixel goes out of bounds
 			int wholePixelYFromZero = (int)subPixelY;		
 			if (wholePixelXFromZero >= 0 && wholePixelXFromZero < src.getWidth() && wholePixelYFromZero >= 0 && wholePixelYFromZero < src.getHeight()) {	// check avoids occasional ArrayIndexOutOfBoundsException exception
-				double storedPixelValue;
+				int n = src.getSampleModel().getNumBands();	// (000051)
+				double storedPixelValues[];
 				if (src.getRaster().getDataBuffer() instanceof DataBufferFloat) {
-					float[] storedPixelValues  = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(float[])null,src.getRaster().getDataBuffer());
-					storedPixelValue=storedPixelValues[0];
+					float[] storedPixelValuesFloat  = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(float[])null,src.getRaster().getDataBuffer());
+					storedPixelValues = new double[n];
+					for (int i=0; i<n; ++i) {
+						storedPixelValues[i]=storedPixelValuesFloat[i];
+					}
 				}
 				else if (src.getRaster().getDataBuffer() instanceof DataBufferDouble) {
-					double[] storedPixelValues  = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(double[])null,src.getRaster().getDataBuffer());
-					storedPixelValue=storedPixelValues[0];
+					storedPixelValues = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(double[])null,src.getRaster().getDataBuffer());
 				}
 				else {
-					int[] storedPixelValues  = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(int[])null,src.getRaster().getDataBuffer());
-					int storedPixelValueInt=storedPixelValues[0];
-//System.err.println("storedPixelValue as stored = 0x"+Integer.toHexString(storedPixelValueInt)+" "+storedPixelValueInt+" dec");
-					if (signed && (storedPixelValueInt&signBit) != 0) {
-						storedPixelValueInt|=signMask;	// sign extend
-//System.err.println("storedPixelValue extended  = 0x"+Integer.toHexString(storedPixelValueInt)+" "+storedPixelValueInt+" dec");
+					int[] storedPixelValuesInt  = src.getSampleModel().getPixel(wholePixelXFromZero,wholePixelYFromZero,(int[])null,src.getRaster().getDataBuffer());
+					storedPixelValues = new double[n];
+					for (int i=0; i<n; ++i) {
+						int storedPixelValueInt=storedPixelValuesInt[i];
+	//System.err.println("storedPixelValue as stored = 0x"+Integer.toHexString(storedPixelValueInt)+" "+storedPixelValueInt+" dec");
+						if (signed && (storedPixelValueInt&signBit) != 0) {
+							storedPixelValueInt|=signMask;	// sign extend
+	//System.err.println("storedPixelValue extended  = 0x"+Integer.toHexString(storedPixelValueInt)+" "+storedPixelValueInt+" dec");
+						}
+						storedPixelValues[i]=storedPixelValueInt;
 					}
-					storedPixelValue=storedPixelValueInt;
 				}
-				if (realWorldValueTransform != null) {
+				sbuf.append(" = ");
+				if (realWorldValueTransform != null && realWorldValueTransform.hasTransform()) {
 //System.err.println("mouseMoved(): Have realWorldValueTransform");
-					sbuf.append(" = ");
-					sbuf.append(realWorldValueTransform.toString(useSrcImageIndex,storedPixelValue));
+					String prefix = "";
+					for (int i=0; i<n; ++i) {
+						sbuf.append(prefix);
+						sbuf.append(realWorldValueTransform.toString(useSrcImageIndex,storedPixelValues[i]));
+						prefix = ",";
+					}
 					sbuf.append(" [");
-					sbuf.append(FloatFormatter.toString(storedPixelValue,Locale.US));	// this will not append spurious trailing "0." as default toString() method would
+				}
+				
+				{
+					sbuf.append("[");
+					String prefix = "";
+					for (int i=0; i<n; ++i) {
+						sbuf.append(prefix);
+						sbuf.append(FloatFormatter.toString(storedPixelValues[i],Locale.US));	// this will not append spurious trailing "0." as default toString() method would
+						prefix = ",";
+					}
 					sbuf.append("]");
 				}
 
-				if (suvTransform != null) {
+				if (suvTransform != null && suvTransform.hasTransform()) {
+//System.err.println("mouseMoved(): Have suvTransform");
 					sbuf.append(" ");
-					sbuf.append(suvTransform.toString(useSrcImageIndex,storedPixelValue));
+					String prefix = "";
+					for (int i=0; i<n; ++i) {
+						sbuf.append(prefix);
+						sbuf.append(suvTransform.toString(useSrcImageIndex,storedPixelValues[i]));
+						prefix = ",";
+					}
 				}
 			}
 			str = sbuf.toString();
@@ -1291,6 +1344,34 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			WindowingAccelerationValueChangeEvent wavce = (WindowingAccelerationValueChangeEvent)e;
 			setWindowingAccelerationValue(wavce.getValue());
 			dirtyWindowing();
+			repaint();				// force repaint
+		}
+	}
+	
+	// implement ApplyICCProfileChangeListener to respond to events from elsewhere ... (001443)
+	
+	private OurApplyICCProfileChangeListener ourApplyICCProfileChangeListener;
+
+	class OurApplyICCProfileChangeListener extends SelfRegisteringListener {
+	
+		public OurApplyICCProfileChangeListener(EventContext eventContext) {
+			super("com.pixelmed.display.event.ApplyICCProfileChangeEvent",eventContext);
+//System.err.println("SingleImagePanel.OurApplyICCProfileChangeListener():");
+		}
+		
+		/**
+		 * @param	e
+		 */
+		public void changed(Event e) {
+//System.err.println("SingleImagePanel.OurApplyICCProfileChangeListener.changed():");
+			ApplyICCProfileChangeEvent iccce = (ApplyICCProfileChangeEvent)e;
+			if (iccce.isICCProfileApplied()) {
+				setICCProfileAppliedToApplied();
+			}
+			else if (iccce.isICCProfileNotApplied()) {
+				setICCProfileAppliedToNotApplied();
+			}
+			dirtySource();
 			repaint();				// force repaint
 		}
 	}
@@ -1610,7 +1691,8 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 		ourVOIFunctionChangeListener = new OurVOIFunctionChangeListener(typeOfPanelEventContext);
 		ourWindowLinearCalculationChangeListener = new OurWindowLinearCalculationChangeListener(typeOfPanelEventContext);
 		ourWindowingAccelerationValueChangeListener = new OurWindowingAccelerationValueChangeListener(typeOfPanelEventContext);
-		ourGraphicDisplayChangeListener = new OurGraphicDisplayChangeListener(typeOfPanelEventContext);
+		ourWindowingAccelerationValueChangeListener = new OurWindowingAccelerationValueChangeListener(typeOfPanelEventContext);
+		ourApplyICCProfileChangeListener = new OurApplyICCProfileChangeListener(typeOfPanelEventContext);
 		ourApplyShutterChangeListener = new OurApplyShutterChangeListener(typeOfPanelEventContext);
 	
 		this.largestGray=sImg.getPaletteColorLargestGray();
@@ -1777,6 +1859,11 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			ApplicationEventDispatcher.getApplicationEventDispatcher().removeListener(ourWindowingAccelerationValueChangeListener);
 			ourWindowingAccelerationValueChangeListener=null;
 		}
+		if (ourApplyICCProfileChangeListener != null) {
+//System.err.println("SingleImagePanel.deconstruct(): removing ourApplyICCProfileChangeListener");
+			ApplicationEventDispatcher.getApplicationEventDispatcher().removeListener(ourApplyICCProfileChangeListener);
+			ourApplyICCProfileChangeListener=null;
+		}
 		if (ourGraphicDisplayChangeListener != null) {
 //System.err.println("SingleImagePanel.deconstruct(): removing ourGraphicDisplayChangeListener");
 			ApplicationEventDispatcher.getApplicationEventDispatcher().removeListener(ourGraphicDisplayChangeListener);
@@ -1856,7 +1943,10 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		
 		if (currentSrcImageIndex != -1) {
-			
+
+			slf4jlogger.debug("applyICCProfile {}",applyICCProfile);	// (001443)
+			sImg.setApplyICCProfileIfPresent(applyICCProfile);
+
 			int useSrcImageIndex = currentSrcImageSortOrder == null ? currentSrcImageIndex : currentSrcImageSortOrder[currentSrcImageIndex];
 			slf4jlogger.debug("paintComponent() useSrcImageIndex: {}",useSrcImageIndex);
 			BufferedImage useSrcImage = sImg.getBufferedImage(useSrcImageIndex);
@@ -1879,7 +1969,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 			}
 			
 			Rectangle windowSize = this.getBounds();
-			slf4jlogger.debug("paintComponent():windowSize = {}",windowSize);
+			slf4jlogger.debug("paintComponent(): windowSize = {}",windowSize);
 			
 			// the following is not sensitive to selection area change ... in future may need to make this explicit on resize event ... :(
 			if (cachedWindowSize != null && (windowSize.width != cachedWindowSize.width && windowSize.height != cachedWindowSize.height)) {		// do not care about position
@@ -2087,6 +2177,7 @@ public class SingleImagePanel extends JComponent implements KeyListener, MouseLi
 					}
 					else  if (numComponents == 3) {
 						slf4jlogger.debug("paintComponent(): is 3 component");
+
 						slf4jlogger.debug("currentVOITransformInUse {}",currentVOITransformInUse);
 						if (currentVOITransformInUse != -1 && voiTransform.getNumberOfTransforms(useSrcImageIndex) > currentVOITransformInUse) {
 							windowWidth=voiTransform.getWidth(useSrcImageIndex,currentVOITransformInUse);

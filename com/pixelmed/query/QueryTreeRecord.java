@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
@@ -37,7 +37,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class QueryTreeRecord implements Comparable, TreeNode {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeRecord.java,v 1.24 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryTreeRecord.java,v 1.26 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryTreeRecord.class);
 
@@ -325,8 +325,11 @@ public class QueryTreeRecord implements Comparable, TreeNode {
 			numberOfChildren = -1;
 			AttributeTag t = q.getAttributeTagOfCountOfChildren(ie);
 			if (allAttributesReturnedInIdentifier != null && t != null && allAttributesReturnedInIdentifier.containsKey(t)) {
-				numberOfChildren = Attribute.getSingleIntegerValueOrDefault(allAttributesReturnedInIdentifier,t,-1);
-//System.err.println("QueryTreeRecord(): "+this+" numberOfChildren = "+numberOfChildren);
+				int supposedNumberOfChildren = Attribute.getSingleIntegerValueOrDefault(allAttributesReturnedInIdentifier,t,-1);
+				if (supposedNumberOfChildren > 0) {		// do not trust an explicit value of 0 - has been observed to be incorrect from some servers (001446)
+					numberOfChildren = supposedNumberOfChildren;
+				}
+				slf4jlogger.trace("QueryTreeRecord(): {} numberOfChildren = {}",this,numberOfChildren);
 			}
 		}
 		{
@@ -343,9 +346,9 @@ public class QueryTreeRecord implements Comparable, TreeNode {
 				uniqueKeys.put(uniqueKey.getTag(),uniqueKey);
 			}
 		}
-//System.err.println("QueryTreeRecord(): created="+this);
-//System.err.println("QueryTreeRecord(): uniqueKey="+uniqueKey);
-//System.err.println("QueryTreeRecord(): uniqueKeys="+uniqueKeys);
+		slf4jlogger.trace("QueryTreeRecord(): created={}",this);
+		slf4jlogger.trace("QueryTreeRecord(): uniqueKey={}",uniqueKey);
+		slf4jlogger.trace("QueryTreeRecord(): uniqueKeys={}",uniqueKeys);
 	}
 
 	/**

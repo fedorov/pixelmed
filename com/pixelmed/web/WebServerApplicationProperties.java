@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -25,7 +25,7 @@ import java.util.Properties;
  */
 public class WebServerApplicationProperties {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebServerApplicationProperties.java,v 1.18 2025/01/29 10:58:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WebServerApplicationProperties.java,v 1.19 2026/03/08 15:20:41 dclunie Exp $";
 	
 	private static final String defaultRootURL = "";
 	private static final String defaultStylesheetPath = "stylesheet.css";
