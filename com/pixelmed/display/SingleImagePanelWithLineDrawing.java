@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -44,7 +44,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 class SingleImagePanelWithLineDrawing extends SingleImagePanel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithLineDrawing.java,v 1.16 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SingleImagePanelWithLineDrawing.java,v 1.17 2026/03/08 15:20:37 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(WindowCenterAndWidth.class);
 

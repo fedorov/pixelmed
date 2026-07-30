@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.convert;
 
@@ -50,6 +50,7 @@ import com.pixelmed.dicom.TransferSyntax;
 import com.pixelmed.dicom.UIDGenerator;
 import com.pixelmed.dicom.UniqueIdentifierAttribute;
 import com.pixelmed.dicom.UniversalResourceAttribute;
+import com.pixelmed.dicom.UnlimitedCharactersAttribute;
 import com.pixelmed.dicom.UnlimitedTextAttribute;
 import com.pixelmed.dicom.UnsignedLongAttribute;
 import com.pixelmed.dicom.UnsignedShortAttribute;
@@ -98,6 +99,9 @@ import java.util.TreeMap;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+	
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -216,7 +220,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 
 public class TIFFToDicom {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/TIFFToDicom.java,v 1.146 2025/02/11 14:12:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/TIFFToDicom.java,v 1.164 2026/05/04 16:19:00 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(TIFFToDicom.class);
 	
@@ -228,8 +232,10 @@ public class TIFFToDicom {
 
 	private static final int pixelmedPrivateOriginalFileNameDataGroup = 0x0009;
 	private static final AttributeTag pixelmedPrivateOriginalFileNameDataBlockReservation = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x0010);
-	private static final AttributeTag pixelmedPrivateOriginalFileName = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1001);
-	private static final AttributeTag pixelmedPrivateOriginalTIFFIFDIndex = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1002);
+	private static final AttributeTag pixelmedPrivateOriginalFileName                     = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1001);
+	private static final AttributeTag pixelmedPrivateOriginalTIFFIFDIndex                 = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1002);
+	private static final AttributeTag pixelmedPrivateOriginalFileMACString                = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1003);	// (001453)
+	private static final AttributeTag pixelmedPrivateOriginalOriginalFileMACAlgorithm     = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1004);
 
 	private static final long UNSIGNED32_MAX_VALUE = 0xffffffffl;
 
@@ -654,10 +660,11 @@ public class TIFFToDicom {
 							}
 						}
 						{
-							String fileName = row.get("Filename");
-							String ifd = row.get("IFD");
-							String keyword = row.get("Keyword");
-							String uid = row.get("UID");
+							// should not need to trim() but just in case input is malformed
+							String fileName = row.get("Filename").trim();
+							String ifd = row.get("IFD").trim();
+							String keyword = row.get("Keyword").trim();
+							String uid = row.get("UID").trim();
 							
 							if (keyword != null && keyword.length() > 0) {
 								if (keyword.equals("StudyInstanceUID")) {
@@ -707,6 +714,7 @@ public class TIFFToDicom {
 		String getUIDForFileNameAndIFDFromMap(Map<String,Map<String,String>> map,String inputFileName,int dirNum,String keyword) {
 			// may not be exact match since may have path preamble - use endsWith(), which entails a search ...
 			for (String f : map.keySet()) {
+				slf4jlogger.trace("Checking map key \"{}\" against file \"{}\"",f,inputFileName);
 				if (inputFileName.endsWith(f)) {
 					Map<String,String> ifdmap = map.get(f);
 					if (ifdmap != null) {
@@ -734,6 +742,7 @@ public class TIFFToDicom {
 		String getUIDForFileNameFromMap(Map<String,String> map,String inputFileName,String keyword) {
 			// may not be exact match since may have path preamble - use endsWith(), which entails a search ...
 			for (String f : map.keySet()) {
+				slf4jlogger.trace("Checking map key \"{}\" against file \"{}\"",f,inputFileName);
 				if (inputFileName.endsWith(f)) {
 					String uid = map.get(f);
 					return uid;
@@ -744,6 +753,7 @@ public class TIFFToDicom {
 		}
 
 		void replaceUIDs(AttributeList list,String inputFileName,int dirNum) throws DicomException {
+			slf4jlogger.debug("Looking for UIDs to replace for file {} and IFD {}",inputFileName,dirNum);
 			{
 				String uid = getUIDForFileNameFromMap(studyInstanceUIDByFileName,inputFileName,"StudyInstanceUID");
 				if (uid != null && uid.length() > 0) {
@@ -829,9 +839,10 @@ public class TIFFToDicom {
 								{ Attribute a = new UniqueIdentifierAttribute(TagFromName.DimensionOrganizationUID); a.addValue(uid); itemList.put(a); }
 							}
 						}
-						else {
-							slf4jlogger.error("Missing aDimensionIndexSequence - unable to replace DimensionOrganizationUID");
-						}
+						// Do not send DimensionIndexSequence since always TILED_FULL (001458)
+						//else {
+						//	slf4jlogger.error("Missing aDimensionIndexSequence - unable to replace DimensionOrganizationUID");
+						//}
 					}
 				}
 			}
@@ -998,13 +1009,13 @@ public class TIFFToDicom {
 		}
 		
 		if (compression == 0 || compression == 1	// absent or specified as uncompressed
-		 || compression == 5) {					// LZW is always decompressed
+		 || compression == 5 || compression == 8) {	// LZW or Deflate is always decompressed
 			if (recompressAsFormat == null || recompressAsFormat.length() == 0) {
 				slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): no output compression requested");
 				boolean useSourceFileForOutputPixelData = false;
 				File[] files = null;
-				if (compression == 5) {
-					slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Decompressing LZW to write as uncompressed ");
+				if (compression == 5 || compression == 8) {	// (001461)
+					slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Decompressing LZW or deflated to write as uncompressed ");
 					if (mergeSamplesPerPixelTiles) {	// (001351)
 						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Using LZW tiles as source merging separate tiles per channel into one tile");
 						long destinationTileNumberOfBytes = tileWidth * tileLength * samplesPerPixel * bitsPerSample/8;
@@ -1022,8 +1033,8 @@ public class TIFFToDicom {
 								inputFile.seek(pixelOffset);
 								inputFile.read(sourceValues);
 
-								sourceValues = lzwUncompress(sourceValues);
-								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW tile length = {}",sourceValues.length);
+								sourceValues = compression == 5 ? lzwUncompress(sourceValues) : deflateUncompress(sourceValues);	// (001461)
+								if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW or deflated tile length = {}",sourceValues.length);
 								// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
 								if (predictor == 2) {	// horizontalDifferencing
 									reverseHorizontalDifferencing(sourceValues,bytesPerPixelForHorizontalDifferencing,tileWidth);
@@ -1070,8 +1081,8 @@ public class TIFFToDicom {
 							inputFile.seek(pixelOffset);
 							inputFile.read(values);
 							
-							values = lzwUncompress(values);
-							if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW tile length = {}",values.length);
+							values = compression == 5 ? lzwUncompress(values) : deflateUncompress(values);	// (001461)
+							if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW or deflated tile length = {}",values.length);
 							// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
 							if (predictor == 2) {	// horizontalDifferencing
 								reverseHorizontalDifferencing(values,bytesPerPixelForHorizontalDifferencing,tileWidth);
@@ -1167,7 +1178,7 @@ public class TIFFToDicom {
 				}
 				if (bitsPerSample == 8) {
 					if (!isFloat) {
-						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW decompressed 8 bit input to output");
+						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW or deflate decompressed 8 bit input to output");
 						Attribute aPixelData = new OtherByteAttributeMultipleFilesOnDisk(TagFromName.PixelData,files,
 							useSourceFileForOutputPixelData ? tileOffsets : null,
 							useSourceFileForOutputPixelData ? tileByteCounts : null);
@@ -1183,7 +1194,7 @@ public class TIFFToDicom {
 				}
 				else if (bitsPerSample == 16) {
 					if (!isFloat) {
-						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW decompressed 16 bit input to output");
+						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW or deflate decompressed 16 bit input to output");
 						Attribute aPixelData = new OtherWordAttributeMultipleFilesOnDisk(TagFromName.PixelData,files,
 							useSourceFileForOutputPixelData ? tileOffsets : null,
 							useSourceFileForOutputPixelData ? tileByteCounts : null,
@@ -1204,7 +1215,7 @@ public class TIFFToDicom {
 					}
 					else {
 						// (001320)
-						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW decompressed 32 bit float input to output");
+						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying uncompressed or LZW or deflate decompressed 32 bit float input to output");
 						Attribute aPixelData = new OtherFloatAttributeMultipleFilesOnDisk(TagFromName.FloatPixelData,files,
 							useSourceFileForOutputPixelData ? tileOffsets : null,
 							useSourceFileForOutputPixelData ? tileByteCounts : null,
@@ -1224,39 +1235,71 @@ public class TIFFToDicom {
 			else {
 				slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): output compression requested");
 				if (bitsPerSample == 8) {
-					slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): compressing uncompressed or LZW decompressed 8 bit input");
-
+					slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): compressing uncompressed or LZW or deflate decompressed 8 bit input");
+					if (mergeSamplesPerPixelTiles) {	// (001351)
+						slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Using uncompressed or LZW or deflate decompressed 8 bit input tiles as source merging separate tiles per channel into one tile");
+					}
+					
 					File[] files = new File[numberOfDestinationTiles];
 					for (int tileNumber=0; tileNumber<numberOfDestinationTiles; ++tileNumber) {
-						long pixelOffset = tileOffsets[tileNumber];
-						long pixelByteCount = tileByteCounts[tileNumber];
-							{
-								// check for truncated tiles ... (001397)
-								if (pixelByteCount != expectedUncompressedTileByteCount && pixelByteCount != 0) {
-									// will warn about 0 length when dealing with it later
-									slf4jlogger.warn("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Tile {} pixelByteCount {} != expected {}",tileNumber,pixelByteCount,expectedUncompressedTileByteCount);
+						byte[] values = new byte[(int)expectedUncompressedTileByteCount];
+						if (mergeSamplesPerPixelTiles) {	// (001351)
+							int offsetIntoDestinationValues = 0;
+							for (int c=0; c<samplesPerPixel; ++c) {
+								int sourceTileNumber = c * numberOfDestinationTiles + tileNumber;	// numberOfDestinationTiles is also the number of tiles per component in the source tiles
+								long pixelOffset = tileOffsets[sourceTileNumber];
+								long pixelByteCount = tileByteCounts[sourceTileNumber];
+								//if (slf4jlogger.isDebugEnabled() && pixelByteCount != expectedSingleChannelTileSizeBytes) slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): tileByteCount[{}] {} != tileWidth * tileLength {}",sourceTileNumber,pixelByteCount,expectedSingleChannelTileSizeBytes);
+								// not checking for truncated or zero length tiles ... (001397) :(
+								byte[] sourceValues = new byte[(int)pixelByteCount];
+								inputFile.seek(pixelOffset);
+								inputFile.read(sourceValues);
+								
+								if (compression == 5 || compression == 8) {	// (001461)
+									sourceValues = compression == 5 ? lzwUncompress(sourceValues) : deflateUncompress(sourceValues);	// (001461)
+									slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW or deflated tile length in bytes = {}",values.length);
+									slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): expected tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing = {}",tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing);
+									// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
+									if (predictor == 2) {	// horizontalDifferencing
+										reverseHorizontalDifferencing(sourceValues,bytesPerPixelForHorizontalDifferencing,tileWidth);
+									}
 								}
-							}
-						byte[] values;
-						if (pixelByteCount > 0) {
-							values = new byte[(int)pixelByteCount];
-							inputFile.seek(pixelOffset);
-							inputFile.read(values);
-							
-							if (compression == 5) {
-								values = lzwUncompress(values);
-								slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW tile length in bytes = {}",values.length);
-								slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): expected tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing = {}",tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing);
-								// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
-								if (predictor == 2) {	// horizontalDifferencing
-									reverseHorizontalDifferencing(values,bytesPerPixelForHorizontalDifferencing,tileWidth);
-								}
+								
+								System.arraycopy(sourceValues,0,values,offsetIntoDestinationValues,sourceValues.length);	// not pixelByteCount since wanted decompressed size
+								offsetIntoDestinationValues += sourceValues.length;
 							}
 						}
 						else {
-							// pixelByteCount == 0 so need to create empty uncompressed tile (001397)
-							slf4jlogger.warn("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Tile {} pixelByteCount {} so creating empty tile",tileNumber,pixelByteCount);
-							values = new byte[(int)expectedUncompressedTileByteCount];
+							long pixelOffset = tileOffsets[tileNumber];
+							long pixelByteCount = tileByteCounts[tileNumber];
+							if (pixelByteCount > 0) {
+								values = new byte[(int)pixelByteCount];
+								inputFile.seek(pixelOffset);
+								inputFile.read(values);
+								
+								if (compression == 5 || compression == 8) {	// (001461)
+									values = compression == 5 ? lzwUncompress(values) : deflateUncompress(values);	// (001461)
+									slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW or deflated tile length in bytes = {}",values.length);
+									slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): expected tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing = {}",tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing);
+									// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
+									if (predictor == 2) {	// horizontalDifferencing
+										reverseHorizontalDifferencing(values,bytesPerPixelForHorizontalDifferencing,tileWidth);
+									}
+								}
+
+								{
+									// check for truncated tiles AFTER decompressing them (i.e., not pixelByteCount) ... (001397) (001461)
+									if (values.length != expectedUncompressedTileByteCount) {
+										// will warn about 0 length when dealing with it later
+										slf4jlogger.warn("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Tile {} pixelByteCount {} != expected {}",tileNumber,pixelByteCount,expectedUncompressedTileByteCount);
+									}
+								}
+							}
+							else {
+								// pixelByteCount == 0 so need to create empty uncompressed tile (001397)
+								slf4jlogger.warn("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): Tile {} pixelByteCount {} so creating empty tile",tileNumber,pixelByteCount);
+								values = new byte[(int)expectedUncompressedTileByteCount];
+							}
 						}
 						
 						BufferedImage img = null;
@@ -1269,6 +1312,12 @@ public class TIFFToDicom {
 									(int)tileWidth,(int)tileLength,values,0/*offset*/,
 									ColorSpace.getInstance(ColorSpace.CS_sRGB),	// should check for presence of TIFF ICC profile ? :(
 									false/*isChrominanceHorizontallyDownsampledBy2*/);
+							}
+							else if (planarConfig == 2) {
+								img = SourceImage.createBandInterleavedByteThreeComponentColorImage(
+									(int)tileWidth,(int)tileLength,values,0/*offset*/,
+									ColorSpace.getInstance(ColorSpace.CS_sRGB)	// should check for presence of TIFF ICC profile ? :(
+									);
 							}
 							else {
 								throw new TIFFException("Unsupported planarConfig = "+planarConfig+" for re-compression");
@@ -1312,12 +1361,12 @@ public class TIFFToDicom {
 							inputFile.seek(pixelOffset);
 							inputFile.read(values);
 						}
-						else if (compression == 5) {
-							byte[] lzwCompressedValues = new byte[(int)pixelByteCount];
+						else if (compression == 5 || compression == 8) {	// (001461)
+							byte[] compressedvalues = new byte[(int)pixelByteCount];
 							inputFile.seek(pixelOffset);
-							inputFile.read(lzwCompressedValues);
-							byte[] decompressedValues = lzwUncompress(lzwCompressedValues);
-							slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW tile length in bytes = {}",decompressedValues.length);
+							inputFile.read(compressedvalues);
+							byte[] decompressedValues = compression == 5 ? lzwUncompress(compressedvalues) : deflateUncompress(compressedvalues);	// (001461)
+							slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): decompressed LZW or deflated tile length in bytes = {}",decompressedValues.length);
 							slf4jlogger.trace("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): expected tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing = {}",tileWidth*tileLength*bytesPerPixelForHorizontalDifferencing);
 							// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
 							if (predictor == 2) {	// horizontalDifferencing
@@ -1453,7 +1502,18 @@ public class TIFFToDicom {
 	}
 	
 	/**
-	 * Utility method for decoding an LZW-compressed image strip.
+	 * Utility method for decoding a deflated compressed image segment (strip or tile).
+	 * Described in "Adobe Photoshop® TIFF Technical Notes" http://alternatiff.com/resources/TIFFphotoshop.pdf (page 2)
+	 * Pattern same as com.pixelmed.dicom.DicomStreamCopier - consider re-factoring ? :(
+	 */
+	private byte[] deflateUncompress(byte[] input) throws IOException {
+		// (001461)
+		// nowrap false is required since ZLIB header is present (Adobe doc says "stored as a complete zlib data stream"), unlike for DICOM compressed transfer syntaxes
+		return ByteArray.readFully(new InflaterInputStream(new ByteArrayInputStream(input),new Inflater(false)));
+	}
+	
+	/**
+	 * Utility method for decoding an LZW-compressed image segment (strip or tile).
 	 * Derived from io/ImageReader.java
 	 * Adapted from the TIFF 6.0 Specification:
 	 * http://partners.adobe.com/asn/developer/pdfs/tn/TIFF6.pdf (page 61)
@@ -1676,7 +1736,7 @@ public class TIFFToDicom {
 
 
 		if (compression == 0 || compression == 1		// absent or specified as uncompressed
-		 || compression == 5) {							// LZW
+		 || compression == 5 || compression == 8) {		// LZW or Deflate
 			if (recompressAsFormat == null || recompressAsFormat.length() == 0) {
 				if (bitsPerSample == 8) {
 					slf4jlogger.debug("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): merging uncompressed or LZW compressed 8 bit strips");
@@ -1701,11 +1761,11 @@ public class TIFFToDicom {
 						inputFile.seek(fileOffset);
 						int bytesToRead = (int)pixelByteCount[i];
 						slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): pixelByteCount[{}] = {}",i,bytesToRead);
-						if (compression == 5) {
-							byte[] lzwvalues = new byte[bytesToRead];
-							inputFile.read(lzwvalues,0,bytesToRead);
-							byte[] decompressedStrip = lzwUncompress(lzwvalues);
-							slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): decompressed LZW strip length = {}",decompressedStrip.length);
+						if (compression == 5 || compression == 8) {	// (001461)
+							byte[] compressedvalues = new byte[bytesToRead];
+							inputFile.read(compressedvalues,0,bytesToRead);
+							byte[] decompressedStrip = compression == 5 ? lzwUncompress(compressedvalues) : deflateUncompress(compressedvalues);	// (001461)
+							slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): decompressed LZW or deflated strip length = {}",decompressedStrip.length);
 							// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
 							if (predictor == 2) {	// horizontalDifferencing
 								reverseHorizontalDifferencing(decompressedStrip,bytesPerPixelForHorizontalDifferencing,imageWidth);
@@ -1746,8 +1806,8 @@ public class TIFFToDicom {
 						throw new TIFFException("Uncompressed image too large to allocate = "+totalLength+" 16-bit words");
 					}
 					short[] values = new short[(int)totalLength];
-					if (compression == 5) {
-						slf4jlogger.debug("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): merging LZW compressed 16 bit strips");
+					if (compression == 5 || compression == 8) {	// (001461)
+						slf4jlogger.debug("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): merging LZW compressed or deflated 16 bit strips");
 						long totalLengthInBytes = totalLength*2;
 						if (totalLengthInBytes > Integer.MAX_VALUE) {
 							throw new TIFFException("Uncompressed image too large to allocate = "+totalLengthInBytes+" bytes");
@@ -1763,10 +1823,10 @@ public class TIFFToDicom {
 							int bytesToRead = (int)pixelByteCount[i];
 							slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): pixelByteCount[{}] = {}",i,bytesToRead);
 							{
-								byte[] lzwvalues = new byte[bytesToRead];
-								inputFile.read(lzwvalues,0,bytesToRead);
-								byte[] decompressedStrip = lzwUncompress(lzwvalues);
-								slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): decompressed LZW strip length = {}",decompressedStrip.length);
+								byte[] compressedvalues = new byte[bytesToRead];
+								inputFile.read(compressedvalues,0,bytesToRead);
+								byte[] decompressedStrip = compression == 5 ? lzwUncompress(compressedvalues) : deflateUncompress(compressedvalues);	// (001461)
+								slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): decompressed LZW or deflated strip length = {}",decompressedStrip.length);
 								// apply horizontal differencing as per ij/io/ImageReader.java and TIFF6 page 64
 								if (predictor == 2) {	// horizontalDifferencing
 									reverseHorizontalDifferencing(decompressedStrip,bytesPerPixelForHorizontalDifferencing,imageWidth);
@@ -2282,13 +2342,24 @@ public class TIFFToDicom {
 		}
 
 		boolean isLabel = "LABEL".equals(imageFlavor);							// CP 2086
+		slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): isLabel = {}",isLabel);
 		boolean isLabelOrOverview = isLabel || "OVERVIEW".equals(imageFlavor);	// CP 2086
+		slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): isLabelOrOverview = {}",isLabelOrOverview);
 
-		// Frame of Reference Module
-		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.FrameOfReferenceUID); a.addValue(frameOfReferenceUID); list.put(a); }	// (001244) (001256)
-		
-		boolean havePositionReference = !(xOffsetInSlideCoordinateSystem == 0 && yOffsetInSlideCoordinateSystem == 0);	// (001362)
-		{ Attribute a = new LongStringAttribute(TagFromName.PositionReferenceIndicator); a.addValue(havePositionReference ? "SLIDE_CORNER" : "UNKNOWN"); list.put(a); }	// (001272)
+		// Frame of Reference Module (001244) (001256) (CP 2406)
+		if (frameOfReferenceUID != null && frameOfReferenceUID.length() > 0) {
+			slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): adding FrameOfReferenceUID = {}",frameOfReferenceUID);
+			{ Attribute a = new UniqueIdentifierAttribute(TagFromName.FrameOfReferenceUID); a.addValue(frameOfReferenceUID); list.put(a); }
+
+			// only include PositionReferenceIndicator if FrameOfReferenceUID else triggers missing FrameOfReferenceUID in FrameOfReferenceModule
+			boolean havePositionReference = !(xOffsetInSlideCoordinateSystem == 0 && yOffsetInSlideCoordinateSystem == 0);	// (001362)
+			slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): havePositionReference = {}",havePositionReference);
+			{ Attribute a = new LongStringAttribute(TagFromName.PositionReferenceIndicator); a.addValue(havePositionReference ? "SLIDE_CORNER" : "UNKNOWN"); list.put(a); }	// (001272)
+		}
+		else {
+			list.remove(TagFromName.FrameOfReferenceUID);	// in case already added by CommonConvertedAttributeGeneration.generateCommonAttributes() (CP 2406)
+			list.remove(TagFromName.PositionReferenceIndicator);
+		}
 
 		// Whole Slide Microscopy Series Module
 		
@@ -2330,26 +2401,27 @@ public class TIFFToDicom {
 				}
 			}
 			{ Attribute a = new CodeStringAttribute(TagFromName.DimensionOrganizationType); a.addValue("TILED_FULL"); list.put(a); }
-			{
-				SequenceAttribute saDimensionIndexSequence = new SequenceAttribute(TagFromName.DimensionIndexSequence);
-				list.put(saDimensionIndexSequence);
-				{
-					AttributeList itemList = new AttributeList();
-					saDimensionIndexSequence.addItem(itemList);
-					{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.DimensionIndexPointer); a.addValue(TagFromName.RowPositionInTotalImagePixelMatrix); itemList.put(a); }
-					{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.FunctionalGroupPointer); a.addValue(TagFromName.PlanePositionSlideSequence); itemList.put(a); }
-					{ Attribute a = new UniqueIdentifierAttribute(TagFromName.DimensionOrganizationUID); a.addValue(dimensionOrganizationUID); itemList.put(a); }
-					{ Attribute a = new LongStringAttribute(TagFromName.DimensionDescriptionLabel); a.addValue("Row Position"); itemList.put(a); }
-				}
-				{
-					AttributeList itemList = new AttributeList();
-					saDimensionIndexSequence.addItem(itemList);
-					{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.DimensionIndexPointer); a.addValue(TagFromName.ColumnPositionInTotalImagePixelMatrix); itemList.put(a); }
-					{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.FunctionalGroupPointer); a.addValue(TagFromName.PlanePositionSlideSequence); itemList.put(a); }
-					{ Attribute a = new UniqueIdentifierAttribute(TagFromName.DimensionOrganizationUID); a.addValue(dimensionOrganizationUID); itemList.put(a); }
-					{ Attribute a = new LongStringAttribute(TagFromName.DimensionDescriptionLabel); a.addValue("Column Position"); itemList.put(a); }
-				}
-			}
+			// Do not send DimensionIndexSequence since always TILED_FULL (001458)
+			//{
+			//	SequenceAttribute saDimensionIndexSequence = new SequenceAttribute(TagFromName.DimensionIndexSequence);
+			//	list.put(saDimensionIndexSequence);
+			//	{
+			//		AttributeList itemList = new AttributeList();
+			//		saDimensionIndexSequence.addItem(itemList);
+			//		{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.DimensionIndexPointer); a.addValue(TagFromName.RowPositionInTotalImagePixelMatrix); itemList.put(a); }
+			//		{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.FunctionalGroupPointer); a.addValue(TagFromName.PlanePositionSlideSequence); itemList.put(a); }
+			//		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.DimensionOrganizationUID); a.addValue(dimensionOrganizationUID); itemList.put(a); }
+			//		{ Attribute a = new LongStringAttribute(TagFromName.DimensionDescriptionLabel); a.addValue("Row Position"); itemList.put(a); }
+			//	}
+			//	{
+			//		AttributeList itemList = new AttributeList();
+			//		saDimensionIndexSequence.addItem(itemList);
+			//		{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.DimensionIndexPointer); a.addValue(TagFromName.ColumnPositionInTotalImagePixelMatrix); itemList.put(a); }
+			//		{ AttributeTagAttribute a = new AttributeTagAttribute(TagFromName.FunctionalGroupPointer); a.addValue(TagFromName.PlanePositionSlideSequence); itemList.put(a); }
+			//		{ Attribute a = new UniqueIdentifierAttribute(TagFromName.DimensionOrganizationUID); a.addValue(dimensionOrganizationUID); itemList.put(a); }
+			//		{ Attribute a = new LongStringAttribute(TagFromName.DimensionDescriptionLabel); a.addValue("Column Position"); itemList.put(a); }
+			//	}
+			//}
 		}
 
 
@@ -2690,12 +2762,31 @@ public class TIFFToDicom {
 								Matcher m = p.matcher(line);
 								if (m.matches()) {
 									slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have Aperio Leica Biosystems GT450 match");
+									manufacturer = "Leica Biosystems";	// (001455)
 									manufacturerModelName = "GT450";
 									int groupCount = m.groupCount();
 									if (groupCount == 1) {
 										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have Aperio Leica Biosystems GT450 correct groupCount");
 										softwareVersions = m.group(1);
 										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): found softwareVersions (Aperio Leica Biosystems GT450) {}",softwareVersions);
+									}
+								}
+							}
+							{
+								// |ScannerType = GT450|
+								Pattern p = Pattern.compile(".*[|]ScannerType[ ]*=[ ]*([^|]*)[|].*");
+								Matcher m = p.matcher(line);
+								if (m.matches()) {
+									slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have ScannerType match");
+									int groupCount = m.groupCount();
+									if (groupCount == 1) {
+										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have ScannerType correct groupCount");
+										manufacturerModelName = m.group(1);
+										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): found manufacturerModelName {}",manufacturerModelName);
+										if (manufacturerModelName.equals("GT450")
+										 || manufacturerModelName.equals("AT2")) {
+											manufacturer = "Leica Biosystems";
+										}
 									}
 								}
 							}
@@ -2800,9 +2891,11 @@ public class TIFFToDicom {
 					}
 					if (manufacturer.length() == 0) {
 						manufacturer = "Leica Biosystems";
-						manufacturerModelName = "Aperio";	// in absence of more specific information about whether AT2 (DX), CS2, GT450 (DX)
 						slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): SVS so assuming manufacturer {}",manufacturer);
-						slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): SVS so assuming  manufacturerModelName {}",manufacturerModelName);
+						if (manufacturerModelName.length() == 0) {
+							manufacturerModelName = "Aperio";	// in absence of more specific information about whether AT2 (DX), CS2, GT450 (DX)
+							slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): SVS so assuming  manufacturerModelName {}",manufacturerModelName);
+						}
 					}
 				}
 				else if (d.contains("X scan size")) {
@@ -3147,7 +3240,7 @@ public class TIFFToDicom {
 							long compression = ifd.getSingleNumericValue(TIFFTags.COMPRESSION,0,0);
 							slf4jlogger.debug("getImageFlavorAndDerivationByIFD(): compression={}",compression);
 					
-							if (compression == 5) {			// LZW
+							if (compression == 5) {			// LZW - SVS does not use Deflate compression == 5
 								slf4jlogger.debug("getImageFlavorAndDerivationByIFD(): is not tiled and last or 2nd last IFD entry and LZW so using THUMBNAIL flavor");
 								imageFlavorAndDerivationByIFD[dirNum][0] = "LABEL";
 								imageFlavorAndDerivationByIFD[dirNum][1] = "NONE";
@@ -3173,7 +3266,7 @@ public class TIFFToDicom {
 		slf4jlogger.debug("chooseTransferSyntaxForCompressionSchemeIfNotSpecifiedExplicitly(): compression = {}",compression);
 		if (transferSyntax == null || transferSyntax.length() == 0) {
 			if (compression == 0 || compression == 1		// absent or specified as uncompressed
-			 || compression == 5) {							// LZW will always be decompressed
+			 || compression == 5 || compression == 8) {		// LZW or Deflate will always be decompressed
 				transferSyntax = TransferSyntax.ExplicitVRLittleEndian;
 			}
 			else if (compression == 7) {		// "new" JPEG per TTN2 as used by Aperio in SVS
@@ -3228,7 +3321,23 @@ public class TIFFToDicom {
 			manufacturerModelName = manufacturerModelName + " converted by ";
 		}
 		manufacturerModelName = manufacturerModelName + this.getClass().getName();
-		{ Attribute a = new LongStringAttribute(TagFromName.ManufacturerModelName); a.addValue(manufacturerModelName); list.put(a); }
+		if (manufacturerModelName.length() <= 64) {	// (001440); LongStringAttribute.getMaximumLengthOfSingleValue() is not static :(
+			Attribute a = new LongStringAttribute(TagFromName.ManufacturerModelName); a.addValue(manufacturerModelName); list.put(a);
+		}
+		else {
+			// try it without the "converted by" (001440) ...
+			manufacturerModelName = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.ManufacturerModelName) + " " + this.getClass().getName();
+			if (manufacturerModelName.length() <= 64) {	// (001440)
+				Attribute a = new LongStringAttribute(TagFromName.ManufacturerModelName); a.addValue(manufacturerModelName); list.put(a);
+			}
+			else {
+				manufacturerModelName = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.ManufacturerModelName) + " pixelmed";
+				if (manufacturerModelName.length() <= 64) {	// (001440)
+					Attribute a = new LongStringAttribute(TagFromName.ManufacturerModelName); a.addValue(manufacturerModelName); list.put(a);
+				}
+				// else leave it alone (does not fix if already too long :()
+			}
+		}
 	}
 
 	private void createOrAppendToSoftwareVersionsAndInsertOrReplace(AttributeList list) throws DicomException {
@@ -3327,7 +3436,7 @@ public class TIFFToDicom {
 		// numberOfSourceTiles will == number of DICOM tiles for planarConfig 1 (color-by-pixel) and be samplesPerPixel * number of DICOM tiles for planarConfig 2 (color-by-plane) (TIFF6 p 68) (001351)
 		boolean mergeSamplesPerPixelTiles = planarConfig == 2 && samplesPerPixel > 1;
 		slf4jlogger.debug("convertTIFFPixelsToDicomMultiFrame(): mergeSamplesPerPixelTiles = {}",mergeSamplesPerPixelTiles);
-		if (mergeSamplesPerPixelTiles && !(compression == 0 || compression == 1 || compression == 5)) {
+		if (mergeSamplesPerPixelTiles && !(compression == 0 || compression == 1 || compression == 5 || compression == 8)) {
 			throw new DicomException("Merging of separately compressed color planes not supported");	// (001353)
 		}
 		
@@ -3347,6 +3456,7 @@ public class TIFFToDicom {
 
 		generateDICOMPixelDataModuleAttributes(list,numberOfDestinationTiles,tileWidth,tileLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
 		
+		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
@@ -3358,12 +3468,7 @@ public class TIFFToDicom {
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,totalArrayValues(tileByteCounts),imageWidth,imageLength,bitsPerSample,samplesPerPixel);
 
 		if (includeCopyOfImageDescription && imageDescription != null && imageDescription.length() > 0) {	// (001347)
-			if (imageDescription.length() <= 10240) {	// (001281)
-				{ Attribute a = new LongTextAttribute(TagFromName.ImageComments); a.addValue(imageDescription); list.put(a); }
-			}
-			else {
-				{ Attribute a = new UnlimitedTextAttribute(TagFromName.TextValue); a.addValue(imageDescription); list.put(a); }
-			}
+			addImageComment(list,imageDescription);
 		}
 
 		if (descriptionList != null) {
@@ -3477,7 +3582,10 @@ public class TIFFToDicom {
 					{ Attribute a = new OtherVeryLongAttribute(TagFromName.ExtendedOffsetTableLengths); a.setValues(extendedOffsetTableLengths); list.put(a); }
 				}
 				
-				long  byteOffsetFromFileStartOfNextAttributeAfterPixelData = AddTIFFOrOffsetTables.getByteOffsetsAndLengthsOfTileDataFromStartOfFile(list,transferSyntax,tileDataByteOffsets,tileDataLengths,imageWidths,imageLengths,mergeSamplesPerPixelTiles,samplesPerPixel,addBasicOffsetTable);
+				mergeSamplesPerPixelTiles = outputPlanarConfig == 2 && samplesPerPixel > 1;
+				slf4jlogger.debug("convertTIFFPixelsToDicomMultiFrame(): updated with outputPlanarConfig {} mergeSamplesPerPixelTiles = {}",outputPlanarConfig,mergeSamplesPerPixelTiles);
+
+				long byteOffsetFromFileStartOfNextAttributeAfterPixelData = AddTIFFOrOffsetTables.getByteOffsetsAndLengthsOfTileDataFromStartOfFile(list,transferSyntax,tileDataByteOffsets,tileDataLengths,imageWidths,imageLengths,mergeSamplesPerPixelTiles,samplesPerPixel,addBasicOffsetTable);
 
 				if (addBasicOffsetTable) {
 					long firstOffsetFromStartOfFile = tileDataByteOffsets[0][0];
@@ -3578,6 +3686,7 @@ public class TIFFToDicom {
 
 		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,imageWidth,imageLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
 
+		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
@@ -3589,12 +3698,7 @@ public class TIFFToDicom {
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,totalArrayValues(pixelByteCount),imageWidth,imageLength,bitsPerSample,samplesPerPixel);
 
 		if (includeCopyOfImageDescription && imageDescription != null && imageDescription.length() > 0) {	// (001347)
-			if (imageDescription.length() <= 10240) {	// (001281)
-				{ Attribute a = new LongTextAttribute(TagFromName.ImageComments); a.addValue(imageDescription); list.put(a); }
-			}
-			else {
-				{ Attribute a = new UnlimitedTextAttribute(TagFromName.TextValue); a.addValue(imageDescription); list.put(a); }
-			}
+			addImageComment(list,imageDescription);
 		}
 
 		if (descriptionList != null) {
@@ -3671,6 +3775,27 @@ public class TIFFToDicom {
 			filesToDeleteAfterWritingDicomFile = null;
 		}
 	}
+
+	private void addImageComment(AttributeList list,String comment) throws DicomException {	// (001439)
+		if (comment.length() <= 10240) {	// (001281)
+			{ Attribute a = new LongTextAttribute(TagFromName.ImageComments); a.addValue(comment); list.put(a); }
+		}
+		else {
+			//{ Attribute a = new UnlimitedTextAttribute(TagFromName.TextValue); a.addValue(comment); list.put(a); }
+			SequenceAttribute acquisitionContextSequence = (SequenceAttribute)(list.get(TagFromName.AcquisitionContextSequence));
+			if (acquisitionContextSequence == null) {
+				acquisitionContextSequence = new SequenceAttribute(TagFromName.AcquisitionContextSequence);
+				list.put(acquisitionContextSequence);
+			}
+			{
+				AttributeList itemList = new AttributeList();
+				{ Attribute a = new CodeStringAttribute(TagFromName.ValueType); a.addValue("TEXT"); itemList.put(a); }
+				CodedSequenceItem.putSingleCodedSequenceItem(itemList,TagFromName.ConceptNameCodeSequence,"121106","DCM","Comment");
+				{ Attribute a = new UnlimitedTextAttribute(TagFromName.TextValue); a.addValue(comment); itemList.put(a); }
+				acquisitionContextSequence.addItem(itemList);
+			}
+		}
+	}
 	
 	private void convertTIFFPixelsToDicomSingleFrame(String jsonfile,UIDMap uidMap,TIFFFile inputFile,int dirNum,String outputFileName,int instanceNumber,
 				long imageWidth,long imageLength,
@@ -3705,6 +3830,7 @@ public class TIFFToDicom {
 
 		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,pixelWidth,pixelLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,planarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
 
+		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
@@ -3716,12 +3842,7 @@ public class TIFFToDicom {
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,pixelByteCount,imageWidth,imageLength,bitsPerSample,samplesPerPixel);
 
 		if (includeCopyOfImageDescription && imageDescription != null && imageDescription.length() > 0) {	// (001347)
-			if (imageDescription.length() <= 10240) {	// (001281)
-				{ Attribute a = new LongTextAttribute(TagFromName.ImageComments); a.addValue(imageDescription); list.put(a); }
-			}
-			else {
-				{ Attribute a = new UnlimitedTextAttribute(TagFromName.TextValue); a.addValue(imageDescription); list.put(a); }
-			}
+			addImageComment(list,imageDescription);
 		}
 
 		if (descriptionList != null) {
@@ -3823,6 +3944,7 @@ public class TIFFToDicom {
 		SortedMap<String,String> channelNamesByChannelID;
 		double sliceThickness;
 		
+		int samplesPerPixel;	// from 1st channel (001454)
 		int numberOfChannels;
 		int numberOfZSections;
 		int numberOfTimepoints;
@@ -3928,7 +4050,7 @@ public class TIFFToDicom {
 		 */
 		WSIFrameOfReference(ArrayList<TIFFImageFileDirectory> ifdlist,String[][] imageFlavorAndDerivationByIFD,double spacingrowmm,double spacingcolmm,double thicknessmm) throws DicomException {
 			uidPyramid = u.getAnotherNewUID();
-			uidLabel = u.getAnotherNewUID();	// (001399)
+			uidLabel = null;	// (001399) (CP 2406)
 			
 			dirNumOfOverview = -1;	// flag that we have not encountered an overview image yet (not 0, since 0 is a valid dirNum)
 			dirNumOfLabel = -1;		// flag that we have not encountered a label image yet (not 0, since 0 is a valid dirNum) (001399)
@@ -3963,6 +4085,7 @@ public class TIFFToDicom {
 			channelForIFD = null;
 			zSectionForIFD = null;
 			timepointForIFD = null;
+			samplesPerPixel = 1;	// (001454)
 
 			channelName = null;		// (001285)
 
@@ -4103,6 +4226,20 @@ public class TIFFToDicom {
 											try {
 												numberOfChannels = Integer.parseInt(sizeC);
 												slf4jlogger.debug("WSIFrameOfReference(): found numberOfChannels {}",numberOfChannels);
+												// if RGB 3 samples per pixel, numer of channels is still 3 even though there is really only one ... (001454)
+												String samplesPerPixelValue = xpf.newXPath().evaluate("/OME/Image/Pixels/Channel[@ID='Channel:0:0']/@SamplesPerPixel",document);
+												slf4jlogger.debug("WSIFrameOfReference(): found SamplesPerPixel for Channel:0:0 {}",samplesPerPixelValue);
+												try {
+													samplesPerPixel = Integer.parseInt(samplesPerPixelValue);
+													slf4jlogger.debug("WSIFrameOfReference(): have samplesPerPixel {}",samplesPerPixel);
+													if (numberOfChannels >= samplesPerPixel) {
+														numberOfChannels = numberOfChannels / samplesPerPixel;
+														slf4jlogger.debug("WSIFrameOfReference(): divided numberOfChannels by samplesPerPixel, now {}",numberOfChannels);
+													}
+												}
+												catch (NumberFormatException e) {
+													slf4jlogger.error("Failed to parse samplesPerPixelValue to int ",e);
+												}
 											}
 											catch (NumberFormatException e) {
 												slf4jlogger.error("Failed to parse sizeC to int ",e);
@@ -4298,6 +4435,9 @@ public class TIFFToDicom {
 												channelName[channelNumber] = xpf.newXPath().evaluate("@Name",channel);
 												slf4jlogger.debug("WSIFrameOfReference(): for channelNumber {} found Channel Name {}",channelNumber,channelName[channelNumber]);
 											}
+										}
+										else if (channels.getLength() > numberOfChannels && samplesPerPixel > 1) {	// (001454)
+											slf4jlogger.debug("WSIFrameOfReference(): ignoring {} channel metadata since samplesPerPixel == {} > 1",channels.getLength(),samplesPerPixel);
 										}
 										else {
 											slf4jlogger.error("WSIFrameOfReference(): number of channels in OME-TIFF XML metadata {} does not match numberOfChannels {}",channels.getLength(),numberOfChannels);
@@ -4783,7 +4923,7 @@ public class TIFFToDicom {
 			}
 			else if (xOffsetInSlideCoordinateSystemPyramid != 0 || yOffsetInSlideCoordinateSystemPyramid != 0) {
 				slf4jlogger.debug("Have explicit X and Y offsets for pyramid frame of reference");
-				uidOverview = u.getAnotherNewUID();		// probably is no OVERVIEW (in 3D Histech) but just in case
+				uidOverview = null;		// probably is no OVERVIEW (in 3D Histech) but just in case; (CP 2406)
 				// xOffsetInSlideCoordinateSystemPyramid and yOffsetInSlideCoordinateSystemPyramid already set
 				xOffsetInSlideCoordinateSystemOverview = 0;
 				yOffsetInSlideCoordinateSystemOverview = 0;
@@ -4791,7 +4931,7 @@ public class TIFFToDicom {
 			else {
 				slf4jlogger.debug("Cannot establish common frame of reference between OVERVIEW and pyramid");
 
-				uidOverview = u.getAnotherNewUID();
+				uidOverview = null;	// CP 2406
 				
 				xOffsetInSlideCoordinateSystemPyramid = 0;
 				yOffsetInSlideCoordinateSystemPyramid = 0;
@@ -4803,6 +4943,9 @@ public class TIFFToDicom {
 			slf4jlogger.debug("yOffsetInSlideCoordinateSystemPyramid={}",yOffsetInSlideCoordinateSystemPyramid);
 			slf4jlogger.debug("xOffsetInSlideCoordinateSystemOverview={}",xOffsetInSlideCoordinateSystemOverview);
 			slf4jlogger.debug("yOffsetInSlideCoordinateSystemOverview={}",yOffsetInSlideCoordinateSystemOverview);
+			
+			slf4jlogger.debug("uidPyramid={}",uidPyramid);
+			slf4jlogger.debug("uidOverview={}",uidOverview);
 		}
 
 	}
@@ -5179,7 +5322,7 @@ public class TIFFToDicom {
 	 * @exception			TIFFException
 	 * @exception			NumberFormatException
 	 */
-	public TIFFToDicom(String jsonfile,String inputFileName,String outputFilePrefix,String outputFileSuffix,String modality,String sopClass,String transferSyntax,boolean addTIFF,boolean useBigTIFF,boolean alwaysWSI,boolean addPyramid,boolean mergeStrips,boolean autoRecognize,String channelFileName,boolean includeFileName,double spacingrowmm,double spacingcolmm,double thicknessmm,boolean includeCopyOfImageDescription,String uidFileName,boolean addExtendedOffsetTable,boolean addBasicOffsetTable)
+	public TIFFToDicom(String jsonfile,String inputFileName,String outputFilePrefix,String outputFileSuffix,String modality,String sopClass,String transferSyntax,boolean addTIFF,boolean useBigTIFF,boolean alwaysWSI,boolean addPyramid,boolean mergeStrips,boolean autoRecognize,String channelFileName,boolean includeFileName,boolean includeFileMessageDigest,double spacingrowmm,double spacingcolmm,double thicknessmm,boolean includeCopyOfImageDescription,String uidFileName,boolean addExtendedOffsetTable,boolean addBasicOffsetTable)
 			throws IOException, DicomException, TIFFException, NumberFormatException {
 		
 		TIFFImageFileDirectories ifds = new TIFFImageFileDirectories();
@@ -5278,7 +5421,18 @@ public class TIFFToDicom {
 		}
 		
 		UIDMap uidMap = uidFileName == null ? null : new UIDMap(uidFileName);
-		
+
+		String inputFileMessageDigest = null;	// (001453)
+		if (includeFileMessageDigest) {
+			try {
+				inputFileMessageDigest = FileUtilities.md5(inputFileName);
+			}
+			catch (Exception e) {
+				slf4jlogger.error("Unable to obtain message digest for original file: ",e);
+				inputFileMessageDigest = null;
+			}
+		}
+
 		int dirNum = 0;
 		for (TIFFImageFileDirectory ifd : ifdlist) {
 			slf4jlogger.debug("Directory={}",dirNum);
@@ -5360,11 +5514,17 @@ public class TIFFToDicom {
 				}
 			}
 
-			if (includeFileName) {	// (001314)
+			if (includeFileName || includeFileMessageDigest) {
 				{ Attribute a = new LongStringAttribute(pixelmedPrivateOriginalFileNameDataBlockReservation); a.addValue(pixelmedPrivateCreator); descriptionList.put(a); }
-				{ Attribute a = new UnlimitedTextAttribute(pixelmedPrivateOriginalFileName); a.addValue(inputFileName); descriptionList.put(a); }
-				// OriginalTIFFIFDIndex is not actually common but will be overwritten with every pass through the loop, but misnamed (?) descriptionList is what is passed to convertTIFFPixelsToDicom*()
-				{ Attribute a = new UnsignedShortAttribute(pixelmedPrivateOriginalTIFFIFDIndex); a.addValue(dirNum); descriptionList.put(a); }
+				if (includeFileName) {	// (001314)
+					{ Attribute a = new UnlimitedTextAttribute(pixelmedPrivateOriginalFileName); a.addValue(inputFileName); descriptionList.put(a); }
+					// OriginalTIFFIFDIndex is not actually common but will be overwritten with every pass through the loop, but misnamed (?) descriptionList is what is passed to convertTIFFPixelsToDicom*()
+					{ Attribute a = new UnsignedShortAttribute(pixelmedPrivateOriginalTIFFIFDIndex); a.addValue(dirNum); descriptionList.put(a); }
+				}
+				if (includeFileMessageDigest && inputFileMessageDigest != null) {	// (001453)
+					{ Attribute a = new UnlimitedCharactersAttribute(pixelmedPrivateOriginalFileMACString); a.addValue(inputFileMessageDigest); descriptionList.put(a); }
+					{ Attribute a = new CodeStringAttribute(pixelmedPrivateOriginalOriginalFileMACAlgorithm); a.addValue("MD5"); descriptionList.put(a); }
+				}
 			}
 
 			String frameOfReferenceUID = wsifor.getFrameOfReferenceUIDForIFD(dirNum);	// (001256)
@@ -5388,10 +5548,10 @@ public class TIFFToDicom {
 				slf4jlogger.debug("Using opticalPathIdentifier from WSI Frame of Reference {} to make DICOM file",opticalPathIdentifier);
 				if (opticalPathIdentifier == null || opticalPathIdentifier.length() == 0) {
 					opticalPathIdentifier = Integer.toString(channel);
-					slf4jlogger.debug("In absence of opticalPathIdentifier from WSI Frame of Reference, using sequential channel index value",opticalPathIdentifier);
+					slf4jlogger.debug("In absence of opticalPathIdentifier from WSI Frame of Reference, using sequential channel index value {}",opticalPathIdentifier);
 				}
 				opticalPathDescription = wsifor.getChannelNameForChannel(channel);
-				slf4jlogger.debug("Using opticalPathDescription from WSI Frame of Reference {} to make DICOM file",opticalPathDescription);
+				slf4jlogger.debug("Using opticalPathDescription from WSI Frame of Reference {} to make DICOM file {}",opticalPathDescription);
 				
 				if (opticalPathAttributesByChannelID != null) {
 					opticalPathAttributesForChannel = opticalPathAttributesByChannelID.get(opticalPathIdentifier);
@@ -5472,7 +5632,7 @@ public class TIFFToDicom {
 							String outputFileName = outputFilePrefix + "_" + dirNum + outputFileSuffix;
 							slf4jlogger.info("outputFileName={}",outputFileName);
 							int instanceNumber = dirNum+1;
-							if (compression == 5) {
+							if (compression == 5 || compression == 8) {
 								// pretend it is merging strips, since we want to force decompression, which is not supported by convertTIFFPixelsToDicomSingleFrame()
 								convertTIFFPixelsToDicomSingleFrameMergingStrips(jsonfile,uidMap,ifds.getFile(),dirNum,outputFileName,instanceNumber,imageWidth,imageLength,stripOffsets,stripByteCounts,imageWidth,rowsPerStrip,bitsPerSample,compression,
 													jpegTables,iccProfile,photometric,samplesPerPixel,planarConfig,sampleFormat,predictor,
@@ -5555,6 +5715,8 @@ public class TIFFToDicom {
 	 * <p>Options are:</p>
 	 * <p>ADDTIFF | DONOTADDTIFF (default)</p>
 	 * <p>USEBIGTIFF (default) | DONOTUSEBIGTIFF</p>
+	 * <p>ADDEXTENDEDOFFSETTABLE | DONOTADDEXTENDEDOFFSETTABLE (default)</p>
+	 * <p>ADDBASICOFFSETTABLE | DONOTADDBASICOFFSETTABLE (default)</p>
 	 * <p>ALWAYSWSI | NOTALWAYSWSI (default)</p>
 	 * <p>ADDPYRAMID | DONOTADDPYRAMID (default)</p>
 	 * <p>MERGESTRIPS (default) | DONOTMERGESTRIPS</p>
@@ -5581,6 +5743,7 @@ public class TIFFToDicom {
 			boolean mergeStrips = true;
 			boolean autoRecognize = true;
 			boolean includeFileName = false;
+			boolean includeFileMessageDigest = false;
 			boolean includeCopyOfImageDescription = true;	// (001347)
 			
 			String outputFileSuffix = ".dcm";
@@ -5632,6 +5795,9 @@ public class TIFFToDicom {
 
 					case "INCLUDEFILENAME":		includeFileName = true;  --endOptionsPosition; break;
 					case "DONOTINCLUDEFILENAME":includeFileName = false; --endOptionsPosition; break;
+
+					case "INCLUDEFILEMESSAGEDIGEST":		includeFileMessageDigest = true;  --endOptionsPosition; break;
+					case "DONOTINCLUDEFILEMESSAGEDIGEST":	includeFileMessageDigest = false; --endOptionsPosition; break;
 
 					case "INCLUDEIMAGEDESCRIPTION":			includeCopyOfImageDescription = true;  --endOptionsPosition; break;	// (001347)
 					case "DONOTINCLUDEIMAGEDESCRIPTION":	includeCopyOfImageDescription = false; --endOptionsPosition; break;
@@ -5712,7 +5878,7 @@ public class TIFFToDicom {
 				slf4jlogger.debug("thicknessmm = {}",thicknessmm);
 				slf4jlogger.debug("uidFileName = {}",uidFileName);
 
-				new TIFFToDicom(jsonfile,inputFile,outputFilePrefix,outputFileSuffix,modality,sopClass,transferSyntax,addTIFF,useBigTIFF,alwaysWSI,addPyramid,mergeStrips,autoRecognize,channelFileName,includeFileName,spacingrowmm,spacingcolmm,thicknessmm,includeCopyOfImageDescription,uidFileName,addExtendedOffsetTable,addBasicOffsetTable);
+				new TIFFToDicom(jsonfile,inputFile,outputFilePrefix,outputFileSuffix,modality,sopClass,transferSyntax,addTIFF,useBigTIFF,alwaysWSI,addPyramid,mergeStrips,autoRecognize,channelFileName,includeFileName,includeFileMessageDigest,spacingrowmm,spacingcolmm,thicknessmm,includeCopyOfImageDescription,uidFileName,addExtendedOffsetTable,addBasicOffsetTable);
 			}
 			else {
 				System.err.println("Error: Incorrect number of arguments or bad arguments");
@@ -5727,6 +5893,7 @@ public class TIFFToDicom {
 					+" [AUTORECOGNIZE|DONOTAUTORECOGNIZE]"
 					+" [ADDDCMSUFFIX|DONOTADDDCMSUFFIX]"
 					+" [INCLUDEFILENAME|DONOTINCLUDEFILENAME]"
+					+" [INCLUDEFILEMESSAGEDIGEST|DONOTINCLUDEFILEMESSAGEDIGEST]"
 					+" [INCLUDEIMAGEDESCRIPTION|DONOTINCLUDEIMAGEDESCRIPTION]"
 					+" [CHANNELFILE channelfile]"
 					+" [SPACINGMM spacingmm]"

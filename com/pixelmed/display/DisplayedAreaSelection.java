@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -13,7 +13,7 @@ import java.awt.Rectangle;
  */
 public class DisplayedAreaSelection implements Cloneable {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayedAreaSelection.java,v 1.23 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DisplayedAreaSelection.java,v 1.24 2026/03/08 15:20:37 dclunie Exp $";
 
 		protected int imageWidth;
 		protected int imageHeight;

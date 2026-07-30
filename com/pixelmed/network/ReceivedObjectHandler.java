@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -39,7 +39,7 @@ private class OurReceivedObjectHandler extends ReceivedObjectHandler {
  * @author	dclunie
  */
 abstract public class ReceivedObjectHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedObjectHandler.java,v 1.19 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/ReceivedObjectHandler.java,v 1.20 2026/03/08 15:20:39 dclunie Exp $";
 
 	/**
 	 * <p>Do something with the received data set stored in the specified file name.</p>

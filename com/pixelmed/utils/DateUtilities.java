@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -17,7 +17,7 @@ import java.util.GregorianCalendar;
  * @author	dclunie
  */
 public class DateUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/DateUtilities.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/DateUtilities.java,v 1.15 2026/03/08 15:20:40 dclunie Exp $";
 
 	private DateUtilities() {}
 	

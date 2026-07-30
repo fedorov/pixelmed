@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -23,7 +23,7 @@ import com.pixelmed.dicom.GeometryOfVolumeFromAttributeList;
  */
 class OrientationAnnotations {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/OrientationAnnotations.java,v 1.13 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/OrientationAnnotations.java,v 1.14 2026/03/08 15:20:37 dclunie Exp $";
 	
 	/***/
 	private GeometryOfVolume imageGeometry;

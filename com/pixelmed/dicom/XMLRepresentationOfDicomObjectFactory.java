@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -150,7 +150,7 @@ try {
  * @author	dclunie
  */
 public class XMLRepresentationOfDicomObjectFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfDicomObjectFactory.java,v 1.33 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/XMLRepresentationOfDicomObjectFactory.java,v 1.34 2026/03/08 15:20:36 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(XMLRepresentationOfDicomObjectFactory.class);
 

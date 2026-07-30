@@ -1,9 +1,10 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
 import com.pixelmed.dicom.*;
 import com.pixelmed.network.*;
+import com.pixelmed.dicomweb.useragent.StudyServiceSearchTransactionUserAgent;
 
 import java.io.*;
 import java.util.*;
@@ -15,7 +16,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * <p>The {@link QueryInformationModel QueryInformationModel} class is an abstract class that contains the core
  * functionality for performing DICOM query and retrieval over the network.</p>
  *
- * <p>It hides the underlying DICOM network implementation.</p>
+ * <p>It hides the underlying DICOM or DICOMweb network implementation.</p>
  *
  * <p>Associations can be cached and reused.</p>
  *
@@ -29,6 +30,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * builders are:</p>
  * <ul>
  * <li> {@link #QueryInformationModel(String,int,String,String) QueryInformationModel()}
+ * <li> {@link #QueryInformationModel(String) QueryInformationModel()}
  * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
  * <li> {@link #performHierarchicalMove(AttributeList) performHierarchicalMove()}
  * <li> {@link #performHierarchicalMoveFrom(AttributeList,String) performHierarchicalMoveFrom()}
@@ -41,7 +43,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 abstract public class QueryInformationModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.37 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.40 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryInformationModel.class);
 
@@ -57,6 +59,8 @@ abstract public class QueryInformationModel {
 	protected Association cFindAssociation;
 	/***/
 	protected Association cMoveAssociation;
+	/***/
+	private String uri;		// DICOMweb URI used instead of hostname, port and calledAETitle
 	
 	public final Association getCFindAssociation() { return cFindAssociation; }
 	
@@ -95,6 +99,17 @@ abstract public class QueryInformationModel {
 		else if (ie == InformationEntity.INSTANCE)      return "IMAGE";
 		else return null;
 	}
+
+	/**
+	 * @param	queryLevelName
+	 */
+	public InformationEntity getInformationEntityForQueryLevelName(String queryLevelName) {
+		if      ("PATIENT" == queryLevelName)	return InformationEntity.PATIENT;
+		else if ("STUDY"   == queryLevelName)	return InformationEntity.STUDY;
+		else if ("SERIES"  == queryLevelName)	return InformationEntity.SERIES;
+		else if ("IMAGE"   == queryLevelName)	return InformationEntity.INSTANCE;
+		else return null;
+	}
 	
 	/**
 	 * @param	ie
@@ -124,7 +139,7 @@ abstract public class QueryInformationModel {
 	 * @throws	DicomException
 	 */
 	private AttributeList makeIdentifierFromAttributesAtThisQueryLevel(AttributeList oldList,AttributeList parentUniqueKeys,InformationEntity queryLevel) throws DicomException {
-		slf4jlogger.trace("makeIdentifierFromAttributesAtThisQueryLevel: queryLevel={}",queryLevel);
+		slf4jlogger.trace("makeIdentifierFromAttributesAtThisQueryLevel: queryLevel=\n{}",queryLevel);
 		HashSet allInformationEntitiesToIncludeAtThisQueryLevel = getAllInformationEntitiesToIncludeAtThisQueryLevel(queryLevel);
 //System.err.println("makeIdentifierFromAttributesAtThisQueryLevel: allInformationEntitiesToIncludeAtThisQueryLevel="+allInformationEntitiesToIncludeAtThisQueryLevel);
 		DicomDictionary dictionary = oldList.getDictionary();
@@ -186,13 +201,23 @@ abstract public class QueryInformationModel {
 		slf4jlogger.debug("performQuery(): queryLevel={}",queryLevel);
 		slf4jlogger.debug("performQuery(): parentUniqueKeys=\n{}",parentUniqueKeys);
 		AttributeList requestIdentifier = makeIdentifierFromAttributesAtThisQueryLevel(filter,parentUniqueKeys,queryLevel);
-		slf4jlogger.trace("performQuery(): requestIdentifier=\n{}",requestIdentifier);
-		if (cFindAssociation == null) {
-			new FindSOPClassSCU(hostname,port,calledAETitle,callingAETitle,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
+		slf4jlogger.debug("performQuery(): requestIdentifier=\n{}",requestIdentifier);
+		if (cFindAssociation != null) {
+			slf4jlogger.debug("performQuery(): reusing existing association");
+			new FindSOPClassSCU(cFindAssociation,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
 		}
 		else {
-		slf4jlogger.trace("performQuery(): reusing existing association");
-			new FindSOPClassSCU(cFindAssociation,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
+			if (hostname != null && port != 0 && calledAETitle != null) {
+				slf4jlogger.debug("performQuery(): perform C-FIND");
+				new FindSOPClassSCU(hostname,port,calledAETitle,callingAETitle,getFindSOPClassUID(),requestIdentifier,responseIdentifierHandler);
+			}
+			else if (uri != null) {
+				slf4jlogger.debug("performQuery(): perform DICOMweb search");
+				new StudyServiceSearchTransactionUserAgent(uri,requestIdentifier,responseIdentifierHandler);
+			}
+			else {
+				throw new DicomException("Insufficient parameters to identify query method and server");
+			}
 		}
 	}
 
@@ -468,6 +493,20 @@ abstract public class QueryInformationModel {
 		this.callingAETitle=callingAETitle;
 		cFindAssociation = null;
 		cMoveAssociation = null;
+	}
+	
+	/**
+	 * <p>Construct a query information model.</p>
+	 *
+	 * <p>Does not actually open an association or perform a query or retrieval; for that see:</p>
+	 * <ul>
+	 * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
+	 * </ul>
+	 *
+	 * @param	uri			DICOMweb uRI
+	 */
+	public QueryInformationModel(String uri) {
+		this.uri=uri;
 	}
 
 }

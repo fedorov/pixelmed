@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -170,7 +170,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class AttributeList extends TreeMap<AttributeTag,Attribute> {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeList.java,v 1.212 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeList.java,v 1.215 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(AttributeList.class);
 
@@ -436,7 +436,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * @param	lengthToRead
 	 * @param	stopAfterMetaInformationHeader
 	 * @param	specificCharacterSet
-	 * @param	stopAtTag										the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag										the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @param	strategy										the ReadTerminationStrategy at which to stop
 	 * @param	insideUnknownVRSoForceImplicitVRLittleEndian	we are inside a UN VR sequence, so regardless of the whether the DicomInputStream is implicit or explicit VR, treat as implicit VR
 	 * @param	isSignedPixelRepresentation						the PixelRepresentation in an enclosing data set is signed (needed to choose VR for US/SS VR data elements)
@@ -1362,7 +1362,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * <p>Leaves the stream open.</p>
 	 *
 	 * @param	i				the stream to read from
-	 * @param	stopAtTag		the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag		the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @return					the byte offset at which the read stopped (which will be just past the stopAtTag, if stopped)
 	 * @throws	IOException		if an I/O error occurs
 	 * @throws	DicomException	if an error in DICOM parsing
@@ -1380,7 +1380,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * <p>Leaves the stream open.</p>
 	 *
 	 * @param	i				the stream to read from
-	 * @param	stopAtTag		the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag		the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @param	strategy		the ReadTerminationStrategy at which to stop
 	 * @return					the byte offset at which the read stopped (which will be just past the stopAtTag or the tag read before the ReadTerminationStrategy terminated)
 	 * @throws	IOException		if an I/O error occurs
@@ -1449,7 +1449,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * @param	transferSyntaxUID	the transfer syntax to use for the data set (leave null for autodetection)
 	 * @param	hasMeta				look for a meta information header
 	 * @param	useBufferedStream	buffer the input for better performance
-	 * @param	stopAtTag			the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag			the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @param	strategy			the ReadTerminationStrategy at which to stop
 	 * @return						the byte offset at which the read stopped (which will be just past the stopAtTag or the tag read before the ReadTerminationStrategy terminated)
 	 * @throws	IOException		if an I/O error occurs
@@ -1602,7 +1602,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * if no meta information header and buffers the input for better performance.</p>
 	 *
 	 * @param	name			the input file name
-	 * @param	stopAtTag		the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag		the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @return					the byte offset at which the read stopped (which will be just past the stopAtTag, if stopped)
 	 * @throws	IOException		if an I/O error occurs
 	 * @throws	DicomException	if an error in DICOM parsing
@@ -1655,7 +1655,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	 * if no meta information header and buffers the input for better performance.</p>
 	 *
 	 * @param	file			the input file
-	 * @param	stopAtTag		the tag (in the top level data set) at which to stop
+	 * @param	stopAtTag		the tag (in the top level data set) at which to stop (before reading the rest of the data element)
 	 * @return					the byte offset at which the read stopped (which will be just past the stopAtTag, if stopped)
 	 * @throws	IOException		if an I/O error occurs
 	 * @throws	DicomException	if an error in DICOM parsing
@@ -1758,6 +1758,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 				|| useMeta						// will also write command group
 				|| isCommandGroupAttribute) {	// (001133), applies when not useMeta
 //System.err.println("Writing "+a);
+				if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("read(): Writing {}"+a.toString());
 				a.write(dout);
 			}
 		}

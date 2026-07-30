@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -43,7 +43,7 @@ public class TestAnatomyFind extends TestCase {
 	protected void tearDown() {
 	}
 	
-	private static final Concept chest = new Concept("C0817096");
+	private static final Concept chest = new Concept("C5230958");
 	private static final Concept pelvis = new Concept("C0030797");
 
 	public void TestAnatomyFind_SeriesDescription() throws Exception {

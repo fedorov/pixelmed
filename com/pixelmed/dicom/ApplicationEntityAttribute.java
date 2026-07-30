@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class ApplicationEntityAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ApplicationEntityAttribute.java,v 1.21 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ApplicationEntityAttribute.java,v 1.22 2026/03/08 15:20:34 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
 	

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -24,7 +24,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 public class OtherByteAttributeMultipleCompressedFrames extends Attribute implements ByteFrameSource, BasicOffsetTableAccessor {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeMultipleCompressedFrames.java,v 1.23 2025/02/11 22:28:28 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeMultipleCompressedFrames.java,v 1.24 2026/03/08 15:20:36 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(OtherByteAttributeMultipleCompressedFrames.class);
 	

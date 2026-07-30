@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -51,7 +51,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class CompressedFrameDecoder {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CompressedFrameDecoder.java,v 1.36 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CompressedFrameDecoder.java,v 1.38 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompressedFrameDecoder.class);
 	
@@ -62,7 +62,14 @@ public class CompressedFrameDecoder {
 	private int width;		// needed for RLE
 	private int height;		// needed for RLE
 	private int samples;	// needed for RLE and lossy JPEG if doing own color space conversion
-	private ColorSpace colorSpace;
+	
+	private ColorSpace colorSpace;		// used to create color model when samples == 3 as decompressed frames are requested as BufferedImage
+	
+	public void setColorSpace(ColorSpace colorSpace) {
+		slf4jlogger.debug("CompressedFrameDecoder.setColorSpace(): to {}",colorSpace);
+		this.colorSpace = colorSpace;
+	}
+	
 	private boolean photometricInterpretationIsKnown;
 	private boolean photometricInterpretationIsYBR;
 

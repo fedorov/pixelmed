@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -27,7 +27,7 @@ import javax.xml.bind.DatatypeConverter;	// for getting digest as hex string
  * @author	dclunie
  */
 public class PixelMessageDigest {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/PixelMessageDigest.java,v 1.6 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/PixelMessageDigest.java,v 1.8 2026/03/08 15:20:34 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(PixelMessageDigest.class);
 	
@@ -37,12 +37,12 @@ public class PixelMessageDigest {
 		list.setDecompressPixelData(false);
 		list.read(inputFile);
 
-		SourceImage sImg = new SourceImage(list);
+		SourceImage sImg = new SourceImage(list,false/*applyICCProfileIfPresent*/);		// Hmm :( Do we need to be concerned about color space transformations?
 		int nframes = sImg.getNumberOfFrames();
 
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		for (int f=0; f<nframes; ++f) {
-			BufferedImage img = sImg.getBufferedImage(f,false/*useICC*/);								// Hmm :( Do we need to be concerned about color space transformations?
+			BufferedImage img = sImg.getBufferedImage(f);
 			if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug(com.pixelmed.display.BufferedImageUtilities.describeImage(img));
 			byte[] decompressedValues = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();	// Hmm :( Do we need to be concerned about the order of components and interleaving?
 			md.update(decompressedValues);

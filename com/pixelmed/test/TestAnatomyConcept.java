@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -45,8 +45,8 @@ public class TestAnatomyConcept extends TestCase {
 	public void TestAnatomyConcept_Equality() throws Exception {
 
 		Concept ileum1 = new                    Concept("C0020885");
-		Concept ileum2 = new DisplayableAnatomicConcept("C0020885","34516001",	false/*unpaired*/,	"SRT",	"SNM3",	null,	"T-58600",	"Ileum",			"ILEUM",		null,	null,			null);
-		Concept ilium  = new DisplayableAnatomicConcept("C0020889","22356005",	true   /*paired*/,	"SRT",	"SNM3",	null,	"T-12340",	"Ilium",			"ILIUM",		null,	null,			null);
+		Concept ileum2 = new DisplayableAnatomicConcept("C0020885","34516001",	false/*unpaired*/,	"SCT",	"SRT",	CodedConcept.srtLegacyCodingSchemeDesignators,	null,	"34516001",	"T-58600",	"Ileum",			"ILEUM",		null,	null,			null);
+		Concept ilium  = new DisplayableAnatomicConcept("C0020889","22356005",	true   /*paired*/,	"SCT",	"SRT",	CodedConcept.srtLegacyCodingSchemeDesignators,	null,	"22356005",	"T-12340",	"Ilium",			"ILIUM",		null,	null,			null);
 
 		assertEquals("Checking self",ileum1,ileum1);
 		assertTrue("Checking self hashCode",ileum1.hashCode() == ileum1.hashCode());

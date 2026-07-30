@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -27,7 +27,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 class AssociationInitiator extends Association {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociationInitiator.java,v 1.43 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/AssociationInitiator.java,v 1.44 2026/03/08 15:20:38 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(AssociationInitiator.class);
 

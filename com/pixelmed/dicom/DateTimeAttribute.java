@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -21,7 +21,7 @@ import java.util.TimeZone;
  */
 public class DateTimeAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.31 2026/03/08 15:20:35 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 26;	// assuming not being used for query range matching, in which case it would be 54 :(
 	

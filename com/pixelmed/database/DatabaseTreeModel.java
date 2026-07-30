@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -21,7 +21,7 @@ import com.pixelmed.dicom.*;
 public class DatabaseTreeModel implements TreeModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeModel.java,v 1.24 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DatabaseTreeModel.java,v 1.25 2026/03/08 15:20:34 dclunie Exp $";
 
 	// Our nodes are all instances of DatabaseTreeRecord ...
 

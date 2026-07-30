@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.slf4j;
 
@@ -19,7 +19,7 @@ import java.util.Date;
  * @author	dclunie
  */
 public class Logger {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/slf4j/Logger.java,v 1.10 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/slf4j/Logger.java,v 1.11 2026/03/08 15:20:39 dclunie Exp $";
 	
 	protected org.slf4j.Logger slf4jlogger;
 	

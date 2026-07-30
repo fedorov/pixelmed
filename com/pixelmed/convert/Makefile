@@ -1489,6 +1489,25 @@ testbigtiffjpegtodicommfauto:	/tmp/bigtiffjpegtodicommf.json TIFFToDicom.class T
 	rm -f /tmp/bigtiffjpegtodicommf.json
 	ls -l /tmp/WSI_MultiFrame/*
 
+testbigtiffjpegtodicommfaddfilenameanddigest:	/tmp/bigtiffjpegtodicommf.json TIFFToDicom.class TIFFException.class TIFFFile.class TIFFImageFileDirectories.class TIFFImageFileDirectory.class TIFFImageFileDirectoryEntry.class TIFFTags.class TIFFTypes.class TIFFValues.class
+	mkdir -p /tmp/WSI_MultiFrame
+	rm -f /tmp/WSI_MultiFrame/*
+	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} -Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.TIFFToDicom=debug \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.CompressedFrameDecoder=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.OtherByteAttributeMultipleCompressedFrames=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.display.SourceImage=info \
+		com.pixelmed.convert.TIFFToDicom \
+		/tmp/bigtiffjpegtodicommf.json \
+		"$${HOME}/Pictures/Medical/WSI/CMU/openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs" \
+		"/tmp/WSI_MultiFrame/img" \
+		SM 1.2.840.10008.5.1.4.1.1.77.1.6 \
+		INCLUDEFILENAME INCLUDEFILEMESSAGEDIGEST
+	rm -f /tmp/bigtiffjpegtodicommf.json
+	ls -l /tmp/WSI_MultiFrame/*
+	dckey -k '(0x0009,0x1003)' /tmp/WSI_MultiFrame/img_0.dcm
+	dckey -k '(0x0009,0x1004)' /tmp/WSI_MultiFrame/img_0.dcm
+
 testbigtiffjpegtodicommfaddtiff:	/tmp/bigtiffjpegtodicommf.json TIFFToDicom.class TIFFException.class TIFFFile.class TIFFImageFileDirectories.class TIFFImageFileDirectory.class TIFFImageFileDirectoryEntry.class TIFFTags.class TIFFTypes.class TIFFValues.class
 	mkdir -p /tmp/WSI_MultiFrame
 	rm -f /tmp/WSI_MultiFrame/*

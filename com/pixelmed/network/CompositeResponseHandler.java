@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -26,7 +26,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 abstract public class CompositeResponseHandler extends ReceivedDataHandler {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CompositeResponseHandler.java,v 1.29 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/CompositeResponseHandler.java,v 1.30 2026/03/08 15:20:38 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompositeResponseHandler.class);
 

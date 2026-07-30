@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.query;
 
@@ -19,11 +19,21 @@ import com.pixelmed.slf4j.LoggerFactory;
  * the study level are series and instance (image) levels.</p>
  *
  * <p>For example, an application might instantiate a
- * {@link com.pixelmed.query.StudyRootQueryInformationModel StudyRootQueryInformationModel}, and
- * then actually perform a query (with debugging messages on) using a list of attributes as follows:</p>
+ * {@link com.pixelmed.query.StudyRootQueryInformationModel StudyRootQueryInformationModel}:</p>
  *
  * <pre>
- * 	final QueryInformationModel model = new StudyRootQueryInformationModel("remotehost",104,"THEIRAET","OURAET",1);
+ * 	final QueryInformationModel model = new StudyRootQueryInformationModel("remotehost",104,"THEIRAET","OURAET");
+ * </pre>
+ *
+ * <p>or:</p>
+ *
+ * <pre>
+ * 	final QueryInformationModel model = new StudyRootQueryInformationModel("http://acmeserver.com/dicomweb");
+ * </pre>
+ *
+ * <p>then actually perform a query (with debugging messages on) using a list of attributes as follows:</p>
+ *
+ * <pre>
  * 	final QueryTreeModel tree = model.performHierarchicalQuery(identifier);
  *	System.err.println("Tree="+tree);
  * </pre>
@@ -100,7 +110,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class StudyRootQueryInformationModel extends QueryInformationModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.34 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.36 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StudyRootQueryInformationModel.class);
 	
@@ -187,6 +197,16 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 	 */
 	public StudyRootQueryInformationModel(String hostname,int port,String calledAETitle,String callingAETitle) {
 		super(hostname,port,calledAETitle,callingAETitle);
+		populateInformationEntitySets();
+	}
+	
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @param	uri			DICOMweb uRI
+	 */
+	public StudyRootQueryInformationModel(String uri) {
+		super(uri);
 		populateInformationEntitySets();
 	}
 	
@@ -278,7 +298,7 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 	/**
 	 * <p>Unit testing.</p>
 	 *
-	 * @param	arg	an array of four strings, hostname, port, calledAETitle, callingAETitle
+	 * @param	arg	an array of four strings, hostname, port, calledAETitle, callingAETitle, or one string, DICOMweb URI
 	 */
 	public static void main(String arg[]) {
 		try {
@@ -354,7 +374,11 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 			{ AttributeTag t = TagFromName.SOPInstanceUID; Attribute a = new UniqueIdentifierAttribute(t); filter.put(t,a); }
 			{ AttributeTag t = TagFromName.SOPClassUID; Attribute a = new UniqueIdentifierAttribute(t); filter.put(t,a); }
 			{ AttributeTag t = TagFromName.SpecificCharacterSet; Attribute a = new CodeStringAttribute(t); filter.put(t,a); a.addValue(characterSets[0]); }
-			QueryInformationModel model = new StudyRootQueryInformationModel(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3]);
+			
+			QueryInformationModel model = arg.length == 4
+				? new StudyRootQueryInformationModel(arg[0],Integer.parseInt(arg[1]),arg[2],arg[3])
+				: new StudyRootQueryInformationModel(arg[0]);
+				
 			QueryTreeModel tree = model.performHierarchicalQuery(filter);
 			System.err.println("Tree="+tree);	// no need to use SLF4J since command line utility/test
 		}

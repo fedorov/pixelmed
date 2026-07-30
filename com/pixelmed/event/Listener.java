@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.event;
 
@@ -11,7 +11,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public abstract class Listener implements EventListener {	// why bother implementing java.util.EventListener ?
-	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/Listener.java,v 1.14 2025/01/29 10:58:08 dclunie Exp $";
+	static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/event/Listener.java,v 1.15 2026/03/08 15:20:38 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(Listener.class);
 

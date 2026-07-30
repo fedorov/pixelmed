@@ -20,6 +20,5 @@ java \
 	-Djavax.xml.transform.TransformerFactory=net.sf.saxon.TransformerFactoryImpl \
 	-cp "${PIXELMEDDIR}/pixelmed.jar:${PIXELMEDDIR}/lib/additional/slf4j-api-1.7.13.jar:${PIXELMEDDIR}/lib/additional/slf4j-simple-1.7.13.jar:${PIXELMEDDIR}/lib/additional/excalibur-bzip2-1.0.jar:${PIXELMEDDIR}/lib/additional/commons-codec-1.3.jar:${PIXELMEDDIR}/lib/additional/saxon-he-12.5.jar:${PIXELMEDDIR}/lib/additional/xmlresolver-5.2.2.jar" \
 	com.pixelmed.validate.DicomSRValidator \
-	-checkcontentitemorder \
 	-checktemplateid \
 	$*

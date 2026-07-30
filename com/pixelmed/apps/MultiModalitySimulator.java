@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.apps;
 
@@ -59,7 +59,7 @@ java -cp pixelmed.jar:lib/additional/commons-codec-1.3.jar:lib/additional/common
  * @author	dclunie
  */
 public class MultiModalitySimulator {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MultiModalitySimulator.java,v 1.18 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/MultiModalitySimulator.java,v 1.19 2026/03/08 15:20:34 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(MultiModalitySimulator.class);
 	

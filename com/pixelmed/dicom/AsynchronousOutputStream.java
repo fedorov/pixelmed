@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class AsynchronousOutputStream extends FilterOutputStream {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AsynchronousOutputStream.java,v 1.15 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AsynchronousOutputStream.java,v 1.16 2026/03/08 15:20:34 dclunie Exp $";
 
 	private BlockingQueue<ByteArrayObject> q;
 	private Consumer c;

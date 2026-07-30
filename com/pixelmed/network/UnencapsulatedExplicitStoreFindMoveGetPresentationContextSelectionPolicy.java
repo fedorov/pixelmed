@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -16,7 +16,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy implements PresentationContextSelectionPolicy {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy.java,v 1.16 2026/03/08 15:20:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(UnencapsulatedExplicitStoreFindMoveGetPresentationContextSelectionPolicy.class);
 	

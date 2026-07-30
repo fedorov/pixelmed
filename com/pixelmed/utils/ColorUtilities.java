@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -8,7 +8,7 @@ package com.pixelmed.utils;
  * @author	dclunie
  */
 public class ColorUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ColorUtilities.java,v 1.14 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ColorUtilities.java,v 1.17 2026/03/11 19:05:00 dclunie Exp $";
 
 	private ColorUtilities() {}
 		
@@ -139,9 +139,9 @@ public class ColorUtilities {
 	 * @param	rgb		array of length 3 containing R,G,B values each from 0 to 255
 	 * return			array of length 3 containing X,Y,Z values
 	 */
-	public static float[] getCIEXYZPCSFromSRGB(int[] rgb) {
+	public static float[] getCIEXYZPCSFromSRGB(float[] rgb) {
 		// per http://www.easyrgb.com/index.php?X=MATH&H=02#text2
-			
+		
 		double var_R = ((double)rgb[0])/255.0;
 		double var_G = ((double)rgb[1])/255.0;
 		double var_B = ((double)rgb[2])/255.0;
@@ -168,6 +168,24 @@ public class ColorUtilities {
 			
 //System.err.println("RGB ("+rgb[0]+","+rgb[1]+","+rgb[2]+") -> CIEXYZ ("+cieXYZ[0]+","+cieXYZ[1]+","+cieXYZ[2]+")");
 		return cieXYZ;
+	}
+
+	/**
+	 * <p>Convert RGB values in sRGB to CIEXYZ in ICC PCS.</p>
+	 *
+	 * <p>SRGB Observer = 2°, Illuminant = D65, XYZ PCS Illuminant = D50.</p>
+	 *
+	 * @see <a href="http://en.wikipedia.org/wiki/SRGB#The_reverse_transformation">Wikipedia SRGB Reverse Transformation</a>
+	 *
+	 * @param	rgb		array of length 3 containing R,G,B values each from 0 to 255
+	 * return			array of length 3 containing X,Y,Z values
+	 */
+	public static float[] getCIEXYZPCSFromSRGB(int[] rgb) {
+		float[] frgb = new float[3];
+		frgb[0]=(float)rgb[0];
+		frgb[1]=(float)rgb[1];
+		frgb[2]=(float)rgb[2];
+		return getCIEXYZPCSFromSRGB(frgb);
 	}
 	
 	/**
@@ -207,7 +225,25 @@ public class ColorUtilities {
 //System.err.println("CIEXYZ ("+cieXYZ[0]+","+cieXYZ[1]+","+cieXYZ[2]+") -> RGB ("+rgb[0]+","+rgb[1]+","+rgb[2]+")");
 		return rgb;
 	}
-		
+
+	/**
+	 * <p>Convert CIEXYZ in ICC PCS to RGB values in sRGB.</p>
+	 *
+	 * <p>SRGB Observer = 2°, Illuminant = D65, XYZ PCS Illuminant = D50.</p>
+	 *
+	 * @see <a href="http://en.wikipedia.org/wiki/SRGB#The_forward_transformation_.28CIE_xyY_or_CIE_XYZ_to_sRGB.29">Wikipedia SRGB Forward Transformation</a>
+	 *
+	 * @param	cieXYZ	array of length 3 containing X,Y,Z values
+	 * return			array of length 3 containing R,G,B values each from 0 to 255
+	 */
+	public static int[] getSRGBFromCIEXYZPCS(int[] cieXYZ) {
+		float[] fcieXYZ = new float[3];
+		fcieXYZ[0]=(float)cieXYZ[0];
+		fcieXYZ[1]=(float)cieXYZ[1];
+		fcieXYZ[2]=(float)cieXYZ[2];
+		return getSRGBFromCIEXYZPCS(fcieXYZ);
+	}
+
 	/**
 	 * <p>Convert RGB values in sRGB to CIELab in ICC PCS.</p>
 	 *
@@ -215,6 +251,16 @@ public class ColorUtilities {
 	 * return			array of length 3 containing L*,a*,b* values
 	 */
 	public static float[] getCIELabPCSFromSRGB(int[] rgb) {
+		return getCIELabFromXYZ(getCIEXYZPCSFromSRGB(rgb));
+	}
+		
+	/**
+	 * <p>Convert RGB values in sRGB to CIELab in ICC PCS.</p>
+	 *
+	 * @param	rgb		array of length 3 containing R,G,B values each from 0 to 255
+	 * return			array of length 3 containing L*,a*,b* values
+	 */
+	public static float[] getCIELabPCSFromSRGB(float[] rgb) {
 		return getCIELabFromXYZ(getCIEXYZPCSFromSRGB(rgb));
 	}
 
@@ -225,6 +271,16 @@ public class ColorUtilities {
 	 * return			array of length 3 containing L*,a*,b* values each from 0 to 65535
 	 */
 	public static int[] getIntegerScaledCIELabPCSFromSRGB(int[] rgb) {
+		return getIntegerScaledCIELabFromCIELab(getCIELabPCSFromSRGB(rgb));
+	}
+
+	/**
+	 * <p>Convert RGB values in sRGB to 16 bit fractional integer scaled CIELab in ICC PCS.</p>
+	 *
+	 * @param	rgb		array of length 3 containing R,G,B values each from 0 to 255
+	 * return			array of length 3 containing L*,a*,b* values each from 0 to 65535
+	 */
+	public static int[] getIntegerScaledCIELabPCSFromSRGB(float[] rgb) {
 		return getIntegerScaledCIELabFromCIELab(getCIELabPCSFromSRGB(rgb));
 	}
 	
@@ -247,7 +303,6 @@ public class ColorUtilities {
 	public static int[] getSRGBFromIntegerScaledCIELabPCS(int[] cieLabScaled) {
 		return getSRGBFromCIELabPCS(getCIELabPCSFromIntegerScaledCIELabPCS(cieLabScaled));
 	}
-
 	
 	/**
 	 * <p>Convert color values</p>
@@ -258,21 +313,67 @@ public class ColorUtilities {
 		boolean bad = true;
 		try {
 			if (arg.length == 4) {
-				int[] input = new int[3];
-				input[0] = arg[1].startsWith("0x") ? Integer.parseInt(arg[1].replaceFirst("0x",""),16) :  Integer.parseInt(arg[1]);
-				input[1] = arg[2].startsWith("0x") ? Integer.parseInt(arg[2].replaceFirst("0x",""),16) :  Integer.parseInt(arg[2]);
-				input[2] = arg[3].startsWith("0x") ? Integer.parseInt(arg[3].replaceFirst("0x",""),16) :  Integer.parseInt(arg[3]);
+				int[] input = null;
+				float[] finput = null;
+				if (arg[1].startsWith("0x") || arg[2].startsWith("0x") || arg[3].startsWith("0x")
+				 || (!arg[1].contains(".") && !arg[2].contains(".") && !arg[3].contains("."))
+				 ) {
+					input = new int[3];
+					input[0] = arg[1].startsWith("0x") ? Integer.parseInt(arg[1].replaceFirst("0x",""),16) :  Integer.parseInt(arg[1]);
+					input[1] = arg[2].startsWith("0x") ? Integer.parseInt(arg[2].replaceFirst("0x",""),16) :  Integer.parseInt(arg[2]);
+					input[2] = arg[3].startsWith("0x") ? Integer.parseInt(arg[3].replaceFirst("0x",""),16) :  Integer.parseInt(arg[3]);
+				}
+				else {
+					finput = new float[3];
+					finput[0] = Float.parseFloat(arg[1]);
+					finput[1] = Float.parseFloat(arg[2]);
+					finput[2] = Float.parseFloat(arg[3]);
+				}
+				
 				int[] output = null;
+				float[] foutput = null;
+				
 				String inputType = null;
 				String outputType = null;
+				
 				if (arg[0].toLowerCase(java.util.Locale.US).equals("sRGB8toCIELab16".toLowerCase(java.util.Locale.US))) {
-					output = getIntegerScaledCIELabPCSFromSRGB(input);
+					if (input != null) {
+						output = getIntegerScaledCIELabPCSFromSRGB(input);
+					}
+					else if (finput != null) {
+						output = getIntegerScaledCIELabPCSFromSRGB(finput);
+					}
 					inputType = "sRGB8";
 					outputType = "CIELab16";
 					bad = false;
 				}
+				else if (arg[0].toLowerCase(java.util.Locale.US).equals("sRGB8toCIEXYZ".toLowerCase(java.util.Locale.US))) {
+					if (input != null) {
+						foutput = getCIEXYZPCSFromSRGB(input);
+					}
+					else if (finput != null) {
+						foutput = getCIEXYZPCSFromSRGB(finput);
+					}
+					inputType = "sRGB8";
+					outputType = "CIEXYZ";
+					bad = false;
+				}
+				else if (arg[0].toLowerCase(java.util.Locale.US).equals("CIEXYZtosRGB8".toLowerCase(java.util.Locale.US))) {
+					if (input != null) {
+						output = getSRGBFromCIEXYZPCS(input);
+					}
+					else if (finput != null) {
+						output = getSRGBFromCIEXYZPCS(finput);
+					}
+					inputType = "CIEXYZ";
+					outputType = "sRGB8";
+					bad = false;
+				}
 				else if (arg[0].toLowerCase(java.util.Locale.US).equals("CIELab16tosRGB8".toLowerCase(java.util.Locale.US))) {
-					output = getSRGBFromIntegerScaledCIELabPCS(input);
+					if (input != null) {
+						output = getSRGBFromIntegerScaledCIELabPCS(input);
+					}
+					// not float input
 					inputType = "CIELab16";
 					outputType = "sRGB8";
 					bad = false;
@@ -280,9 +381,19 @@ public class ColorUtilities {
 				else {
 					System.err.println("Unrecognized conversion type "+arg[0]);
 				}
-				if (output != null) {
-					System.err.println(inputType+": "+input[0]+" "+input[1]+" "+input[2]+" (dec) (0x"+Integer.toHexString(input[0])+" 0x"+Integer.toHexString(input[1])+" 0x"+Integer.toHexString(input[2])+")");
-					System.err.println(outputType+": "+output[0]+" "+output[1]+" "+output[2]+" (dec) (0x"+Integer.toHexString(output[0])+" 0x"+Integer.toHexString(output[1])+" 0x"+Integer.toHexString(output[2])+")");
+				if (output != null || foutput != null) {
+					if (input != null) {
+						System.err.println(inputType+": "+input[0]+" "+input[1]+" "+input[2]+" (dec) (0x"+Integer.toHexString(input[0])+" 0x"+Integer.toHexString(input[1])+" 0x"+Integer.toHexString(input[2])+")");
+					}
+					if (finput != null) {
+						System.err.println(inputType+": "+finput[0]+" "+finput[1]+" "+finput[2]+" (dec)");
+					}
+					if (output != null) {
+						System.err.println(outputType+": "+output[0]+" "+output[1]+" "+output[2]+" (dec) (0x"+Integer.toHexString(output[0])+" 0x"+Integer.toHexString(output[1])+" 0x"+Integer.toHexString(output[2])+")");
+					}
+					if (foutput != null) {
+						System.err.println(outputType+": "+foutput[0]+" "+foutput[1]+" "+foutput[2]+" (dec)");
+					}
 				}
 			}
 			else {
@@ -292,7 +403,7 @@ public class ColorUtilities {
 			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 		if (bad) {
-			System.err.println("Usage: ColorUtilities sRGB8toCIELab16|CIELab16tosRGB8 R|L G|a B|b");
+			System.err.println("Usage: ColorUtilities sRGB8toCIELab16|sRGB8toCIEXYZ|CIEXYZtosRGB8|CIELab16tosRGB8 R|L G|a B|b");
 		}
 	}
 }

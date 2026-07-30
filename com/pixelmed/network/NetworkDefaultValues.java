@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
@@ -12,7 +12,7 @@ import java.net.InetAddress;
 public class NetworkDefaultValues {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkDefaultValues.java,v 1.15 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/NetworkDefaultValues.java,v 1.16 2026/03/08 15:20:38 dclunie Exp $";
 	
 	public static final int StandardDicomPrivilegedPortNumber = 104;
 	public static final int StandardDicomReservedPortNumber = 11112;

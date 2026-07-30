@@ -56,7 +56,8 @@ OBJS =	TestApp.class \
 	SafeFileChooser.class \
 	SafeProgressBarUpdaterThread.class \
 	SafeCursorChanger.class \
-	TiledSourceImageSortOrderPanel.class
+	TiledSourceImageSortOrderPanel.class \
+	SourceImageApplyICCProfileSelectorPanel.class
 
 TRANSFORMEDPROPERTIES = \
 	DicomCleaner_cs.properties \

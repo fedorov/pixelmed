@@ -13,7 +13,8 @@ OBJS =	BrowserPaneChangeEvent.class \
 	WindowCenterAndWidthChangeEvent.class \
 	ApplyShutterChangeEvent.class \
 	WindowLinearCalculationChangeEvent.class \
-	WindowingAccelerationValueChangeEvent.class
+	WindowingAccelerationValueChangeEvent.class \
+	ApplyICCProfileChangeEvent.class
 
 all:	${OBJS}
 

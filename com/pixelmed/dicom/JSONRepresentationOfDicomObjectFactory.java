@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -106,7 +106,7 @@ try {
  * @author	dclunie
  */
 public class JSONRepresentationOfDicomObjectFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfDicomObjectFactory.java,v 1.27 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfDicomObjectFactory.java,v 1.29 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(JSONRepresentationOfDicomObjectFactory.class);
 
@@ -994,6 +994,38 @@ public class JSONRepresentationOfDicomObjectFactory {
 	}
 	
 	/**
+	 * <p>Given an array of DICOM instances encoded as JsonObjects in a JsonArray in a JSON document (such as a query response)
+	 * convert it to an array of lists of attributes.</p>
+	 *
+	 * @param	document				the JSON document
+	 * @param	ignoreUnrecognizedTags	whether or not to ignore unrecognized tags (e.g., when used with JSONRepresentationOfStructuredReportObjectFactory)
+	 * @param	ignoreSR				whether or not to ignore SR Content Items (e.g., when used with JSONRepresentationOfStructuredReportObjectFactory)
+	 * @return							an array of lists of DICOM attributes or null if none
+	 * @throws	DicomException
+	 */
+	public AttributeList[] getArrayOfAttributeLists(JsonArray document,boolean ignoreUnrecognizedTags,boolean ignoreSR) throws DicomException {
+		AttributeList[] lists = null;
+		int n = document.size();
+		if (n > 0) {
+			lists = new AttributeList[n];
+			for (int i=0; i<n; ++i) {
+				try {
+					JsonObject object = null;
+					object = document.getJsonObject(i);
+					lists[i] = getAttributeList(object,ignoreUnrecognizedTags,ignoreSR);
+				}
+				catch (IndexOutOfBoundsException e) {
+					throw new DicomException("Could not parse JSON document for object "+i+" "+e);
+				}
+				catch (ClassCastException e) {
+					throw new DicomException("Could not parse JSON document - expected object "+i+" in top level array "+e);
+				}
+			}
+		}
+		return lists;
+	}
+	
+	/**
 	 * <p>Given a DICOM instance encoded as a JsonObject in JsonArray in a JSON document
 	 * convert it to a list of attributes.</p>
 	 *
@@ -1006,16 +1038,33 @@ public class JSONRepresentationOfDicomObjectFactory {
 	public AttributeList getAttributeList(JsonArray document,boolean ignoreUnrecognizedTags,boolean ignoreSR) throws DicomException {
 		AttributeList list = null;
 		JsonObject topLevelObject = null;
-		try {
-			topLevelObject = document.getJsonObject(0);
+		if (document.size() == 1) {
+			try {
+				topLevelObject = document.getJsonObject(0);
+			}
+			catch (IndexOutOfBoundsException e) {
+				throw new DicomException("Could not parse JSON document - exactly one object in top level array expected "+e);
+			}
+			catch (ClassCastException e) {
+				throw new DicomException("Could not parse JSON document - expected object in top level array "+e);
+			}
 		}
-		catch (IndexOutOfBoundsException e) {
-			throw new DicomException("Could not parse JSON document - exactly one object in top level array expected "+e);
-		}
-		catch (ClassCastException e) {
-			throw new DicomException("Could not parse JSON document - expected object in top level array "+e);
+		else {
+			throw new DicomException("Could not parse JSON document - exactly one object in top level array expected but have "+document.size());
 		}
 		return getAttributeList(topLevelObject,ignoreUnrecognizedTags,ignoreSR);
+	}
+
+	/**
+	 * <p>Given an array of DICOM instances encoded as JsonObjects in a JsonArray in a JSON document (such as a query response)
+	 * convert it to an array of lists of attributes.</p>
+	 *
+	 * @param		document		the JSON document
+	 * @return						an array of lists of DICOM attributes or null if none
+	 * @throws	DicomException
+	 */
+	public AttributeList[] getArrayOfAttributeLists(JsonArray document) throws DicomException {
+		return getArrayOfAttributeLists(document,false/*ignoreUnrecognizedTags*/,false/*ignoreSR*/);
 	}
 
 	/**
@@ -1043,6 +1092,27 @@ public class JSONRepresentationOfDicomObjectFactory {
 	}
 
 	/**
+	 * <p>Given an array of DICOM instances encoded as a JSON document in a stream
+	 *  convert it to an array of lists of attributes.</p>
+	 *
+	 * @param		stream			the input stream containing the JSON document
+	 * @return						an array of lists of DICOM attributes or null if none
+	 * @throws	IOException
+	 * @throws	DicomException
+	 */
+	public AttributeList[] getArrayOfAttributeLists(InputStream stream) throws IOException, DicomException {
+		JsonReader jsonReader = Json.createReader(stream);
+		JsonStructure document = jsonReader.read();
+		jsonReader.close();
+		if (document instanceof JsonArray) {
+			return getArrayOfAttributeLists((JsonArray)document);
+		}
+		else {
+			throw new DicomException("Could not parse JSON document - expected array at top level");
+		}
+	}
+
+	/**
 	 * <p>Given a DICOM instance encoded as a JSON document in a stream
 	 * convert it to a list of attributes.</p>
 	 *
@@ -1067,6 +1137,29 @@ public class JSONRepresentationOfDicomObjectFactory {
 	}
 	
 	/**
+	 * <p>Given an array of DICOM instances encoded as a JSON document in a file
+	 *  convert it to an array of lists of attributes.</p>
+	 *
+	 * @param		file			the input file containing the JSON document
+	 * @return						an array of lists of DICOM attributes or null if none
+	 * @throws	IOException
+	 * @throws	DicomException
+	 */
+	public AttributeList[] getArrayOfAttributeLists(File file) throws IOException, DicomException {
+		InputStream fi = new FileInputStream(file);
+		BufferedInputStream bi = new BufferedInputStream(fi);
+		AttributeList[] lists = null;
+		try {
+			lists = getArrayOfAttributeLists(bi);
+		}
+		finally {
+			bi.close();
+			fi.close();
+		}
+		return lists;
+	}
+	
+	/**
 	 * <p>Given a DICOM instance encoded as a JSON document in a file
 	 * convert it to a list of attributes.</p>
 	 *
@@ -1087,6 +1180,19 @@ public class JSONRepresentationOfDicomObjectFactory {
 			fi.close();
 		}
 		return list;
+	}
+	
+	/**
+	 * <p>Given an array of DICOM instances encoded as a JSON document in a named file
+	 *  convert it to an array of lists of attributes.</p>
+	 *
+	 * @param		name			the input file containing the JSON document
+	 * @return						an array of lists of DICOM attributes or null if none
+	 * @throws	IOException
+	 * @throws	DicomException
+	 */
+	public AttributeList[] getArrayOfAttributeLists(String name) throws IOException, DicomException {
+		return getArrayOfAttributeLists(new File(name));
 	}
 	
 	/**
@@ -1311,7 +1417,6 @@ public class JSONRepresentationOfDicomObjectFactory {
 					+" [USEUIDKEYWORDS|DONOTUSEUIDKEYWORDS]"
 					+" [USENUMBERFORISDS|DONOTUSENUMBERFORISDS]"
 				);
-				System.err.println("usage: JSONRepresentationOfDicomObjectFactory toDICOM inputpath [outputpath]");
 				System.exit(1);
 			}
 			else {
@@ -1327,21 +1432,36 @@ public class JSONRepresentationOfDicomObjectFactory {
 				}
 				else {
 //long startReadTime = System.currentTimeMillis();
-					AttributeList list = new JSONRepresentationOfDicomObjectFactory().getAttributeList(inputPath);
+					try {
+						AttributeList list = new JSONRepresentationOfDicomObjectFactory().getAttributeList(inputPath);
+//System.err.println(list);
 //System.err.println("AttributeList.main(): read JSON and create DICOM AttributeList - done in "+(System.currentTimeMillis()-startReadTime)+" ms");
-					String sourceApplicationEntityTitle = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SourceApplicationEntityTitle);
-					list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
-					list.removeMetaInformationHeaderAttributes();
-					FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,sourceApplicationEntityTitle);
-					if (outputPath == null) {
-						list.write(System.out,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
+						String sourceApplicationEntityTitle = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.SourceApplicationEntityTitle);
+						list.insertSuitableSpecificCharacterSetForAllStringValues();	// (001158)
+						list.removeMetaInformationHeaderAttributes();
+						FileMetaInformation.addFileMetaInformation(list,TransferSyntax.ExplicitVRLittleEndian,sourceApplicationEntityTitle);
+						if (outputPath == null) {
+							list.write(System.out,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
+						}
+						else {
+							list.write(outputPath,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
+						}
 					}
-					else {
-						list.write(outputPath,TransferSyntax.ExplicitVRLittleEndian,true/*useMeta*/,true/*useBufferedStream*/);
+					catch (Exception e) {
+						e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
+						
+						// The following will not actually create a DICOM output file, but does allow for testing of parsing of JSON query responses that consist of multiple datasets in an array instead of just one (001441)
+						AttributeList lists[] = new JSONRepresentationOfDicomObjectFactory().getArrayOfAttributeLists(inputPath);
+						if (lists != null) {
+							for (AttributeList list: lists) {
+System.err.println(list);
+							}
+						}
 					}
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			e.printStackTrace(System.err);	// no need to use SLF4J since command line utility/test
 		}
 	}

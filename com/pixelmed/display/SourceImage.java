@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -30,7 +30,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class SourceImage {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImage.java,v 1.140 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SourceImage.java,v 1.143 2026/03/08 15:20:37 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(SourceImage.class);
 	
@@ -39,6 +39,17 @@ public class SourceImage {
 	protected static boolean allowDeferredReadFromFileIfNotMemoryMapped = true;
 	
 	protected boolean applyICCProfileIfPresent = true;
+	
+	public void setApplyICCProfileIfPresent(boolean applyICCProfileIfPresent) {	// (001443)
+		slf4jlogger.debug("setApplyICCProfileIfPresent(): was {}",this.applyICCProfileIfPresent);
+		slf4jlogger.debug("setApplyICCProfileIfPresent(): now set to {}",applyICCProfileIfPresent);
+		this.applyICCProfileIfPresent = applyICCProfileIfPresent;
+		srcColorSpace = applyICCProfileIfPresent ? specifiedColorSpace : defaultColorSpace;
+		if (bufferedImageSource != null) {
+			slf4jlogger.debug("setApplyICCProfileIfPresent(): setting color space for bufferedImageSource");
+			bufferedImageSource.setColorSpace(srcColorSpace);
+		}
+	}
 	
 	/**
 	 * <p>Static method to set whether or not to allow memory mapping to be used at all when subsequently
@@ -175,9 +186,13 @@ public class SourceImage {
 	private Overlay overlay;
 
 	/***/
-	private ColorSpace srcColorSpace;
+	private ColorSpace defaultColorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);	// (001443)
 	/***/
-	private ColorSpace dstColorSpace;
+	private ColorSpace specifiedColorSpace;	// what was read from AttributeList (001443)
+	/***/
+	private ColorSpace srcColorSpace;	// what is currently active (001443)
+	/***/
+	private ColorSpace dstColorSpace;	// what we know about the display (if anything, else same as default)
 
 	/***/
 	private Rectangle[] clipRects;
@@ -792,11 +807,15 @@ public class SourceImage {
 		protected int nframesamples;
 		private int cachedIndex;
 		BufferedImage cachedBufferedImage;
+		
+		public void dirty() {	// (001443)
+			cachedIndex = -1;
+			cachedBufferedImage = null;
+		}
 
 		BufferedImageSource(int nframesamples) {
 			this.nframesamples=nframesamples;
-			cachedIndex=-1;
-			cachedBufferedImage = null;
+			dirty();
 		}
 		
 		protected void finalize() throws Throwable {
@@ -818,6 +837,9 @@ public class SourceImage {
 					cachedIndex=-1;
 				}
 			}
+			else {
+				slf4jlogger.debug("BufferedImageSource.getBufferedImage(): Reusing cached BufferedImage");
+			}
 			return cachedBufferedImage;
 		}
 
@@ -825,6 +847,8 @@ public class SourceImage {
 
 		public double getMinimumPixelValueOfMostRecentBufferedImage(double oldMin) { return oldMin; }
 		public double getMaximumPixelValueOfMostRecentBufferedImage(double oldMax) { return oldMax; }
+		
+		public void setColorSpace(ColorSpace colorSpace) {}		// ignore unless specialized in sub-class (001443)
 	}
 
 	private abstract class ShortBufferedImageSource extends BufferedImageSource {
@@ -839,9 +863,21 @@ public class SourceImage {
 		protected boolean minMaxSet;
 		protected int imgMin;
 		protected int imgMax;
+		protected ColorSpace colorSpace;
 
 		public double getMinimumPixelValueOfMostRecentBufferedImage(double oldMin) { return minMaxSet ? ((double)imgMin) : oldMin; }
 		public double getMaximumPixelValueOfMostRecentBufferedImage(double oldMax) { return minMaxSet ? ((double)imgMax) : oldMax; }
+
+		public void setColorSpace(ColorSpace colorSpace) {	// (001443)
+			slf4jlogger.debug("ShortBufferedImageSource.setColorSpace():");
+			if (this.colorSpace != colorSpace) {
+				this.colorSpace=colorSpace;
+				dirty();
+			}
+			if (decoder != null) {
+				decoder.setColorSpace(colorSpace);
+			}
+		}
 
 		ShortBufferedImageSource(short data[],int nframesamples) {
 			super(nframesamples);	// normally width*height*samples except in the special case of uncompressed YBR_FULL_422 (000986)
@@ -1000,7 +1036,20 @@ public class SourceImage {
 		protected File[] filesPerFrame;
 		protected long[] byteOffsets;
 		protected CompressedFrameDecoder decoder;
-		
+		protected ColorSpace colorSpace;
+
+		public void setColorSpace(ColorSpace colorSpace) {	// (001443)
+			slf4jlogger.debug("ByteBufferedImageSource.setColorSpace():");
+			if (this.colorSpace != colorSpace) {
+				this.colorSpace=colorSpace;
+				dirty();
+			}
+			if (decoder != null) {
+				slf4jlogger.debug("ByteBufferedImageSource.setColorSpace(): CompressedFrameDecoder is not null so setting");
+				decoder.setColorSpace(colorSpace);
+			}
+		}
+
 		ByteBufferedImageSource(byte byteData[],int nframesamples) {
 			super(nframesamples);	// normally width*height*samples except in the special case of uncompressed YBR_FULL_422 (000986)
 			this.byteData=byteData;
@@ -1833,11 +1882,22 @@ public class SourceImage {
 		public double getMaximumPixelValueOfMostRecentBufferedImage(double oldMax) { return 0xffffl; }
 	}
 
-	
 	private class CompressedByteThreeComponentColorBufferedImageSource extends BufferedImageSource /* extending BufferedImageSource also leverages its last frame caching mechanism */ {
 		CompressedFrameDecoder decoder;
 		ColorSpace colorSpace;
-		
+
+		public void setColorSpace(ColorSpace colorSpace) {	// (001443)
+			slf4jlogger.debug("CompressedByteThreeComponentColorBufferedImageSource.setColorSpace():");
+			if (this.colorSpace != colorSpace) {
+				this.colorSpace=colorSpace;
+				dirty();
+			}
+			if (decoder != null) {
+				slf4jlogger.debug("CompressedByteThreeComponentColorBufferedImageSource.setColorSpace(): CompressedFrameDecoder is not null so setting");
+				decoder.setColorSpace(colorSpace);
+			}
+		}
+
 		CompressedByteThreeComponentColorBufferedImageSource(byte[][] compressedData,int width,int height,ColorSpace colorSpace,String compressedDataTransferSyntaxUID,boolean codecConvertsYBRtoRGB) {
 			super(width*height*3/*samples*/);	// nframesamples is actually irrelevant ... BufferedImageSource does nothing with this information :(
 			try {
@@ -2528,7 +2588,8 @@ public class SourceImage {
 			}
 		}
 		
-		if (applyICCProfileIfPresent) {
+		// Read and record ICCProfile as specifiedColorSpace regardless of whether initially used or not, set may be activated later (001443)
+		{
 			Attribute aICCProfile = list.get(TagFromName.ICCProfile);
 			if (aICCProfile == null) {
 				// (001042)
@@ -2549,22 +2610,27 @@ public class SourceImage {
 					try {
 						ICC_Profile iccProfile = ICC_Profile.getInstance(iccProfileBytes);
 						slf4jlogger.debug("constructSourceImage(): read ICC Profile={}",iccProfile);
-						srcColorSpace = new ICC_ColorSpace(iccProfile);
+						specifiedColorSpace = new ICC_ColorSpace(iccProfile);
 					}
 					catch (IllegalArgumentException e) {	// Invalid ICC Profile Data (001061)
 						slf4jlogger.warn("constructSourceImage(): ",e);
-						srcColorSpace=null;
+						specifiedColorSpace=null;
 					}
 				}
 			}
-			if (srcColorSpace == null) {
-				slf4jlogger.debug("constructSourceImage(): Using sRGB as source color space since no ICC Profile detected");
-				srcColorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+			if (specifiedColorSpace == null) {
+				slf4jlogger.debug("constructSourceImage(): Using default (sRGB) as source color space since no ICC Profile detected");
+				specifiedColorSpace = defaultColorSpace;
 			}
 		}
+		
+		if (applyICCProfileIfPresent) {
+			slf4jlogger.debug("constructSourceImage(): applyICCProfileIfPresent true so using suplied ICC Profile");
+			srcColorSpace = specifiedColorSpace;
+		}
 		else {
-			slf4jlogger.debug("constructSourceImage(): Using sRGB as source color space and ignoring any ICC Profile");
-			srcColorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+			slf4jlogger.debug("constructSourceImage(): applyICCProfileIfPresent false so using default (sRGB) as source color space and ignoring any ICC Profile");
+			srcColorSpace = defaultColorSpace;
 		}
 
 		bufferedImageSource = null;
@@ -2936,54 +3002,92 @@ public class SourceImage {
 			slf4jlogger.debug("constructSourceImage(): {}",a);
 			if (ValueRepresentation.isOtherByteVR(a.getVR())) {
 				if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("constructSourceImage(): single bit from OB with {} bit order",/*(badBitOrder ? "bad" : */"standard"/*)*/);
-long startTime = System.currentTimeMillis();
-				byte data[] = a.getByteValues();
-				for (int f=0; f<nframes; ++f) {
-					imgs[f] = new BufferedImage(width,height,BufferedImage.TYPE_BYTE_BINARY,colorModel);
-					Raster raster = imgs[f].getData();
-					SampleModel sampleModel = raster.getSampleModel();
-					DataBuffer dataBuffer = raster.getDataBuffer();
-					/*if (!badBitOrder) */{
-						for (int row=0; row<height; ++row) {
-							for (int column=0; column<width; ++column) {
-								if (bitsRemaining <= 0) {
-									word = data[wi++] & 0xff;
-									bitsRemaining=8;
+				
+				if (a instanceof OtherByteAttributeMultipleCompressedFrames) {
+					byte[][] compressedData = ((OtherByteAttributeMultipleCompressedFrames)a).getFrames();;
+					ByteFrameSource compressedDataFrameSource = null;
+					String compressedDataTransferSyntaxUID = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.TransferSyntaxUID);
+					slf4jlogger.debug("constructSourceImage(): compressedDataTransferSyntaxUID = {}",compressedDataTransferSyntaxUID);
+					if (compressedData == null) {
+						slf4jlogger.debug("constructSourceImage(): one or more compressed frames on disk");
+						compressedDataFrameSource = (ByteFrameSource)a;
+						throw new DicomException("not implemented yet");
+					}
+					else {
+						slf4jlogger.debug("constructSourceImage(): one or more compressed frames in memory");
+
+						CompressedFrameDecoder decoder = new CompressedFrameDecoder(compressedDataTransferSyntaxUID,compressedData,1/*bytesPerSample*/,width,height,1/*samplesPerPixel*/,null/*colorSpace*/,false/*codecConvertsYBRtoRGB*/);
+
+						for (int f=0; f<nframes; ++f) {
+							if (decoder != null) {
+								try {
+									imgs[f] = decoder.getDecompressedFrameAsBufferedImage(f);
 								}
-								int bit = (word & 0x0001);
-								if (bit != 0) {
-									//slf4jlogger.trace("constructSourceImage(): got a bit set at frame {} row {} column {}",f,row,column);/
-									sampleModel.setSample(column,row,0/*bank*/,1,dataBuffer);
-									//++onBitCount;
+								catch (DicomException e) {
+									slf4jlogger.error("",e);
 								}
-								word = (word >>> 1);
-								--bitsRemaining;
+								catch (IOException e) {
+									slf4jlogger.error("",e);
+								}
+							}
+							else {
+								slf4jlogger.debug("constructSourceImage(): could not get decompressed frame {}",f);
 							}
 						}
 					}
-					//else {	// badBitOrder
-					//	for (int row=0; row<height; ++row) {
-					//		for (int column=0; column<width; ++column) {
-					//			if (bitsRemaining <= 0) {
-					//				word = data[wi++] & 0xff;
-					//				bitsRemaining=8;
-					//			}
-					//			int bit = (word & 0x0080);
-					//			if (bit != 0) {
-					//				//slf4jlogger.trace("constructSourceImage(): got a bit set at frame {} row {} column {}",f,row,column);/
-					//				sampleModel.setSample(column,row,0/*bank*/,1,dataBuffer);
-					//				//++onBitCount;
-					//			}
-					//			word = (word << 1);
-					//			--bitsRemaining;
-					//		}
-					//	}
-					//}
-					imgs[f].setData(raster);
+					
+					// TODO
 				}
+				else {
+long startTime = System.currentTimeMillis();
+					byte data[] = a.getByteValues();
+					for (int f=0; f<nframes; ++f) {
+						imgs[f] = new BufferedImage(width,height,BufferedImage.TYPE_BYTE_BINARY,colorModel);
+						Raster raster = imgs[f].getData();
+						SampleModel sampleModel = raster.getSampleModel();
+						DataBuffer dataBuffer = raster.getDataBuffer();
+						/*if (!badBitOrder) */{
+							for (int row=0; row<height; ++row) {
+								for (int column=0; column<width; ++column) {
+									if (bitsRemaining <= 0) {
+										word = data[wi++] & 0xff;
+										bitsRemaining=8;
+									}
+									int bit = (word & 0x0001);
+									if (bit != 0) {
+										//slf4jlogger.trace("constructSourceImage(): got a bit set at frame {} row {} column {}",f,row,column);/
+										sampleModel.setSample(column,row,0/*bank*/,1,dataBuffer);
+										//++onBitCount;
+									}
+									word = (word >>> 1);
+									--bitsRemaining;
+								}
+							}
+						}
+						//else {	// badBitOrder
+						//	for (int row=0; row<height; ++row) {
+						//		for (int column=0; column<width; ++column) {
+						//			if (bitsRemaining <= 0) {
+						//				word = data[wi++] & 0xff;
+						//				bitsRemaining=8;
+						//			}
+						//			int bit = (word & 0x0080);
+						//			if (bit != 0) {
+						//				//slf4jlogger.trace("constructSourceImage(): got a bit set at frame {} row {} column {}",f,row,column);/
+						//				sampleModel.setSample(column,row,0/*bank*/,1,dataBuffer);
+						//				//++onBitCount;
+						//			}
+						//			word = (word << 1);
+						//			--bitsRemaining;
+						//		}
+						//	}
+						//}
+						imgs[f].setData(raster);
+					}
 long currentTime = System.currentTimeMillis();
 slf4jlogger.info("constructSourceImage(): single bit read from OB = {} ms",(currentTime-startTime));
-				slf4jlogger.debug("constructSourceImage(): single bit read complete - byte[] length = {}, last index used = {}, bitsRemaining = {}",data.length,wi,bitsRemaining);
+					slf4jlogger.debug("constructSourceImage(): single bit read complete - byte[] length = {}, last index used = {}, bitsRemaining = {}",data.length,wi,bitsRemaining);
+				}
 			}
 			else {
 				if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("constructSourceImage(): single bit from OW with {} bit order",/*(badBitOrder ? "bad" : */"standard"/*)*/);
@@ -3403,16 +3507,6 @@ slf4jlogger.info("constructSourceImage(): single bit read from OW = {} ms",(curr
 	public BufferedImage getBufferedImage() { return getBufferedImage(0); }
 
 	/**
-	 * <p>Make a BufferedImage for the first or only frame.</p>
-	 *
-	 * <p>The BufferedImage will have the bit depth and photometric interpretation of the original SourceImage.</p>
-	 *
-	 * @param	useICC	if true, if image has an RGB photometric interpretation, and an ICC profile is present, it will be applied
-	 * @return			a BufferedImage for the first or only frame
-	 */
-	public BufferedImage getBufferedImage(boolean useICC) { return getBufferedImage(0,useICC); }
-
-	/**
 	 * <p>Make a BufferedImage for the selected frame.</p>
 	 *
 	 * <p>The BufferedImage will have the bit depth and photometric interpretation of the original SourceImage.</p>
@@ -3423,19 +3517,6 @@ slf4jlogger.info("constructSourceImage(): single bit read from OW = {} ms",(curr
 	 * @return		a BufferedImage for the selected frame
 	 */
 	public BufferedImage getBufferedImage(int i) {
-		return getBufferedImage(i,true/*useICC*/);
-	}
-
-	/**
-	 * <p>Make a BufferedImage for the selected frame.</p>
-	 *
-	 * <p>The BufferedImage will have the bit depth and photometric interpretation of the original SourceImage.</p>
-	 *
-	 * @param	i		frame number (from 0)
-	 * @param	useICC	if true, if image has an RGB photometric interpretation, and an ICC profile is present, it will be applied
-	 * @return			a BufferedImage for the selected frame
-	 */
-	public BufferedImage getBufferedImage(int i,boolean useICC) {
 		BufferedImage img = null;
 		if (bufferedImageSource == null) {
 			slf4jlogger.debug("getBufferedImage(): from array not source - frame {}",i);
@@ -3444,19 +3525,18 @@ slf4jlogger.info("constructSourceImage(): single bit read from OW = {} ms",(curr
 		else {
 			slf4jlogger.debug("getBufferedImage(): from bufferedImageSource - frame {}",i);
 			img = bufferedImageSource.getBufferedImage(i);
-
-			if (useICC && img.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB && srcColorSpace != null && dstColorSpace != null && srcColorSpace != dstColorSpace) {
-				slf4jlogger.debug("getBufferedImage(): have color image with different source and destination color spaces - converting");
-				try {
-					if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("getBufferedImage(): System.getProperty(\"sun.java2d.cmm\") = {}",System.getProperty("sun.java2d.cmm"));
-					ColorConvertOp cco = new ColorConvertOp(srcColorSpace,dstColorSpace,new RenderingHints(RenderingHints.KEY_COLOR_RENDERING,RenderingHints.VALUE_COLOR_RENDER_QUALITY));
-					BufferedImage convertedImg = cco.filter(img,null);
-					slf4jlogger.debug("getBufferedImage(): have converted color image ={}",convertedImg);
-					img = convertedImg;
-				}
-				catch (Exception e) {
-					slf4jlogger.error("",e);
-				}
+		}
+		if (img.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB && srcColorSpace != null && dstColorSpace != null && srcColorSpace != dstColorSpace) {
+			slf4jlogger.debug("getBufferedImage(): have color image with different source and destination color spaces - converting");
+			try {
+				if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("getBufferedImage(): System.getProperty(\"sun.java2d.cmm\") = {}",System.getProperty("sun.java2d.cmm"));
+				ColorConvertOp cco = new ColorConvertOp(srcColorSpace,dstColorSpace,new RenderingHints(RenderingHints.KEY_COLOR_RENDERING,RenderingHints.VALUE_COLOR_RENDER_QUALITY));
+				BufferedImage convertedImg = cco.filter(img,null);
+				slf4jlogger.debug("getBufferedImage(): have converted color image ={}",convertedImg);
+				img = convertedImg;
+			}
+			catch (Exception e) {
+				slf4jlogger.error("",e);
 			}
 		}
 		if (img != null) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -26,7 +26,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 abstract public class ClinicalTrialsAttributes {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ClinicalTrialsAttributes.java,v 1.145 2025/02/12 18:15:47 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ClinicalTrialsAttributes.java,v 1.150 2026/06/05 12:56:19 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(ClinicalTrialsAttributes.class);
 	
@@ -3014,10 +3014,19 @@ abstract public class ClinicalTrialsAttributes {
 					else if (cv.equals("111058") && csd.equals("DCM") && valueType.equals("TEXT")) {	// "Selected Region Description"
 						if (!keepDescriptors) { Attribute a = new UnlimitedTextAttribute(dictionary.getTagFromName("TextValue")); a.addValue(replacementForTextInStructuredContent); replacementList.put(a); }
 					}
+					else if (cv.equals("131561") && csd.equals("DCM") && valueType.equals("DATE")) {	// "Series Date"	CP 2595
+						if (handleDates == HandleDates.remove) { Attribute a = new DateAttribute(dictionary.getTagFromName("Date")); a.addValue(replacementForDateInStructuredContent); replacementList.put(a); }
+					}
+					else if (cv.equals("131563") && csd.equals("DCM") && valueType.equals("TEXT")) {	// "Series Description"	CP 2595
+						if (!keepDescriptors) { Attribute a = new UnlimitedTextAttribute(dictionary.getTagFromName("TextValue")); a.addValue(replacementForTextInStructuredContent); replacementList.put(a); }
+					}
 					else if (cv.equals("112002") && csd.equals("DCM") && valueType.equals("UIDREF")) {	// "Series Instance UID"
 						if (handleUIDs == HandleUIDs.remove) {
 							removeStructuredContentInThisList = true;
 						}
+					}
+					else if (cv.equals("131562") && csd.equals("DCM") && valueType.equals("TIME")) {	// "Series Time"	CP 2595
+						if (handleDates == HandleDates.remove) { Attribute a = new TimeAttribute(dictionary.getTagFromName("Time")); a.addValue(replacementForTimeInStructuredContent); replacementList.put(a); }
 					}
 					else if (cv.equals("113985") && csd.equals("DCM") && valueType.equals("UIDREF")) {	// "Series or Instance used for Water Equivalent Diameter estimation"
 						if (handleUIDs == HandleUIDs.remove) {
@@ -3710,6 +3719,8 @@ abstract public class ClinicalTrialsAttributes {
 			list.remove(dictionary.getTagFromName("DateOfLastDetectorCalibration"));	// (001387)
 			list.remove(dictionary.getTagFromName("TimeOfLastCalibration"));			// (001387)
 			list.remove(dictionary.getTagFromName("TimeOfLastDetectorCalibration"));	// (001387)
+			list.remove(dictionary.getTagFromName("HardcopyCreationDeviceID"));	// CP 2459
+			list.remove(dictionary.getTagFromName("SecondaryCaptureDeviceID"));	// CP 2459
 		}
 		
 		list.replaceWithZeroLengthIfPresent(dictionary.getTagFromName("StudyID"));
@@ -4135,7 +4146,20 @@ abstract public class ClinicalTrialsAttributes {
 			// Sup 236
 			list.remove(dictionary.getTagFromName("MontageChannelLabel"));
 			list.remove(dictionary.getTagFromName("MontageName"));
+			
+			// CP 2511
+			
+			list.remove(dictionary.getTagFromName("AcquisitionContextDescription"));
+			list.remove(dictionary.getTagFromName("ChannelDerivationDescription"));
+			list.remove(dictionary.getTagFromName("ChannelLabel"));
+			list.remove(dictionary.getTagFromName("MultiplexGroupLabel"));
+			list.replaceWithValueIfPresent(dictionary.getTagFromName("UnformattedTextValue"),replacementForDescriptionOrLabel);
+
 		}
+		
+		// CP 2511
+		
+		// WaveformAnnotationSequence - not removed despite PS3.15 Annex E (or replace with dummy per CP 2511) - handle seperately using removeOrCleanStructuredContent()
 
 		if (handleUIDs == HandleUIDs.remove) {
 			// these are not UI VR, and hence don't get taken care of later,
@@ -4185,6 +4209,33 @@ abstract public class ClinicalTrialsAttributes {
 		//ROIObservationDateTime
 		list.remove(dictionary.getTagFromName("ROICreatorSequence"));
 		list.remove(dictionary.getTagFromName("ROIInterpreterSequence"));
+		
+		// Sup 233
+		
+		list.remove(dictionary.getTagFromName("GenderIdentitySequence"));
+		list.remove(dictionary.getTagFromName("GenderIdentityCodeSequence"));
+		list.remove(dictionary.getTagFromName("PersonNamesToUseSequence"));
+		list.remove(dictionary.getTagFromName("ThirdPersonPronounsSequence"));
+		list.remove(dictionary.getTagFromName("PronounCodeSequence"));
+		list.remove(dictionary.getTagFromName("NameToUse"));
+		list.remove(dictionary.getTagFromName("NameToUseComment"));
+
+		if (!keepPatientCharacteristics) {
+			list.remove(dictionary.getTagFromName("SexParametersForClinicalUseCategorySequence"));
+			list.remove(dictionary.getTagFromName("SexParametersForClinicalUseCategoryCodeSequence"));
+			list.remove(dictionary.getTagFromName("SexParametersForClinicalUseCategoryReference"));
+		}
+		// don't check keepDescriptors - safer to always remove these since cannot clean ...
+		list.remove(dictionary.getTagFromName("SexParametersForClinicalUseCategoryComment"));	// is C if keepPatientCharacteristics, but can't clean
+		list.remove(dictionary.getTagFromName("GenderIdentityComment"));
+		list.remove(dictionary.getTagFromName("PronounComment"));
+		
+		// EffectiveStartDateTime
+		// EffectiveStopDateTime
+		
+		// CP 2595
+		
+		list.remove(dictionary.getTagFromName("DisplayURI"));
 
 		Iterator i = list.values().iterator();
 		while (i.hasNext()) {

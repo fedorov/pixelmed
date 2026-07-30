@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.geometry;
 
@@ -37,7 +37,7 @@ Vector shapes = localizerPoster.getOutlineOnLocalizerForThisGeometry(postImageGe
  */
 public abstract class LocalizerPoster {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPoster.java,v 1.28 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/geometry/LocalizerPoster.java,v 1.29 2026/03/08 15:20:38 dclunie Exp $";
 
 	/***/
 	protected Vector3d localizerRow;

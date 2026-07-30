@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -17,7 +17,7 @@ import java.util.HashMap;
  */
 public class DictionaryOfConcepts {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/DictionaryOfConcepts.java,v 1.19 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/DictionaryOfConcepts.java,v 1.20 2026/03/08 15:20:33 dclunie Exp $";
 
 	protected DisplayableConcept[] conceptEntries;
 	protected HashMap schemeAndValuePairsToConceptEntries;

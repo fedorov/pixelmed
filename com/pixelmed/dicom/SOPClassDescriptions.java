@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ import java.util.HashMap;
  * @author	dclunie
  */
 public class SOPClassDescriptions {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.71 2025/02/12 18:15:47 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.73 2026/03/08 15:20:36 dclunie Exp $";
 	
 	private static SOPClassDescriptions ourself = new SOPClassDescriptions();
 	
@@ -232,6 +232,8 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.EncapsulatedPDFStorage,"ENCAP(PDF)");
 		abbreviationsByUID.put(SOPClass.EncapsulatedCDAStorage,"ENCAP(CDA)");
 		abbreviationsByUID.put(SOPClass.EncapsulatedSTLStorage,"ENCAP(STL)");
+		abbreviationsByUID.put(SOPClass.EncapsulatedOBJStorage,"ENCAP(OBJ)");
+		abbreviationsByUID.put(SOPClass.EncapsulatedMTLStorage,"ENCAP(MTL)");
 
 		abbreviationsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"FIND(Study)");
 		abbreviationsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"MOVE(Study)");
@@ -513,6 +515,8 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.EncapsulatedPDFStorage,"Encapsulated PDF Storage");
 		descriptionsByUID.put(SOPClass.EncapsulatedCDAStorage,"Encapsulated CDA Storage");
 		descriptionsByUID.put(SOPClass.EncapsulatedSTLStorage,"Encapsulated STL Storage");
+		descriptionsByUID.put(SOPClass.EncapsulatedOBJStorage,"Encapsulated OBJ Storage");
+		descriptionsByUID.put(SOPClass.EncapsulatedMTLStorage,"Encapsulated MTL Storage");
 
 		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"Study Root Query Retrieve Information Model Find");
 		descriptionsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"Study Root Query Retrieve Information Model Move");
@@ -811,6 +815,8 @@ public class SOPClassDescriptions {
 		keywordsByUID.put(SOPClass.EncapsulatedPDFStorage,"EncapsulatedPDFStorage");
 		keywordsByUID.put(SOPClass.EncapsulatedCDAStorage,"EncapsulatedCDAStorage");
 		keywordsByUID.put(SOPClass.EncapsulatedSTLStorage,"EncapsulatedSTLStorage");
+		keywordsByUID.put(SOPClass.EncapsulatedOBJStorage,"EncapsulatedOBJStorage");
+		keywordsByUID.put(SOPClass.EncapsulatedMTLStorage,"EncapsulatedMTLStorage");
 
 		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelFind,"StudyRootQueryRetrieveInformationModelFind");
 		keywordsByUID.put(SOPClass.StudyRootQueryRetrieveInformationModelMove,"StudyRootQueryRetrieveInformationModelMove");
@@ -1024,6 +1030,8 @@ public class SOPClassDescriptions {
 		uidsByKeyword.put("EncapsulatedPDFStorage",SOPClass.EncapsulatedPDFStorage);
 		uidsByKeyword.put("EncapsulatedCDAStorage",SOPClass.EncapsulatedCDAStorage);
 		uidsByKeyword.put("EncapsulatedSTLStorage",SOPClass.EncapsulatedSTLStorage);
+		uidsByKeyword.put("EncapsulatedOBJStorage",SOPClass.EncapsulatedOBJStorage);
+		uidsByKeyword.put("EncapsulatedMTLStorage",SOPClass.EncapsulatedMTLStorage);
 
 		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelFind",SOPClass.StudyRootQueryRetrieveInformationModelFind);
 		uidsByKeyword.put("StudyRootQueryRetrieveInformationModelMove",SOPClass.StudyRootQueryRetrieveInformationModelMove);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -14,6 +14,7 @@ public class TestAnatomy_AllTests extends TestCase {
 		suite.addTest(TestAnatomyCombined.suite());
 		suite.addTest(TestAnatomyFind.suite());
 		suite.addTest(TestLaterality.suite());
+		suite.addTest(TestAnatomyAgainstStandard.suite());
 		return suite;
 	}
 	

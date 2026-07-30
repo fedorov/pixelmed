@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.FileInputStream;
  * @author	dclunie
  */
 public class AttributeFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeFactory.java,v 1.46 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeFactory.java,v 1.47 2026/03/08 15:20:35 dclunie Exp $";
 
 	private static final long maximumInMemoryOtherDataValueLength = 4096*4096*2;	// set to -1l to never leave on disk, 0 to always leave on disk
 	//private static final long maximumInMemoryOtherDataValueLength = 0;			// set to -1l to never leave on disk, 0 to always leave on disk

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,7 +17,7 @@ package com.pixelmed.dicom;
 public class AttributeTag implements Comparable {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTag.java,v 1.30 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeTag.java,v 1.32 2026/03/08 15:20:35 dclunie Exp $";
 
 	/***/
 	private int group;
@@ -220,6 +220,39 @@ public class AttributeTag implements Comparable {
 		for (int i=elementString.length(); i<4; ++i) str.append("0");
 		str.append(elementString);
 		str.append(")");
+		return str.toString();
+	}
+
+	/**
+	 * <p>Get a human-readable rendering of the tag of the form used in DICOMweb query parameters.</p>
+	 *
+	 * <p>This takes the form "ggggeeee" where gggg and eeee are the zero-padded
+	 * hexadecimal representations of the group and element respectively.</p>
+	 *
+	 * @return	the string rendering of the tag
+	 */
+	public String toStringUndelimited() {
+		return toStringUndelimited(group,element);
+	}
+
+	/**
+	 * <p>Get a human-readable rendering of the tag of the form used in DICOMweb query parameters.</p>
+	 *
+	 * <p>This takes the form "ggggeeee" where gggg and eeee are the zero-padded
+	 * hexadecimal representations of the group and element respectively.</p>
+	 *
+	 * @param	group	the 16 bit unsigned binary group
+	 * @param	element	the 16 bit unsigned binary element
+	 * @return	the string rendering of the tag
+	 */
+	public static String toStringUndelimited(int group,int element) {
+		StringBuffer str = new StringBuffer();
+		String groupString = Integer.toHexString(group);
+		for (int i=groupString.length(); i<4; ++i) str.append("0");
+		str.append(groupString);
+		String elementString = Integer.toHexString(element);
+		for (int i=elementString.length(); i<4; ++i) str.append("0");
+		str.append(elementString);
 		return str.toString();
 	}
 

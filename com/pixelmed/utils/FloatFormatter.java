@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -14,7 +14,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class FloatFormatter {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FloatFormatter.java,v 1.20 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FloatFormatter.java,v 1.22 2026/03/08 15:20:40 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(FileUtilities.class);
 	
@@ -165,10 +165,10 @@ public class FloatFormatter {
 				}
 			}
 			else {
-				boolean isZeroWithoutFraction = Math.round(value) == 0;		// want to know this to supress leading zero in "0.x", as opposed to "9.x"
+				boolean isZeroWithoutFraction = Math.round(value) == 0;		// want to know this to suppress leading zero in "0.x", as opposed to "9.x"
 //System.err.println("FloatFormatter.toStringOfFixedMaximumLength(): isZeroWithoutFraction = "+isZeroWithoutFraction);
 				if (isZeroWithoutFraction) {
-//System.err.println("FloatFormatter.toStringOfFixedMaximumLength(): supressing leading zero");
+//System.err.println("FloatFormatter.toStringOfFixedMaximumLength(): suppressing leading zero");
 					--numberOfIntegerDigits;
 				}
 				int numberOfFractionDigitsAvailable = maxLength - numberOfSignBytes - numberOfIntegerDigits;
@@ -181,7 +181,7 @@ public class FloatFormatter {
 //System.err.println("FloatFormatter.toStringOfFixedMaximumLength(): formatting with fraction");
 					if (numberOfIntegerDigits >= 0) {
 //System.err.println("FloatFormatter.toStringOfFixedMaximumLength(): formatting with number and fraction");
-						formatter.setMaximumIntegerDigits(numberOfIntegerDigits);					// this supresses the leading "0" in "0.", which wastes one byte
+						formatter.setMaximumIntegerDigits(numberOfIntegerDigits);					// this suppresses the leading "0" in "0.", which wastes one byte
 						formatter.setMaximumFractionDigits(numberOfFractionDigitsAvailable - 1);
 					}
 					else {

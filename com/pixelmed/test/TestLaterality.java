@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -48,8 +48,8 @@ public class TestLaterality extends TestCase {
 	public void TestLaterality_Equality() throws Exception {
 
 		Concept left1 = new                      Concept("C0205091");
-		Concept left2 = new DisplayableLateralityConcept("C0205091","7771000",	"SRT",	"SNM3",	null,	"G-A101",	"Left",			"L",		null,	null,			null);
-		Concept right = new DisplayableLateralityConcept("C0205090","24028007",	"SRT",	"SNM3",	null,	"G-A100",	"Right",		"R",		null,	null,			null);
+		Concept left2 = new DisplayableLateralityConcept("C0205091","7771000",	"SCT",	"SRT",	CodedConcept.srtLegacyCodingSchemeDesignators,	null,	"7771000",	"G-A101",	"Left",			"L",		null,	null,			null);
+		Concept right = new DisplayableLateralityConcept("C0205090","24028007",	"SCT",	"SRT",	CodedConcept.srtLegacyCodingSchemeDesignators,	null,	"24028007",	"G-A100",	"Right",		"R",		null,	null,			null);
 
 		assertEquals("Checking self",left1,left1);
 		assertTrue("Checking self hashCode",left1.hashCode() == left1.hashCode());
@@ -73,8 +73,8 @@ public class TestLaterality extends TestCase {
 	
 	public void TestLaterality_MammoConversion() throws Exception {
 		{
-			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205091","7771000","SRT","SNM3",null,"G-A101","Left","L",null,null,null);
-			DisplayableLateralityConcept breastSpecific  = new DisplayableLateralityConcept("C0222601","80248007","SRT","SNM3",null,"T-04030","Left breast",null,null,null,null);
+			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205091","7771000","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"7771000","G-A101","Left","L",null,null,null);
+			DisplayableLateralityConcept breastSpecific  = new DisplayableLateralityConcept("C0222601","80248007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"80248007","T-04030","Left breast",null,null,null,null);
 			String expectedCodeMeaning = "Left breast";
 			
 			DisplayableLateralityConcept converted = MammographyLaterality.convertGenericLateralityToBreastSpecificLaterality(generic);
@@ -86,8 +86,8 @@ public class TestLaterality extends TestCase {
 			assertEquals("Checking converted left by CodedSequenceItem code meaning",expectedCodeMeaning,convertedCodedSequenceItem.getCodeMeaning());
 		}
 		{
-			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205090","24028007","SRT","SRT",null,"G-A100","Right","R",null,null,null);
-			DisplayableLateralityConcept breastSpecific  = new DisplayableLateralityConcept("C0222600","73056007","SRT","SNM3",null,"T-04020","Right breast",null,null,null,null);
+			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205090","24028007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"24028007","G-A100","Right","R",null,null,null);
+			DisplayableLateralityConcept breastSpecific  = new DisplayableLateralityConcept("C0222600","73056007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"73056007","T-04020","Right breast",null,null,null,null);
 			String expectedCodeMeaning = "Right breast";
 			
 			DisplayableLateralityConcept converted = MammographyLaterality.convertGenericLateralityToBreastSpecificLaterality(generic);
@@ -99,8 +99,8 @@ public class TestLaterality extends TestCase {
 			assertEquals("Checking converted right by CodedSequenceItem code meaning",expectedCodeMeaning,convertedCodedSequenceItem.getCodeMeaning());
 		}
 		{
-			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0238767","51440002","SRT","SRT",null,"G-A102","Right and left","B",null,null,null);
-			DisplayableLateralityConcept breastSpecific = new DisplayableLateralityConcept("C0222605","63762007","SRT","SNM3",null,"T-04080","Both breasts",null,null,null,null);
+			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0238767","51440002","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"51440002","G-A102","Right and left","B",null,null,null);
+			DisplayableLateralityConcept breastSpecific = new DisplayableLateralityConcept("C0222605","63762007","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"63762007","T-04080","Both breasts",null,null,null,null);
 			String expectedCodeMeaning = "Both breasts";
 			
 			DisplayableLateralityConcept converted = MammographyLaterality.convertGenericLateralityToBreastSpecificLaterality(generic);
@@ -112,7 +112,7 @@ public class TestLaterality extends TestCase {
 			assertEquals("Checking converted both by CodedSequenceItem code meaning",expectedCodeMeaning,convertedCodedSequenceItem.getCodeMeaning());
 		}
 		{
-			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205092","66459002","SRT","SRT",null,"G-A103","Unilateral","U",null,null,null);
+			DisplayableLateralityConcept generic = new DisplayableLateralityConcept("C0205092","66459002","SCT","SRT",CodedConcept.srtLegacyCodingSchemeDesignators,null,"66459002","G-A103","Unilateral","U",null,null,null);
 			String expectedCodeMeaning = "Unilateral";
 			
 			DisplayableLateralityConcept converted = MammographyLaterality.convertGenericLateralityToBreastSpecificLaterality(generic);

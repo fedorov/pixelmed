@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.utils;
 
@@ -30,7 +30,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class FileUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.33 2025/01/29 10:58:09 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.35 2026/03/08 15:20:40 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(FileUtilities.class);
 
@@ -311,6 +311,8 @@ public class FileUtilities {
 	static public final String digest(InputStream in,String algorithm) throws IOException, NoSuchAlgorithmException {
 		// See "http://stackoverflow.com/questions/304268/using-java-to-get-a-files-md5-checksum"
 		
+		// "https://docs.oracle.com/javase/8/docs/api/java/security/MessageDigest.html" - "Every implementation of the Java platform is required to support ... MD5, SHA-1, SHA-256"
+		
 		int readBufferSize = 32768;
 		byte[] readBuffer = new byte[readBufferSize];
 		MessageDigest md = MessageDigest.getInstance(algorithm);
@@ -328,7 +330,6 @@ public class FileUtilities {
 		String sValue = HexDump.byteArrayToHexString(bValue);
 		return sValue;
 	}
-
 
 	/**
 	 * <p>Return an MD5 message digest of a file.</p>
@@ -348,6 +349,26 @@ public class FileUtilities {
 	 */
 	static public final String md5(InputStream in) throws IOException, NoSuchAlgorithmException {
 		return digest(in,"MD5");
+	}
+
+	/**
+	 * <p>Return a SHA256 message digest of a file.</p>
+	 *
+	 * @param	fileName	the file name
+	 * @return				string representation of the digest
+	 */
+	static public final String sha256(String fileName) throws IOException, NoSuchAlgorithmException {
+		return digest(fileName,"SHA-256");
+	}
+
+	/**
+	 * <p>Return a SHA256 message digest of an InputStream.</p>
+	 *
+	 * @param	in			the InputStream
+	 * @return				string representation of the digest
+	 */
+	static public final String sha256(InputStream in) throws IOException, NoSuchAlgorithmException {
+		return digest(in,"SHA-256");
 	}
 
 	/**

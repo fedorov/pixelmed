@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -37,9 +37,9 @@ public class TestAnatomyCombined extends TestCase {
 	
 	public void TestAnatomyCombined_CT() throws Exception {
 		{	
-			Concept a = new Concept("C0000726");			// "Abdomen"
-			Concept b = new Concept("C0030797");			// "Pelvis"
-			Concept combined = new Concept("C1508499");	// "Abdomen and Pelvis"
+			Concept a = new Concept("C5231290");			// "Abdomen"
+			Concept b = new Concept("C5230955");			// "Pelvis"
+			Concept combined = new Concept("C5231291");	// "Abdomen and Pelvis"
 			assertEquals("Checking Abdomen and Pelvis",				combined,CombinedAnatomicConcepts.getCombinedConcept(a,b));
 			assertEquals("Checking Abdomen and Pelvis",				combined,CombinedAnatomicConcepts.getCombinedConcept(b,a));
 			assertEquals("Checking Abdomen and Pelvis with self",	combined,CombinedAnatomicConcepts.getCombinedConcept(combined,a));
@@ -66,20 +66,20 @@ public class TestAnatomyCombined extends TestCase {
 			assertEquals("Checking Head and Brain merge",			combined,CombinedAnatomicConcepts.getCombinedConcept(a,b));
 		}
 		{	
-			Concept a = new Concept("C0817096");			// "Chest"
+			Concept a = new Concept("C5230958");			// "Chest"
 			Concept b = new Concept("C0024109");			// "Lung"
-			Concept combined = new Concept("C0817096");		// "Chest"
+			Concept combined = new Concept("C5230958");		// "Chest"
 			assertEquals("Checking Chest and Lung merge",			combined,CombinedAnatomicConcepts.getCombinedConcept(a,b));
 		}
 		{	
-			Concept a = new Concept("C0817096");			// "Chest"
-			Concept b = new Concept("C1508499");			// "Abdomen and Pelvis"
+			Concept a = new Concept("C5230958");			// "Chest"
+			Concept b = new Concept("C5231291");			// "Abdomen and Pelvis"
 			Concept combined = new Concept("C1562547");		// "Chest, Abdomen and Pelvis"
 			assertEquals("Checking Chest, Abdomen and Pelvis merge",combined,CombinedAnatomicConcepts.getCombinedConcept(a,b));
 		}
 		{
 			Concept a = new Concept("C1562459");			// "Neck and Chest"
-			Concept b = new Concept("C1508499");			// "Abdomen and Pelvis"
+			Concept b = new Concept("C5231291");			// "Abdomen and Pelvis"
 			Concept combined = new Concept("C1562776");		// "Neck, Chest, Abdomen and Pelvis"
 			assertEquals("Checking Neck, Chest, Abdomen and Pelvis merge",combined,CombinedAnatomicConcepts.getCombinedConcept(a,b));
 		}
@@ -91,12 +91,11 @@ public class TestAnatomyCombined extends TestCase {
 		}
 	}
 
-	
 	public void TestAnatomyCombined_CT_Displayable() throws Exception {
 		{	
-			Concept a = new Concept("C0000726");			// "Abdomen"
-			Concept b = new Concept("C0030797");			// "Pelvis"
-			Concept combined = new Concept("C1508499");	// "Abdomen and Pelvis"
+			Concept a = new Concept("C5231290");			// "Abdomen"
+			Concept b = new Concept("C5230955");			// "Pelvis"
+			Concept combined = new Concept("C5231291");	// "Abdomen and Pelvis"
 			assertEquals("Checking Abdomen and Pelvis","Abdomen and Pelvis",CombinedAnatomicConcepts.getCombinedConcept(a,b,CTAnatomy.getAnatomyConcepts()).getCodeMeaning());
 		}
 	}

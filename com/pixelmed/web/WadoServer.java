@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.web;
 
@@ -39,7 +39,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class WadoServer extends HttpServer {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoServer.java,v 1.33 2025/01/29 10:58:10 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/web/WadoServer.java,v 1.34 2026/03/08 15:20:41 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(WadoServer.class);
 

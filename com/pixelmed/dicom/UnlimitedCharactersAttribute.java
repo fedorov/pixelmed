@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class UnlimitedCharactersAttribute extends StringAttributeAffectedBySpecificCharacterSet {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnlimitedCharactersAttribute.java,v 1.10 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UnlimitedCharactersAttribute.java,v 1.11 2026/03/08 15:20:36 dclunie Exp $";
 
 	//protected static final int MAX_LENGTH_SINGLE_VALUE = 0xfffffffe;	// 2^32 - 2
 	protected static final int MAX_LENGTH_SINGLE_VALUE = Integer.MAX_VALUE;	// since Java limits length of String, which is 2^31 - 1 :(

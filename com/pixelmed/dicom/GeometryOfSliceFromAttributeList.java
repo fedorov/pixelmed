@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -11,7 +11,7 @@ import com.pixelmed.geometry.*;
  * @author	dclunie
  */
 public class GeometryOfSliceFromAttributeList extends GeometryOfSlice {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/GeometryOfSliceFromAttributeList.java,v 1.20 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/GeometryOfSliceFromAttributeList.java,v 1.21 2026/03/08 15:20:35 dclunie Exp $";
 
 	/**
 	 * <p>Construct the geometry from the Image Plane Module and related attributes.</p>

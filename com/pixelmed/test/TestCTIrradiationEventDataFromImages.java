@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.test;
 
@@ -402,7 +402,7 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 
 		String irradiationEventUID = "1.2.3.4";
 		String sopInstanceUID = "1.2.3.4.5";
-		CodedSequenceItem anatomy = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 
 		File testFile = File.createTempFile("TestCTIrradiationEventDataFromImages",".tmp");
 		testFile.deleteOnExit();
@@ -430,10 +430,10 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		String irradiationEventUID = "1.2.3.4";
 
 		String sopInstanceUID1 = "1.2.3.4.5.6";
-		CodedSequenceItem anatomy1 = new CodedSequenceItem("R-FAB56","SRT","Chest, Abdomen and Pelvis");
+		CodedSequenceItem anatomy1 = new CodedSequenceItem("416775004","SCT","Chest, Abdomen and Pelvis");
 
 		String sopInstanceUID2 = "1.2.3.4.5.7";
-		CodedSequenceItem anatomy2 = new CodedSequenceItem("T-D8810","SRT","Thumb");
+		CodedSequenceItem anatomy2 = new CodedSequenceItem("76505004","SCT","Thumb");
 		
 		File testFile1 = File.createTempFile("TestCTIrradiationEventDataFromImages",".tmp");
 		testFile1.deleteOnExit();
@@ -472,12 +472,12 @@ public class TestCTIrradiationEventDataFromImages extends TestCase {
 		String irradiationEventUID = "1.2.3.4";
 
 		String sopInstanceUID1 = "1.2.3.4.5.6";
-		CodedSequenceItem anatomy1 = new CodedSequenceItem("T-D3000","SRT","Chest");
+		CodedSequenceItem anatomy1 = new CodedSequenceItem("51185008","SCT","Chest");
 
 		String sopInstanceUID2 = "1.2.3.4.5.7";
-		CodedSequenceItem anatomy2 = new CodedSequenceItem("T-D4000","SRT","Abdomen");
+		CodedSequenceItem anatomy2 = new CodedSequenceItem("113345001","SCT","Abdomen");
 		
-		CodedSequenceItem expectedAnatomy = new CodedSequenceItem("R-FAB55","SRT","Chest and Abdomen");
+		CodedSequenceItem expectedAnatomy = new CodedSequenceItem("416550000","SCT","Chest and Abdomen");
 
 		File testFile1 = File.createTempFile("TestCTIrradiationEventDataFromImages",".tmp");
 		testFile1.deleteOnExit();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -41,7 +41,7 @@ package com.pixelmed.dicom;
  */
 public class TagFromName {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TagFromName.java,v 1.192 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TagFromName.java,v 1.194 2026/03/08 15:20:36 dclunie Exp $";
 
 	static public final AttributeTag AccessionNumber = new AttributeTag(0x0008,0x0050);
 	/* @deprecated */ @Deprecated static public final AttributeTag AcquisitionComments = new AttributeTag(0x0018,0x4000);
@@ -826,6 +826,7 @@ public class TagFromName {
 	static public final AttributeTag VolumeBasedCalculationTechnique = new AttributeTag(0x0008,0x9207);
 	static public final AttributeTag VolumeLocalizationSequence = new AttributeTag(0x0018,0x9126);
 	static public final AttributeTag VolumetricProperties = new AttributeTag(0x0008,0x9206);
+	static public final AttributeTag WaveformAnnotationSequence = new AttributeTag(0x0040,0xB020);
 	static public final AttributeTag WaveformBitsAllocated = new AttributeTag(0x5400,0x1004);
 	static public final AttributeTag WaveformBitsStored = new AttributeTag(0x003A,0x021A);
 	static public final AttributeTag WaveformChannelNumber = new AttributeTag(0x003A,0x0202);

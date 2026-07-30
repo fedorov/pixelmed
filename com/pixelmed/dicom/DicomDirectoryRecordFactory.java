@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -8,7 +8,7 @@ package com.pixelmed.dicom;
 public class DicomDirectoryRecordFactory {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryRecordFactory.java,v 1.35 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DicomDirectoryRecordFactory.java,v 1.36 2026/03/08 15:20:35 dclunie Exp $";
 
 	/***/
 	public class TopDirectoryRecord extends DicomDirectoryRecord {

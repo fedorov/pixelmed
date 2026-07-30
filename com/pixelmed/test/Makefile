@@ -46,6 +46,7 @@ TestAnatomyConcept.class \
 TestAnatomyCombined.class \
 TestAnatomyFind.class \
 TestLaterality.class \
+TestAnatomyAgainstStandard.class \
 TestGeometry_AllTests.class \
 TestGeometryOfSlice.class \
 TestDecimalStringAttributeLocaleEffect.class \
@@ -276,6 +277,7 @@ testcleaner:	TestCleaner_AllTests.class TestCleanerReceiveAndClean.class UserInt
 	if [ -f $${HOME}/.com.pixelmed.display.DicomCleaner.properties.holdfortestcleaner ]; then cp $${HOME}/.com.pixelmed.display.DicomCleaner.properties.holdfortestcleaner $${HOME}/.com.pixelmed.display.DicomCleaner.properties; else rm -f $${HOME}/.com.pixelmed.display.DicomCleaner.properties; fi
 
 testanatomy:	${OBJS}
+	(cd ../anatproc; make anatomyfromannexl.xml)
 	java -cp ${PATHTOROOT}:${JUNITJAR} -Djava.awt.headless=true org.junit.runner.JUnitCore com.pixelmed.test.TestAnatomy_AllTests
 
 testgeometry:	${OBJS}

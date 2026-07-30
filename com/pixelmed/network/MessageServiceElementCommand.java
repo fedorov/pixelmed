@@ -1,10 +1,10 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.network;
 
 public class MessageServiceElementCommand {
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/MessageServiceElementCommand.java,v 1.12 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/network/MessageServiceElementCommand.java,v 1.13 2026/03/08 15:20:38 dclunie Exp $";
 
 	public static final int NOCOMMAND = 0x0000;	// used as a flag
 	

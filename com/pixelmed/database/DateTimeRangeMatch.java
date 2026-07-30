@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class DateTimeRangeMatch {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DateTimeRangeMatch.java,v 1.13 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/DateTimeRangeMatch.java,v 1.14 2026/03/08 15:20:34 dclunie Exp $";
 
 	private static final String earliestPossibleSQLDate = "19000101";
 	private static final String latestPossibleSQLDate = "20990101";

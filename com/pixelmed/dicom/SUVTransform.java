@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.dicom;
 
@@ -17,7 +17,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class SUVTransform {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SUVTransform.java,v 1.19 2025/01/29 10:58:07 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SUVTransform.java,v 1.21 2026/03/08 15:20:36 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(SUVTransform.class);
 	
@@ -345,6 +345,14 @@ public class SUVTransform {
 	public SUVTransform(AttributeList list) {
 //System.err.println("SUVTransform:");
 		useTransform = new SingleSUVTransform(list);
+	}
+
+	/**
+	 * @return	whether or not there is an actual transform
+	 */
+	public boolean hasTransform() {
+		// take current to update isValid check if more kinds of transforms are added
+		return useTransform != null && (useTransform.isValidSUVbw() || useTransform.isValidSUVbsa() || useTransform.isValidSUVlbm() || useTransform.isValidSUVibw());
 	}
 
 	/**

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.anatproc;
 
@@ -16,9 +16,9 @@ import java.util.Set;
  */
 public class CombinedAnatomicConcepts extends DisplayableConcept {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CombinedAnatomicConcepts.java,v 1.15 2025/01/29 10:58:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/anatproc/CombinedAnatomicConcepts.java,v 1.17 2026/05/19 14:38:44 dclunie Exp $";
 		
-	// new Concept("C1508499"/*"Abdomen and Pelvis"*/)
+	// new Concept("C5231291"/*"Abdomen and Pelvis"*/)
 	// new Concept("C1442171"/*"Chest and Abdomen"*/)
 	// new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/)
 	// new Concept("C0460004"/*"Head and Neck"*/)
@@ -29,10 +29,10 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 	// new Concept("C0006104"/*"Brain"*/)
 	// new Concept("C0018670"/*"Head"*/)
 	// new Concept("C0027530"/*"Neck"*/)
-	// new Concept("C0817096"/*"Chest"*/)
+	// new Concept("C5230958"/*"Chest"*/)
 	// new Concept("C0024109"/*"Lung"*/)
-	// new Concept("C0000726"/*"Abdomen"*/)
-	// new Concept("C0030797"/*"Pelvis"*/)
+	// new Concept("C5231290"/*"Abdomen"*/)
+	// new Concept("C5230955"/*"Pelvis"*/)
 	
 	protected static Concept[] newConceptArray(Concept... values) { return values; }
 
@@ -42,12 +42,12 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		// deal with what are essentially synonyms first (to prevent expanding body part due to synonyms in broader combinations) ...
 		
 		new Combination(new Concept("C0018670"/*"Head"*/),	newConceptArray(new Concept("C0006104"/*"Brain"*/))),
-		new Combination(new Concept("C0817096"/*"Chest"*/),	newConceptArray(new Concept("C0024109"/*"Lung"*/))),
+		new Combination(new Concept("C5230958"/*"Chest"*/),	newConceptArray(new Concept("C0024109"/*"Lung"*/))),
 		
 		// deal with two pair combinations ...
-		new Combination(new Concept("C1508499"/*"Abdomen and Pelvis"*/), newConceptArray(
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+		new Combination(new Concept("C5231291"/*"Abdomen and Pelvis"*/), newConceptArray(
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C0460004"   /*"Head and Neck"*/),      newConceptArray(
@@ -62,7 +62,7 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		),
 		new Combination(new Concept("C1562459"/*"Neck and Chest"*/),     newConceptArray(
 				new Concept("C0027530"/*"Neck"*/),
-				new Concept("C0817096"/*"Chest"*/)
+				new Concept("C5230958"/*"Chest"*/)
 			)
 		),
 		new Combination(new Concept("C1562459"/*"Neck and Chest"*/),     newConceptArray(
@@ -71,13 +71,13 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 			)
 		),
 		new Combination(new Concept("C1442171"/*"Chest and Abdomen"*/),  newConceptArray(
-				new Concept("C0817096"/*"Chest"*/),
-				new Concept("C0000726"/*"Abdomen"*/)
+				new Concept("C5230958"/*"Chest"*/),
+				new Concept("C5231290"/*"Abdomen"*/)
 			)
 		),
 		new Combination(new Concept("C1442171"/*"Chest and Abdomen"*/),  newConceptArray(
 				new Concept("C0024109"/*"Lung"*/),
-				new Concept("C0000726"/*"Abdomen"*/)
+				new Concept("C5231290"/*"Abdomen"*/)
 			)
 		),
 		new Combination(new Concept("C1508520"/*"Aortic Arch and Carotid Artery"*/),  newConceptArray(
@@ -119,49 +119,49 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		
 		// deal with three pair combinations ...
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
-				new Concept("C0817096"/*"Chest"*/),
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5230958"/*"Chest"*/),
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C0024109"/*"Lung"*/),
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1442171"/*"Chest and Abdomen"*/),
-				new Concept("C1508499"/*"Abdomen and Pelvis"*/)
+				new Concept("C5231291"/*"Abdomen and Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1442171"/*"Chest and Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
-				new Concept("C0817096"/*"Chest"*/),
-				new Concept("C1508499"/*"Abdomen and Pelvis"*/)
+				new Concept("C5230958"/*"Chest"*/),
+				new Concept("C5231291"/*"Abdomen and Pelvis"*/)
 			)
 		),
 		new Combination(new Concept("C1562547"/*"Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C0024109"/*"Lung"*/),
-				new Concept("C1508499"/*"Abdomen and Pelvis"*/)
+				new Concept("C5231291"/*"Abdomen and Pelvis"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562378"/*"Neck, Chest and Abdomen"*/), newConceptArray(
 				new Concept("C0027530"/*"Neck"*/),
-				new Concept("C0817096"/*"Chest"*/),
-				new Concept("C0000726"/*"Abdomen"*/)
+				new Concept("C5230958"/*"Chest"*/),
+				new Concept("C5231290"/*"Abdomen"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562378"/*"Neck, Chest and Abdomen"*/), newConceptArray(
 				new Concept("C0027530"/*"Neck"*/),
 				new Concept("C0024109"/*"Lung"*/),
-				new Concept("C0000726"/*"Abdomen"*/)
+				new Concept("C5231290"/*"Abdomen"*/)
 			)
 		),
 		
@@ -173,7 +173,7 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		
 		new Combination(new Concept("C1562378"/*"Neck, Chest and Abdomen"*/), newConceptArray(
 				new Concept("C1562459"/*"Neck and Chest"*/), 
-				new Concept("C0000726"/*"Abdomen"*/)
+				new Concept("C5231290"/*"Abdomen"*/)
 			)
 		),
 
@@ -194,24 +194,24 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		// deal with four pair combinations ...
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C0027530"/*"Neck"*/),
-				new Concept("C0817096"/*"Chest"*/),
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5230958"/*"Chest"*/),
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C0027530"/*"Neck"*/),
 				new Concept("C0024109"/*"Lung"*/),
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1562459"/*"Neck and Chest"*/), 
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		
@@ -223,20 +223,20 @@ public class CombinedAnatomicConcepts extends DisplayableConcept {
 		
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1562459"/*"Neck and Chest"*/), 
-				new Concept("C0000726"/*"Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5231290"/*"Abdomen"*/),
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1562378"/*"Neck, Chest and Abdomen"*/),
-				new Concept("C0030797"/*"Pelvis"*/)
+				new Concept("C5230955"/*"Pelvis"*/)
 			)
 		),
 		
 		new Combination(new Concept("C1562776"/*"Neck, Chest, Abdomen and Pelvis"*/), newConceptArray(
 				new Concept("C1562459"/*"Neck and Chest"*/), 
-				new Concept("C1508499"/*"Abdomen and Pelvis"*/)
+				new Concept("C5231291"/*"Abdomen and Pelvis"*/)
 			)
 		)
 		

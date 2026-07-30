@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.database;
 
@@ -30,7 +30,7 @@ import javax.swing.event.*;
 public class MinimalPatientStudySeriesInstanceModel extends DicomDatabaseInformationModel {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MinimalPatientStudySeriesInstanceModel.java,v 1.15 2025/01/29 10:58:06 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/database/MinimalPatientStudySeriesInstanceModel.java,v 1.16 2026/03/08 15:20:34 dclunie Exp $";
 
 	/**
 	 * <p>Construct a model with the attributes from the default dictionary.</p>

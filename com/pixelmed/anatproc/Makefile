@@ -1,4 +1,5 @@
 OBJS = \
+	Anatomy.class \
 	Concept.class \
 	CodedConcept.class \
 	CombinedAnatomicConcepts.class \
@@ -10,7 +11,8 @@ OBJS = \
 	DisplayableViewConcept.class \
 	MammographyLaterality.class \
 	ProjectionXRayAnatomy.class \
-	SchemeAndValuePair.class
+	SchemeAndValuePair.class \
+	anatomyfromannexl.xml
 
 all:	${OBJS}
 
@@ -19,7 +21,7 @@ PATHTOROOT = ../../..
 include ${PATHTOROOT}/Makefile.common.mk
 
 clean:
-	rm -f *~ *.class core *.bak
+	rm -f *~ *.class core *.bak anatomyfromannexl.xml
 
 testanatregionseq:	ProjectionXRayAnatomy.class
 	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.anatproc.ProjectionXRayAnatomy \
@@ -54,3 +56,10 @@ testctstudydescabbrev:	CTAnatomy.class
 	dcsmpte /tmp/crap -nodisclaimer -r StudyDescription "CAP"
 	java -cp ${PATHTOROOT}:${COMMONSCODECADDITIONALJAR} com.pixelmed.anatproc.CTAnatomy /tmp/crap
 	rm /tmp/crap
+
+anatomyfromannexl.xml:	${HOME}/${PATHTOSTANDARDFROMHOME}/support/stylesheets/extractanatomyfromannexl.xsl ${HOME}/${PATHTOSTANDARDFROMHOME}/source/docbook/part16/part16.xml
+	java -cp ${PATHTOROOT} ${XALANJAVAOPTS} \
+		com.pixelmed.utils.ExecuteTranslet \
+		"$${HOME}/${PATHTOSTANDARDFROMHOME}/support/stylesheets/extractanatomyfromannexl.xsl" \
+		"$${HOME}/${PATHTOSTANDARDFROMHOME}/source/docbook/part16/part16.xml" \
+		$@

@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2025, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
+/* Copyright (c) 2001-2026, David A. Clunie DBA Pixelmed Publishing. All rights reserved. */
 
 package com.pixelmed.display;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
 
 class SpectroscopyLocalizerManager extends LocalizerManager {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SpectroscopyLocalizerManager.java,v 1.16 2025/01/29 10:58:08 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/SpectroscopyLocalizerManager.java,v 1.17 2026/03/08 15:20:37 dclunie Exp $";
 		
 	/***/
 	protected GeometryOfVolume spectroscopyGeometry;
