@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Seri açıklamasını kaldır
 removeProtocolNameLabelText=Görüntü alma protokolü adını kaldır
 removeCharacteristicsLabelText=Hasta özelliklerini kaldır
 removeDeviceIdentityLabelText=Cihaz kimliklerini kaldır
+removeManufacturerLabelText=Üretici kaldır
 removeInstitutionIdentityLabelText=Kurum kimliklerini kaldır
 cleanUIDsLabelText=Tüm UID'leri değiştir
 removePrivateLabelText=Güvenli olmayan özel nitelikleri kaldır

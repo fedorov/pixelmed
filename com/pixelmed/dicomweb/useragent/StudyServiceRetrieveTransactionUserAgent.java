@@ -25,6 +25,19 @@ import com.pixelmed.slf4j.LoggerFactory;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+//import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
+import java.security.cert.X509Certificate;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -44,7 +57,7 @@ import java.util.Enumeration;
  * @author	dclunie
  */
 public class StudyServiceRetrieveTransactionUserAgent {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicomweb/useragent/StudyServiceRetrieveTransactionUserAgent.java,v 1.3 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicomweb/useragent/StudyServiceRetrieveTransactionUserAgent.java,v 1.10 2026/08/03 12:11:10 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StudyServiceRetrieveTransactionUserAgent.class);
 
@@ -118,14 +131,79 @@ public class StudyServiceRetrieveTransactionUserAgent {
 	 * @param	savedImagesFolder			the folder in which to store received data sets (may be null, to ignore received data for testing)
 	 * @param	storedFilePathStrategy		the strategy to use for naming received files and folders
 	 * @param	receivedObjectHandler		the handler to call after each data set has been received and stored
-	 * @param	acceptheadervalue			the value of the Accept: header to send (null if don't send)
+	 * @param	multipartacceptheadervalue	the value of the Accept: header to try first (null if don't send)
+	 * @param	singlepartacceptheadervalue	the value of the Accept: header to try if the multipartacceptheadervalue fails (null if don't re-try)
 	 * @throws	IOException
 	 * @throws	DicomException
 	 * @throws	DicomNetworkException
 	 */
 	public StudyServiceRetrieveTransactionUserAgent(String endpointuri,AttributeList requestIdentifier,IdentifierHandler identifierHandler,
 			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
+			String multipartacceptheadervalue,String singlepartacceptheadervalue
+		) throws DicomNetworkException, DicomException, IOException {
+		this(endpointuri,null/*bearerToken*/,requestIdentifier,identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,multipartacceptheadervalue,singlepartacceptheadervalue);
+	}
+
+	/**
+	 * @param	endpointuri					DICOMweb URI
+	 * @param	bearerToken					bearer token
+	 * @param	requestIdentifier			the list of unique keys
+	 * @param	identifierHandler			the handler to use for each returned identifier
+	 * @param	savedImagesFolder			the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * @param	storedFilePathStrategy		the strategy to use for naming received files and folders
+	 * @param	receivedObjectHandler		the handler to call after each data set has been received and stored
+	 * @param	acceptheadervalue			the value of the Accept: header to send (null if don't send)
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public StudyServiceRetrieveTransactionUserAgent(String endpointuri,String bearerToken,AttributeList requestIdentifier,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
 			String acceptheadervalue
+		) throws DicomNetworkException, DicomException, IOException {
+		this(endpointuri,bearerToken,requestIdentifier,identifierHandler,
+			savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,
+			acceptheadervalue/*multipartacceptheadervalue*/,null/*singlepartacceptheadervalue*/);
+	}
+	
+	/**
+	 * @param	endpointuri					DICOMweb URI
+	 * @param	bearerToken					bearer token
+	 * @param	requestIdentifier			the list of unique keys
+	 * @param	identifierHandler			the handler to use for each returned identifier
+	 * @param	savedImagesFolder			the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * @param	storedFilePathStrategy		the strategy to use for naming received files and folders
+	 * @param	receivedObjectHandler		the handler to call after each data set has been received and stored
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	public StudyServiceRetrieveTransactionUserAgent(String endpointuri,String bearerToken,AttributeList requestIdentifier,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler
+		) throws DicomNetworkException, DicomException, IOException {
+		this(endpointuri,bearerToken,requestIdentifier,identifierHandler,
+			savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,
+			null/*acceptheadervalue*/);
+	}
+	
+	/**
+	 * @param	endpointuri					DICOMweb URI
+	 * @param	requestIdentifier			the list of unique keys
+	 * @param	bearerToken					bearer token
+	 * @param	identifierHandler			the handler to use for each returned identifier
+	 * @param	savedImagesFolder			the folder in which to store received data sets (may be null, to ignore received data for testing)
+	 * @param	storedFilePathStrategy		the strategy to use for naming received files and folders
+	 * @param	receivedObjectHandler		the handler to call after each data set has been received and stored
+	 * @param	multipartacceptheadervalue	the value of the Accept: header to try first (null if don't send)
+	 * @param	singlepartacceptheadervalue	the value of the Accept: header to try if the multipartacceptheadervalue fails (null if don't re-try)
+	 * @throws	IOException
+	 * @throws	DicomException
+	 * @throws	DicomNetworkException
+	 */
+	 
+	public StudyServiceRetrieveTransactionUserAgent(String endpointuri,String bearerToken,AttributeList requestIdentifier,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
+			String multipartacceptheadervalue,String singlepartacceptheadervalue
 		) throws DicomNetworkException, DicomException, IOException {
 		// need to build path to query-level specific resource with unique keys, then append to end point URI
 		// see "http://dicom.nema.org/medical/dicom/current/output/chtml/part18/sect_10.4.html"
@@ -198,14 +276,85 @@ public class StudyServiceRetrieveTransactionUserAgent {
 				buf.append(sopInstanceUID);
 			}
 		}
-				
 		String retrieveuri = buf.toString();
 		slf4jlogger.debug("StudyServiceRetrieveTransactionUserAgent(): retrieveuri=\"{}\"",retrieveuri);
 		
+		int status = this.performRetrieval(retrieveuri,bearerToken,identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,multipartacceptheadervalue);
+		
+		if (status != 200 && singlepartacceptheadervalue != null) {
+			status = this.performRetrieval(retrieveuri,bearerToken,identifierHandler,savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,singlepartacceptheadervalue);
+		}
+	}
+	
+	// (001482)
+	// same as in StudyServiceSearchTransactionUserAgent - should re-factor :(
+	// based on "https://stackoverflow.com/questions/33084855/way-to-ignore-ssl-certificate-using-httpsurlconnection"
+	private class HttpsTrustManager implements X509TrustManager {
+		private final X509Certificate[] acceptedIssuers = new X509Certificate[]{};
+
+		@Override
+		public void checkClientTrusted(
+				X509Certificate[] x509Certificates, String s)
+				throws java.security.cert.CertificateException {
+		}
+
+		@Override
+		public void checkServerTrusted(
+				X509Certificate[] x509Certificates, String s)
+				throws java.security.cert.CertificateException {
+			slf4jlogger.trace("HttpsTrustManager.checkServerTrusted():");
+		}
+
+		public boolean isClientTrusted(X509Certificate[] chain) {
+			return true;
+		}
+
+		public boolean isServerTrusted(X509Certificate[] chain) {
+			slf4jlogger.trace("HttpsTrustManager.isServerTrusted():");
+			return true;
+		}
+
+		@Override
+		public X509Certificate[] getAcceptedIssuers() {
+			slf4jlogger.trace("HttpsTrustManager.getAcceptedIssuers():");
+			return acceptedIssuers;
+		}
+	}
+	
+	private int performRetrieval(String retrieveuri,String bearerToken,IdentifierHandler identifierHandler,
+			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler,
+			String acceptheadervalue
+		) throws DicomNetworkException, DicomException, IOException {
+						
 		URL url = new URL(retrieveuri);
+		slf4jlogger.trace("StudyServiceRetrieveTransactionUserAgent(): opening HttpURLConnection");
+		
+		// (001482)
+		// this is very bad security practice - should not be default and should only be done if need to override (control by command line option) :(
+		{
+			slf4jlogger.trace("StudyServiceSearchTransactionUserAgent(): may be HTTPS so overriding trust manager in case expired certificate ");
+			TrustManager[] trustManagers = new TrustManager[] { new HttpsTrustManager() };
+			SSLContext context = null;
+			try {
+				context = SSLContext.getInstance("TLS");
+				context.init(null, trustManagers, new SecureRandom());
+			} catch (NoSuchAlgorithmException | KeyManagementException e) {
+				e.printStackTrace();
+			}
+			if (context != null) {
+				HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+			}
+		}
+
 		HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+				
 		connection.setRequestMethod("GET");
 		
+		// (001483)
+		if (bearerToken != null && bearerToken.length() > 0) {
+			connection.setRequestProperty("Authorization","BEARER "+bearerToken);
+		}
+
 		if (acceptheadervalue != null) {
 			slf4jlogger.debug("StudyServiceRetrieveTransactionUserAgent(): setting Accept header to {}",acceptheadervalue);
 			connection.setRequestProperty("Accept",acceptheadervalue);
@@ -217,6 +366,9 @@ public class StudyServiceRetrieveTransactionUserAgent {
 		if (status == HttpURLConnection.HTTP_OK) {
 			String contentType = connection.getContentType();
 			slf4jlogger.debug("StudyServiceRetrieveTransactionUserAgent(): contentType={}",contentType);
+			if (contentType == null || contentType.length() == 0) {		// (001485)
+				throw new DicomException("Unexpected missing or null ContentType in retrieve response: \""+contentType+"\"");
+			}
 			String contentTypeWithoutParameters = contentType.toLowerCase().replaceFirst(";.*$","").trim();
 			slf4jlogger.debug("StudyServiceRetrieveTransactionUserAgent(): contentTypeWithoutParameters={}",contentTypeWithoutParameters);
 
@@ -233,16 +385,22 @@ public class StudyServiceRetrieveTransactionUserAgent {
             
             if (contentTypeWithoutParameters.equals("multipart/related")) {
             	// https://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
-            	// Tried using javax.mail.internet.MimeMultipart, but seems to laod too much into memory and fails for large files so do it by hand ...
+            	// Tried using javax.mail.internet.MimeMultipart, but seems to load too much into memory and fails for large files so do it by hand ...
 				slf4jlogger.debug("StudyServiceRetrieveTransactionUserAgent(): multipart/related response");
 				{
 					InputStream in = new BufferedInputStream(new FileInputStream(temporaryReceivedFile));
 					
 					// rather than extract and use boundary specified in contentType header, consume first instance of boundary and record it ...
 					
-					byte[] boundary = new byte[80];		// max boundary length is 70 bytes (not including the two hyphens that precede it and the CR LFR that follow it) per RFC 2046
+					byte[] boundary = new byte[200];	// (001468) increase size of buffer from 80 to larger so as not to reject non-compliant servers
+														// max boundary length is 70 bytes (not including the two hyphens that precede it and the CR LFR that follow it)
+														// per RFC 2046 ("https://datatracker.ietf.org/doc/html/rfc2046#:~:text=which%20consists%20of%201%20to%2070%20characters")
 					
 					int c = in.read();
+					// may be spurious extra CR LF before boundary (001481)
+					while (c == 0x0d || c == 0x0a) {
+						c = in.read();
+					}
 					if (c != '-') throw new DicomException("Expected boundary start hyphen character, got '"+(char)c+"'");
 					c = in.read();
 					if (c != '-') throw new DicomException("Expected boundary start hyphen character, got '"+(char)c+"'");
@@ -423,27 +581,15 @@ public class StudyServiceRetrieveTransactionUserAgent {
             
             // by this point temporaryReceivedFile will have been moved or deleted
 		}
+		else if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {	// (001488); a 401 will be returned if the bearer token has expired
+			slf4jlogger.error("StudyServiceRetrieveTransactionUserAgent(): unauthorized response {} - nothing retrieved",status);
+		}
+		else {	// (001488)
+			slf4jlogger.warn("StudyServiceRetrieveTransactionUserAgent(): unexpected response {} - nothing retrieved",status);
+		}
 
 		connection.disconnect();
-	}
-
-
-	/**
-	 * @param	endpointuri					DICOMweb URI
-	 * @param	requestIdentifier			the list of unique keys
-	 * @param	identifierHandler			the handler to use for each returned identifier
-	 * @param	savedImagesFolder			the folder in which to store received data sets (may be null, to ignore received data for testing)
-	 * @param	storedFilePathStrategy		the strategy to use for naming received files and folders
-	 * @param	receivedObjectHandler		the handler to call after each data set has been received and stored
-	 * @throws	IOException
-	 * @throws	DicomException
-	 * @throws	DicomNetworkException
-	 */
-	public StudyServiceRetrieveTransactionUserAgent(String endpointuri,AttributeList requestIdentifier,IdentifierHandler identifierHandler,
-			File savedImagesFolder,StoredFilePathStrategy storedFilePathStrategy,ReceivedObjectHandler receivedObjectHandler
-		) throws DicomNetworkException, DicomException, IOException {
-		this(endpointuri,requestIdentifier,identifierHandler,
-			savedImagesFolder,storedFilePathStrategy,receivedObjectHandler,
-			null/*acceptheadervalue*/);
+		
+		return status;
 	}
 }

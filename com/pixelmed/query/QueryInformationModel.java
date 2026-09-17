@@ -43,7 +43,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 abstract public class QueryInformationModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.40 2026/03/08 15:20:39 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/QueryInformationModel.java,v 1.41 2026/07/31 01:23:19 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(QueryInformationModel.class);
 
@@ -60,7 +60,9 @@ abstract public class QueryInformationModel {
 	/***/
 	protected Association cMoveAssociation;
 	/***/
-	private String uri;		// DICOMweb URI used instead of hostname, port and calledAETitle
+	private String uri;			// DICOMweb URI used instead of hostname, port and calledAETitle
+	/***/
+	private String bearerToken;	// DICOMweb bearer token
 	
 	public final Association getCFindAssociation() { return cFindAssociation; }
 	
@@ -213,7 +215,7 @@ abstract public class QueryInformationModel {
 			}
 			else if (uri != null) {
 				slf4jlogger.debug("performQuery(): perform DICOMweb search");
-				new StudyServiceSearchTransactionUserAgent(uri,requestIdentifier,responseIdentifierHandler);
+				new StudyServiceSearchTransactionUserAgent(uri,bearerToken,requestIdentifier,responseIdentifierHandler);
 			}
 			else {
 				throw new DicomException("Insufficient parameters to identify query method and server");
@@ -507,6 +509,22 @@ abstract public class QueryInformationModel {
 	 */
 	public QueryInformationModel(String uri) {
 		this.uri=uri;
+	}
+	
+	/**
+	 * <p>Construct a query information model.</p>
+	 *
+	 * <p>Does not actually open an association or perform a query or retrieval; for that see:</p>
+	 * <ul>
+	 * <li> {@link #performHierarchicalQuery(AttributeList) performHierarchicalQuery()}
+	 * </ul>
+	 *
+	 * @param	uri			DICOMweb uRI
+	 * @param	bearerToken	DICOMweb bearer token
+	 */
+	public QueryInformationModel(String uri,String bearerToken) {		// (001483)
+		this.uri=uri;
+		this.bearerToken=bearerToken;
 	}
 
 }

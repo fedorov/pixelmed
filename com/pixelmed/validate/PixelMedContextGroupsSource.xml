@@ -215,6 +215,8 @@
 		<contextgroupcode csd="99PMP" cv="210010" cm="Remove all structured content"/>
 		<contextgroupcode csd="99PMP" cv="210011" cm="Retain all structured content unchanged"/>
 		<contextgroupcode csd="99PMP" cv="210012" cm="Patient ages > 89 years set to 90"/>
+		<contextgroupcode csd="99PMP" cv="210013" cm="Retain Manufacturer"/>
+		<contextgroupcode csd="99PMP" cv="210014" cm="Remove Manufacturer"/>
 	</definecontextgroup>
 
 	<definecontextgroup cid="PMP_4" name="PixelMedTemporaryRadiationDoseSR" extensible="T" version="20110716">

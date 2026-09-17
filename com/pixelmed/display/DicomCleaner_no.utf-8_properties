@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Fjern seriebeskrivelser
 removeProtocolNameLabelText=Fjern opptaksprotokollnavn
 removeCharacteristicsLabelText=Fjern pasientkarakteristikker
 removeDeviceIdentityLabelText=Fjern enhetsidentifikatorer
+removeManufacturerLabelText=Fjern produsent
 removeInstitutionIdentityLabelText=Fjern institusjonsidentifikatorer
 cleanUIDsLabelText=Erstatt alle UID-er
 removePrivateLabelText=Fjern usikre private attributter

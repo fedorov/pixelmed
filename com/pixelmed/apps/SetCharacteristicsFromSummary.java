@@ -20,6 +20,8 @@ import com.pixelmed.dicom.MediaImporter;
 import com.pixelmed.dicom.MoveDicomFilesIntoHierarchy;
 import com.pixelmed.dicom.SequenceAttribute;
 import com.pixelmed.dicom.SequenceItem;
+import com.pixelmed.dicom.SpecificCharacterSet;
+import com.pixelmed.dicom.StringAttributeAffectedBySpecificCharacterSet;
 import com.pixelmed.dicom.TagFromName;
 import com.pixelmed.dicom.TransferSyntax;
 import com.pixelmed.dicom.UnknownAttribute;
@@ -30,8 +32,11 @@ import com.pixelmed.utils.PrintStreamMessageLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+
+import java.nio.charset.Charset;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -130,7 +135,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class SetCharacteristicsFromSummary {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/SetCharacteristicsFromSummary.java,v 1.32 2026/03/08 15:20:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/SetCharacteristicsFromSummary.java,v 1.33 2026/09/04 22:33:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(SetCharacteristicsFromSummary.class);
 	
@@ -173,10 +178,16 @@ public class SetCharacteristicsFromSummary {
 		return AttributeFactory.newAttribute(tag);
 	}
 	
+	private static final String[] iso_ir_192 = { "ISO_IR 192" };
+	private static final SpecificCharacterSet utf8SpecificCharacterSet = new SpecificCharacterSet(iso_ir_192);
+	
 	protected Attribute makeNewStringAttribute(AttributeTag tag) throws DicomException {	 // (001295)
 		Attribute a = AttributeFactory.newAttribute(tag);
 		if (a instanceof UnknownAttribute) {
 			a = new LongStringAttribute(tag);	// this is not ideal, but no way to do better unless we (a) have a private dictionary, or (b) add VR to the JSON input
+		}
+		if (a instanceof StringAttributeAffectedBySpecificCharacterSet) {	// (001489) - otherwise will not know if UTF-8 characters are being used
+			((StringAttributeAffectedBySpecificCharacterSet)a).setSpecificCharacterSet(utf8SpecificCharacterSet);
 		}
 		return a;
 	}
@@ -199,7 +210,12 @@ public class SetCharacteristicsFromSummary {
 		JsonValue.ValueType valueType = entry.getValueType();
 		if (valueType == JsonValue.ValueType.STRING) {		// single valued attribute
 			String value = ((JsonString)entry).getString();
-			slf4jlogger.debug("parseAttributeFromJSON(): "+name+" : "+value);
+			slf4jlogger.debug("parseAttributeFromJSON(): {} : {}",name,value);
+			try {
+				slf4jlogger.debug("parseAttributeFromJSON(): value = {}",com.pixelmed.utils.HexDump.dump(value.getBytes("UTF-8")));
+			}
+			catch (Exception e) {
+			}
 			if (value != null && value.length() > 0) {	// (001157)
 				a = makeNewStringAttribute(tag);		// (001295)
 				a.addValue(value);
@@ -282,7 +298,8 @@ public class SetCharacteristicsFromSummary {
 	}
 	
 	protected void parseSummaryFile(String jsonfile) throws DicomException, FileNotFoundException {
-		JsonReader jsonReader = Json.createReader(new FileReader(jsonfile));
+		//(001489) just using default reader without setting Charset for reading does not work - JsonReader jsonReader = Json.createReader(new FileReader(jsonfile));
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(new FileInputStream(jsonfile),Charset.forName("UTF-8")));	// (001489)
 		JsonObject obj = jsonReader.readObject();
 		
 		for (String functionalGroupName : obj.keySet()) {

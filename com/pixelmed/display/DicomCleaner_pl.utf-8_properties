@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Usuń opis serii
 removeProtocolNameLabelText=Usuń nazwę protokołu akwizycji
 removeCharacteristicsLabelText=Usuń informacje o pacjencie
 removeDeviceIdentityLabelText=Usuń identyfikatory urządzeń
+removeManufacturerLabelText=Usuń producenta
 removeInstitutionIdentityLabelText=Usuń identyfikatory instytucji
 cleanUIDsLabelText=Zastąp wszystkie UID
 removePrivateLabelText=Usuń niebezpieczne atrybuty danych prywatnych

@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Удалить описание серии
 removeProtocolNameLabelText=Удалить имя протокола получения изображений
 removeCharacteristicsLabelText=Удалить характеристики пациента
 removeDeviceIdentityLabelText=Удалить идентификаторы устройств
+removeManufacturerLabelText=Удалить производителя
 removeInstitutionIdentityLabelText=Удалить идентификаторы учреждения
 cleanUIDsLabelText=Заменить все UID
 removePrivateLabelText=Удалить небезопасные частные атрибуты

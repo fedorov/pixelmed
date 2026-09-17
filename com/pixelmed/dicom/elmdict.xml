@@ -4160,6 +4160,7 @@
 	<DataElement><Group>0x3004</Group><Element>0x0070</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMinimumDose</Keyword><Name>DVH Minimum Dose</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0072</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMaximumDose</Keyword><Name>DVH Maximum Dose</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0074</Element><VR>DS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DVHMeanDose</Keyword><Name>DVH Mean Dose</Name></DataElement>
+	<DataElement><Group>0x3004</Group><Element>0x007F</Element><VR>LO</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationModelName</Keyword><Name>Dose Calculation Model Name</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0080</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationModelSequence</Keyword><Name>Dose Calculation Model Sequence</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0081</Element><VR>SQ</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>DoseCalculationAlgorithmSequence</Keyword><Name>Dose Calculation Algorithm Sequence</Name></DataElement>
 	<DataElement><Group>0x3004</Group><Element>0x0082</Element><VR>CS</VR><VMMin>1</VMMin><VMMax>1</VMMax><Keyword>CommissioningStatus</Keyword><Name>Commissioning Status</Name></DataElement>

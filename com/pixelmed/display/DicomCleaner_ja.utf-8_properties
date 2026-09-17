@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=シリーズの説明を削除
 removeProtocolNameLabelText=収集プロトコル名を削除
 removeCharacteristicsLabelText=患者特性を削除
 removeDeviceIdentityLabelText=デバイスIDを削除
+removeManufacturerLabelText=メーカーを削除
 removeInstitutionIdentityLabelText=施設IDを削除
 cleanUIDsLabelText=すべてのUIDを置換
 removePrivateLabelText=安全でないプライベート属性を削除

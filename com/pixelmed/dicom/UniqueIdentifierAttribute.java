@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class UniqueIdentifierAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.31 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.32 2026/06/29 21:23:30 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 64;
 	
@@ -99,7 +99,8 @@ public class UniqueIdentifierAttribute extends StringAttribute {
 	}
 	
 	static public boolean isWellKnownRelated(AttributeTag t) {
-		return t.equals(TagFromName.EquipmentFrameOfReferenceUID);
+		return t.equals(TagFromName.EquipmentFrameOfReferenceUID)
+			|| t.equals(TagFromName.ManufacturerDeviceClassUID);
 	}
 	
 	static public boolean isCodingSchemeRelated(AttributeTag t) {

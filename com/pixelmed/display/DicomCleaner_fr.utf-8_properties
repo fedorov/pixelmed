@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Supprimer la description de série
 removeProtocolNameLabelText=Supprimer le nom du protocole d'acquisition
 removeCharacteristicsLabelText=Supprimer les caractéristiques du patient
 removeDeviceIdentityLabelText=Supprimer les identifiants de périphérique
+removeManufacturerLabelText=Supprimer le fabricant
 removeInstitutionIdentityLabelText=Supprimer les identifiants d'institution
 cleanUIDsLabelText=Remplacer tous les UID
 removePrivateLabelText=Supprimer les attributs privés non sécurisés

@@ -38,7 +38,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class CompressedFrameEncoder {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CompressedFrameEncoder.java,v 1.19 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CompressedFrameEncoder.java,v 1.20 2026/07/17 00:34:11 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(CompressedFrameEncoder.class);
 	
@@ -102,6 +102,8 @@ public class CompressedFrameEncoder {
 	/**
 	 * <p>Compress the supplied frame.</p>
 	 *
+	 * <p>If jpeg2000, uses lossless mode.</p>
+	 *
 	 * @param	list					the AttributeList from which the frame was extracted
 	 * @param	renderedImage			the frame as an image
 	 * @param	outputFormat			the compression format to use [jpeg2000|jpeg-lossless|jpeg-ls|rle]
@@ -112,6 +114,23 @@ public class CompressedFrameEncoder {
 	 * @throws	DicomException			if the image cannot be compressed
 	 */
 	public static File getCompressedFrameAsFile(AttributeList list,BufferedImage renderedImage,String outputFormat,File tmpFrameFile) throws IOException, FileNotFoundException, DicomException {
+		return getCompressedFrameAsFile(list,renderedImage,outputFormat,true/*lossless*/,tmpFrameFile);
+	}
+	
+	/**
+	 * <p>Compress the supplied frame.</p>
+	 *
+	 * @param	list					the AttributeList from which the frame was extracted
+	 * @param	renderedImage			the frame as an image
+	 * @param	outputFormat			the compression format to use [jpeg2000|jpeg-lossless|jpeg-ls|rle]
+	 * @param	lossless				selects lossless mode for compression format (used for jpeg2000 only)
+	 * @param	tmpFrameFile			the file to write the compressed bit stream to
+	 * @return							the file written to, or null if compression failed
+	 * @throws	IOException				if there is an error writing the file
+	 * @throws	FileNotFoundException	if the supplied file path cannot be found
+	 * @throws	DicomException			if the image cannot be compressed
+	 */
+	public static File getCompressedFrameAsFile(AttributeList list,BufferedImage renderedImage,String outputFormat,boolean lossless,File tmpFrameFile) throws IOException, FileNotFoundException, DicomException {
 		File returnFile = null;
 		if (outputFormat.equals("rle")) {
 			// care about Samples per Pixel and Bits Allocated, not Photometric Intepretation (e.g., doesn't matter if PALETTE COLOR or RGB or YBR_FULL) or Bits Stored (but consider CP 1654)
@@ -299,8 +318,20 @@ public class CompressedFrameEncoder {
 									if (setLossless == null) {
 										throw new DicomException("Could not get J2KImageWriteParam.setLossless() method");
 									}
-									setLossless.invoke(writeParameters,Boolean.TRUE);
-									
+									if (lossless) {
+										setLossless.invoke(writeParameters,Boolean.TRUE);
+									}
+									else {
+										// (001475)
+										setLossless.invoke(writeParameters,Boolean.FALSE);
+										java.lang.reflect.Method setEncodingRate = classToUse.getMethod("setEncodingRate",Double.TYPE);
+										if (setEncodingRate == null) {
+											throw new DicomException("Could not get J2KImageWriteParam.setEncodingRate() method");
+										}
+										// per "https://docs.oracle.com/cd/E17802_01/products/products/java-media/jai/forDevelopers/jai-imageio-1_0-docs/com/sun/media/imageio/plugins/jpeg2000/J2KImageWriteParam.html"
+										// needs to be set when lossy else will be lossless, Double.MAX_VALUE is also lossless and triggers use of integer wavelet, so don't use that either
+										setEncodingRate.invoke(writeParameters,new Double(24/*bits-per-pixel*/));
+									}
 									java.lang.reflect.Method setComponentTransformation = classToUse.getMethod("setComponentTransformation",Boolean.TYPE);
 									if (setComponentTransformation == null) {
 										throw new DicomException("Could not get J2KImageWriteParam.setComponentTransformation() method");

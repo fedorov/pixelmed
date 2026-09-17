@@ -220,7 +220,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 
 public class TIFFToDicom {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/TIFFToDicom.java,v 1.164 2026/05/04 16:19:00 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/TIFFToDicom.java,v 1.174 2026/08/12 00:53:39 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(TIFFToDicom.class);
 	
@@ -230,12 +230,19 @@ public class TIFFToDicom {
 
 	private static final String pixelmedPrivateCreator = "PixelMed Publishing";
 
-	private static final int pixelmedPrivateOriginalFileNameDataGroup = 0x0009;
-	private static final AttributeTag pixelmedPrivateOriginalFileNameDataBlockReservation = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x0010);
-	private static final AttributeTag pixelmedPrivateOriginalFileName                     = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1001);
-	private static final AttributeTag pixelmedPrivateOriginalTIFFIFDIndex                 = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1002);
-	private static final AttributeTag pixelmedPrivateOriginalFileMACString                = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1003);	// (001453)
-	private static final AttributeTag pixelmedPrivateOriginalOriginalFileMACAlgorithm     = new AttributeTag(pixelmedPrivateOriginalFileNameDataGroup,0x1004);
+	private static final int pixelmedPrivateOriginalTIFFInformationDataGroup = 0x0009;
+	private static final AttributeTag pixelmedPrivateOriginalFileNameDataBlockReservation = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x0010);
+	private static final AttributeTag pixelmedPrivateOriginalFileName                     = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1001);
+	private static final AttributeTag pixelmedPrivateOriginalTIFFIFDIndex                 = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1002);
+	private static final AttributeTag pixelmedPrivateOriginalFileMACString                = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1003);	// (001453)
+	private static final AttributeTag pixelmedPrivateOriginalFileMACAlgorithm			  = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1004);
+	private static final AttributeTag pixelmedPrivateOriginalTIFFPhotometric			  = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1005);	// (001473)
+	private static final AttributeTag pixelmedPrivateOriginalTIFFCompression			  = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1006);	// (001473)
+	private static final AttributeTag pixelmedPrivateOriginalTIFFCompressionColorSpace	  = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1007);	// (001473)
+	private static final AttributeTag pixelmedPrivateOriginalTIFFCompressionQFactor		  = new AttributeTag(pixelmedPrivateOriginalTIFFInformationDataGroup,0x1008);	// (001473)
+
+	private static final int TIFF_PHOTOMETRIC_PIXELMED_ICT = 1006;
+	private static final int TIFF_PHOTOMETRIC_PIXELMED_RCT = 1007;
 
 	private static final long UNSIGNED32_MAX_VALUE = 0xffffffffl;
 
@@ -308,11 +315,14 @@ public class TIFFToDicom {
 		return newBytes;
 	}
 	
-	// http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html#Adobe
-	// per JPEG-EPS.pdf 18 Adobe Application-Specific JPEG Marker
-	// http://fileformats.archiveteam.org/wiki/JPEG#Color_format
+	// http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html#Adobe (https://web.archive.org/web/20070122132142/https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html#Adobe)
+	// per JPEG-EPS.pdf Section 18 "Adobe Application-Specific JPEG Marker" (https://web.archive.org/web/20191119174559/https://www.adobe.com/content/dam/acom/en/devnet/postscript/pdfs/5116.DCT_Filter.pdf)
+	// http://fileformats.archiveteam.org/wiki/JPEG#Color_format (https://web.archive.org/web/20131005061632/http://fileformats.archiveteam.org/wiki/JPEG#Color_format)
 	// http://docs.oracle.com/javase/8/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#color
-	// http://exiftool.org/forum/index.php?topic=8695.0
+	// http://exiftool.org/forum/index.php?topic=8695.0 (https://web.archive.org/web/20230819112840/https://exiftool.org/forum/index.php?topic=8695.0)
+	// https://github.com/libjxl/libjxl/issues/3512
+	// https://www.itu.int/rec/T-REC-T.872-201206-I/en - see section 6.1 "Colour encoding"
+	// https://entropymine.wordpress.com/2018/10/22/how-is-a-jpeg-images-color-type-determined/
 	
 	private static byte[] AdobeAPP14_RGB = {
 		(byte)0xFF, (byte)0xEE,
@@ -379,10 +389,22 @@ public class TIFFToDicom {
 		return newBytes;
 	}
 	
+	// (001473)
+	private static long selectTIFFPhotometric(long photometric,String transferSyntax) {
+		long outputPhotometric = photometric;
+		switch ((int)photometric) {
+			case 6:		if (TransferSyntax.JPEG2000.equals(transferSyntax)) outputPhotometric = 2; break;	// mimic Leica/Aperio use of RGB in J2K/YUV16 case
+			case TIFF_PHOTOMETRIC_PIXELMED_ICT:	outputPhotometric = 2; break;	// not a valid value in TIFF - use internally only to signal YBR_ICT - mimic Leica/Aperio use of RGB in this case
+			case TIFF_PHOTOMETRIC_PIXELMED_RCT:	outputPhotometric = 2; break;	// not a valid value in TIFF - use internally only to signal YBR_RCT
+		}
+		slf4jlogger.debug("selectTIFFPhotometric(): photometric {}changed from {} to {}",(photometric == outputPhotometric ? "un" : ""),photometric,outputPhotometric);
+		return outputPhotometric;
+	}
+	
 	// derived from com.pixelmed.dicom.CompressedFrameEncoder.getCompressedFrameAsFile() (001433)
 	// should refactor :(
 	
-	private static void createCompressedImage(BufferedImage renderedImage,String outputFormat,OutputStream outputStream) throws IOException, DicomException {
+	private static void createCompressedImage(BufferedImage renderedImage,String outputFormat,boolean lossless,OutputStream outputStream) throws IOException, DicomException {
 		Iterator writers = ImageIO.getImageWritersByFormatName(outputFormat);
 		if (writers != null && writers.hasNext()) {
 			ImageWriter writer = (ImageWriter)writers.next();
@@ -411,8 +433,20 @@ public class TIFFToDicom {
 								if (setLossless == null) {
 									throw new DicomException("Could not get J2KImageWriteParam.setLossless() method");
 								}
-								setLossless.invoke(writeParameters,Boolean.TRUE);
-								
+								if (lossless) {
+									setLossless.invoke(writeParameters,Boolean.TRUE);
+								}
+								else {
+									// (001475)
+									setLossless.invoke(writeParameters,Boolean.FALSE);
+									java.lang.reflect.Method setEncodingRate = classToUse.getMethod("setEncodingRate",Double.TYPE);
+									if (setEncodingRate == null) {
+										throw new DicomException("Could not get J2KImageWriteParam.setEncodingRate() method");
+									}
+									// per "https://docs.oracle.com/cd/E17802_01/products/products/java-media/jai/forDevelopers/jai-imageio-1_0-docs/com/sun/media/imageio/plugins/jpeg2000/J2KImageWriteParam.html"
+									// needs to be set when lossy else will be lossless, Double.MAX_VALUE is also lossless and triggers use of integer wavelet, so don't use that either
+									setEncodingRate.invoke(writeParameters,new Double(24/*bits-per-pixel*/));
+								}
 								java.lang.reflect.Method setComponentTransformation = classToUse.getMethod("setComponentTransformation",Boolean.TYPE);
 								if (setComponentTransformation == null) {
 									throw new DicomException("Could not get J2KImageWriteParam.setComponentTransformation() method");
@@ -465,7 +499,7 @@ public class TIFFToDicom {
 		}
 	}
 
-	private static byte[] createEmptyCompressedTile(long tileWidth,long tileLength,long compression,long photometric,long samplesPerPixel) {
+	private static byte[] createEmptyCompressedTile(long tileWidth,long tileLength,long compression,long photometric,long samplesPerPixel,boolean lossless) {
 		byte[] values = null;
 		String format = null;
 		if (compression == 7) {
@@ -486,7 +520,7 @@ public class TIFFToDicom {
 					
 					ByteArrayOutputStream bos = new ByteArrayOutputStream();
 					//ImageIO.write(img,format,bos);		// (001433) cannot use because creates JP2 box, which is forbidden in DICOM :(
-					createCompressedImage(img,format,bos);	// (001433) so use our own method that supresses JP2 box
+					createCompressedImage(img,format,lossless,bos);	// (001433) so use our own method that supresses JP2 box
 					values =  bos.toByteArray();
 					
 					if (values != null && values.length > 0) {
@@ -523,7 +557,7 @@ public class TIFFToDicom {
 	private static boolean encounteredZeroLengthTiles = false;
 	private static boolean encounteredInvalidJPEGFamilyBitstreamTiles = false;
 	
-	private static byte[] readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(TIFFFile inputFile,int tileNumber,long pixelOffset,long pixelByteCount,byte[] jpegTables,long tileWidth,long tileLength,long compression,long photometric,long samplesPerPixel) throws IOException, TIFFException {
+	private static byte[] readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(TIFFFile inputFile,int tileNumber,long pixelOffset,long pixelByteCount,byte[] jpegTables,long tileWidth,long tileLength,long compression,long photometric,long samplesPerPixel,boolean lossless) throws IOException, TIFFException {
 		byte[] values = null;
 		if (pixelByteCount == 0) {
 			if (!encounteredZeroLengthTiles) {
@@ -531,7 +565,7 @@ public class TIFFToDicom {
 				encounteredZeroLengthTiles = true;
 			}
 			slf4jlogger.trace("For frame {}, pixelByteCount is zero - assume empty tile",tileNumber);
-			values = createEmptyCompressedTile(tileWidth,tileLength,compression,photometric,samplesPerPixel);	// will have JPEG tables and APP14 if necessary
+			values = createEmptyCompressedTile(tileWidth,tileLength,compression,photometric,samplesPerPixel,lossless);	// will have JPEG tables and APP14 if necessary
 			if (values == null || values.length == 0) {
 				throw new TIFFException("For frame "+tileNumber+", pixelByteCount is zero and could not create empty compressed tile");
 			}
@@ -565,7 +599,7 @@ public class TIFFToDicom {
 					encounteredInvalidJPEGFamilyBitstreamTiles = true;
 				}
 				slf4jlogger.trace("For frame {}, invalid JPEG family bitstream - assume empty tile",tileNumber);
-				values = createEmptyCompressedTile(tileWidth,tileLength,compression,photometric,samplesPerPixel);	// will have JPEG tables and APP14 if necessary
+				values = createEmptyCompressedTile(tileWidth,tileLength,compression,photometric,samplesPerPixel,lossless);	// will have JPEG tables and APP14 if necessary
 				if (values == null || values.length == 0) {
 					throw new TIFFException("For frame "+tileNumber+", invalid JPEG family bitstream and could not create empty compressed tile");
 				}
@@ -964,7 +998,7 @@ public class TIFFToDicom {
 	 * @param	jpegTables				the JPEG tables in the TIFF source to be inserted in to the abbreviated format JPEG stream to make interchange format or before decompression
 	 * @param	iccProfile				the ICC Profile value in the TIFF source, if any
 	 * @param	recompressAsFormat		scheme to recompress uncompressed or previously compressed data if different than what was read, either "jpeg" or "jpeg2000"
-	 * @param	recompressLossy			use lossy rather than lossless recompression if supported by scheme (not yet implemented)
+	 * @param	recompressLossy			use lossy rather than lossless recompression if supported by scheme
 	 * @return							the updated TIFF photometric value, which may be changed by recompression
 	 * @throws	IOException				if there is an error reading or writing
 	 * @throws	DicomException			if the image cannot be compressed
@@ -979,6 +1013,9 @@ public class TIFFToDicom {
 
 
 		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): compression = {}",compression);
+		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): recompressAsFormat = {}",recompressAsFormat);
+		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): recompressLossy = {}",recompressLossy);
+		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): photometric = {}",photometric);
 		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): predictor = {}",predictor);
 		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): planarConfig = {}",planarConfig);
 		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): samplesPerPixel = {}",samplesPerPixel);
@@ -1327,15 +1364,26 @@ public class TIFFToDicom {
 							throw new TIFFException("Unsupported samplesPerPixel = "+samplesPerPixel+" for re-compression");
 						}
 						
-						// recompressLossy not yet implemented ... default for JPEG is best quality, J2K is lossless :(
+						// regardless of recompressLossy ... default for JPEG is best quality :(
+						// J2K is lossy or lossless as requested
 						// will always transform color space by default
-						File tmpFile = CompressedFrameEncoder.getCompressedFrameAsFile(new AttributeList(),img,recompressAsFormat,File.createTempFile("TIFFToDicom","."+recompressAsFormat));
+						File tmpFile = CompressedFrameEncoder.getCompressedFrameAsFile(new AttributeList(),img,recompressAsFormat,!recompressLossy,File.createTempFile("TIFFToDicom","."+recompressAsFormat));
 						files[tileNumber] = tmpFile;
 						tmpFile.deleteOnExit();
 						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Tile {} created compressed temporary file {}",tileNumber,tmpFile.toString());
 						// if not grayscale, photometric changed, since CompressedFrameEncoder always transforms color space
 						if (samplesPerPixel == 3) {
-							outputPhotometric = 6;	// TIFF definition of YCbCr is generic, so use it to signal YBR_FULL_422 for JPEG and YBR_RCT or YBR_ICT for J2K
+							if (recompressAsFormat.equals("jpeg")) {
+								outputPhotometric = 6;	// TIFF YCbCr
+							}
+							else if (recompressAsFormat.equals("jpeg2000")) {
+								if (recompressLossy) {
+									outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_ICT;	// not a valid value in TIFF - use internally only to signal YBR_ICT
+								}
+								else {
+									outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_RCT;	// not a valid value in TIFF - use internally only to signal YBR_RCT
+								}
+							}
 						}
 					}
 					Attribute aPixelData = new OtherByteAttributeMultipleCompressedFrames(TagFromName.PixelData,files);
@@ -1401,11 +1449,10 @@ public class TIFFToDicom {
 				else {
 					throw new TIFFException("Unsupported bitsPerSample = "+bitsPerSample+" and samplesPerPixel = "+samplesPerPixel+" for recompression as "+recompressAsFormat);
 				}
-				//throw new TIFFException("Compression as "+(recompressLossy ? "lossy" : "lossless")+" "+recompressAsFormat+" not supported");
 			}
 		}
 		else if (compression == 7 && recompressAsFormat.equals("jpeg")				// "new" JPEG per TTN2 as used by Aperio in SVS
-			  || (compression == 33003 || compression == 33005) && recompressAsFormat.equals("jpeg2000")) {	// Aperio J2K YCbCr or RGB
+			  || (compression == 33003 || compression == 33005) && recompressAsFormat.equals("jpeg2000")) {	// Aperio J2K YCbCr or YBR_ICT
 			slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): copying compressed bit stream from input to output without recompressing it");
 			// because we need to edit the stream to insert the jpegTables, need to write lots of temporary files to feed to OtherByteAttributeMultipleCompressedFrames file-based constructor
 			File[] files = new File[numberOfDestinationTiles];
@@ -1416,7 +1463,7 @@ public class TIFFToDicom {
 				if (pixelByteCount > Integer.MAX_VALUE) {
 					throw new TIFFException("For frame "+tileNumber+", compressed pixelByteCount to be read "+pixelByteCount+" exceeds maximum Java array size "+Integer.MAX_VALUE+" and fragmentation not yet supported");
 				}
-				byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,tileNumber,pixelOffset,pixelByteCount,jpegTables,tileWidth,tileLength,compression,photometric,samplesPerPixel);
+				byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,tileNumber,pixelOffset,pixelByteCount,jpegTables,tileWidth,tileLength,compression,photometric,samplesPerPixel,!recompressLossy);
 				if (values.length > 0xfffffffel) {
 					throw new TIFFException("For frame "+tileNumber+", compressed pixelByteCount to be written "+values.length+" exceeds maximum single fragment size 0xfffffffe and fragmentation not yet supported");
 				}
@@ -1428,9 +1475,19 @@ public class TIFFToDicom {
 				o.flush();
 				o.close();
 				if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Tile {} wrote {} bytes to {}",tileNumber,values.length,tmpFile.toString());
-				if (compression == 33003
-				 /*|| compression == 33005*/) {	// do NOT change since no MCT (value is 0 in SGcod) (001263)
-					outputPhotometric = 6;	// TIFF definition of YCbCr is generic, so use it to signal YBR_RCT or YBR_ICT for J2K
+				// if not grayscale, photometric changed, since CompressedFrameEncoder always transforms color space
+				if (samplesPerPixel == 3) {
+					if (compression == 33003) {
+						outputPhotometric = 6;	// TIFF YCbCr - use internally - will fix this up later to be 2 in dual personality TIFF header (001473)
+					}
+					else if (compression == 33005) {	// (001263) (001473)
+						if (recompressLossy) {
+							outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_ICT;	// not a valid value in TIFF - use internally only to signal YBR_ICT
+						}
+						else {
+							outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_RCT;	// not a valid value in TIFF - use internally only to signal YBR_RCT
+						}
+					}
 				}
 				//else photometric unchanged
 			}
@@ -1443,7 +1500,7 @@ public class TIFFToDicom {
 				Collections.addAll(filesToDeleteAfterWritingDicomFile,files);
 			}
 		}
-		else if ((compression == 7 || compression == 33003 || compression == 33005)		// "new" JPEG per TTN2 as used by Aperio in SVS, Aperio J2K YCbCr or RGB
+		else if ((compression == 7 || compression == 33003 || compression == 33005)		// "new" JPEG per TTN2 as used by Aperio in SVS, Aperio J2K YCbCr or ICT
 			  && (recompressAsFormat.equals("jpeg") || recompressAsFormat.equals("jpeg2000"))) {
 			// decompress and recompress each frame
 			{
@@ -1466,18 +1523,17 @@ public class TIFFToDicom {
 							throw new TIFFException("For frame "+tileNumber+", compressed pixelByteCount to be read "+pixelByteCount+" exceeds maximum Java array size "+Integer.MAX_VALUE+" and fragmentation not yet supported");
 						}
 						
-						byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,tileNumber,pixelOffset,pixelByteCount,jpegTables,tileWidth,tileLength,compression,photometric,samplesPerPixel);
+						byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,tileNumber,pixelOffset,pixelByteCount,jpegTables,tileWidth,tileLength,compression,photometric,samplesPerPixel,!recompressLossy);
 						
 						BufferedImage img = decoder.getDecompressedFrameAsBufferedImage(values);
 						
-						// recompressLossy not yet implemented ... default for JPEG is best quality, J2K is lossless :(
+						// regardless of recompressLossy ... default for JPEG is best quality :(
+						// J2K is lossy or lossless as requested
 						// will always transform color space by default
-						File tmpFile = CompressedFrameEncoder.getCompressedFrameAsFile(new AttributeList(),img,recompressAsFormat,File.createTempFile("TIFFToDicom","."+recompressAsFormat));
+						File tmpFile = CompressedFrameEncoder.getCompressedFrameAsFile(new AttributeList(),img,recompressAsFormat,!recompressLossy,File.createTempFile("TIFFToDicom","."+recompressAsFormat));
 						files[tileNumber] = tmpFile;
 						tmpFile.deleteOnExit();
 						if (slf4jlogger.isTraceEnabled()) slf4jlogger.trace("Tile {} created compressed temporary file {}",tileNumber,tmpFile.toString());
-						// photometric changed, since CompressedFrameEncoder always transforms color space
-						outputPhotometric = 6;	// TIFF definition of YCbCr is generic, so use it to signal YBR_FULL_422 for JPEG and YBR_RCT or YBR_ICT for J2K
 					}
 					Attribute aPixelData = new OtherByteAttributeMultipleCompressedFrames(TagFromName.PixelData,files);
 					list.put(aPixelData);
@@ -1487,17 +1543,31 @@ public class TIFFToDicom {
 					else {
 						Collections.addAll(filesToDeleteAfterWritingDicomFile,files);
 					}
+					// if not grayscale, photometric changed, since CompressedFrameEncoder always transforms color space
+					if (samplesPerPixel == 3) {
+						if (recompressAsFormat.equals("jpeg")) {
+							outputPhotometric = 6;	// TIFF YCbCr
+						}
+						else if (recompressAsFormat.equals("jpeg2000")) {
+							if (recompressLossy) {
+								outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_ICT;	// not a valid value in TIFF - use internally only to signal YBR_ICT
+							}
+							else {
+								outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_RCT;	// not a valid value in TIFF - use internally only to signal YBR_RCT
+							}
+						}
+					}
 				}
 				else {
 					throw new TIFFException("Unsupported bitsPerSample = "+bitsPerSample+" for compression");
 				}
-				//throw new TIFFException("Recompression as "+(recompressLossy ? "lossy" : "lossless")+" "+recompressAsFormat+" not supported");
 			}
 		}
 		else {
 			throw new TIFFException("Unsupported compression = "+compression+" or unsupported transformation to "+recompressAsFormat);
 		}
 
+		slf4jlogger.debug("generateDICOMPixelDataMultiFrameImageFromTIFFFile(): outputPhotometric = {} ",outputPhotometric);
 		return outputPhotometric;
 	}
 	
@@ -1902,7 +1972,7 @@ public class TIFFToDicom {
 					int offsetIntoValues = 0;
 					for (int i=0; i<pixelOffset.length; ++i) {
 						slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): strip {} offsetIntoValues = {}",i,offsetIntoValues);
-						byte[] compressedValues = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,0/*tileNumber*/,pixelOffset[i],pixelByteCount[i],jpegTables,pixelWidth,rowsPerStrip,compression,photometric,samplesPerPixel);
+						byte[] compressedValues = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,0/*tileNumber*/,pixelOffset[i],pixelByteCount[i],jpegTables,pixelWidth,rowsPerStrip,compression,photometric,samplesPerPixel,false/*lossless*/);
 						BufferedImage img = decoder.getDecompressedFrameAsBufferedImage(compressedValues);
 						int decompressedWidth = img.getWidth();
 						slf4jlogger.trace("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): strip {} decompressedWidth = {}",i,decompressedWidth);
@@ -1942,6 +2012,7 @@ public class TIFFToDicom {
 			throw new TIFFException("Unsupported compression = "+compression);
 		}
 
+		slf4jlogger.debug("generateDICOMPixelDataSingleFrameImageFromTIFFFileMergingStrips(): outputPhotometric = {} ",outputPhotometric);
 		return outputPhotometric;
 	}
 
@@ -2021,14 +2092,21 @@ public class TIFFToDicom {
 		else if (compression == 7				// "new" JPEG per TTN2 as used by Aperio in SVS
 			  || compression == 33003			// Aperio J2K YCbCr
 			  || compression == 33005) {		// Aperio J2K RGB
-			byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,0/*tileNumber*/,pixelOffset,pixelByteCount,jpegTables,pixelWidth,pixelLength,compression,photometric,samplesPerPixel);
+			byte[] values = readJPEGFamilyCompressedPixelValuesAndFixAsNecessary(inputFile,0/*tileNumber*/,pixelOffset,pixelByteCount,jpegTables,pixelWidth,pixelLength,compression,photometric,samplesPerPixel,!recompressLossy);
 			byte[][] frames = new byte[1][];
 			frames[0] = values;
 			Attribute aPixelData = new OtherByteAttributeMultipleCompressedFrames(TagFromName.PixelData,frames);
 			list.put(aPixelData);
-			if (compression == 33003
-			 /*|| compression == 33005*/) {	// do NOT change since no MCT (value is 0 in SGcod) (001263)
-				outputPhotometric = 6;	// TIFF definition of YCbCr is generic, so use it to signal YBR_RCT or YBR_ICT for J2K
+			if (compression == 33003) {
+				outputPhotometric = 6;	// TIFF YCbCr - use internally - will fix this up later to be 2 in dual personality TIFF header (001473)
+			}
+			else if (compression == 33005) {	// (001263) (001473)
+				if (recompressLossy) {
+					outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_ICT;	// not a valid value in TIFF - use internally only to signal YBR_ICT
+				}
+				else {
+					outputPhotometric = TIFF_PHOTOMETRIC_PIXELMED_RCT;	// not a valid value in TIFF - use internally only to signal YBR_RCT
+				}
 			}
 			//else photometric unchanged
 		}
@@ -2038,10 +2116,96 @@ public class TIFFToDicom {
 
 		return outputPhotometric;
 	}
-	
+
+	// (001474)
+	private static String getQFactorFromAperioImageDescriptionLine(String line) {
+		String qFactor = null;
+		// J2K/YUV16 Q=70|AppMag
+		Pattern p = Pattern.compile(".* Q[ ]*=[ ]*([0-9][0-9]*)[^0-9].*");
+		Matcher m = p.matcher(line);
+		if (m.matches()) {
+			slf4jlogger.debug("getQFactorFromAperioImageDescriptionLine(): have Q factor match");
+			int groupCount = m.groupCount();
+			if (groupCount == 1) {
+				slf4jlogger.debug("getQFactorFromAperioImageDescriptionLine(): have Q factor correct groupCount");
+				qFactor = m.group(1);
+				slf4jlogger.debug("getQFactorFromAperioImageDescriptionLine(): found Q factor {}",qFactor);
+			}
+		}
+		return qFactor;
+	}
+
+	// (001474)
+	private static AttributeList recordOriginalTIFFPixelDataCharacteristics(AttributeList list,long photometric,long compression,String imageDescription) throws IOException, DicomException {
+		
+		if (list == null) {
+			list = new AttributeList();
+		}
+
+		{ Attribute a = new LongStringAttribute(pixelmedPrivateOriginalFileNameDataBlockReservation); a.addValue(pixelmedPrivateCreator); list.put(a); }
+		{ Attribute a = new UnsignedLongAttribute(pixelmedPrivateOriginalTIFFPhotometric); a.addValue(photometric); list.put(a); }
+		{ Attribute a = new UnsignedLongAttribute(pixelmedPrivateOriginalTIFFCompression); a.addValue(compression); list.put(a); }
+		
+		// ImageDescription: Aperio Image Library v10.2.41
+		// 78368x73425 [0,100 75208x73325] (240x240) J2K/YUV16 Q=70|AppMag = 40|StripeWidth = 992|ScanScope ID = SS1546|Filename = 23412|Date = 01/21/11|Time = 09:55:54|User = 5166d20a-7e99-43cd-a045-609198d40089|MPP = 0.2462|Left = 24.164181|Top = 20.633795|LineCameraSkew = 0.000963|LineAreaXOffset = 0.004954|LineAreaYOffset = -0.003469|Focus Offset = 0.000000|DSR ID = ap1546-dsr|ImageID = 23412|Exposure Time = 109|Exposure Scale = 0.000001|DisplayColor = 0|OriginalWidth = 78368|OriginalHeight = 73425|ICC Profile = ScanScope v1
+
+		// ImageDescription: Aperio Image Library v12.1.3
+		// 81671x47631 (256x256) J2K/KDU Q=70;Aperio Image Library v12.0.15
+		// 83312x47731 [0,100 81671x47631] (240x240) RAW|AppMag = 40|StripeWidth = 2032|ScanScope ID = SS7168CNTLR|Filename = PARPDV-0BLRWU_A2|Title = PARPDV-0BLRWU_A2|Date = 10/05/18|Time = 14:23:52|Time Zone = GMT-04:00|User = 00000000-0000-0000-0000-000000000000|Parmset = GOG136|MPP = 0.2526|Left = 17.312305|Top = 17.136868|LineCameraSkew = 0.000894|LineAreaXOffset = 0.003425|LineAreaYOffset = 0.008537|Focus Offset = 0.000000|DSR ID = resc3-dsr1|ImageID = 207392|Exposure Time = 45|Exposure Scale = 0.000001|DisplayColor = 0|SessonMode = NR|OriginalWidth = 83312|OriginalHeight = 47731|BigTIFF = true|ICC Profile = ScanScope v1
+
+		// Aperio Image Library v12.0.15
+		// 83312x47731 [0,100 81671x47631] (240x240) RAW|AppMag = 40|StripeWidth = 2032|ScanScope ID = SS7168CNTLR|Filename = PARPDV-0BLRWU_A2|Title = PARPDV-0BLRWU_A2|Date = 10/05/18|Time = 14:23:52|Time Zone = GMT-04:00|User = 00000000-0000-0000-0000-000000000000|Parmset = GOG136|MPP = 0.2526|Left = 17.312305|Top = 17.136868|LineCameraSkew = 0.000894|LineAreaXOffset = 0.003425|LineAreaYOffset = 0.008537|Focus Offset = 0.000000|DSR ID = resc3-dsr1|ImageID = 207392|Exposure Time = 45|Exposure Scale = 0.000001|DisplayColor = 0|SessonMode = NR|OriginalWidth = 83312|OriginalHeight = 47731|ICC Profile = ScanScope v1
+
+		// Aperio Image Library v10.0.51
+		// 46920x33014 [0,100 46000x32914] (256x256) JPEG/RGB Q=30|AppMag = 20|StripeWidth = 2040|ScanScope ID = CPAPERIOCS|Filename = CMU-1|Date = 12/29/09|Time = 09:59:15|User = b414003d-95c6-48b0-9369-8010ed517ba7|Parmset = USM Filter|MPP = 0.4990|Left = 25.691574|Top = 23.449873|LineCameraSkew = -0.000424|LineAreaXOffset = 0.019265|LineAreaYOffset = -0.000313|Focus Offset = 0.000000|ImageID = 1004486|OriginalWidth = 46920|Originalheight = 33014|Filtered = 5|ICC Profile = ScanScope v1
+
+		// ImageDescription: Aperio Image Library v9.1.4
+		// 65280x44682 [0,0 64021x44632] (240x240) J2K/MIL Q=30|AppMag = 20|StripeWidth = 2040|ScanScope ID = PATH-MCLEN001MS|Filename = 2027|Title = none|Date = 10/29/08|Time = 06:57:01|User = 1a1f3a40-b95c-4677-96af-adb093739a4f|MPP = 0.4993|Left = 22.279686|Top = 24.054907|LineCameraSkew = 0.000091|LineAreaXOffset = 0.048133|LineAreaYOffset = -0.005874|DSR ID = path-mclen001ms|ImageID = 2027|OriginalWidth = 65280|Originalheight = 44682|ICC Profile = ScanScope v1
+
+		if (imageDescription != null) {
+			String compressionColorSpace = null;
+			String compressionQFactor = null;
+			// search in order of sequential lines in case retrospectively re-compressed
+			BufferedReader r = new BufferedReader(new StringReader(imageDescription));
+			String line = null;
+			while (compressionColorSpace == null && (line=r.readLine()) != null) {
+				if (line.contains("J2K/YUV16")) {
+					compressionColorSpace="J2K/YUV16";
+					compressionQFactor = getQFactorFromAperioImageDescriptionLine(line);	// want Q for same line as compression, not other lines
+				}
+				else if (line.contains("J2K/MIL")) {
+					compressionColorSpace="J2K/MIL";
+					compressionQFactor = getQFactorFromAperioImageDescriptionLine(line);	// want Q for same line as compression, not other lines
+				}
+				else if (line.contains("J2K/KDU")) {
+					compressionColorSpace="J2K/KDU";
+					compressionQFactor = getQFactorFromAperioImageDescriptionLine(line);	// want Q for same line as compression, not other lines
+				}
+				else if (line.contains("JPEG/RGB")) {
+					compressionColorSpace="JPEG/RGB";
+					compressionQFactor = getQFactorFromAperioImageDescriptionLine(line);	// want Q for same line as compression, not other lines
+				}
+				else if (line.contains("RAW")) {
+					compressionColorSpace="RAW";
+				}
+			}
+			slf4jlogger.debug("getQFactorFromAperioImageDescriptionLine(): compressionColorSpace = {}",compressionColorSpace);
+			if (compressionColorSpace != null) {
+				{ Attribute a = new ShortStringAttribute(pixelmedPrivateOriginalTIFFCompressionColorSpace); a.addValue(compressionColorSpace); list.put(a); }
+			}
+			
+			slf4jlogger.debug("getQFactorFromAperioImageDescriptionLine(): compressionQFactor = {}",compressionQFactor);
+			if (compressionQFactor != null) {
+				{ Attribute a = new ShortStringAttribute(pixelmedPrivateOriginalTIFFCompressionQFactor); a.addValue(compressionQFactor); list.put(a); }
+			}
+		}
+		return list;
+	}
+
+
 	private static AttributeList generateDICOMPixelDataModuleAttributes(AttributeList list,
 			int numberOfFrames,long pixelWidth,long pixelLength,
-			long bitsPerSample,long compression,long photometric,long samplesPerPixel,long planarConfig,long sampleFormat,String recompressAsFormat,boolean recompressLossy,String sopClass) throws IOException, DicomException, TIFFException {
+			long bitsPerSample,long compression,long photometric,long samplesPerPixel,long planarConfig,long sampleFormat,String sopClass) throws IOException, DicomException, TIFFException {
 		
 		if (list == null) {
 			list = new AttributeList();
@@ -2055,9 +2219,12 @@ public class TIFFToDicom {
 			case 3:	photometricInterpretation = "PALETTE COLOR"; break;
 			case 4:	photometricInterpretation = "TRANSPARENCY"; break;		// not standard DICOM
 			case 5:	photometricInterpretation = "CMYK"; break;				// retired in DICOM
-			case 6:	photometricInterpretation = (recompressAsFormat != null && recompressAsFormat.equals("jpeg2000")) ? (recompressLossy ? "YBR_ICT" : "YBR_RCT") : "YBR_FULL_422"; break;
+			case 6:	photometricInterpretation = "YBR_FULL_422"; break;
 			case 8:	photometricInterpretation = "CIELAB"; break;			// not standard DICOM
+			case TIFF_PHOTOMETRIC_PIXELMED_ICT:	photometricInterpretation = "YBR_ICT"; break;			// not standard TIFF - only used internally (001473) - irreversible (lossy)
+			case TIFF_PHOTOMETRIC_PIXELMED_RCT:	photometricInterpretation = "YBR_RCT"; break;			// not standard TIFF - only used internally (001473) - reversible (lossless)
 		}
+		slf4jlogger.debug("generateDICOMPixelDataModuleAttributes(): PhotometricInterpretation = {}",photometricInterpretation);
 		{ Attribute a = new CodeStringAttribute(TagFromName.PhotometricInterpretation); a.addValue(photometricInterpretation); list.put(a); }
 
 		{ Attribute a = new UnsignedShortAttribute(TagFromName.BitsAllocated); a.addValue((int)bitsPerSample); list.put(a); }
@@ -2236,8 +2403,8 @@ public class TIFFToDicom {
 
 	private AttributeList insertLossyImageCompressionHistory(AttributeList list,
 			long compression,long outputCompression,
-			boolean recompressLossy,		// (001304)
-			String pastHistoryOfLossyCompression,	//	(001359)
+			boolean recompressLossy,				// (001304)
+			String pastHistoryOfLossyCompression,	// (001359)
 			long originalCompressedByteCount,long imageWidth,long imageLength,long bitsPerSample,long samplesPerPixel
 			) throws DicomException {
 		
@@ -2335,7 +2502,7 @@ public class TIFFToDicom {
 			String opticalPathIdentifier,String opticalPathDescription,
 			double xOffsetInSlideCoordinateSystem,double yOffsetInSlideCoordinateSystem,
 			String containerIdentifier,String specimenIdentifier,String specimenUID,
-			String imageFlavor,String imageDerivation,String pyramidUID,String acquisitionUID) throws DicomException {
+			String imageFlavor,String imageDerivation,String pyramidUID,String acquisitionUID,String manufacturer) throws DicomException {
 		
 		if (list == null) {
 			list = new AttributeList();
@@ -2480,8 +2647,16 @@ public class TIFFToDicom {
 			Attribute a = new DecimalStringAttribute(TagFromName.ImageOrientationSlide); a.addValue(1.0); a.addValue(0.0); a.addValue(0.0); a.addValue(0.0); a.addValue(-1.0); a.addValue(0.0); list.put(a);
 		}
 		else {
-			// assume slide on its side with label on left, which seems to be what Aperio, Hamamatsu, AIDPATH are
-			Attribute a = new DecimalStringAttribute(TagFromName.ImageOrientationSlide); a.addValue(0.0); a.addValue(-1.0); a.addValue(0.0); a.addValue(-1.0); a.addValue(0.0); a.addValue(0.0); list.put(a);
+			slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): manufacturer = {}",manufacturer);
+			if (manufacturer.toUpperCase().equals("3DHISTECH") || manufacturer.toUpperCase().equals("3D HISTECH")) {
+				slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): For ImageOrientationSlide, assuming slide is vertical with label at the bottom");
+				Attribute a = new DecimalStringAttribute(TagFromName.ImageOrientationSlide); a.addValue(-1.0); a.addValue(0.0); a.addValue(0.0); a.addValue(0.0); a.addValue(1.0); a.addValue(0.0); list.put(a);
+			}
+			else {
+				// seems to be what Aperio, Hamamatsu, AIDPATH are
+				slf4jlogger.debug("generateDICOMWholeSlideMicroscopyImageAttributes(): For ImageOrientationSlide, assuming slide on its side with label on left");
+				Attribute a = new DecimalStringAttribute(TagFromName.ImageOrientationSlide); a.addValue(0.0); a.addValue(-1.0); a.addValue(0.0); a.addValue(-1.0); a.addValue(0.0); a.addValue(0.0); list.put(a);
+			}
 		}
 		{ Attribute a = new DateTimeAttribute(TagFromName.AcquisitionDateTime); list.put(a); }							// No way of determining this :(
 		// AcquisitionDuration is optional after CP 1821
@@ -2721,7 +2896,7 @@ public class TIFFToDicom {
 						slf4jlogger.error("Failed to parse OME-TIFF XML metadata in ImageDescription ",e);
 					}
 				}
-				else if (d.contains("Aperio")) {
+				else if (d.contains("Aperio") || d.contains("Leica") || d.contains("NanoZoomer") || d.contains("Mirax") || d.contains("3dh_")) {
 					// Aperio Image Library v10.0.51
 					// 46920x33014 [0,100 46000x32914] (256x256) JPEG/RGB Q=30|AppMag = 20|StripeWidth = 2040|ScanScope ID = CPAPERIOCS|Filename = CMU-1|Date = 12/29/09|Time = 09:59:15|User = b414003d-95c6-48b0-9369-8010ed517ba7|Parmset = USM Filter|MPP = 0.4990|Left = 25.691574|Top = 23.449873|LineCameraSkew = -0.000424|LineAreaXOffset = 0.019265|LineAreaYOffset = -0.000313|Focus Offset = 0.000000|ImageID = 1004486|OriginalWidth = 46920|Originalheight = 33014|Filtered = 5|ICC Profile = ScanScope v1
 
@@ -2751,6 +2926,9 @@ public class TIFFToDicom {
 					// 99200x89856 (256x256) J2K/KDU Q=70;NanoZoomer Digital Pathology Image|AppMag = 40|MPP = 0.2265
 
 					// 99328x110848 -> 688x768 - ;Mirax Digital Slide|AppMag = 20|MPP = 0.23250
+
+					// Output from 3DHISTECH SlideMaster conversion to TIFF
+					// 43520x57600 (256x256) JPEG/RGB Q=80|Date = 30/08/2022|Time = 12:15:31|MPP = 0.49707|3dh_PixelSizeX = 0.496094|3dh_PixelSizeY = 0.498047|3dh_Filter = Default|3dh_Profile = Default(1)|3dh_ScannerHardwareID = SC150-213005
 
 					try {
 						BufferedReader r = new BufferedReader(new StringReader(d));
@@ -2881,6 +3059,22 @@ public class TIFFToDicom {
 										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have Aperio Image Library correct groupCount");
 										aperioImageLibraryVersion = m.group(1);
 										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): found Aperio Image Library version {}",aperioImageLibraryVersion);
+									}
+								}
+							}
+							if (d.contains("3dh_")) {
+								manufacturer = "3D Histech";
+								manufacturerModelName="";
+								// |3dh_ScannerHardwareID = SC150-213005
+								Pattern p = Pattern.compile(".*[|]3dh_ScannerHardwareID[ ]*=[ ]*([^|]*)([|].*|$)");	// end of line
+								Matcher m = p.matcher(line);
+								if (m.matches()) {
+									slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have 3dh_ScannerHardwareID match");
+									int groupCount = m.groupCount();
+									if (groupCount == 2) {	// be sure to allow for extra in groupCount for end of line or delimiter match group
+										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): have 3dh_ScannerHardwareID correct groupCount");
+										deviceSerialNumber = m.group(1);
+										slf4jlogger.debug("getEquipmentFromTIFFImageDescription(): found deviceSerialNumber (ScanScope ID) {}",deviceSerialNumber);
 									}
 								}
 							}
@@ -3307,7 +3501,7 @@ public class TIFFToDicom {
 			}
 			else if (recompressAsFormat.equals("jpeg2000")) {
 				if (compression != 33003 && compression != 33005) {
-					outputCompression = 33003;		// if recompressing, and need to choose something
+					outputCompression = 33005;		// if recompressing, we will always be using ICT or RCT, so choose 33005 (not 33003, which is only for YCbCr downsampled 4:2:2) (001473)
 				}
 			}
 		}
@@ -3454,15 +3648,18 @@ public class TIFFToDicom {
 		slf4jlogger.debug("convertTIFFPixelsToDicomMultiFrame(): photometric {}changed from {} to {}",(photometric == outputPhotometric ? "un" : ""),photometric,outputPhotometric);
 		slf4jlogger.debug("convertTIFFPixelsToDicomMultiFrame(): compression {}changed from {} to {}",(compression == outputCompression ? "un" : ""),compression,outputCompression);
 
-		generateDICOMPixelDataModuleAttributes(list,numberOfDestinationTiles,tileWidth,tileLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
+		recordOriginalTIFFPixelDataCharacteristics(list,photometric,compression,imageDescription);	// (001474)
+
+		generateDICOMPixelDataModuleAttributes(list,numberOfDestinationTiles,tileWidth,tileLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,sopClass);
 		
 		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
+		String manufacturer = Attribute.getSingleStringValueOrEmptyString(descriptionList,TagFromName.Manufacturer);
 		
 		if (alwaysWSI || SOPClass.VLWholeSlideMicroscopyImageStorage.equals(sopClass)) {	// (001321)
-			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID);
+			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID,manufacturer);
 		}
 
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,totalArrayValues(tileByteCounts),imageWidth,imageLength,bitsPerSample,samplesPerPixel);
@@ -3630,7 +3827,7 @@ public class TIFFToDicom {
 
 				if (addTIFF) {
 					preamble = AddTIFFOrOffsetTables.makeTIFFInPreambleAndAddDataSetTrailingPadding(byteOffsetFromFileStartOfNextAttributeAfterPixelData,numberOfPyramidLevels,tileDataByteOffsets,tileDataLengths,imageWidths,imageLengths,list,
-						tileWidth,tileLength,bitsPerSample,outputCompression,outputPhotometric,lowerPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,iccProfile,mmPerPixelX,mmPerPixelY,useBigTIFF);
+						tileWidth,tileLength,bitsPerSample,outputCompression,selectTIFFPhotometric(outputPhotometric,transferSyntax),selectTIFFPhotometric(lowerPhotometric,transferSyntax),samplesPerPixel,outputPlanarConfig,sampleFormat,iccProfile,mmPerPixelX,mmPerPixelY,useBigTIFF);
 				}
 			}
 			catch (DicomException e) {
@@ -3684,15 +3881,18 @@ public class TIFFToDicom {
 		slf4jlogger.debug("convertTIFFPixelsToDicomSingleFrameMergingStrips(): photometric {}changed from {} to {}",(photometric == outputPhotometric ? "un" : ""),photometric,outputPhotometric);
 		slf4jlogger.debug("convertTIFFPixelsToDicomSingleFrameMergingStrips(): compression {}changed from {} to {}",(compression == outputCompression ? "un" : ""),compression,outputCompression);
 
-		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,imageWidth,imageLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
+		recordOriginalTIFFPixelDataCharacteristics(list,photometric,compression,imageDescription);	// (001474)
+
+		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,imageWidth,imageLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,outputPlanarConfig,sampleFormat,sopClass);
 
 		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
+		String manufacturer = Attribute.getSingleStringValueOrEmptyString(descriptionList,TagFromName.Manufacturer);
 
 		if (alwaysWSI || SOPClass.VLWholeSlideMicroscopyImageStorage.equals(sopClass)) {
-			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID);
+			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID,manufacturer);
 		}
 
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,totalArrayValues(pixelByteCount),imageWidth,imageLength,bitsPerSample,samplesPerPixel);
@@ -3828,15 +4028,18 @@ public class TIFFToDicom {
 		slf4jlogger.debug("convertTIFFPixelsToDicomSingleFrame(): photometric {}changed from {} to {}",(photometric == outputPhotometric ? "un" : ""),photometric,outputPhotometric);
 		slf4jlogger.debug("convertTIFFPixelsToDicomSingleFrame(): compression {}changed from {} to {}",(compression == outputCompression ? "un" : ""),compression,outputCompression);
 
-		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,pixelWidth,pixelLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,planarConfig,sampleFormat,recompressAsFormat,recompressLossy,sopClass);
+		recordOriginalTIFFPixelDataCharacteristics(list,photometric,compression,imageDescription);	// (001474)
+
+		generateDICOMPixelDataModuleAttributes(list,1/*numberOfFrames*/,pixelWidth,pixelLength,bitsPerSample,outputCompression,outputPhotometric,samplesPerPixel,planarConfig,sampleFormat,sopClass);
 
 		// generateCommonAttributes() creates a FrameOfReferenceUID if WSI even if label :( - will need to remove later if not needed in generateDICOMWholeSlideMicroscopyImageAttributes (CP 2406)
 		CommonConvertedAttributeGeneration.generateCommonAttributes(list,""/*patientName*/,""/*patientID*/,""/*studyID*/,""/*seriesNumber*/,Integer.toString(instanceNumber),modality,sopClass,false/*generateUnassignedConverted*/);
 		list.remove(TagFromName.SoftwareVersions);		// will set later - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes
 		list.remove(TagFromName.DeviceSerialNumber);	// will be overridden by descriptionList +/- generated value - do not want default from CommonConvertedAttributeGeneration.generateCommonAttributes (001398)
+		String manufacturer = Attribute.getSingleStringValueOrEmptyString(descriptionList,TagFromName.Manufacturer);
 
 		if (alwaysWSI || SOPClass.VLWholeSlideMicroscopyImageStorage.equals(sopClass)) {
-			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID);
+			generateDICOMWholeSlideMicroscopyImageAttributes(list,imageWidth,imageLength,frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,opticalPathIdentifier,opticalPathDescription,xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,containerIdentifier,specimenIdentifier,specimenUID,imageFlavor,imageDerivation,pyramidUID,acquisitionUID,manufacturer);
 		}
 
 		insertLossyImageCompressionHistory(list,compression,outputCompression,recompressLossy,pastHistoryOfLossyCompression,pixelByteCount,imageWidth,imageLength,bitsPerSample,samplesPerPixel);
@@ -4641,6 +4844,98 @@ public class TIFFToDicom {
 									slf4jlogger.error("Failed to parse ImageDescription ",e);
 								}
 							}
+							else if (d.contains("3dh_")) {
+								// Output from 3DHISTECH SlideMaster conversion to TIFF
+								// 43520x57600 (256x256) JPEG/RGB Q=80|Date = 30/08/2022|Time = 12:15:31|MPP = 0.49707|3dh_PixelSizeX = 0.496094|3dh_PixelSizeY = 0.498047|3dh_Filter = Default|3dh_Profile = Default(1)|3dh_ScannerHardwareID = SC150-213005
+								try {
+									BufferedReader r = new BufferedReader(new StringReader(d));
+									String line = null;
+									while ((line=r.readLine()) != null) {
+										// pixels may be non-square so only use MPP value when 3dh_PixelSizeX and 3dh_PixelSizeY pair absent
+										if (line.contains("MPP") && !line.contains("3dh_PixelSizeX") && !line.contains("3dh_PixelSizeY")) {
+											// |MPP = 0.49707|
+											Pattern p = Pattern.compile(".*[|]MPP[ ]*=[ ]*([0-9][0-9]*[.][0-9][0-9]*)([|].*|$)");
+											Matcher m = p.matcher(line);
+											if (m.matches()) {
+												slf4jlogger.debug("WSIFrameOfReference(): have MPP match");
+												int groupCount = m.groupCount();
+												if (groupCount > 1) {
+													slf4jlogger.debug("WSIFrameOfReference(): have MPP correct groupCount");
+													try {
+														double micronsPerPixelXCandidate = Double.parseDouble(m.group(1));
+														if (micronsPerPixelXCandidate > 0 && (micronsPerPixelX == 0 || micronsPerPixelXCandidate < micronsPerPixelX)) {	// (001408)
+															micronsPerPixelX = micronsPerPixelXCandidate;
+															micronsPerPixelY = micronsPerPixelX;
+															slf4jlogger.debug("WSIFrameOfReference(): found micronsPerPixel (MPP) {}",micronsPerPixelX);
+														}
+														else {
+															slf4jlogger.warn("WSIFrameOfReference(): ignoring micronsPerPixel (MPP) {} since already have {}",micronsPerPixelXCandidate,micronsPerPixelX);
+														}
+													}
+													catch (NumberFormatException e) {
+														slf4jlogger.error("Failed to parse MPP to double ",e);
+													}
+												}
+											}
+										}
+										else {
+											{
+												// |3dh_PixelSizeX = 0.496094|
+												Pattern p = Pattern.compile(".*[|]3dh_PixelSizeX[ ]*=[ ]*([0-9][0-9]*[.][0-9][0-9]*)([|].*|$)");
+												Matcher m = p.matcher(line);
+												if (m.matches()) {
+													slf4jlogger.debug("WSIFrameOfReference(): have 3dh_PixelSizeX match");
+													int groupCount = m.groupCount();
+													if (groupCount > 1) {
+														slf4jlogger.debug("WSIFrameOfReference(): have 3dh_PixelSizeX correct groupCount");
+														try {
+															double micronsPerPixelXCandidate = Double.parseDouble(m.group(1));
+															if (micronsPerPixelXCandidate > 0 && (micronsPerPixelX == 0 || micronsPerPixelXCandidate < micronsPerPixelX)) {	// (001408)
+																micronsPerPixelX = micronsPerPixelXCandidate;
+																slf4jlogger.debug("WSIFrameOfReference(): found 3dh_PixelSizeX {}",micronsPerPixelX);
+															}
+															else {
+																slf4jlogger.warn("WSIFrameOfReference(): ignoring 3dh_PixelSizeX {} since already have {}",micronsPerPixelXCandidate,micronsPerPixelX);
+															}
+														}
+														catch (NumberFormatException e) {
+															slf4jlogger.error("Failed to parse 3dh_PixelSizeX to double ",e);
+														}
+													}
+												}
+											}
+											{
+												// |3dh_PixelSizeY = 0.498047|
+												Pattern p = Pattern.compile(".*[|]3dh_PixelSizeY[ ]*=[ ]*([0-9][0-9]*[.][0-9][0-9]*)([|].*|$)");
+												Matcher m = p.matcher(line);
+												if (m.matches()) {
+													slf4jlogger.debug("WSIFrameOfReference(): have 3dh_PixelSizeY match");
+													int groupCount = m.groupCount();
+													if (groupCount > 1) {
+														slf4jlogger.debug("WSIFrameOfReference(): have 3dh_PixelSizeY correct groupCount");
+														try {
+															double micronsPerPixelYCandidate = Double.parseDouble(m.group(1));
+															if (micronsPerPixelYCandidate > 0 && (micronsPerPixelY == 0 || micronsPerPixelYCandidate < micronsPerPixelY)) {	// (001408)
+																micronsPerPixelY = micronsPerPixelYCandidate;
+																slf4jlogger.debug("WSIFrameOfReference(): found 3dh_PixelSizeY {}",micronsPerPixelY);
+															}
+															else {
+																slf4jlogger.warn("WSIFrameOfReference(): ignoring 3dh_PixelSizeY {} since already have {}",micronsPerPixelYCandidate,micronsPerPixelY);
+															}
+														}
+														catch (NumberFormatException e) {
+															slf4jlogger.error("Failed to parse 3dh_PixelSizeY to double ",e);
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+								catch (IOException e) {
+									slf4jlogger.error("Failed to parse ImageDescription ",e);
+								}
+							}
 							else if (d.contains("X scan size")) {
 								// encountered in 3D Histech uncompressed TIFF samples
 								
@@ -5078,19 +5373,20 @@ public class TIFFToDicom {
 										slf4jlogger.error("Failed to parse OME-TIFF XML metadata in ImageDescription ",e);
 									}
 								}
-								else if (d.contains("Aperio")) {
+								else if (d.contains("Aperio") || d.contains("Leica") || d.contains("3dh_")) {
 									// (001340)
 									// assume SVS but could be other Aperio format, theoretically ? :(
 									// AppMag = 40|Date = 07/24/2023|Exposure Scale = 0.000001|Exposure Time = 8|Filtered = 3|Focus Offset = 0.500000|Gamma = 2.2|Left = 19.347723007202|MPP = 0.263447|Rack = 10|ScanScope ID = SS12035|Slide = 27|StripeWidth = 4096|Time = 15:22:42|Time Zone = GMT-0400|Top = 44.411762237549
 									// 46920x33014 [0,100 46000x32914] (256x256) JPEG/RGB Q=30|AppMag = 20|StripeWidth = 2040|ScanScope ID = CPAPERIOCS|Filename = CMU-1|Date = 12/29/09|Time = 09:59:15|User = b414003d-95c6-48b0-9369-8010ed517ba7|Parmset = USM Filter|MPP = 0.4990|Left = 25.691574|Top = 23.449873|LineCameraSkew = -0.000424|LineAreaXOffset = 0.019265|LineAreaYOffset = -0.000313|Focus Offset = 0.000000|ImageID = 1004486|OriginalWidth = 46920|Originalheight = 33014|Filtered = 5|ICC Profile = ScanScope v1
 									// 95744x86336 (256x256) J2K/KDU Q=70;Leica SCN400;Leica SCN ver.1.5.1.10804 2012/05/10 13:29:07;1.5.1.10864|Filename = ImageCollection_0000000935|Date = 2014-07-23T16:33:58.37Z|AppMag = 40.000000|MPP = 0.250000|OriginalWidth = 86336|OriginalHeight = 95744
+									// 43520x57600 (256x256) JPEG/RGB Q=80|Date = 30/08/2022|Time = 12:15:31|MPP = 0.49707|3dh_PixelSizeX = 0.496094|3dh_PixelSizeY = 0.498047|3dh_Filter = Default|3dh_Profile = Default(1)|3dh_ScannerHardwareID = SC150-213005
 									slf4jlogger.debug("addCommonDateTimeInformation(): processing SVS ImageDescription {}");
 									try {
 										BufferedReader r = new BufferedReader(new StringReader(d));
 										String line = null;
 										while ((line=r.readLine()) != null) {
 											{	// (001405)
-												// |Date = 07/24/2023|
+												// |Date = 07/24/2023| or |Date = 30/08/2022|
 												Pattern p = Pattern.compile(".*[|]Date[ ]*=[ ]*([0-9][0-9])/([0-9][0-9])/([0-9][0-9][0-9][0-9])[|].*");
 												Matcher m = p.matcher(line);
 												if (m.matches()) {
@@ -5098,8 +5394,8 @@ public class TIFFToDicom {
 													int groupCount = m.groupCount();
 													if (groupCount == 3) {
 														slf4jlogger.debug("addCommonDateTimeInformation(): have SVS date correct groupCount");
-														String month = m.group(1);
-														String day = m.group(2);
+														String month = d.contains("3dh_") ? m.group(2) : m.group(1);
+														String day = d.contains("3dh_") ? m.group(1) : m.group(2);
 														String fourdigityear = m.group(3);
 														dateString = fourdigityear + month + day;
 														slf4jlogger.debug("addCommonDateTimeInformation(): found SVS date {}",dateString);
@@ -5317,12 +5613,13 @@ public class TIFFToDicom {
 	 * @param	uidFileName		CSV file mapping filename and IFD number (from 0) to keyword and UID pair, may be null
 	 * @param	addExtendedOffsetTable	whether or not to add an Extended Offset Table
 	 * @param	addBasicOffsetTable	whether or not to add a Basic Offset Table
+	 * @param	forceFlavor	image flavor to use (e.g., "LABEL" or "OVERVIEW" or null if to deduce from TIFF information
 	 * @exception			IOException
 	 * @exception			DicomException
 	 * @exception			TIFFException
 	 * @exception			NumberFormatException
 	 */
-	public TIFFToDicom(String jsonfile,String inputFileName,String outputFilePrefix,String outputFileSuffix,String modality,String sopClass,String transferSyntax,boolean addTIFF,boolean useBigTIFF,boolean alwaysWSI,boolean addPyramid,boolean mergeStrips,boolean autoRecognize,String channelFileName,boolean includeFileName,boolean includeFileMessageDigest,double spacingrowmm,double spacingcolmm,double thicknessmm,boolean includeCopyOfImageDescription,String uidFileName,boolean addExtendedOffsetTable,boolean addBasicOffsetTable)
+	public TIFFToDicom(String jsonfile,String inputFileName,String outputFilePrefix,String outputFileSuffix,String modality,String sopClass,String transferSyntax,boolean addTIFF,boolean useBigTIFF,boolean alwaysWSI,boolean addPyramid,boolean mergeStrips,boolean autoRecognize,String channelFileName,boolean includeFileName,boolean includeFileMessageDigest,double spacingrowmm,double spacingcolmm,double thicknessmm,boolean includeCopyOfImageDescription,String uidFileName,boolean addExtendedOffsetTable,boolean addBasicOffsetTable,String forceFlavor)
 			throws IOException, DicomException, TIFFException, NumberFormatException {
 		
 		TIFFImageFileDirectories ifds = new TIFFImageFileDirectories();
@@ -5523,7 +5820,7 @@ public class TIFFToDicom {
 				}
 				if (includeFileMessageDigest && inputFileMessageDigest != null) {	// (001453)
 					{ Attribute a = new UnlimitedCharactersAttribute(pixelmedPrivateOriginalFileMACString); a.addValue(inputFileMessageDigest); descriptionList.put(a); }
-					{ Attribute a = new CodeStringAttribute(pixelmedPrivateOriginalOriginalFileMACAlgorithm); a.addValue("MD5"); descriptionList.put(a); }
+					{ Attribute a = new CodeStringAttribute(pixelmedPrivateOriginalFileMACAlgorithm); a.addValue("MD5"); descriptionList.put(a); }
 				}
 			}
 
@@ -5576,6 +5873,9 @@ public class TIFFToDicom {
 			slf4jlogger.debug("Using xOffsetInSlideCoordinateSystem[{}] from WSI Frame of Reference {} to make DICOM file",dirNum,xOffsetInSlideCoordinateSystem);
 			double yOffsetInSlideCoordinateSystem = wsifor.getYOffsetInSlideCoordinateSystemForIFD(dirNum);
 			slf4jlogger.debug("Using yOffsetInSlideCoordinateSystem[{}] from WSI Frame of Reference {} to make DICOM file",dirNum,yOffsetInSlideCoordinateSystem);
+			
+			String useImageFlavor     = (forceFlavor == null || forceFlavor.length() == 0) ? imageFlavorAndDerivationByIFD[dirNum][0] : forceFlavor;
+			String useImageDerivation = (forceFlavor == null || forceFlavor.length() == 0) ? imageFlavorAndDerivationByIFD[dirNum][1] : "NONE";
 
 			try {
 				long[] tileOffsets = ifd.getNumericValues(TIFFTags.TILEOFFSETS);
@@ -5594,7 +5894,7 @@ public class TIFFToDicom {
 														  frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 														  opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 														  xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-														  modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+														  modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 														  imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,addPyramid,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression,addExtendedOffsetTable,addBasicOffsetTable);
 					}
 					else {
@@ -5607,7 +5907,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression);
 						}
 					}
@@ -5639,7 +5939,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,TransferSyntax.ExplicitVRLittleEndian/*since always decompressed*/,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,TransferSyntax.ExplicitVRLittleEndian/*since always decompressed*/,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression);
 							}
 							else {
@@ -5648,7 +5948,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression);
 							}
 						}
@@ -5664,7 +5964,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,TransferSyntax.ExplicitVRLittleEndian/*since always decompressed*/,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,TransferSyntax.ExplicitVRLittleEndian/*since always decompressed*/,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression);
 							}
 							else {
@@ -5677,7 +5977,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,addPyramid,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression,addExtendedOffsetTable,addBasicOffsetTable);
 								}
 								else {
@@ -5690,7 +5990,7 @@ public class TIFFToDicom {
 													frameOfReferenceUID,mmPerPixelX,mmPerPixelY,sliceThickness,objectiveLensPower,objectiveLensNumericalAperture,
 													opticalPathIdentifier,opticalPathDescription,opticalPathAttributesForChannel,
 													xOffsetInSlideCoordinateSystem,yOffsetInSlideCoordinateSystem,
-													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,imageFlavorAndDerivationByIFD[dirNum][0],imageFlavorAndDerivationByIFD[dirNum][1],
+													modality,sopClass,transferSyntax,containerIdentifier,specimenIdentifier,specimenUID,useImageFlavor,useImageDerivation,
 													imageDescription,descriptionList,addTIFF,useBigTIFF,alwaysWSI,specimenPreparationStepContentItemSequence,pyramidUID,acquisitionUID,includeCopyOfImageDescription,pastHistoryOfLossyCompression);
 									}
 								}
@@ -5753,6 +6053,7 @@ public class TIFFToDicom {
 			double spacingrowmm = 0;
 			double thicknessmm = 0;
 			String uidFileName = null;
+			String forceFlavor = null;
 
 			int numberOfFixedArguments = 3;
 			int numberOfFixedAndOptionalArguments = 6;
@@ -5839,6 +6140,10 @@ public class TIFFToDicom {
 									uidFileName = arg[endOptionsPosition-1];
 									endOptionsPosition-=2;
 								}
+								else if (arg[endOptionsPosition-2].trim().toUpperCase().equals("FORCEFLAVOR")) {	// (XXXX)
+									forceFlavor = arg[endOptionsPosition-1];
+									endOptionsPosition-=2;
+								}
 								else if (endOptionsPosition > numberOfFixedAndOptionalArguments) {
 									slf4jlogger.error("Unrecognized argument {}",option);
 									bad = true;
@@ -5878,7 +6183,7 @@ public class TIFFToDicom {
 				slf4jlogger.debug("thicknessmm = {}",thicknessmm);
 				slf4jlogger.debug("uidFileName = {}",uidFileName);
 
-				new TIFFToDicom(jsonfile,inputFile,outputFilePrefix,outputFileSuffix,modality,sopClass,transferSyntax,addTIFF,useBigTIFF,alwaysWSI,addPyramid,mergeStrips,autoRecognize,channelFileName,includeFileName,includeFileMessageDigest,spacingrowmm,spacingcolmm,thicknessmm,includeCopyOfImageDescription,uidFileName,addExtendedOffsetTable,addBasicOffsetTable);
+				new TIFFToDicom(jsonfile,inputFile,outputFilePrefix,outputFileSuffix,modality,sopClass,transferSyntax,addTIFF,useBigTIFF,alwaysWSI,addPyramid,mergeStrips,autoRecognize,channelFileName,includeFileName,includeFileMessageDigest,spacingrowmm,spacingcolmm,thicknessmm,includeCopyOfImageDescription,uidFileName,addExtendedOffsetTable,addBasicOffsetTable,forceFlavor);
 			}
 			else {
 				System.err.println("Error: Incorrect number of arguments or bad arguments");
@@ -5900,6 +6205,7 @@ public class TIFFToDicom {
 					+" [SPACINGROWCOLMM spacingrowmm(y) spacingcolmm(x)]"
 					+" [THICKNESSMM thickness]"
 					+" [UIDFILE uidfile]"
+					+" [FORCEFLAVOR flavor]"
 				);
 				System.exit(1);
 			}

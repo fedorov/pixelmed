@@ -26,7 +26,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 abstract public class ClinicalTrialsAttributes {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ClinicalTrialsAttributes.java,v 1.150 2026/06/05 12:56:19 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/ClinicalTrialsAttributes.java,v 1.152 2026/09/12 11:57:55 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(ClinicalTrialsAttributes.class);
 	
@@ -48,6 +48,10 @@ abstract public class ClinicalTrialsAttributes {
 	public static final String replacementForContentCreatorName = "Nobody^Noone";	// CP 1801
 	public static final String replacementForAgeString = "000Y";
 	public static final String replacementForAET = "REMOVED";
+	public static final String replacementForManufacturer = "NoManufacturer";
+	public static final String replacementForManufacturerModelName = "NoManufacturerModelName";
+	public static final String replacementForManufacturerModelVersion = "0.0";
+	public static final String replacementForSoftwareVersions = "0.0";
 	
 	protected static final DicomDictionary dictionary = DicomDictionary.StandardDictionary;
 
@@ -3418,7 +3422,7 @@ abstract public class ClinicalTrialsAttributes {
 	public static void removeOrNullIdentifyingAttributes(AttributeList list,int handleUIDs,boolean keepDescriptors,boolean keepSeriesDescriptors,boolean keepProtocolName,boolean keepPatientCharacteristics,boolean keepDeviceIdentity,boolean keepInstitutionIdentity,int handleDates,Date epochForDateModification,Date earliestDateInSet,int handleStructuredContent) throws DicomException {
 		removeOrNullIdentifyingAttributes(list,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,keepInstitutionIdentity,handleDates,epochForDateModification,earliestDateInSet,handleStructuredContent,false/*aggregateAgesOver89*/);
 	}
-	
+
 	/**
 	 * <p>De-identify a list of attributes.</p>
 	 *
@@ -3450,8 +3454,43 @@ abstract public class ClinicalTrialsAttributes {
 	 * @throws	DicomException	if error in DICOM encoding
 	 */
 	public static void removeOrNullIdentifyingAttributes(AttributeList list,int handleUIDs,boolean keepDescriptors,boolean keepSeriesDescriptors,boolean keepProtocolName,boolean keepPatientCharacteristics,boolean keepDeviceIdentity,boolean keepInstitutionIdentity,int handleDates,Date epochForDateModification,Date earliestDateInSet,int handleStructuredContent,boolean aggregateAgesOver89) throws DicomException {
+		removeOrNullIdentifyingAttributes(list,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,true/*keepManufacturer*/,keepInstitutionIdentity,handleDates,epochForDateModification,earliestDateInSet,handleStructuredContent,aggregateAgesOver89);
+	}
+	
+	/**
+	 * <p>De-identify a list of attributes.</p>
+	 *
+	 * <p>De-identifies attributes within nested sequences.</p>
+	 *
+	 * <p>Handles UIDs as requested, including within nested sequences, including Content Sequence.</p>
+	 *
+	 * <p>Handles dates and times as requested (other than Patient Birth), including within nested sequences, including Content Sequence.</p>
+	 *
+	 * <p>Can optionally group ages over 89 years into single age of 90 as per HIPAA PR §164.514(b)(2)(i)(C).</p>
+	 *
+	 * <p>Handles structured content as requested, including within nested sequences, including (and not just confined to) Content Sequence.</p>
+	 *
+	 * <p>Also adds record that de-identification has been performed.</p>
+	 *
+	 * @param	list						the list of attributes to be cleaned up
+	 * @param	handleUIDs					keep, remove or remap the UIDs
+	 * @param	keepDescriptors				if true, keep the text description and comment attributes
+	 * @param	keepSeriesDescriptors		if true, keep the series description even if all other descriptors are removed
+	 * @param	keepProtocolName			if true, keep protocol name even if all other descriptors are removed
+	 * @param	keepPatientCharacteristics	if true, keep patient characteristics (such as might be needed for PET SUV calculations)
+	 * @param	keepDeviceIdentity			if true, keep device identity
+	 * @param	keepManufacturer			if true, keep manufacturer information
+	 * @param	keepInstitutionIdentity		if true, keep institution identity
+	 * @param	handleDates					keep, remove or modify dates and times
+	 * @param	epochForDateModification	the epoch to which to move the earliest date, used if handleDates is modify dates, otherwise null
+	 * @param	earliestDateInSet			the known earliest date to move to the specified epoch, used if handleDates is modify dates, otherwise null; if null, the earliest in the supplied list is used; MUST be the earliest date and time else unaccompanied time attributes may cross midnight
+	 * @param	handleStructuredContent		keep, remove or modify structured content
+	 * @param	aggregateAgesOver89			if true, and keepPatientCharacteristics true, combine patient ages over 89 years into single 90 year category
+	 * @throws	DicomException	if error in DICOM encoding
+	 */
+	public static void removeOrNullIdentifyingAttributes(AttributeList list,int handleUIDs,boolean keepDescriptors,boolean keepSeriesDescriptors,boolean keepProtocolName,boolean keepPatientCharacteristics,boolean keepDeviceIdentity,boolean keepManufacturer,boolean keepInstitutionIdentity,int handleDates,Date epochForDateModification,Date earliestDateInSet,int handleStructuredContent,boolean aggregateAgesOver89) throws DicomException {
 //System.err.println("removeOrNullIdentifyingAttributes():");
-		removeOrNullIdentifyingAttributesRecursively(list,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,keepInstitutionIdentity,aggregateAgesOver89);
+		removeOrNullIdentifyingAttributesRecursively(list,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,keepManufacturer,keepInstitutionIdentity,aggregateAgesOver89);
 		
 		if (handleUIDs != HandleUIDs.keep) {
 			removeOrRemapUIDAttributes(list,handleUIDs);
@@ -3527,6 +3566,13 @@ abstract public class ClinicalTrialsAttributes {
 			if (keepDeviceIdentity) {
 				a.addItem(new CodedSequenceItem("113109","DCM","Retain Device Identity Option").getAttributeList());
 			}
+			
+			if (keepManufacturer) {
+				a.addItem(new CodedSequenceItem("210013","99PMP","Retain Manufacturer").getAttributeList());
+			}
+			else {
+				a.addItem(new CodedSequenceItem("210014","99PMP","Remove Manufacturer").getAttributeList());
+			}
 
 			if (keepInstitutionIdentity) {
 				a.addItem(new CodedSequenceItem("113112","DCM","Retain Institution Identity Option").getAttributeList());
@@ -3560,7 +3606,6 @@ abstract public class ClinicalTrialsAttributes {
 			}
 		}
 	}
-
 	
 	/**
 	 * <p>De-identify a list of attributes, recursively iterating through nested sequences.</p>
@@ -3576,11 +3621,12 @@ abstract public class ClinicalTrialsAttributes {
 	 * @param	keepProtocolName			if true, keep protocol name even if all other descriptors are removed
 	 * @param	keepPatientCharacteristics	if true, keep patient characteristics (such as might be needed for PET SUV calculations)
 	 * @param	keepDeviceIdentity			if true, keep device identity
+	 * @param	keepManufacturer			if true, keep manufacturer information
 	 * @param	keepInstitutionIdentity		if true, keep device identity
 	 * @param	aggregateAgesOver89			if true, and keepPatientCharacteristics true, combine patient ages over 89 years into single 90 year category
 	 * @throws	DicomException	if error in DICOM encoding
 	 */
-	protected static void removeOrNullIdentifyingAttributesRecursively(AttributeList list,int handleUIDs,boolean keepDescriptors,boolean keepSeriesDescriptors,boolean keepProtocolName,boolean keepPatientCharacteristics,boolean keepDeviceIdentity,boolean keepInstitutionIdentity,boolean aggregateAgesOver89) throws DicomException {
+	protected static void removeOrNullIdentifyingAttributesRecursively(AttributeList list,int handleUIDs,boolean keepDescriptors,boolean keepSeriesDescriptors,boolean keepProtocolName,boolean keepPatientCharacteristics,boolean keepDeviceIdentity,boolean keepManufacturer,boolean keepInstitutionIdentity,boolean aggregateAgesOver89) throws DicomException {
 		// use the list from the Basic Application Level Confidentiality Profile in PS 3.15 2003, as updated per draft of Sup 142
 	
 		if (!keepDescriptors) {
@@ -3706,7 +3752,11 @@ abstract public class ClinicalTrialsAttributes {
 			list.remove(dictionary.getTagFromName("TreatmentMachineName"));	// CP 1720
 			list.remove(dictionary.getTagFromName("UDISequence"));			// cp_dac477_moreonuniquedeviceid
 			list.remove(dictionary.getTagFromName("UniqueDeviceIdentifier"));// cp_dac477_moreonuniquedeviceid
+			list.remove(dictionary.getTagFromName("ManufacturerDeviceIdentifier"));
+			list.remove(dictionary.getTagFromName("ManufacturerDeviceClassUID"));
+			list.remove(dictionary.getTagFromName("DeviceAlternateIdentifier"));
 			list.remove(dictionary.getTagFromName("DeviceDescription"));		// cp_dac477_moreonuniquedeviceid
+			list.remove(dictionary.getTagFromName("LongDeviceDescription"));
 			list.remove(dictionary.getTagFromName("LensMake"));				// CP 1736
 			list.remove(dictionary.getTagFromName("LensModel"));			// CP 1736
 			list.remove(dictionary.getTagFromName("LensSerialNumber"));		// CP 1736
@@ -3719,8 +3769,18 @@ abstract public class ClinicalTrialsAttributes {
 			list.remove(dictionary.getTagFromName("DateOfLastDetectorCalibration"));	// (001387)
 			list.remove(dictionary.getTagFromName("TimeOfLastCalibration"));			// (001387)
 			list.remove(dictionary.getTagFromName("TimeOfLastDetectorCalibration"));	// (001387)
+			list.remove(dictionary.getTagFromName("DateOfInstallation"));
 			list.remove(dictionary.getTagFromName("HardcopyCreationDeviceID"));	// CP 2459
 			list.remove(dictionary.getTagFromName("SecondaryCaptureDeviceID"));	// CP 2459
+		}
+
+		if (!keepManufacturer) {
+			list.replaceWithValueIfPresent(dictionary.getTagFromName("Manufacturer"),replacementForManufacturer);
+			list.replaceWithValueIfPresent(dictionary.getTagFromName("ManufacturerModelName"),replacementForManufacturerModelName);
+			list.replaceWithValueIfPresent(dictionary.getTagFromName("ManufacturerModelVersion"),replacementForManufacturerModelVersion);
+			list.replaceWithValueIfPresent(dictionary.getTagFromName("SoftwareVersions"),replacementForSoftwareVersions);
+			list.remove(dictionary.getTagFromName("ManufacturerDeviceClassUID"));
+			list.remove(dictionary.getTagFromName("DateOfManufacture"));
 		}
 		
 		list.replaceWithZeroLengthIfPresent(dictionary.getTagFromName("StudyID"));
@@ -3939,7 +3999,6 @@ abstract public class ClinicalTrialsAttributes {
 			list.replaceWithValueIfPresent(dictionary.getTagFromName("TreatmentPositionGroupLabel"),replacementForDescriptionOrLabel);
 		}
 		// handled like any other UID ...
-		//ManufacturerDeviceClassUID
 		//PatientSetupUID
 		//TreatmentPositionGroupUID
 		
@@ -4154,7 +4213,10 @@ abstract public class ClinicalTrialsAttributes {
 			list.remove(dictionary.getTagFromName("ChannelLabel"));
 			list.remove(dictionary.getTagFromName("MultiplexGroupLabel"));
 			list.replaceWithValueIfPresent(dictionary.getTagFromName("UnformattedTextValue"),replacementForDescriptionOrLabel);
+			
+			// CP 2590
 
+			list.remove(dictionary.getTagFromName("DoseCalculationModelName"));
 		}
 		
 		// CP 2511
@@ -4251,7 +4313,7 @@ abstract public class ClinicalTrialsAttributes {
 								AttributeList itemAttributeList = item.getAttributeList();
 //System.err.println("Recursed into item of "+a);
 								if (itemAttributeList != null) {
-									removeOrNullIdentifyingAttributesRecursively(itemAttributeList,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,keepInstitutionIdentity,aggregateAgesOver89);
+									removeOrNullIdentifyingAttributesRecursively(itemAttributeList,handleUIDs,keepDescriptors,keepSeriesDescriptors,keepProtocolName,keepPatientCharacteristics,keepDeviceIdentity,keepManufacturer,keepInstitutionIdentity,aggregateAgesOver89);
 								}
 							}
 						}

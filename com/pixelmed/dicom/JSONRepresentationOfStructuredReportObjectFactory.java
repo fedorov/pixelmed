@@ -17,6 +17,9 @@ import javax.json.JsonValue;
 import javax.json.JsonWriter;
 
 import java.io.*;
+
+import java.nio.charset.Charset;
+
 import java.util.*;
 
 import com.pixelmed.slf4j.Logger;
@@ -76,7 +79,7 @@ try {
  * @author	dclunie
  */
 public class JSONRepresentationOfStructuredReportObjectFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfStructuredReportObjectFactory.java,v 1.35 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfStructuredReportObjectFactory.java,v 1.36 2026/09/04 22:33:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(JSONRepresentationOfStructuredReportObjectFactory.class);
 	
@@ -152,6 +155,9 @@ public class JSONRepresentationOfStructuredReportObjectFactory {
 	protected static String reservedKeywordForIdeographicPropertyInPersonNameContentItem = symbolSignifyingReservedKeyword+"ideographic";
 	protected static String reservedKeywordForPhoneticPropertyInPersonNameContentItem = symbolSignifyingReservedKeyword+"phonetic";
 
+	private static final String[] iso_ir_192 = { "ISO_IR 192" };
+	private static final SpecificCharacterSet utf8SpecificCharacterSet = new SpecificCharacterSet(iso_ir_192);
+	
 	protected boolean isCommonAnnotationAttribute(String attributeName) {
 		return attributeName!= null && attributeName.length() > 0 && (
 			   attributeName.equals(reservedKeywordForSimplifiedLabelAttributeInSRFile)
@@ -293,6 +299,9 @@ public class JSONRepresentationOfStructuredReportObjectFactory {
 			if (s != null && s.length() > 0) {
 				try {
 					Attribute a = AttributeFactory.newAttribute(tag);
+					if (a instanceof StringAttributeAffectedBySpecificCharacterSet) {	// (001489) - otherwise will not know if UTF-8 characters are being used
+						((StringAttributeAffectedBySpecificCharacterSet)a).setSpecificCharacterSet(utf8SpecificCharacterSet);
+					}
 					a.addValue(s);
 					csilist.put(a);
 				}
@@ -466,7 +475,7 @@ public class JSONRepresentationOfStructuredReportObjectFactory {
 	 * @throws	DicomException
 	 */
 	public void loadBusinessNamesDocument(InputStream stream) throws IOException, DicomException {
-		JsonReader jsonReader = Json.createReader(stream);
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(stream,Charset.forName("UTF-8")));	// (001489)
 		JsonArray document = jsonReader.readArray();
 		jsonReader.close();
 		loadBusinessNamesDocument(document);
@@ -2208,7 +2217,7 @@ public class JSONRepresentationOfStructuredReportObjectFactory {
 	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(InputStream stream) throws IOException, DicomException {
-		JsonReader jsonReader = Json.createReader(stream);
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(stream,Charset.forName("UTF-8")));	// (001489)
 		JsonArray document = jsonReader.readArray();
 		jsonReader.close();
 		return getAttributeList(document);

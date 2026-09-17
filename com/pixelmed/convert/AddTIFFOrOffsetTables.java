@@ -38,11 +38,11 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 
 public class AddTIFFOrOffsetTables {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/AddTIFFOrOffsetTables.java,v 1.10 2026/03/08 15:20:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/AddTIFFOrOffsetTables.java,v 1.13 2026/07/20 08:02:05 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(AddTIFFOrOffsetTables.class);
 
-	private int getTIFFPhotometricFromDICOMPhotometricInterpretation(String photometricInterpretation) {
+	private int getTIFFPhotometricFromDICOMPhotometricInterpretation(String photometricInterpretation,String transferSyntax) {
 		int photometric = -1;
 		switch (photometricInterpretation) {
 			case "MONOCHROME1":		photometric = 0; break;
@@ -51,23 +51,23 @@ public class AddTIFFOrOffsetTables {
 			case "PALETTE COLOR":	photometric = 3; break;
 			case "TRANSPARENCY":	photometric = 4; break;		// not standard DICOM
 			case "CMYK":			photometric = 5; break;		// retired in DICOM
-			case "YBR_ICT":			photometric = 6; break;
-			case "YBR_RCT":			photometric = 6; break;
-			case "YBR_FULL_422":	photometric = 6; break;
+			case "YBR_ICT":			photometric = 2; break;		// mimic Leica/Aperio use of RGB in this case (001473)
+			case "YBR_RCT":			photometric = 2; break;		// (001473)
+			case "YBR_FULL_422":	photometric = (TransferSyntax.JPEG2000.equals(transferSyntax) ? 2 : 6); break;	// mimic Leica/Aperio use of RGB for 33003 J2K/YUV16 or J2K/MIL (001473)
 			case "CIELAB":			photometric = 8; break;		// not standard DICOM
 		}
 		return photometric;
 	}
 	
-	private int getTIFFCompressionFromTransferSyntax(String transferSyntax) {
+	private int getTIFFCompressionFromTransferSyntax(String transferSyntax,String photometricInterpretation) {
 		int compression = 0;
 		switch (transferSyntax) {
 			case TransferSyntax.ImplicitVRLittleEndian:		compression = 1; break;
 			case TransferSyntax.ExplicitVRLittleEndian:		compression = 1; break;
 			case TransferSyntax.ExplicitVRBigEndian:		compression = 1; break;			// ? big endian actually handled properly in TIFF
 			case TransferSyntax.JPEGBaseline:				compression = 7; break;
-			case TransferSyntax.JPEG2000:					compression = 33005; break;		// ? should check if RGB
-			case TransferSyntax.JPEG2000Lossless:			compression = 33005; break;		// ? should check if RGB
+			case TransferSyntax.JPEG2000:					compression = ("YBR_FULL_422".equals(photometricInterpretation) ? 33003 : 33005); break;		// (001473)
+			case TransferSyntax.JPEG2000Lossless:			compression = 33005; break;		// (001473)
 		}
 		return compression;
 	}
@@ -738,7 +738,7 @@ public class AddTIFFOrOffsetTables {
 			long samplesPerPixel = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.SamplesPerPixel,0);
 			long planarConfig = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.PlanarConfiguration,0) + 1;	// TIFF is 1 or 2 but sometimes absent (0), DICOM is 0 or 1
 
-			long outputPhotometric = getTIFFPhotometricFromDICOMPhotometricInterpretation(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PhotometricInterpretation));
+			long outputPhotometric = getTIFFPhotometricFromDICOMPhotometricInterpretation(Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PhotometricInterpretation),transferSyntax);
 			long lowerPhotometric =	outputPhotometric; // what to use for lower pyramidal levels, since may be compressed differently than base layer
 
 			int numberOfPyramidLevels = 1;
@@ -750,7 +750,7 @@ public class AddTIFFOrOffsetTables {
 						Attribute a = SequenceAttribute.getNamedAttributeFromWithinSelectedItemWithinSequence(pyramidData,0,TagFromName.PhotometricInterpretation);
 						if (a != null) {
 							String lowerPhotometricInterpretation = a.getSingleStringValueOrDefault("");
-							lowerPhotometric = getTIFFPhotometricFromDICOMPhotometricInterpretation(lowerPhotometricInterpretation);
+							lowerPhotometric = getTIFFPhotometricFromDICOMPhotometricInterpretation(lowerPhotometricInterpretation,transferSyntax);
 						}
 					}
 				}
@@ -849,7 +849,8 @@ public class AddTIFFOrOffsetTables {
 				long tileWidth = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Columns,0);
 				long tileLength = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.Rows,0);
 				long bitsPerSample = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.BitsAllocated,0);
-				long outputCompression = getTIFFCompressionFromTransferSyntax(transferSyntax);
+				String photometricInterpretation = Attribute.getSingleStringValueOrEmptyString(list,TagFromName.PhotometricInterpretation);
+				long outputCompression = getTIFFCompressionFromTransferSyntax(transferSyntax,photometricInterpretation);
 				long sampleFormat = 0x0001;	// if used, always unsigned integer data
 				byte[] iccProfile = null;
 				{
