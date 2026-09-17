@@ -110,7 +110,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class StudyRootQueryInformationModel extends QueryInformationModel {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.36 2026/03/08 15:20:39 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/query/StudyRootQueryInformationModel.java,v 1.37 2026/07/31 01:23:19 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StudyRootQueryInformationModel.class);
 	
@@ -207,6 +207,17 @@ public class StudyRootQueryInformationModel extends QueryInformationModel {
 	 */
 	public StudyRootQueryInformationModel(String uri) {
 		super(uri);
+		populateInformationEntitySets();
+	}
+	
+	/**
+	 * <p>Construct a study root query information model.</p>
+	 *
+	 * @param	uri			DICOMweb uRI
+	 * @param	bearerToken	DICOMweb bearer token
+	 */
+	public StudyRootQueryInformationModel(String uri,String bearerToken) {		// (001483)
+		super(uri,bearerToken);
 		populateInformationEntitySets();
 	}
 	

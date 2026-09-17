@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Odebrat popis série
 removeProtocolNameLabelText=Odebrat název protokolu akvizice
 removeCharacteristicsLabelText=Odebrat charakteristiky pacienta
 removeDeviceIdentityLabelText=Odebrat identifikátory zařízení
+removeManufacturerLabelText=Odebrat výrobce
 removeInstitutionIdentityLabelText=Odebrat identifikátory instituce
 cleanUIDsLabelText=Nahradit všechny UID
 removePrivateLabelText=Odebrat nebezpečné privátní atributy

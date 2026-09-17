@@ -138,6 +138,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * <p><code>Application.Allow.CheckBox.RemoveUnsafeStructuredContent=true</code> - display the checkbox</p>
  * <p><code>Application.Allow.CheckBox.RemoveDescriptions=true</code> - display the checkbox</p>
  * <p><code>Application.Allow.CheckBox.RemoveDeviceIdentity=true</code> - display the checkbox</p>
+ * <p><code>Application.Allow.CheckBox.RemoveManufacturer=true</code> - display the checkbox</p>
  * <p><code>Application.Allow.CheckBox.RemoveIdentity=true</code> - display the checkbox</p>
  * <p><code>Application.Allow.CheckBox.RemoveInstitutionIdentity=true</code> - display the checkbox</p>
  * <p><code>Application.Allow.CheckBox.RemovePrivate=true</code> - display the checkbox</p>
@@ -158,6 +159,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * <p><code>Application.CheckBox.IsSelected.RemoveUnsafeStructuredContent=false</code> - selection status of the checkbox</p>
  * <p><code>Application.CheckBox.IsSelected.RemoveDescriptions=false</code> - selection status of the checkbox</p>
  * <p><code>Application.CheckBox.IsSelected.RemoveDeviceIdentity=false</code> - selection status of the checkbox</p>
+ * <p><code>Application.CheckBox.IsSelected.RemoveManufacturer=false</code> - selection status of the checkbox</p>
  * <p><code>Application.CheckBox.IsSelected.RemoveIdentity=true</code> - selection status of the checkbox</p>
  * <p><code>Application.CheckBox.IsSelected.RemoveInstitutionIdentity=false</code> - selection status of the checkbox</p>
  * <p><code>Application.CheckBox.IsSelected.RemovePrivate=true</code> - selection status of the checkbox</p>
@@ -182,7 +184,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class DicomCleaner extends ApplicationFrame {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomCleaner.java,v 1.103 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/display/DicomCleaner.java,v 1.104 2026/06/29 21:23:30 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(DicomCleaner.class);
 
@@ -204,6 +206,7 @@ public class DicomCleaner extends ApplicationFrame {
 	protected static String propertyName_AllowRemoveProtocolNameCheckBox = "Application.Allow.CheckBox.RemoveProtocolName";
 	protected static String propertyName_AllowRemoveCharacteristicsCheckBox = "Application.Allow.CheckBox.RemoveCharacteristics";
 	protected static String propertyName_AllowRemoveDeviceIdentityCheckBox = "Application.Allow.CheckBox.RemoveDeviceIdentity";
+	protected static String propertyName_AllowRemoveManufacturerCheckBox = "Application.Allow.CheckBox.RemoveManufacturer";
 	protected static String propertyName_AllowRemoveInstitutionIdentityCheckBox = "Application.Allow.CheckBox.RemoveInstitutionIdentity";
 	protected static String propertyName_AllowCleanUIDsCheckBox = "Application.Allow.CheckBox.CleanUIDs";
 	protected static String propertyName_AllowRemovePrivateCheckBox = "Application.Allow.CheckBox.RemovePrivate";
@@ -239,6 +242,7 @@ public class DicomCleaner extends ApplicationFrame {
 	protected static String propertyName_CheckBoxRemoveProtocolNameIsSelected = "Application.CheckBox.IsSelected.RemoveProtocolName";
 	protected static String propertyName_CheckBoxRemoveCharacteristicsIsSelected = "Application.CheckBox.IsSelected.RemoveCharacteristics";
 	protected static String propertyName_CheckBoxRemoveDeviceIdentityIsSelected = "Application.CheckBox.IsSelected.RemoveDeviceIdentity";
+	protected static String propertyName_CheckBoxRemoveManufacturerIsSelected = "Application.CheckBox.IsSelected.RemoveManufacturer";
 	protected static String propertyName_CheckBoxRemoveInstitutionIdentityIsSelected = "Application.CheckBox.IsSelected.RemoveInstitutionIdentity";
 	protected static String propertyName_CheckBoxCleanUIDsIsSelected = "Application.CheckBox.IsSelected.CleanUIDs";
 	protected static String propertyName_CheckBoxRemovePrivateIsSelected = "Application.CheckBox.IsSelected.RemovePrivate";
@@ -268,6 +272,7 @@ public class DicomCleaner extends ApplicationFrame {
 	protected static boolean default_CheckBoxRemoveProtocolNameIsSelected = false;
 	protected static boolean default_CheckBoxRemoveCharacteristicsIsSelected = false;
 	protected static boolean default_CheckBoxRemoveDeviceIdentityIsSelected = false;
+	protected static boolean default_CheckBoxRemoveManufacturerIsSelected = false;
 	protected static boolean default_CheckBoxRemoveInstitutionIdentityIsSelected = false;
 	protected static boolean default_CheckBoxCleanUIDsIsSelected = true;
 	protected static boolean default_CheckBoxRemovePrivateIsSelected = true;
@@ -317,6 +322,7 @@ public class DicomCleaner extends ApplicationFrame {
 	protected JCheckBox removeProtocolNameCheckBox;
 	protected JCheckBox removeCharacteristicsCheckBox;
 	protected JCheckBox removeDeviceIdentityCheckBox;
+	protected JCheckBox removeManufacturerCheckBox;
 	protected JCheckBox removeInstitutionIdentityCheckBox;
 	protected JCheckBox cleanUIDsCheckBox;
 	protected JCheckBox removePrivateCheckBox;
@@ -808,6 +814,7 @@ slf4jlogger.info("DicomCleaner.copyFromOriginalToCleanedPerformingAction(): epoc
 								!removeProtocolNameCheckBox.isSelected(),
 								!removeCharacteristicsCheckBox.isSelected(),
 								!removeDeviceIdentityCheckBox.isSelected(),
+								!removeManufacturerCheckBox.isSelected(),
 								!removeInstitutionIdentityCheckBox.isSelected(),
 								modifyDatesCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleDates.modify : ClinicalTrialsAttributes.HandleDates.keep,epochForDateModification,earliestDateInSet,
 								removeAllStructuredContentCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleStructuredContent.remove : (removeUnsafeStructuredContentCheckBox.isSelected() ? ClinicalTrialsAttributes.HandleStructuredContent.modify : ClinicalTrialsAttributes.HandleStructuredContent.keep),
@@ -1769,6 +1776,7 @@ slf4jlogger.info("DicomCleaner.setCurrentRemoteQuerySelection(): Guessed missing
 		properties.setProperty(propertyName_CheckBoxRemoveProtocolNameIsSelected,Boolean.toString(removeProtocolNameCheckBox.isSelected()));
 		properties.setProperty(propertyName_CheckBoxRemoveCharacteristicsIsSelected,Boolean.toString(removeCharacteristicsCheckBox.isSelected()));
 		properties.setProperty(propertyName_CheckBoxRemoveDeviceIdentityIsSelected,Boolean.toString(removeDeviceIdentityCheckBox.isSelected()));
+		properties.setProperty(propertyName_CheckBoxRemoveManufacturerIsSelected,Boolean.toString(removeManufacturerCheckBox.isSelected()));
 		properties.setProperty(propertyName_CheckBoxRemoveInstitutionIdentityIsSelected,Boolean.toString(removeInstitutionIdentityCheckBox.isSelected()));
 		properties.setProperty(propertyName_CheckBoxCleanUIDsIsSelected,Boolean.toString(cleanUIDsCheckBox.isSelected()));
 		properties.setProperty(propertyName_CheckBoxRemovePrivateIsSelected,Boolean.toString(removePrivateCheckBox.isSelected()));
@@ -1850,6 +1858,7 @@ System.err.println("properties="+properties);
 		boolean allowRemoveProtocolNameCheckBox            = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveProtocolNameCheckBox,true);
 		boolean allowRemoveCharacteristicsCheckBox         = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveCharacteristicsCheckBox,true);
 		boolean allowRemoveDeviceIdentityCheckBox          = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveDeviceIdentityCheckBox,true);
+		boolean allowRemoveManufacturerCheckBox            = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveManufacturerCheckBox,true);
 		boolean allowRemoveInstitutionIdentityCheckBox     = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemoveInstitutionIdentityCheckBox,true);
 		boolean allowCleanUIDsCheckBox                     = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowCleanUIDsCheckBox,true);
 		boolean allowRemovePrivateCheckBox                 = getBooleanPropertyOrDefaultAndAddIt(propertyName_AllowRemovePrivateCheckBox,true);
@@ -2129,6 +2138,10 @@ System.err.println("properties="+properties);
 		removeDeviceIdentityCheckBox = new JCheckBox(resourceBundle.getString("removeDeviceIdentityLabelText"));
 		removeDeviceIdentityCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveDeviceIdentityIsSelected,default_CheckBoxRemoveDeviceIdentityIsSelected));
 		if (allowRemoveDeviceIdentityCheckBox) checkBoxPanel.add(removeDeviceIdentityCheckBox);
+		
+		removeManufacturerCheckBox = new JCheckBox(resourceBundle.getString("removeManufacturerLabelText"));
+		removeManufacturerCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveManufacturerIsSelected,default_CheckBoxRemoveManufacturerIsSelected));
+		if (allowRemoveManufacturerCheckBox) checkBoxPanel.add(removeManufacturerCheckBox);
 		
 		removeInstitutionIdentityCheckBox = new JCheckBox(resourceBundle.getString("removeInstitutionIdentityLabelText"));
 		removeInstitutionIdentityCheckBox.setSelected(getBooleanPropertyOrDefaultAndAddIt(propertyName_CheckBoxRemoveInstitutionIdentityIsSelected,default_CheckBoxRemoveInstitutionIdentityIsSelected));

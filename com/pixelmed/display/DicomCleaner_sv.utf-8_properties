@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=Ta bort seriebeskrivning
 removeProtocolNameLabelText=Ta bort protokollnamn för insamling
 removeCharacteristicsLabelText=Ta bort patientegenskaper
 removeDeviceIdentityLabelText=Ta bort enhets-ID:n
+removeManufacturerLabelText=Ta bort tillverkare
 removeInstitutionIdentityLabelText=Ta bort institutions-ID:n
 cleanUIDsLabelText=Ersätt alla UID:n
 removePrivateLabelText=Ta bort alla ej säkra privata attribut

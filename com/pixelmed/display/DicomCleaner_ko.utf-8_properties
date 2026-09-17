@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=시리즈 설명 삭제
 removeProtocolNameLabelText=획득 프로토콜 이름 삭제
 removeCharacteristicsLabelText=환자 특징 삭제
 removeDeviceIdentityLabelText=장치 ID 삭제
+removeManufacturerLabelText=제조사 제거
 removeInstitutionIdentityLabelText=기관 ID 삭제
 cleanUIDsLabelText=모든 UID 교체
 removePrivateLabelText=안전하지 않은 비공개 속성 삭제

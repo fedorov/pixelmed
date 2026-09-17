@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class ByteArray {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.26 2026/03/08 15:16:59 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/ByteArray.java,v 1.27 2026/07/20 08:07:44 dclunie Exp $";
 
 	private ByteArray() {}
 
@@ -23,7 +23,7 @@ public class ByteArray {
 	/**
 	 * <p>Read as many bytes as are available (entire contents of the stream).</p>
 	 *
-	 * @param	InputStream
+	 * @param	in
 	 * @return				the bytes that were read
 	 * @throws	IOException	if an I/O error occurs
 	 */

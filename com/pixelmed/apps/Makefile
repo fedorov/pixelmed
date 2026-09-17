@@ -44,7 +44,9 @@ ShrinkSegmentationToBoundingBox.class \
 CompareSetsOfDicomFiles.class \
 PixelMessageDigest.class \
 MergeConcatenationInstances.class \
-ConvertColorToGrayscale.class
+ConvertColorToGrayscale.class \
+ExtractCompressedFrameData.class \
+ExtractICCProfile.class
 
 all:	${OBJS}
 

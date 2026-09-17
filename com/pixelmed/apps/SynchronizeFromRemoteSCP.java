@@ -84,7 +84,7 @@ java -cp ./pixelmed.jar:./lib/additional/hsqldb.jar -Djava.awt.headless=true \
  * @author	dclunie
  */
 public class SynchronizeFromRemoteSCP {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/SynchronizeFromRemoteSCP.java,v 1.38 2026/03/08 15:20:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/apps/SynchronizeFromRemoteSCP.java,v 1.42 2026/07/31 01:23:19 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(SynchronizeFromRemoteSCP.class);
 	
@@ -95,7 +95,9 @@ public class SynchronizeFromRemoteSCP {
 	private DatabaseInformationModel databaseInformationModel;
 	private File savedInstancesFolder;
 	
-	private String remoteURI;
+	private String remoteSearchURI;		// (001480)
+	private String remoteRetrieveURI;	// (001480)
+	private String bearerToken;			// (001483)
 	
 	private String remoteHost;
 	private int remotePort;
@@ -127,12 +129,14 @@ public class SynchronizeFromRemoteSCP {
 	
 	private DecimalFormat commaFormatter = new DecimalFormat("#,###");
 
-	private static String anyimagemediatypeforacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=*";
+	private static String anyimagemediatypeformultipartacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=*";
 	//private static String anyimagemediatypeforacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.50, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.91, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.111, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.112, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.90, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.110, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.1";
 	//private static String anyimagemediatypeforacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.50, multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.1";
 	//private static String anyimagemediatypeforacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.50";
+	private static String anyimagemediatypeforsinglepartacceptheader = "application/dicom; transfer-syntax=*";
 
-	private static String anynonimagemediatypeforacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.1";
+	private static String anynonimagemediatypeformultipartacceptheader = "multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.1";
+	private static String anynonimagemediatypeforsinglepartacceptheader = "application/dicom; transfer-syntax=1.2.840.10008.1.2.1";
 
 	/**
 	 * @param	node
@@ -273,13 +277,14 @@ public class SynchronizeFromRemoteSCP {
 						}
 						slf4jlogger.debug("walkTreeDownToInstanceLevelAndRetrieve(): instanceIsImage = {}",instanceIsImage);
 						if (anyTransferSyntax) {
-							new StudyServiceRetrieveTransactionUserAgent(remoteURI,retrieveIdentifier,identifierHandler,
+							new StudyServiceRetrieveTransactionUserAgent(remoteRetrieveURI,bearerToken,retrieveIdentifier,identifierHandler,
 								savedInstancesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDHASHSUBFOLDERS,receivedObjectHandler,
-								instanceIsImage ? anyimagemediatypeforacceptheader : anynonimagemediatypeforacceptheader);
+								instanceIsImage ? anyimagemediatypeformultipartacceptheader : anynonimagemediatypeformultipartacceptheader,
+								instanceIsImage ? anyimagemediatypeforsinglepartacceptheader : anynonimagemediatypeforsinglepartacceptheader);
 						}
 						else {
-							// theoretically uncompressed, but actually whatever the servers sfault is (behavior varies)
-							new StudyServiceRetrieveTransactionUserAgent(remoteURI,retrieveIdentifier,identifierHandler,
+							// theoretically uncompressed, but actually whatever the server's default is (behavior varies)
+							new StudyServiceRetrieveTransactionUserAgent(remoteRetrieveURI,bearerToken,retrieveIdentifier,identifierHandler,
 								savedInstancesFolder,StoredFilePathStrategy.BYSOPINSTANCEUIDHASHSUBFOLDERS,receivedObjectHandler);
 						}
 					}
@@ -561,7 +566,7 @@ public class SynchronizeFromRemoteSCP {
 	 *
 	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
 	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
-	 * @param	remoteURI					DICOMweb URI
+	 * @param	remoteURI					DICOMweb URI (same for both search and retrieve transactions)
 	 * @param	remoteHost					DIMSE host
 	 * @param	remotePort					DIMSE port
 	 * @param	remoteAE					DIMSE Called AET
@@ -582,10 +587,78 @@ public class SynchronizeFromRemoteSCP {
 				String remoteURI,
 				String remoteHost,int remotePort,String remoteAE,int localPort,String localAE,boolean useGet,boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax,boolean retrieveStudy,boolean reuseAssociations)
 			throws DicomException, DicomNetworkException, IOException, InterruptedException {
+		this(databaseInformationModel,savedInstancesFolder,remoteURI,remoteURI,remoteHost,remotePort,remoteAE,localPort,localAE,useGet,queryAll,queryPatternFileName,anyTransferSyntax,retrieveStudy,reuseAssociations);
+	}
+
+	
+	/**
+	 * <p>Synchronize the contents of a local database of DICOM objects with a remote SCP.</p>
+	 *
+	 * <p>Queries the remote SCP for everything it has and retrieves all instances not already present in the specified local database.</p>
+	 *
+	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
+	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
+	 * @param	remoteSearchURI				DICOMweb Study Search URI
+	 * @param	remoteRetrieveURI			DICOMweb Study Retrieve URI
+	 * @param	remoteHost					DIMSE host
+	 * @param	remotePort					DIMSE port
+	 * @param	remoteAE					DIMSE Called AET
+	 * @param	localPort					local port for DICOM listener ... must already be known to remote AE unless C-GET
+	 * @param	localAE						local AET for DICOM listener ... must already be known to remote AE unless C-GET
+	 * @param	useGet						if true, use C-GET rather than C-MOVE
+	 * @param	queryAll					if true query for all patient names at once, rather than selectively by first letter, unless there is a queryPatternFileName
+	 * @param	queryPatternFileName		a file containing a list of PatientName query patterns, one per line
+	 * @param	anyTransferSyntax			if true, accept any Transfer Syntax, not just uncompressed ones
+	 * @param	retrieveStudy				if true, retrieve only at STUDY level, not confirming every instance
+	 * @param	reuseAssociations			if true, keep alive and reuse Associations
+	 * @throws DicomException
+	 * @throws DicomNetworkException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public SynchronizeFromRemoteSCP(DatabaseInformationModel databaseInformationModel,File savedInstancesFolder,
+				String remoteSearchURI,String remoteRetrieveURI,
+				String remoteHost,int remotePort,String remoteAE,int localPort,String localAE,boolean useGet,boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax,boolean retrieveStudy,boolean reuseAssociations)
+			throws DicomException, DicomNetworkException, IOException, InterruptedException {
+		this(databaseInformationModel,savedInstancesFolder,remoteSearchURI,remoteRetrieveURI,null/*bearerToken*/,remoteHost,remotePort,remoteAE,localPort,localAE,useGet,queryAll,queryPatternFileName,anyTransferSyntax,retrieveStudy,reuseAssociations);
+	}
+	
+	/**
+	 * <p>Synchronize the contents of a local database of DICOM objects with a remote SCP.</p>
+	 *
+	 * <p>Queries the remote SCP for everything it has and retrieves all instances not already present in the specified local database.</p>
+	 *
+	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
+	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
+	 * @param	remoteSearchURI				DICOMweb Study Search URI
+	 * @param	remoteRetrieveURI			DICOMweb Study Retrieve URI
+	 * @param	bearerToken					DICOMweb bearer token
+	 * @param	remoteHost					DIMSE host
+	 * @param	remotePort					DIMSE port
+	 * @param	remoteAE					DIMSE Called AET
+	 * @param	localPort					local port for DICOM listener ... must already be known to remote AE unless C-GET
+	 * @param	localAE						local AET for DICOM listener ... must already be known to remote AE unless C-GET
+	 * @param	useGet						if true, use C-GET rather than C-MOVE
+	 * @param	queryAll					if true query for all patient names at once, rather than selectively by first letter, unless there is a queryPatternFileName
+	 * @param	queryPatternFileName		a file containing a list of PatientName query patterns, one per line
+	 * @param	anyTransferSyntax			if true, accept any Transfer Syntax, not just uncompressed ones
+	 * @param	retrieveStudy				if true, retrieve only at STUDY level, not confirming every instance
+	 * @param	reuseAssociations			if true, keep alive and reuse Associations
+	 * @throws DicomException
+	 * @throws DicomNetworkException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public SynchronizeFromRemoteSCP(DatabaseInformationModel databaseInformationModel,File savedInstancesFolder,
+				String remoteSearchURI,String remoteRetrieveURI,String bearerToken,
+				String remoteHost,int remotePort,String remoteAE,int localPort,String localAE,boolean useGet,boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax,boolean retrieveStudy,boolean reuseAssociations)
+			throws DicomException, DicomNetworkException, IOException, InterruptedException {
 		this.databaseInformationModel = databaseInformationModel;
 		this.savedInstancesFolder = savedInstancesFolder;
 		
-		this.remoteURI = remoteURI;
+		this.remoteSearchURI = remoteSearchURI;		// (001480)
+		this.remoteRetrieveURI = remoteRetrieveURI;	// (001480)
+		this.bearerToken = bearerToken;				// (001483)
 		
 		this.remoteHost = remoteHost;
 		this.remotePort = remotePort;
@@ -593,7 +666,7 @@ public class SynchronizeFromRemoteSCP {
 		this.localPort = localPort;
 		this.localAE = localAE;
 		
-		this.useDICOMweb = remoteURI != null;
+		this.useDICOMweb = remoteSearchURI != null && remoteRetrieveURI != null;	// (001480)
 		this.useGet = useGet;
 		this.queryAll = queryAll;
 		this.retrieveStudy = retrieveStudy;
@@ -627,9 +700,9 @@ public class SynchronizeFromRemoteSCP {
 		numberOfValidSOPInstancesReceived = 0;
 		numberOfUnrequestedSOPInstancesReceived = 0;
 		
-		queryInformationModel = remoteURI == null
+		queryInformationModel = remoteSearchURI == null
 			? new StudyRootQueryInformationModel(remoteHost,remotePort,remoteAE,localAE,reuseAssociations)
-			: new StudyRootQueryInformationModel(remoteURI);
+			: new StudyRootQueryInformationModel(remoteSearchURI,bearerToken);
 		if (retrieveStudy) {
 			performQueryAndStudyRetrieve(anyTransferSyntax);
 		}
@@ -650,7 +723,6 @@ public class SynchronizeFromRemoteSCP {
 		}
 	}
 
-	
 	/**
 	 * <p>Synchronize the contents of a local database of DICOM objects with a remote DICOMweb origin server.</p>
 	 *
@@ -658,7 +730,7 @@ public class SynchronizeFromRemoteSCP {
 	 *
 	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
 	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
-	 * @param	remoteURI					DICOMweb URI
+	 * @param	remoteURI					DICOMweb URI (same for both search and retrieve transactions)
 	 * @param	queryAll					if true query for all patient names at once, rather than selectively by first letter, unless there is a queryPatternFileName
 	 * @param	queryPatternFileName		a file containing a list of PatientName query patterns, one per line
 	 * @param	anyTransferSyntax			if true, accept any Transfer Syntax, not just uncompressed ones
@@ -672,6 +744,55 @@ public class SynchronizeFromRemoteSCP {
 				boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax)
 			throws DicomException, DicomNetworkException, IOException, InterruptedException {
 		this(databaseInformationModel,savedInstancesFolder,remoteURI,null/*remoteHost*/,0/*remotePort*/,null/*remoteAE*/,0/*localPort*/,null/*localAE*/,true/*useGet*/,queryAll,queryPatternFileName,anyTransferSyntax,false/*retrieveStudy*/,false/*reuseAssociations*/);
+	}
+
+	/**
+	 * <p>Synchronize the contents of a local database of DICOM objects with a remote DICOMweb origin server.</p>
+	 *
+	 * <p>Queries the remote DICOMweb origin server for everything it has and retrieves all instances not already present in the specified local database.</p>
+	 *
+	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
+	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
+	 * @param	remoteSearchURI				DICOMweb Study Search URI
+	 * @param	remoteRetrieveURI			DICOMweb Study Retrieve URI
+	 * @param	queryAll					if true query for all patient names at once, rather than selectively by first letter, unless there is a queryPatternFileName
+	 * @param	queryPatternFileName		a file containing a list of PatientName query patterns, one per line
+	 * @param	anyTransferSyntax			if true, accept any Transfer Syntax, not just uncompressed ones
+	 * @throws DicomException
+	 * @throws DicomNetworkException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public SynchronizeFromRemoteSCP(DatabaseInformationModel databaseInformationModel,File savedInstancesFolder,
+				String remoteSearchURI,String remoteRetrieveURI,
+				boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax)
+			throws DicomException, DicomNetworkException, IOException, InterruptedException {
+		this(databaseInformationModel,savedInstancesFolder,remoteSearchURI,remoteRetrieveURI,null/*bearerToken*/,null/*remoteHost*/,0/*remotePort*/,null/*remoteAE*/,0/*localPort*/,null/*localAE*/,true/*useGet*/,queryAll,queryPatternFileName,anyTransferSyntax,false/*retrieveStudy*/,false/*reuseAssociations*/);
+	}
+
+	/**
+	 * <p>Synchronize the contents of a local database of DICOM objects with a remote DICOMweb origin server.</p>
+	 *
+	 * <p>Queries the remote DICOMweb origin server for everything it has and retrieves all instances not already present in the specified local database.</p>
+	 *
+	 * @param	databaseInformationModel	the local database (will be created if does not already exist)
+	 * @param	savedInstancesFolder		where to save retrieved instances (must already exist)
+	 * @param	remoteSearchURI				DICOMweb Study Search URI
+	 * @param	remoteRetrieveURI			DICOMweb Study Retrieve URI
+	 * @param	bearerToken					DICOMweb bearer token
+	 * @param	queryAll					if true query for all patient names at once, rather than selectively by first letter, unless there is a queryPatternFileName
+	 * @param	queryPatternFileName		a file containing a list of PatientName query patterns, one per line
+	 * @param	anyTransferSyntax			if true, accept any Transfer Syntax, not just uncompressed ones
+	 * @throws DicomException
+	 * @throws DicomNetworkException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public SynchronizeFromRemoteSCP(DatabaseInformationModel databaseInformationModel,File savedInstancesFolder,
+				String remoteSearchURI,String remoteRetrieveURI,String bearerToken,
+				boolean queryAll,String queryPatternFileName,boolean anyTransferSyntax)
+			throws DicomException, DicomNetworkException, IOException, InterruptedException {
+		this(databaseInformationModel,savedInstancesFolder,remoteSearchURI,remoteRetrieveURI,bearerToken,null/*remoteHost*/,0/*remotePort*/,null/*remoteAE*/,0/*localPort*/,null/*localAE*/,true/*useGet*/,queryAll,queryPatternFileName,anyTransferSyntax,false/*retrieveStudy*/,false/*reuseAssociations*/);
 	}
 
 	/**
@@ -745,7 +866,7 @@ public class SynchronizeFromRemoteSCP {
 	 *
 	 * @param	arg		array of 6 to 12 strings - the fully qualified path of the database file prefix, the fully qualified path of the saved incoming files folder,
 	 *					either, the DIMSE remote hostname, remote port, remote AE Title, our port (ignored if GET), our AE Title,
-	 *					or, the remote DICOMweb URI,
+	 *					or, the remote DICOMweb URI, and optionally a BEARER token pair of arguments,
 	 *					optionally GET or MOVE (defaults to MOVE),
 	 *					optionally query by ALL or SELECTIVE patient name (defaults to ALL) or a filename containing a list of PatientName query patterns (one per line),
 	 *					optionally UNCOMPRESSED or ANY (defaults to UNCOMPRESSED)
@@ -759,7 +880,9 @@ public class SynchronizeFromRemoteSCP {
 			String databaseFileName         = arg.length >= 1 ? arg[0] : null;
 			String savedInstancesFolderName = arg.length >= 2 ? arg[1] : null;
 			
-			String remoteURI = null;
+			String remoteSearchURI = null;		// (001480)
+			String remoteRetrieveURI = null;	// (001480)
+			String bearerToken = null;			// (001483)
 
 			String remoteHost = null;
 			int remotePort = 0;
@@ -768,11 +891,33 @@ public class SynchronizeFromRemoteSCP {
 			String localAE = null;
 			boolean useGet = false;
 
-			if (arg.length >= 3 && arg.length <= 8 && arg[2].startsWith("http")) {
-				slf4jlogger.info("DICOMweb arguments");
+			if (arg.length >= 4 && arg.length <= 11 && arg[2].startsWith("http") && arg[3].startsWith("http")) {	// (001480)
 				dicomWeb = true;
-				remoteURI = arg[2];
-				nFixedArgs = 3;
+				remoteSearchURI = arg[2];
+				remoteRetrieveURI = arg[3];
+				if (arg.length >= 6 && arg[4].equals("BEARER")) {	// (001483)
+				slf4jlogger.info("DICOMweb search and retrieve endpoint arguments with BEARER token");
+					bearerToken = arg[5];
+					nFixedArgs = 6;
+				}
+				else {
+				slf4jlogger.info("DICOMweb search and retrieve endpoint arguments");
+					nFixedArgs = 4;
+				}
+			}
+			else if (arg.length >= 3 && arg.length <= 10 && arg[2].startsWith("http")) {
+				dicomWeb = true;
+				remoteSearchURI = arg[2];
+				remoteRetrieveURI = arg[2];
+				if (arg.length >= 5 && arg[3].equals("BEARER")) {	// (001483)
+					slf4jlogger.info("DICOMweb single search and retrieve endpoint arguments with BEARER token");
+					bearerToken = arg[4];
+					nFixedArgs = 5;
+				}
+				else {
+					slf4jlogger.info("DICOMweb single search and retrieve endpoint arguments");
+					nFixedArgs = 3;
+				}
 			}
 			else if (arg.length >= 7 && arg.length <= 12) {
 				slf4jlogger.info("DIMSE arguments");
@@ -833,7 +978,7 @@ public class SynchronizeFromRemoteSCP {
 				
 				// attempt to register ourselves in case remote host does not already know us and supports Bonjour ... OK if this fails
 				if (dicomWeb) {
-					new SynchronizeFromRemoteSCP(databaseInformationModel,savedInstancesFolder,remoteURI,queryAll,queryPatternFileName,anyTransferSyntax);
+					new SynchronizeFromRemoteSCP(databaseInformationModel,savedInstancesFolder,remoteSearchURI,remoteRetrieveURI,bearerToken,queryAll,queryPatternFileName,anyTransferSyntax);// (001480)
 				}
 				else {
 					try {
@@ -855,7 +1000,8 @@ public class SynchronizeFromRemoteSCP {
 			}
 			else {
 				slf4jlogger.info("Usage: java -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar com.pixelmed.apps.SynchronizeFromRemoteSCP databasepath savedfilesfolder remoteHost remotePort remoteAET ourPort ourAET [GET|MOVE [ALL|SELECTIVE|patternfile] [UNCOMPRESSED|ANY [STUDY|INSTANCE [REUSE|NEW]]]]]");
-				slf4jlogger.info("Usage: java -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar com.pixelmed.apps.SynchronizeFromRemoteSCP databasepath savedfilesfolder remoteURI [ALL|SELECTIVE|patternfile] [UNCOMPRESSED|ANY [STUDY|INSTANCE [REUSE|NEW]]]]");
+				slf4jlogger.info("Usage: java -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar com.pixelmed.apps.SynchronizeFromRemoteSCP databasepath savedfilesfolder remoteURI [BEARER token] [ALL|SELECTIVE|patternfile] [UNCOMPRESSED|ANY [STUDY|INSTANCE [REUSE|NEW]]]]");
+				slf4jlogger.info("Usage: java -cp ./pixelmed.jar:./lib/additional/hsqldb.jar:./lib/additional/commons-codec-1.3.jar:./lib/additional/jmdns.jar com.pixelmed.apps.SynchronizeFromRemoteSCP databasepath savedfilesfolder remoteSearchURI remoteRetrieveURI [BEARER token] [ALL|SELECTIVE|patternfile] [UNCOMPRESSED|ANY [STUDY|INSTANCE [REUSE|NEW]]]]");
 			}
 		}
 		catch (Exception e) {

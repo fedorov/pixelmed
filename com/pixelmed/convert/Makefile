@@ -1460,6 +1460,7 @@ testbigtiffjpegtodicommf:	/tmp/bigtiffjpegtodicommf.json TIFFToDicom.class TIFFE
 	mkdir -p /tmp/WSI_MultiFrame
 	rm -f /tmp/WSI_MultiFrame/*
 	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR}:${COMMONSCOMPRESSADDITIONALJAR} -Djava.awt.headless=true \
+		-Djava.io.tmpdir=/tmp \
 		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.TIFFToDicom=debug \
 		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.TIFFImageFileDirectories=debug \
 		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.CompressedFrameDecoder=info \

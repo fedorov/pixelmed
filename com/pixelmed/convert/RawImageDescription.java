@@ -8,8 +8,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+
+import java.nio.charset.Charset;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +42,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class RawImageDescription {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/RawImageDescription.java,v 1.10 2026/03/08 15:20:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/RawImageDescription.java,v 1.11 2026/09/04 22:33:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(RawImageDescription.class);
 	
@@ -150,7 +153,7 @@ public class RawImageDescription {
 	protected boolean isDataBigEndian;
 	
 	public RawImageDescription(File formatFile) throws IOException, NumberFormatException {
-		JsonReader jsonReader = Json.createReader(new FileReader(formatFile));
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(new FileInputStream(formatFile),Charset.forName("UTF-8")));	// (001489)
 		JsonObject obj = jsonReader.readObject();
 		for (String name : obj.keySet()) {
 			JsonValue entry = obj.get(name);

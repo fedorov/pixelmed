@@ -40,6 +40,7 @@ removeSeriesDescriptionsLabelText=删除系列描述
 removeProtocolNameLabelText=删除采集协议名称
 removeCharacteristicsLabelText=删除患者特征
 removeDeviceIdentityLabelText=删除设备标识符
+removeManufacturerLabelText=移除制造商
 removeInstitutionIdentityLabelText=删除机构标识符
 cleanUIDsLabelText=替换所有 UID
 removePrivateLabelText=删除不安全私有属性

@@ -41,6 +41,7 @@ removeProtocolNameLabelText=Κατάργηση ονόματος πρωτοκόλ
 removeCharacteristicsLabelText=Κατάργηση χαρακτηριστικών ασθενούς
 removeDeviceIdentityLabelText=Κατάργηση αναγνωριστικών συσκευής
 removeInstitutionIdentityLabelText=Κατάργηση αναγνωριστικών ιδρύματος
+removeManufacturerLabelText=Κατάργηση κατασκευαστή
 cleanUIDsLabelText=Αντικατάσταση όλων των UID
 removePrivateLabelText=Κατάργηση μη ασφαλών ιδιωτικών χαρακτηριστικών
 addContributingEquipmentLabelText=Προσθήκη συνεισφέροντος εξοπλισμού

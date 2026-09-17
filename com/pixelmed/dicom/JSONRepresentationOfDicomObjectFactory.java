@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import java.nio.charset.Charset;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -106,7 +109,7 @@ try {
  * @author	dclunie
  */
 public class JSONRepresentationOfDicomObjectFactory {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfDicomObjectFactory.java,v 1.29 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/JSONRepresentationOfDicomObjectFactory.java,v 1.30 2026/09/04 22:33:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(JSONRepresentationOfDicomObjectFactory.class);
 
@@ -241,6 +244,9 @@ public class JSONRepresentationOfDicomObjectFactory {
 		return buf.toString();
 	}
 
+	private static final String[] iso_ir_192 = { "ISO_IR 192" };
+	private static final SpecificCharacterSet utf8SpecificCharacterSet = new SpecificCharacterSet(iso_ir_192);
+	
 	/**
 	 * @param	list
 	 * @param	parent
@@ -396,6 +402,9 @@ public class JSONRepresentationOfDicomObjectFactory {
 								else {
 									Attribute a = AttributeFactory.newAttribute(tag,vr);
 									//System.err.println("Created "+a);
+									if (a instanceof StringAttributeAffectedBySpecificCharacterSet) {	// (001489) - otherwise will not know if UTF-8 characters are being used
+										((StringAttributeAffectedBySpecificCharacterSet)a).setSpecificCharacterSet(utf8SpecificCharacterSet);
+									}
 									if (jsonSingleValue != null) {
 										// may have been single JsonValue.ValueType.STRING
 										// may have been single JsonValue.ValueType.NUMBER - already handled conversion to string and removal of trailing ".0"
@@ -1101,7 +1110,7 @@ public class JSONRepresentationOfDicomObjectFactory {
 	 * @throws	DicomException
 	 */
 	public AttributeList[] getArrayOfAttributeLists(InputStream stream) throws IOException, DicomException {
-		JsonReader jsonReader = Json.createReader(stream);
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(stream,Charset.forName("UTF-8")));	// (001489)
 		JsonStructure document = jsonReader.read();
 		jsonReader.close();
 		if (document instanceof JsonArray) {
@@ -1122,7 +1131,7 @@ public class JSONRepresentationOfDicomObjectFactory {
 	 * @throws	DicomException
 	 */
 	public AttributeList getAttributeList(InputStream stream) throws IOException, DicomException {
-		JsonReader jsonReader = Json.createReader(stream);
+		JsonReader jsonReader = Json.createReader(new InputStreamReader(stream,Charset.forName("UTF-8")));	// (001489)
 		JsonStructure document = jsonReader.read();
 		jsonReader.close();
 		if (document instanceof JsonArray) {
