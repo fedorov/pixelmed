@@ -113,6 +113,8 @@ TestDecompressedImagePixelModuleAndLossyImageCompressionHistory.class \
 TestUnknownSequenceValueRepresentation.class \
 TestBinaryAttribute_AllTests.class \
 TestBinaryAttributeBinaryInputOutput.class \
+TestStringAttributeValues.class \
+TestStringAttribute_AllTests.class \
 TestAttributeListReadUnspecifiedShortAttribute.class \
 TestAttributeListWriteAndReadTextAttribute.class \
 TestAttributeListWriteAndReadMetaInformation.class \
@@ -144,7 +146,7 @@ archive:
 clean:
 	rm -f *~ *.class core *.bak ${OBJS} testcleanerfile.dcm
 
-alltests:	testoverlay testjson testbinaryattr testdicomstreamcopier testcolorconv testsr testdatetime testsuv testfloatformatter testdecimalstring testunkown testctdose testcompositecontext testsafeprivate testremoveid testattributelist \
+alltests:	testoverlay testjson teststringattr testbinaryattr testdicomstreamcopier testcolorconv testsr testdatetime testsuv testfloatformatter testdecimalstring testunkown testctdose testcompositecontext testsafeprivate testremoveid testattributelist \
 			testcontentitem testcodingscheme testcharset testcleaner testanatomy testgeometry testdicomdir testnetwork testuuid testbase64 testdates testsequence \
 			testthread testdatabase testmultiframe testrepair testcodedsequenceitem testpackbits testcapabilitiespresent testcapabilitiesabsent testhierarchicalfilename \
 			teststring testdeid testisdicomfile testdispann
@@ -339,6 +341,9 @@ testrepair:	${OBJS}
 
 testbinaryattr:	${OBJS}
 	java -cp ${PATHTOROOT}:${JUNITJAR} -Djava.awt.headless=true org.junit.runner.JUnitCore com.pixelmed.test.TestBinaryAttribute_AllTests
+
+teststringattr:	${OBJS}
+	java -cp ${PATHTOROOT}:${JUNITJAR} -Djava.awt.headless=true org.junit.runner.JUnitCore com.pixelmed.test.TestStringAttribute_AllTests
 
 testjson:	${OBJS}
 	java -cp ${PATHTOROOT}:${JUNITJAR}:${JSONADDITIONALJAR}:${PATHTOADDITIONAL}/javax.json-api-1.0.jar \

@@ -30,7 +30,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class FileUtilities {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.35 2026/03/08 15:20:40 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/utils/FileUtilities.java,v 1.36 2026/10/28 13:28:12 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(FileUtilities.class);
 
@@ -424,6 +424,31 @@ public class FileUtilities {
 			dstFile = new File(dstFile,srcFileComponents.get(i++));
 		}
 		return dstFile;
+	}
+	
+	/**
+	 * <p>Check file is or is within the specified path.</p>
+	 *
+	 * @param	file
+	 * @param	path
+	 * @return			true if file is or is within the specified path
+	 */
+	public static final boolean fileIsWithinPath(File file,File path) {
+		try {
+			// after pattern in "https://stackoverflow.com/questions/18227634/check-if-file-is-in-subdirectory"
+			File f = file.getCanonicalFile();
+			File p = path.getCanonicalFile();
+			while (f != null) {
+				if (f.equals(p)) {
+					return true;
+				}
+				f = f.getParentFile();
+			}
+		}
+		catch (IOException e) {
+			// false through to false return
+		}
+		return false;
 	}
 }
 

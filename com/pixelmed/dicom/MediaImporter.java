@@ -44,7 +44,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class MediaImporter {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MediaImporter.java,v 1.29 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/MediaImporter.java,v 1.31 2026/10/05 18:32:21 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(MediaImporter.class);		// cannot use normal name "logger" since already published as protected attribute for MessageLogger
 
@@ -309,10 +309,10 @@ public class MediaImporter {
 								if (isOKToImport(sopClassUID,transferSyntaxUID)) {
 									goodToGo=true;
 								}
-								else {
-									logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed: "
-										+mediaFileName+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
-								}
+								//else {
+									//logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed: "
+									//	+mediaFileName+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
+								//}
 							}
 						}
 						if (goodToGo) {
@@ -370,8 +370,8 @@ public class MediaImporter {
 								}
 								else {
 									slf4jlogger.debug("importDicomFiles(): Is a DICOM file but bad meta-header, not a storage object, or is compressed with a scheme that is not supported: {}  SOP Class={}, Transfer Syntax={}",mediaFile,sopClassUID,transferSyntaxUID);
-									logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed with a scheme that is not supported: "
-										+mediaFile+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
+									//logLn("Is a DICOM file but bad meta-header, not a storage object, or is compressed with a scheme that is not supported: "
+									//	+mediaFile+" SOP Class="+sopClassUID+", Transfer Syntax="+transferSyntaxUID);
 								}
 							}
 							else {

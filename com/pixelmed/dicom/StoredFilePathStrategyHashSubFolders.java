@@ -10,15 +10,17 @@ import java.io.File;
  *
  * <p>This is the currently preferred strategy for a server that is expected to store a large number of files.</p>
  *
- * @author	dclunie, jimirrer
+ * @author	dclunie
+ * @author	jimirrer
  */
 public final class StoredFilePathStrategyHashSubFolders extends StoredFilePathStrategy {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategyHashSubFolders.java,v 1.13 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategyHashSubFolders.java,v 1.14 2026/10/28 13:28:11 dclunie Exp $";
 
 	public StoredFilePathStrategyHashSubFolders() {}
 
 	public String makeStoredFilePath(String sopInstanceUID) {
+		sopInstanceUID = makeAlternativeIfNotSuitableSOPInstanceUID(sopInstanceUID);
 		long hashCode = sopInstanceUID.hashCode() & 0x0000ffffl;   // do not sign extend
 		String prefix = null;
 		StringBuffer buf = new StringBuffer();

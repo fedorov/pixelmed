@@ -18,7 +18,7 @@ import java.io.*;
  * @author	dclunie
  */
 public class AgeStringAttribute extends StringAttribute {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AgeStringAttribute.java,v 1.26 2026/03/08 15:20:34 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AgeStringAttribute.java,v 1.27 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 4;
 	
@@ -70,36 +70,26 @@ public class AgeStringAttribute extends StringAttribute {
 	
 	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == 'D' || c == 'W' || c == 'M' || c == 'Y');
 	}
 	
-	public boolean areValuesWellFormed() throws DicomException {
+	public boolean isValueWellFormed(String v) {
 		boolean good = true;
-		if (originalValues != null && originalValues.length > 0) {
-			for (int i=0; i<originalValues.length; ++i) {
-				String v = originalValues[i];
-				if (v != null && v.length() > 0) {
-					if (v.length() != 4) {
+		if (v != null && v.length() > 0) {
+			if (v.length() != 4) {
+				good = false;
+			}
+			else if (!v.endsWith("D") && !v.endsWith("W") &&!v.endsWith("M") &&!v.endsWith("Y")) {
+				good = false;
+			}
+			else {
+				String digits = v.substring(0,3);
+				for (int j=0; j<digits.length(); ++j) {
+					int c = v.codePointAt(j);
+					if (!Character.isDigit(c)) {
 						good = false;
 						break;
-					}
-					else if (!v.endsWith("D") && !v.endsWith("W") &&!v.endsWith("M") &&!v.endsWith("Y")) {
-						good = false;
-						break;
-					}
-					else {
-						String digits = v.substring(0,3);
-						for (int j=0; j<digits.length(); ++j) {
-							int c = v.codePointAt(j);
-							if (!Character.isDigit(c)) {
-								good = false;
-								break;
-							}
-						}
-						if (!good) {
-							break;
-						}
 					}
 				}
 			}

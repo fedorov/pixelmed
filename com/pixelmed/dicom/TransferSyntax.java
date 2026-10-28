@@ -13,7 +13,7 @@ package com.pixelmed.dicom;
 public class TransferSyntax {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntax.java,v 1.41 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntax.java,v 1.42 2026/09/23 22:46:00 dclunie Exp $";
 
 	/***/
 	public static final String ImplicitVRLittleEndian              = "1.2.840.10008.1.2";
@@ -58,6 +58,12 @@ public class TransferSyntax {
 	/***/
 	public static final String MPEG4HP42ST                         = "1.2.840.10008.1.2.4.106";
 	/***/
+	public static final String JPEGXLLossless                      = "1.2.840.10008.1.2.4.110";
+	/***/
+	public static final String JPEGXLJPEGRecompression             = "1.2.840.10008.1.2.4.111";
+	/***/
+	public static final String JPEGXL                              = "1.2.840.10008.1.2.4.112";
+	/***/
 	public static final String RLE								   = "1.2.840.10008.1.2.5";
 	/***/
 	public static final String PixelMedBzip2ExplicitVRLittleEndian = "1.3.6.1.4.1.5962.300.1";
@@ -83,6 +89,8 @@ public class TransferSyntax {
 	/***/
 	protected boolean jpegFamily;
 	/***/
+	protected boolean jpegXLFamily;
+	/***/
 	protected String fileNameExtension;
 
 	/**
@@ -100,6 +108,7 @@ public class TransferSyntax {
 		recognized=false;
 		fileNameExtension="unk";
 		jpegFamily=false;
+		jpegXLFamily=false;
 
 		if (transferSyntaxUID.equals(ImplicitVRLittleEndian)) {
 			description="Implicit VR Little Endian";
@@ -301,6 +310,39 @@ public class TransferSyntax {
 			fileNameExtension="mp4";
 			jpegFamily=false;
 		}
+		else if (transferSyntaxUID.equals(JPEGXLLossless)) {
+			description="JPEG XL Lossless";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=false;
+			recognized=true;
+			fileNameExtension="jxl";
+			jpegFamily=false;		// because different marker syntax
+			jpegXLFamily=true;
+		}
+		else if (transferSyntaxUID.equals(JPEGXLJPEGRecompression)) {
+			description="JPEG XL JPEG Recompression";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="jxl";
+			jpegFamily=false;		// because different marker syntax
+			jpegXLFamily=true;
+		}
+		else if (transferSyntaxUID.equals(JPEGXL)) {
+			description="JPEG XL";
+			bigEndian=false;
+			explicitVR=true;
+			encapsulatedPixelData=true;
+			lossy=true;
+			recognized=true;
+			fileNameExtension="jxl";
+			jpegFamily=false;		// because different marker syntax
+			jpegXLFamily=true;
+		}
 		else if (transferSyntaxUID.equals(RLE)) {
 			description="RLE Lossless";
 			bigEndian=false;
@@ -458,11 +500,18 @@ public class TransferSyntax {
 	/**
 	 * <p>Is the Transfer Syntax part of the JPEG family of Transfer Syntaxes?</p>
 	 *
-	 * <p>I.e., those that share the same marker segments, such as the EOI marker used for end of frame in fragment detection.</p>
+	 * <p>I.e., those that share the same marker segments, such as the EOI marker used for end of frame in fragment detection (i.e., not including JPEG XL).</p>
 	 *
 	 * @return		true if is JPEG family
 	 */
 	public boolean isJPEGFamily()		{ return jpegFamily; }
+
+	/**
+	 * <p>Is the Transfer Syntax part of the JPEG XL family of Transfer Syntaxes?</p>
+	 *
+	 * @return		true if is JPEG XL family
+	 */
+	public boolean isJPEGXLFamily()		{ return jpegXLFamily; }
 
 	/**
 	 * <p>Does the Transfer Syntax use deflate compression ?</p>

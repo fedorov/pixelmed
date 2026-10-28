@@ -13,16 +13,18 @@ import java.io.File;
  *
  * <p>It is the default strategy when not otherwise specified, since it was the original strategy supported in earlier versions of the toolkit.</p>
  *
- * @author	dclunie, jimirrer
+ * @author	dclunie
+ * @author	jimirrer
  */
 
 public final class StoredFilePathStrategySingleFolder extends StoredFilePathStrategy {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategySingleFolder.java,v 1.13 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategySingleFolder.java,v 1.14 2026/10/28 13:28:11 dclunie Exp $";
 
 	public StoredFilePathStrategySingleFolder() {}
 
 	public String makeStoredFilePath(String sopInstanceUID) {
+		sopInstanceUID = makeAlternativeIfNotSuitableSOPInstanceUID(sopInstanceUID);
 	    return sopInstanceUID;
 	}
 

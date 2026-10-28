@@ -31,7 +31,7 @@ import com.pixelmed.slf4j.LoggerFactory;
 public class EncapsulatedInputStream extends InputStream {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/EncapsulatedInputStream.java,v 1.38 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/EncapsulatedInputStream.java,v 1.39 2026/10/11 19:42:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(EncapsulatedInputStream.class);
 
@@ -47,6 +47,8 @@ public class EncapsulatedInputStream extends InputStream {
 	private byte buffer[];			// just for read() one byte method
 	/***/
 	private boolean firstTime;
+	/***/
+	private int basicOffsetTable[];	// (001495)
 	/***/
 	private byte fragment[];
 	/***/
@@ -70,6 +72,12 @@ public class EncapsulatedInputStream extends InputStream {
 
 	private List<Long> listOfByteOffsetsOfItemsForCurrentFrame = new ArrayList<Long>();
 	private List<Long> listOfItemLengthsForCurrentFrame = new ArrayList<Long>();
+	
+	// (001495)
+	public int[] getBasicOffsetTable() {
+		slf4jlogger.debug("getBasicOffsetTable(): {} 32 bit words",(basicOffsetTable == null ? 0 : basicOffsetTable.length));
+		return basicOffsetTable;
+	}
 	
 	public long[] getByteOffsetsOfItemsForCurrentFrame(long startOfPixelData) {
 		long[] byteOffsetsOfItemsForCurrentFrame = new long[listOfByteOffsetsOfItemsForCurrentFrame.size()];
@@ -166,6 +174,7 @@ public class EncapsulatedInputStream extends InputStream {
 		buffer=new byte[8];
 		fragment=null;
 		firstTime=true;
+		basicOffsetTable=null;
 		sequenceDelimiterEncountered=false;
 		endOfFrameEncountered=false;
 	}
@@ -219,7 +228,7 @@ public class EncapsulatedInputStream extends InputStream {
 	public final void readUnsigned16(short[] w,int offset,int len) throws IOException {
 		int blen = len*2;
 		byte  b[] = new byte[blen];
-		read(b,0,blen);				// read the bytes from the fragment(s)
+		i.readInsistently(b,0,blen);				// read the bytes from the fragment(s)
 		bytesRead+=blen;
 		int bcount=0;
 		int wcount=0;
@@ -262,7 +271,7 @@ public class EncapsulatedInputStream extends InputStream {
 	public final void readUnsigned32LittleEndian(long[] w,int offset,int len) throws IOException {
 		int blen = len*4;
 		byte  b[] = new byte[blen];
-		read(b,0,blen);				// read the bytes from the fragment(s)
+		i.readInsistently(b,0,blen);				// read the bytes from the fragment(s)
 		bytesRead+=blen;
 		int bcount=0;
 		int wcount=0;
@@ -273,6 +282,32 @@ public class EncapsulatedInputStream extends InputStream {
 				long v3 =  ((long)b[bcount++])&0xff;
 				long v4 =  ((long)b[bcount++])&0xff;
 				w[offset+wcount]=(((((v4 << 8) | v3) << 8) | v2) << 8) | v1;
+			}
+		}
+	}
+	
+	/**
+	 * <p>Read an array of unsigned integer 32 bit values little endian regardless of endianness of stream.</p>
+	 *
+	 * @param	w			an array of sufficient size in which to return the values read
+	 * @param	offset		the offset in the array at which to begin storing values
+	 * @param	len			the number of 32 bit values to read
+	 * @throws	IOException		if an I/O error occurs
+	 */
+	public final void readUnsigned32LittleEndianAsInt(int[] w,int offset,int len) throws IOException {
+		int blen = len*4;
+		byte  b[] = new byte[blen];
+		i.readInsistently(b,0,blen);				// read the bytes from the fragment(s)
+		bytesRead+=blen;
+		int bcount=0;
+		int wcount=0;
+		{
+			for (;wcount<len;++wcount) {
+				long v1 =  ((long)b[bcount++])&0xff;
+				long v2 =  ((long)b[bcount++])&0xff;
+				long v3 =  ((long)b[bcount++])&0xff;
+				long v4 =  ((long)b[bcount++])&0xff;
+				w[offset+wcount]=(int)((((((v4 << 8) | v3) << 8) | v2) << 8) | v1);
 			}
 		}
 	}
@@ -355,9 +390,22 @@ public class EncapsulatedInputStream extends InputStream {
 					if (sequenceDelimiterEncountered) {
 						throw new IOException("Expected offset table item tag; got sequence delimiter");
 					}
-					slf4jlogger.debug("read() skipping offsetTableLength={}",offsetTableLength);
-					i.skipInsistently(offsetTableLength);
-					bytesRead+=offsetTableLength;
+					if (offsetTableLength == 0) {
+						slf4jlogger.debug("read() no Basic Offset Table present");
+						basicOffsetTable = null;
+					}
+					else if (offsetTableLength <= Integer.MAX_VALUE && offsetTableLength%4 == 0) {	// (001495)
+						int offsetTableLengthWords = (int)(offsetTableLength/4);
+						slf4jlogger.debug("read() reading Basic Offset Table of length={} bytes ({} 32 bit words)",offsetTableLength,offsetTableLengthWords);
+						basicOffsetTable = new int[offsetTableLengthWords];
+						readUnsigned32LittleEndianAsInt(basicOffsetTable,0,offsetTableLengthWords);
+					}
+					else {
+						slf4jlogger.warn("read() skipping offsetTableLength that is too long(={} bytes) or not a multiple of 4",offsetTableLength);
+						basicOffsetTable = null;
+						i.skipInsistently(offsetTableLength);
+						bytesRead+=offsetTableLength;
+					}
 					firstTime=false;
 				}
 				// load a new fragment ...

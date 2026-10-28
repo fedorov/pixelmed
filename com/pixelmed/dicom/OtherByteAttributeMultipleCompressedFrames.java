@@ -24,7 +24,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 public class OtherByteAttributeMultipleCompressedFrames extends Attribute implements ByteFrameSource, BasicOffsetTableAccessor {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeMultipleCompressedFrames.java,v 1.24 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeMultipleCompressedFrames.java,v 1.25 2026/10/11 19:42:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(OtherByteAttributeMultipleCompressedFrames.class);
 	
@@ -48,6 +48,8 @@ public class OtherByteAttributeMultipleCompressedFrames extends Attribute implem
 	 *
 	 * <p>The VL is not required, since it is undefined by definition.</p>
 	 *
+	 * <p>No Basic Offset Table is present.</p>
+	 *
 	 * @param	t			the tag of the attribute
 	 * @param	allframes	the frames
 	 */
@@ -58,12 +60,35 @@ public class OtherByteAttributeMultipleCompressedFrames extends Attribute implem
 		this.files = null;
 		valueLength=0xffffffffl;
 		valueMultiplicity=1;
+		basicOffsetTable=null;
+	}
+
+	// (001495)
+	/**
+	 * <p>Construct an attribute from a single byte array containing all compressed frames.</p>
+	 *
+	 * <p>The VL is not required, since it is undefined by definition.</p>
+	 *
+	 * @param	t			the tag of the attribute
+	 * @param	allframes	the frames
+	 * @param	basicOffsetTable	the Basic Offset Table (may be null)
+	 */
+	public OtherByteAttributeMultipleCompressedFrames(AttributeTag t,byte[] allframes,int[] basicOffsetTable) {
+		super(t);
+		this.allframes = allframes;
+		this.frames = null;
+		this.files = null;
+		valueLength=0xffffffffl;
+		valueMultiplicity=1;
+		this.basicOffsetTable=basicOffsetTable;
 	}
 
 	/**
 	 * <p>Construct an attribute from a set of compressed frames.</p>
 	 *
 	 * <p>The VL is not required, since it is undefined by definition.</p>
+	 *
+	 * <p>No Basic Offset Table is present.</p>
 	 *
 	 * @param	t			the tag of the attribute
 	 * @param	frames		the frames
@@ -75,12 +100,35 @@ public class OtherByteAttributeMultipleCompressedFrames extends Attribute implem
 		this.files = null;
 		valueLength=0xffffffffl;
 		valueMultiplicity=1;
+		basicOffsetTable=null;
+	}
+
+	// (001495)
+	/**
+	 * <p>Construct an attribute from a set of compressed frames.</p>
+	 *
+	 * <p>The VL is not required, since it is undefined by definition.</p>
+	 *
+	 * @param	t			the tag of the attribute
+	 * @param	frames		the frames
+	 * @param	basicOffsetTable	the Basic Offset Table (may be null)
+	 */
+	public OtherByteAttributeMultipleCompressedFrames(AttributeTag t,byte[][] frames,int[] basicOffsetTable) {
+		super(t);
+		this.allframes = null;
+		this.frames = frames;
+		this.files = null;
+		valueLength=0xffffffffl;
+		valueMultiplicity=1;
+		this.basicOffsetTable=basicOffsetTable;
 	}
 
 	/**
 	 * <p>Construct an attribute from a set of compressed frames.</p>
 	 *
 	 * <p>The VL is not required, since it is undefined by definition.</p>
+	 *
+	 * <p>No Basic Offset Table is present.</p>
 	 *
 	 * @param	t		the tag of the attribute
 	 * @param	files	the files containing the compressed bit streams
@@ -92,6 +140,27 @@ public class OtherByteAttributeMultipleCompressedFrames extends Attribute implem
 		this.files = files;
 		valueLength=0xffffffffl;
 		valueMultiplicity=1;
+		basicOffsetTable=null;
+	}
+
+	// (001495)
+	/**
+	 * <p>Construct an attribute from a set of compressed frames.</p>
+	 *
+	 * <p>The VL is not required, since it is undefined by definition.</p>
+	 *
+	 * @param	t		the tag of the attribute
+	 * @param	files	the files containing the compressed bit streams
+	 * @param	basicOffsetTable	the Basic Offset Table (may be null)
+	 */
+	public OtherByteAttributeMultipleCompressedFrames(AttributeTag t,File[] files,int[] basicOffsetTable) {
+		super(t);
+		this.allframes = null;
+		this.frames = null;
+		this.files = files;
+		valueLength=0xffffffffl;
+		valueMultiplicity=1;
+		this.basicOffsetTable=basicOffsetTable;
 	}
 	
 	protected static final AttributeTag itemTag = TagFromName.Item;
@@ -118,9 +187,11 @@ public class OtherByteAttributeMultipleCompressedFrames extends Attribute implem
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		if (basicOffsetTable == null) {
+			slf4jlogger.debug("write(): empty Basic Offset Table");
 			writeItemTag(o,0);	// empty basic offset table
 		}
 		else {
+			slf4jlogger.debug("write(): Basic Offset Table {} 32 bit words",basicOffsetTable.length);
 			writeItemTag(o,basicOffsetTable.length*4);
 			for (int f=0; f<basicOffsetTable.length; ++f) {
 				o.writeUnsigned32(basicOffsetTable[f]);
