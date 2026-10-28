@@ -22,7 +22,7 @@ import java.util.Set;
  * @author	dclunie
  */
 public abstract class SOPClass {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.108 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClass.java,v 1.109 2026/10/06 22:48:43 dclunie Exp $";
 
 	/***/
 	public static final String Verification = "1.2.840.10008.1.1";
@@ -1133,6 +1133,8 @@ public abstract class SOPClass {
 	public static final String IntraocularLensCalculationsStorage = "1.2.840.10008.5.1.4.1.1.78.8";
 	/***/
 	public static final String OphthalmicVisualFieldStaticPerimetryMeasurementsStorage = "1.2.840.10008.5.1.4.1.1.80.1";
+	/***/
+	public static final String MicroscopyBulkSimpleAnnotationsStorage = "1.2.840.10008.5.1.4.1.1.91.1";
 	
 	/**
 	 * @param	sopClassUID	UID of the SOP Class, as a String without trailing zero padding
@@ -1167,6 +1169,7 @@ public abstract class SOPClass {
 			|| sopClassUID.equals(SurfaceScanPointCloudStorage)
 			|| sopClassUID.equals(BasicStructuredDisplayStorage)
 			|| sopClassUID.equals(OphthalmicVisualFieldStaticPerimetryMeasurementsStorage)
+			|| sopClassUID.equals(MicroscopyBulkSimpleAnnotationsStorage)
 		);
 	}	
 
@@ -1884,6 +1887,12 @@ public abstract class SOPClass {
 			"CM",
 			new String[] {
 				CornealTopographyMapStorage
+			});
+
+		plausibleStandardSOPClassUIDsForModality.put(
+			"ANN",
+			new String[] {
+				MicroscopyBulkSimpleAnnotationsStorage
 			});
 
 		plausibleStandardSOPClassUIDsForModality.put(

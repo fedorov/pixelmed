@@ -1629,11 +1629,31 @@ testbigtiffjpegtodicommfaddtiffthenreaddtiffbasicoffsettable:	testbigtiffjpegtod
 	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm
 	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} \
 		-Djava.awt.headless=true \
-		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=debug \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.AttributeList=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.EncapsulatedInputStream=info \
 		com.pixelmed.convert.AddTIFFOrOffsetTables \
 		/tmp/WSI_MultiFrame/img_0.dcm \
 		/tmp/WSI_MultiFrame_TIFFagain.dcm \
 		ADDTIFF ADDBASICOFFSETTABLE
+	#echo comparing
+	cmp /tmp/WSI_MultiFrame/img_0.dcm /tmp/WSI_MultiFrame_TIFFagain.dcm
+	#echo comparison done
+	#rm /tmp/WSI_MultiFrame_TIFFagain.dcm
+
+testbigtiffjpegtodicommfaddtiffleavebasicoffsettablealone:	testbigtiffjpegtodicommfaddtiffbasicoffsettable
+	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm
+	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} \
+		-Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.AttributeList=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.EncapsulatedInputStream=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.OtherByteAttributeMultipleCompressedFrames=info \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.dicom.OtherByteAttributeCompressedSeparateFramesOnDisk=info \
+		com.pixelmed.convert.AddTIFFOrOffsetTables \
+		/tmp/WSI_MultiFrame/img_0.dcm \
+		/tmp/WSI_MultiFrame_TIFFagain.dcm \
+		ADDTIFF
 	#echo comparing
 	cmp /tmp/WSI_MultiFrame/img_0.dcm /tmp/WSI_MultiFrame_TIFFagain.dcm
 	#echo comparison done
@@ -1652,6 +1672,44 @@ testbigtiffjpegtodicommfaddtiffthenreaddtiffextendedoffsettable:	testbigtiffjpeg
 	cmp /tmp/WSI_MultiFrame/img_0.dcm /tmp/WSI_MultiFrame_TIFFagain.dcm
 	#echo comparison done
 	#rm /tmp/WSI_MultiFrame_TIFFagain.dcm
+
+testbigtiffjpegtodicommfaddtiffleaveextendedoffsettablealone:	testbigtiffjpegtodicommfaddtiffextendedoffsettable
+	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm
+	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} \
+		-Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=debug \
+		com.pixelmed.convert.AddTIFFOrOffsetTables \
+		/tmp/WSI_MultiFrame/img_0.dcm \
+		/tmp/WSI_MultiFrame_TIFFagain.dcm \
+		ADDTIFF
+	#echo comparing
+	cmp /tmp/WSI_MultiFrame/img_0.dcm /tmp/WSI_MultiFrame_TIFFagain.dcm
+	#echo comparison done
+	#rm /tmp/WSI_MultiFrame_TIFFagain.dcm
+
+testbigtiffjpegtodicommfaddtiffleaveextendedoffsettablealoneaddbasic:	testbigtiffjpegtodicommfaddtiffextendedoffsettable
+	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm
+	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} \
+		-Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=debug \
+		com.pixelmed.convert.AddTIFFOrOffsetTables \
+		/tmp/WSI_MultiFrame/img_0.dcm \
+		/tmp/WSI_MultiFrame_TIFFagain.dcm \
+		ADDTIFF ADDBASICOFFSETTABLE
+	#expect warning about both BOT and EOT
+	#output will be different so do not try to compare
+
+testbigtiffjpegtodicommfaddtiffleavebasicoffsettablealoneaddextended:	testbigtiffjpegtodicommfaddtiffbasicoffsettable
+	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm
+	java -cp ${PATHTOROOT}:${JIIOADDITIONALJARS}:${JSONADDITIONALJAR} \
+		-Djava.awt.headless=true \
+		-Dorg.slf4j.simpleLogger.log.com.pixelmed.convert.AddTIFFOrOffsetTables=debug \
+		com.pixelmed.convert.AddTIFFOrOffsetTables \
+		/tmp/WSI_MultiFrame/img_0.dcm \
+		/tmp/WSI_MultiFrame_TIFFagain.dcm \
+		ADDTIFF ADDEXTENDEDOFFSETTABLE
+	#expect warning about both BOT and EOT
+	#output will be different so do not try to compare
 
 testbigtiffjpegtodicommfaddtiffthenreaddtiffbasicandextendedoffsettable:	testbigtiffjpegtodicommfaddtiffbasicandextendedoffsettable
 	rm -rf /tmp/WSI_MultiFrame_TIFFagain.dcm

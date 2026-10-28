@@ -24,7 +24,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class OtherByteAttributeCompressedSeparateFramesOnDisk extends OtherAttributeOnDisk implements ByteFrameSource, BasicOffsetTableAccessor {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeCompressedSeparateFramesOnDisk.java,v 1.18 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/OtherByteAttributeCompressedSeparateFramesOnDisk.java,v 1.19 2026/10/11 19:42:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(OtherByteAttributeCompressedSeparateFramesOnDisk.class);
 	
@@ -45,6 +45,8 @@ public class OtherByteAttributeCompressedSeparateFramesOnDisk extends OtherAttri
 	/**
 	 * <p>Create an attribute from a file that contains the compressed frames.</p>
 	 *
+	 * <p>No Basic Offset Table is present.</p>
+	 *
 	 * @param	t						the tag of the attribute
 	 * @param	file					the file
 	 * @param	frameItemByteOffsets	the byte offsets in the input stream of the start of the data for each item of each frame
@@ -58,10 +60,34 @@ public class OtherByteAttributeCompressedSeparateFramesOnDisk extends OtherAttri
 		valueLength = 0xffffffffl;
 		this.frameItemByteOffsets = frameItemByteOffsets;
 		this.frameItemLengths = frameItemLengths;
+		basicOffsetTable=null;
+	}
+
+	// (001495)
+	/**
+	 * <p>Create an attribute from a file that contains the compressed frames.</p>
+	 *
+	 * @param	t						the tag of the attribute
+	 * @param	file					the file
+	 * @param	frameItemByteOffsets	the byte offsets in the input stream of the start of the data for each item of each frame
+	 * @param	frameItemLengths		the lengths in bytes of each item of each frame, with any trailing padding after EOI marker removed (i.e., may be odd)
+	 * @param	basicOffsetTable		the Basic Offset Table (may be null)
+	 * @param	deleteFilesWhenNoLongerNeeded		delete file when attribute goes out of scope
+	 * @throws	IOException
+	 * @throws	DicomException
+	 */
+	public OtherByteAttributeCompressedSeparateFramesOnDisk(AttributeTag t,File file,long[][] frameItemByteOffsets,long[][] frameItemLengths,int[] basicOffsetTable,boolean deleteFilesWhenNoLongerNeeded) throws IOException, DicomException {
+		super(t,file,deleteFilesWhenNoLongerNeeded);
+		valueLength = 0xffffffffl;
+		this.frameItemByteOffsets = frameItemByteOffsets;
+		this.frameItemLengths = frameItemLengths;
+		this.basicOffsetTable=basicOffsetTable;
 	}
 
 	/**
 	 * <p>Create an attribute from an input stream from which the encapsulated items have already been read.</p>
+	 *
+	 * <p>No Basic Offset Table is present.</p>
 	 *
 	 * @param	t						the tag of the attribute
 	 * @param	i						the input stream
@@ -75,6 +101,27 @@ public class OtherByteAttributeCompressedSeparateFramesOnDisk extends OtherAttri
 		valueLength = 0xffffffffl;
 		this.frameItemByteOffsets = frameItemByteOffsets;
 		this.frameItemLengths = frameItemLengths;
+		basicOffsetTable=null;
+	}
+
+	// (001495)
+	/**
+	 * <p>Create an attribute from an input stream from which the encapsulated items have already been read.</p>
+	 *
+	 * @param	t						the tag of the attribute
+	 * @param	i						the input stream
+	 * @param	frameItemByteOffsets	the byte offsets in the input stream of the start of the data for each item of each frame
+	 * @param	frameItemLengths		the lengths in bytes of each item of each frame
+	 * @param	basicOffsetTable	the Basic Offset Table (may be null)
+	 * @throws	IOException
+	 * @throws	DicomException
+	 */
+	public OtherByteAttributeCompressedSeparateFramesOnDisk(AttributeTag t,DicomInputStream i,long[][] frameItemByteOffsets,long[][] frameItemLengths,int[] basicOffsetTable) throws IOException, DicomException {
+		super(t,0/*vl: don't skip anything ... already read*/,i,frameItemByteOffsets[0][0]);
+		valueLength = 0xffffffffl;
+		this.frameItemByteOffsets = frameItemByteOffsets;
+		this.frameItemLengths = frameItemLengths;
+		this.basicOffsetTable=basicOffsetTable;
 	}
 
 	/***/
@@ -108,9 +155,11 @@ public class OtherByteAttributeCompressedSeparateFramesOnDisk extends OtherAttri
 	public void write(DicomOutputStream o) throws DicomException, IOException {
 		writeBase(o);
 		if (basicOffsetTable == null) {
+			slf4jlogger.debug("write(): empty Basic Offset Table");
 			writeItemTag(o,0);	// empty basic offset table
 		}
 		else {
+			slf4jlogger.debug("write(): Basic Offset Table {} 32 bit words",basicOffsetTable.length);
 			writeItemTag(o,basicOffsetTable.length*4);
 			for (int f=0; f<basicOffsetTable.length; ++f) {
 				o.writeUnsigned32(basicOffsetTable[f]);

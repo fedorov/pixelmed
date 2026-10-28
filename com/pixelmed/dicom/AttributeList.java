@@ -170,7 +170,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	dclunie
  */
 public class AttributeList extends TreeMap<AttributeTag,Attribute> {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeList.java,v 1.215 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/AttributeList.java,v 1.217 2026/10/11 19:42:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(AttributeList.class);
 
@@ -717,7 +717,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 					extractCompressedPixelDataCharacteristics(ts);
 					boolean doneReadingEncapsulatedData = false;
 					// when constructing EncapsulatedInputStream, take care whether or not to enable JPEG EOI detection to allow fragment spanning, and if not, whether to use one fragment per frame or all fragments in one frame
-					EncapsulatedInputStream ei = new EncapsulatedInputStream(i,isJPEGFamily,isRLE);
+					EncapsulatedInputStream ei = new EncapsulatedInputStream(i,isJPEGFamily,isRLE|isJPEGXLFamily);
 					if (decompressPixelData) {
 						slf4jlogger.debug("read(): decompress Pixel Data");
 						if (tsuid.equals(TransferSyntax.PixelMedEncapsulatedRawLittleEndian)) {
@@ -1142,7 +1142,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 									System.err.println("Error: Incorrectly terminated encapsulated pixel data - ignoring and creating PixelData anyway - "+e);
 								}
 								if (isGood) {	// (001135)
-									a = new OtherByteAttributeMultipleCompressedFrames(tag,frameArray);
+									a = new OtherByteAttributeMultipleCompressedFrames(tag,frameArray,ei.getBasicOffsetTable());	// (001495)
 								}
 							}
 							else {	// all frames are in one fragment (e.g., MPEG)
@@ -1177,12 +1177,13 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 								else {
 									throw new DicomException("Premature end of encapsulated PixelData - no data for frames");
 								}
-								a = new OtherByteAttributeMultipleCompressedFrames(tag,frame);
+								a = new OtherByteAttributeMultipleCompressedFrames(tag,frame,ei.getBasicOffsetTable());// (001495)
 							}
 						}
 						else {
 							slf4jlogger.debug("read(): leave all compressed frames on disk");
 							if (ei.framesAreSeparated()) {
+								slf4jlogger.debug("read(): framesAreSeparated");
 								long[][] frameItemByteOffsets = new long[frames][];
 								long[][]     frameItemLengths = new long[frames][];
 								for (int f=0; f<frames; ++f) {
@@ -1209,7 +1210,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 								catch (IOException e) {
 									System.err.println("Error: Incorrectly terminated encapsulated pixel data - ignoring and creating PixelData anyway - "+e);
 								}
-								a = new OtherByteAttributeCompressedSeparateFramesOnDisk(tag,i,frameItemByteOffsets,frameItemLengths);
+								a = new OtherByteAttributeCompressedSeparateFramesOnDisk(tag,i,frameItemByteOffsets,frameItemLengths,ei.getBasicOffsetTable());	// (001495)
 							}
 							else {
 								throw new DicomException("Internal error: should not get here since supposed to have checked earlier and left in memory");
@@ -2692,6 +2693,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	private boolean colorSpaceWillBeConvertedToRGBDuringDecompression = false;
 
 	private boolean isJPEGFamily = false;
+	private boolean isJPEGXLFamily = false;
 	private boolean isRLE = false;
 	
 	private String readerWanted = null;
@@ -2700,6 +2702,7 @@ public class AttributeList extends TreeMap<AttributeTag,Attribute> {
 	private void extractCompressedPixelDataCharacteristics(TransferSyntax ts) {
 		String tsuid = ts.getUID();
 		isJPEGFamily = ts.isJPEGFamily();
+		isJPEGXLFamily = ts.isJPEGXLFamily();
 		isRLE = tsuid.equals(TransferSyntax.RLE);
 
 		colorSpaceWasConvertedToRGBDuringDecompression = false;

@@ -13,16 +13,18 @@ import java.io.File;
  *
  * <p>This is not a good strategy, since there may still be too many files within folders, since UID roots have significant commonality.</p>
  *
- * @author	dclunie, jimirrer
+ * @author	dclunie
+ * @author	jimirrer
  */
 		
 public class StoredFilePathStrategyComponentFolders extends StoredFilePathStrategy {
 	
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategyComponentFolders.java,v 1.13 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategyComponentFolders.java,v 1.14 2026/10/28 13:28:11 dclunie Exp $";
 
 	public StoredFilePathStrategyComponentFolders() {}
 
 	public String makeStoredFilePath(String sopInstanceUID) {
+		sopInstanceUID = makeAlternativeIfNotSuitableSOPInstanceUID(sopInstanceUID);
 		// do this in reverse order, to maximize spread across sub-folders for the same manufacturer UID root
 		String suffix = null;
 		StringBuffer buf = new StringBuffer();

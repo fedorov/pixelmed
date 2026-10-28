@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class UniqueIdentifierAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.32 2026/06/29 21:23:30 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/UniqueIdentifierAttribute.java,v 1.33 2026/10/28 13:28:12 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 64;
 	
@@ -152,8 +152,35 @@ public class UniqueIdentifierAttribute extends StringAttribute {
 	
 	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == '.');
+	}
+	
+	public boolean isValueWellFormed(String v) {
+//System.err.println("UniqueIdentifierAttribute.isValueWellFormed(): \""+v+"\"");
+		boolean good = true;
+		if (v != null && v.length() > 0) {
+			// does not currently check for invalid roots ... probably too strict for use case :(
+			if (v.length() > 64) {
+				good = false;
+			}
+			else {
+				int lastChar = -1;
+				for (int j=0; j<v.length(); ++j) {
+					int c = v.codePointAt(j);
+					if (c == '.') {
+						if (!Character.isDigit(lastChar)) {		// period can only be separator after digits
+							good = false;
+							break;
+						}
+					}
+					// does not currently check for leading zeroes in numeric components ... probably too strict for use case :(
+					lastChar = c;
+				}
+			}
+		}
+//System.err.println("UniqueIdentifierAttribute.isValueWellFormed(): "+good);
+		return good;
 	}
 	
 	public boolean repairValues() throws DicomException {

@@ -2,6 +2,9 @@
 
 package com.pixelmed.dicom;
 
+import com.pixelmed.utils.FileUtilities;
+import com.pixelmed.utils.UUIDBasedOID;
+
 import java.io.File;
 
 import com.pixelmed.slf4j.Logger;
@@ -21,7 +24,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  * @author	jimirrer
  */
 public abstract class StoredFilePathStrategy {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategy.java,v 1.14 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StoredFilePathStrategy.java,v 1.15 2026/10/28 13:28:11 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(StoredFilePathStrategy.class);
 
@@ -50,6 +53,8 @@ public abstract class StoredFilePathStrategy {
 	 */
 	public static final StoredFilePathStrategy BYSOPINSTANCEUIDHASHSUBFOLDERS = new StoredFilePathStrategyHashSubFolders();
 	
+	private static final UniqueIdentifierAttribute chk = new UniqueIdentifierAttribute(TagFromName.SOPClassUID);
+	
 	/**
 	 * <p>Get the default strategy.</p>
 	 * @return		the default strategy (which is BYSOPINSTANCEUIDINSINGLEFOLDER)
@@ -57,7 +62,24 @@ public abstract class StoredFilePathStrategy {
 	public static final StoredFilePathStrategy getDefaultStrategy() { return BYSOPINSTANCEUIDINSINGLEFOLDER; }
 
 	/**
+	 * <p>If the SOP Instance UID is not suitable (not well formed) generate and alterative to use in its place</p>
+	 *
+	 * @param	sopInstanceUID			the SOP Instance UID of the instance to be used
+	 * @return							the SOP Instance UID if well formed else an alternative
+	 */
+	public String makeAlternativeIfNotSuitableSOPInstanceUID(String sopInstanceUID) {
+		String use = sopInstanceUID;
+		if (sopInstanceUID == null || sopInstanceUID.length() == 0 || !chk.isValueWellFormed(sopInstanceUID)) {
+			use = new UUIDBasedOID().getOID();
+			slf4jlogger.error("Invalid SOPInstaceUID value for stored file path \"{}\" - generated \"{}\" alternative instead",sopInstanceUID,use);
+		}
+		return use;
+	}
+
+	/**
 	 * <p>Generate a path to where to store a file based on its SOP Instance UID.</p>
+	 *
+	 * <p>Sub-classes should always check SOP Instance UID using makeAlternativeIfNotSuitableSOPInstanceUID().</p>
 	 *
 	 * @param	sopInstanceUID			the SOP Instance UID of the instance to be saved
 	 * @return							the path to the file, which may contain nested sub-folders
@@ -88,8 +110,13 @@ public abstract class StoredFilePathStrategy {
 	 * @return							the path to the file in the specified folder and alternate sub-folder
 	 */
 	public File makeAlternativeStoredFilePath(File savedInstancesFolder,String alternativeSubfolder,String sopInstanceUID) {
+		File alternativeSubfolderFile = new File(savedInstancesFolder,alternativeSubfolder);
+		if (!FileUtilities.fileIsWithinPath(alternativeSubfolderFile,savedInstancesFolder)) {	// does not have to exist yet for check to succeed
+			throw new IllegalArgumentException("Alternative subfolder \""+alternativeSubfolder+"\"is not nested within specified directory\""+savedInstancesFolder+"\"");
+		}
+		// the sopInstanceUID impact will be checked later by makeStoredFilePath()
 		// use the BYSOPINSTANCEUIDINSINGLEFOLDER strategy but within the alternativeSubfolder - cannot fail, but may impact performance if happens a lot due to too many files in one folder
-		return StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER.makeStoredFilePath(new File(savedInstancesFolder,alternativeSubfolder),sopInstanceUID);
+		return StoredFilePathStrategy.BYSOPINSTANCEUIDINSINGLEFOLDER.makeStoredFilePath(alternativeSubfolderFile,sopInstanceUID);
 	}
 
 	/**
@@ -105,6 +132,9 @@ public abstract class StoredFilePathStrategy {
 	 */
 	public File makeReliableStoredFilePathWithFoldersCreated(File savedInstancesFolder,String alternativeSubfolder,String sopInstanceUID) {
 		File storedFile = makeStoredFilePath(savedInstancesFolder,sopInstanceUID);
+		if (!FileUtilities.fileIsWithinPath(storedFile,savedInstancesFolder)) {
+			throw new IllegalArgumentException("File to be stored \""+storedFile+"\"is not within specified directory\""+savedInstancesFolder+"\"");
+		}
 		if (storedFile.exists()) {
 			if (storedFile.isFile()) {
 				slf4jlogger.debug("makeReliableStoredFilePathWithFoldersCreated(): Deleting pre-existing file for same SOPInstanceUID");
@@ -162,15 +192,35 @@ public abstract class StoredFilePathStrategy {
 		slf4jlogger.warn("setDebugLevel(): Debug level ignored");
 	}
 	
+	// expand these tests rather than factoring them out into com.pixelmed.tests because jimirrer probably still uses them :(
+	
 	protected void test(String arg[]) {
 		System.err.println(this);
-		String testUIDs[] = { "1.2.3.4.5", "123.456.789", "123", "123.456", "5", ".1..2...3..." };
+		String testUIDs[] = { "1.2.3.4.5", "123.456.789", "123", "123.456", "5", ".1..2...3...", "../../1" };
 		if (arg.length != 0) {
 		    testUIDs = arg;
 		}
 		File dir = new File("savedInstancesHome");
+		String goodalt = "alternateSub";
+		String badalt = "../../alternateSub";
 		for (int tu = 0; tu < testUIDs.length; tu++) {
 			System.err.println("uid: " + testUIDs[tu] + "   file path: " + makeStoredFilePath(dir,testUIDs[tu]));
+			
+			try {
+				System.err.println("uid: " + testUIDs[tu] + "   file path: " + makeReliableStoredFilePathWithFoldersCreated(dir,goodalt,testUIDs[tu]));
+			}
+			catch (IllegalArgumentException e) {
+				System.err.println(e);
+			}
+			
+			System.err.println("uid: " + testUIDs[tu] + "   file path: " + makeAlternativeStoredFilePath(dir,goodalt,testUIDs[tu]));
+			
+			try {
+				System.err.println("uid: " + testUIDs[tu] + "   file path: " + makeAlternativeStoredFilePath(dir,badalt,testUIDs[tu]));
+			}
+			catch (IllegalArgumentException e) {
+				System.err.println(e);
+			}
 		}
 	}
 }

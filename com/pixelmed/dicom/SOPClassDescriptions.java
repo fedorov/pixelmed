@@ -11,7 +11,7 @@ import java.util.HashMap;
  * @author	dclunie
  */
 public class SOPClassDescriptions {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.73 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/SOPClassDescriptions.java,v 1.74 2026/10/06 22:48:43 dclunie Exp $";
 	
 	private static SOPClassDescriptions ourself = new SOPClassDescriptions();
 	
@@ -257,6 +257,8 @@ public class SOPClassDescriptions {
 		abbreviationsByUID.put(SOPClass.CornealTopographyMapStorage,"CM");
 		
 		abbreviationsByUID.put(SOPClass.ColorPaletteStorage,"PAL");
+		
+		abbreviationsByUID.put(SOPClass.MicroscopyBulkSimpleAnnotationsStorage,"ANN");
 
 		abbreviationsByUID.put(SOPClass.GenericImplantTemplateStorage,"Implant");
 		abbreviationsByUID.put(SOPClass.ImplantAssemblyTemplateStorage,"Implant(ASSY)");
@@ -543,6 +545,8 @@ public class SOPClassDescriptions {
 		descriptionsByUID.put(SOPClass.CornealTopographyMapStorage,"Corneal Topography Map Storage");
 
 		descriptionsByUID.put(SOPClass.ColorPaletteStorage,"Color Palette Storage");
+
+		descriptionsByUID.put(SOPClass.MicroscopyBulkSimpleAnnotationsStorage,"Microscopy Bulk Simple Annotations Storage");
 
 		descriptionsByUID.put(SOPClass.GenericImplantTemplateStorage,"Generic Implant Template Storage");
 		descriptionsByUID.put(SOPClass.ImplantAssemblyTemplateStorage,"Implant Assembly Template Storage");
@@ -844,6 +848,8 @@ public class SOPClassDescriptions {
 
 		keywordsByUID.put(SOPClass.ColorPaletteStorage,"ColorPaletteStorage");
 
+		keywordsByUID.put(SOPClass.MicroscopyBulkSimpleAnnotationsStorage,"MicroscopyBulkSimpleAnnotationsStorage");
+
 		keywordsByUID.put(SOPClass.GenericImplantTemplateStorage,"GenericImplantTemplateStorage");
 		keywordsByUID.put(SOPClass.ImplantAssemblyTemplateStorage,"ImplantAssemblyTemplateStorage");
 		keywordsByUID.put(SOPClass.ImplantTemplateGroupStorage,"ImplantTemplateGroupStorage");
@@ -1058,6 +1064,8 @@ public class SOPClassDescriptions {
 		uidsByKeyword.put("CornealTopographyMapStorage",SOPClass.CornealTopographyMapStorage);
 
 		uidsByKeyword.put("ColorPaletteStorage",SOPClass.ColorPaletteStorage);
+
+		uidsByKeyword.put("MicroscopyBulkSimpleAnnotationsStorage",SOPClass.MicroscopyBulkSimpleAnnotationsStorage);
 
 		uidsByKeyword.put("GenericImplantTemplateStorage",SOPClass.GenericImplantTemplateStorage);
 		uidsByKeyword.put("ImplantAssemblyTemplateStorage",SOPClass.ImplantAssemblyTemplateStorage);

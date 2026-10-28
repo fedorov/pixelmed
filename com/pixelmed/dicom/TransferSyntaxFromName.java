@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class TransferSyntaxFromName {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntaxFromName.java,v 1.17 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/TransferSyntaxFromName.java,v 1.18 2026/09/23 22:46:00 dclunie Exp $";
 	
 	static protected Map<String,String> uidByKeyword = new HashMap<String,String>();
 
@@ -37,6 +37,9 @@ public class TransferSyntaxFromName {
 		uidByKeyword.put("MPEG4HP422D",TransferSyntax.MPEG4HP422D);
 		uidByKeyword.put("MPEG4HP423D",TransferSyntax.MPEG4HP423D);
 		uidByKeyword.put("MPEG4HP42ST",TransferSyntax.MPEG4HP42ST);
+		uidByKeyword.put("JPEGXLLossless",TransferSyntax.JPEGXLLossless);
+		uidByKeyword.put("JPEGXLJPEGRecompression",TransferSyntax.JPEGXLJPEGRecompression);
+		uidByKeyword.put("JPEGXL",TransferSyntax.JPEGXL);
 		uidByKeyword.put("RLE",TransferSyntax.RLE);
 		uidByKeyword.put("PixelMedBzip2ExplicitVRLittleEndian",TransferSyntax.PixelMedBzip2ExplicitVRLittleEndian);
 		uidByKeyword.put("PixelMedEncapsulatedRawLittleEndian",TransferSyntax.PixelMedEncapsulatedRawLittleEndian);
@@ -66,6 +69,9 @@ public class TransferSyntaxFromName {
 		keywordByUID.put(TransferSyntax.MPEG4HP422D,"MPEG4HP422D");
 		keywordByUID.put(TransferSyntax.MPEG4HP423D,"MPEG4HP423D");
 		keywordByUID.put(TransferSyntax.MPEG4HP42ST,"MPEG4HP42ST");
+		keywordByUID.put(TransferSyntax.JPEGXLLossless,"JPEGXLLossless");
+		keywordByUID.put(TransferSyntax.JPEGXLJPEGRecompression,"JPEGXLJPEGRecompression");
+		keywordByUID.put(TransferSyntax.JPEGXL,"JPEGXL");
 		keywordByUID.put(TransferSyntax.RLE,"RLE");
 		keywordByUID.put(TransferSyntax.PixelMedBzip2ExplicitVRLittleEndian,"PixelMedBzip2ExplicitVRLittleEndian");
 		keywordByUID.put(TransferSyntax.PixelMedEncapsulatedRawLittleEndian,"PixelMedEncapsulatedRawLittleEndian");

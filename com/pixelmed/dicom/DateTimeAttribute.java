@@ -21,7 +21,7 @@ import java.util.TimeZone;
  */
 public class DateTimeAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.31 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateTimeAttribute.java,v 1.32 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 26;	// assuming not being used for query range matching, in which case it would be 54 :(
 	
@@ -73,8 +73,18 @@ public class DateTimeAttribute extends StringAttribute {
 	
 	protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }
 	
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == ' ' || c == '+' || c =='-' || c == '.');
+	}
+
+	public boolean isValueWellFormed(String v) {
+		boolean good = true;
+		if (v != null && v.length() > 0) {
+			if (v.length() < 4) {		// YYYY must be present
+				good = false;
+			}
+		}
+		return good;
 	}
 	
 	// public boolean areValuesWellFormed() throws DicomException {}	// should implement this to check position of period and +/- :(

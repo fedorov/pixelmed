@@ -38,7 +38,7 @@ import com.pixelmed.slf4j.LoggerFactory;
  */
 
 public class AddTIFFOrOffsetTables {
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/AddTIFFOrOffsetTables.java,v 1.13 2026/07/20 08:02:05 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/convert/AddTIFFOrOffsetTables.java,v 1.14 2026/10/11 19:42:44 dclunie Exp $";
 
 	private static final Logger slf4jlogger = LoggerFactory.getLogger(AddTIFFOrOffsetTables.class);
 
@@ -81,7 +81,7 @@ public class AddTIFFOrOffsetTables {
 
 	private static final long UNSIGNED32_MAX_VALUE = 0xffffffffl;
 
-	private static long getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(long byteoffset,Attribute a,int numberOfFrames,int numberOfTiles,boolean encodeAsExplicit,boolean encodeAsLittleEndian,long[] tileDataByteOffsets,long[] tileDataLengths,boolean mergeSamplesPerPixelTiles,long samplesPerPixel,boolean addBasicOffsetTable) throws DicomException {
+	private static long getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(long byteoffset,Attribute a,int numberOfFrames,int numberOfTiles,boolean encodeAsExplicit,boolean encodeAsLittleEndian,long[] tileDataByteOffsets,long[] tileDataLengths,boolean mergeSamplesPerPixelTiles,long samplesPerPixel,boolean basicOffsetTablePresent) throws DicomException {
 		if (slf4jlogger.isDebugEnabled()) slf4jlogger.debug("0x{} ({} dec): {} {}",Long.toHexString(byteoffset),byteoffset,a.toString(),a.getClass());
 		long vl = a.getVL();
 		if (vl == 0xffffffffl) {
@@ -94,7 +94,7 @@ public class AddTIFFOrOffsetTables {
 				// simulate OtherByteAttributeMultipleCompressedFrames.write()
 				byteoffset += a.getLengthOfBaseOfEncodedAttribute(encodeAsExplicit,encodeAsLittleEndian);
 				byteoffset += 8;	// Item tag for basic offset table
-				if (addBasicOffsetTable) {
+				if (basicOffsetTablePresent) {
 					byteoffset += numberOfFrames * 4;
 				}
 				
@@ -144,7 +144,7 @@ public class AddTIFFOrOffsetTables {
 				OtherByteAttributeCompressedSeparateFramesOnDisk ob = (OtherByteAttributeCompressedSeparateFramesOnDisk)a;
 				byteoffset += a.getLengthOfBaseOfEncodedAttribute(encodeAsExplicit,encodeAsLittleEndian);
 				byteoffset += 8;	// Item tag for basic offset table
-				if (addBasicOffsetTable) {
+				if (basicOffsetTablePresent) {
 					byteoffset += numberOfFrames * 4;
 				}
 				
@@ -223,7 +223,7 @@ public class AddTIFFOrOffsetTables {
 	}
 	
 	// package private scope so that TIFFToDICOM can use it
-	static long getByteOffsetsAndLengthsOfTileDataFromStartOfFile(AttributeList list,String transferSyntaxUID,long[][] tileDataByteOffsets,long[][] tileDataLengths,long[] imageWidths,long[] imageLengths,boolean mergeSamplesPerPixelTiles,long samplesPerPixel,boolean addBasicOffsetTable) throws DicomException {
+	static long getByteOffsetsAndLengthsOfTileDataFromStartOfFile(AttributeList list,String transferSyntaxUID,long[][] tileDataByteOffsets,long[][] tileDataLengths,long[] imageWidths,long[] imageLengths,boolean mergeSamplesPerPixelTiles,long samplesPerPixel,boolean basicOffsetTablePresent) throws DicomException {
 		long byteoffset = 132;						// assume preamble and magic number, else no reason to call this method
 		boolean inDataSetPastMetaHeader = false;	// starting in metaheader
 		boolean encodeAsExplicit = true;			// always for metaheader
@@ -251,7 +251,7 @@ public class AddTIFFOrOffsetTables {
 				slf4jlogger.debug("getByteOffsetsAndLengthsOfTileDataFromStartOfFile(): numberOfTiles = {}",numberOfTiles);
 				tileDataByteOffsets[0] = new long[numberOfTiles];
 				tileDataLengths[0] = new long[numberOfTiles];
-				byteoffset = getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(byteoffset,a,numberOfFrames,numberOfTiles,encodeAsExplicit,encodeAsLittleEndian,tileDataByteOffsets[0],tileDataLengths[0],mergeSamplesPerPixelTiles,samplesPerPixel,addBasicOffsetTable);
+				byteoffset = getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(byteoffset,a,numberOfFrames,numberOfTiles,encodeAsExplicit,encodeAsLittleEndian,tileDataByteOffsets[0],tileDataLengths[0],mergeSamplesPerPixelTiles,samplesPerPixel,basicOffsetTablePresent);
 			}
 			else if (t.equals(pixelmedPrivatePyramidData)) {	// don't need to check creator since could not be here any other way
 				int pyramidLevel = 1;
@@ -281,7 +281,7 @@ public class AddTIFFOrOffsetTables {
 								slf4jlogger.debug("getByteOffsetsAndLengthsOfTileDataFromStartOfFile(): numberOfTiles = {}",numberOfTiles);
 								tileDataByteOffsets[pyramidLevel] = new long[numberOfTiles];
 								tileDataLengths[pyramidLevel] = new long[numberOfTiles];
-								byteoffset = getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(byteoffset,aa,numberOfFrames,numberOfTiles,encodeAsExplicit,encodeAsLittleEndian,tileDataByteOffsets[pyramidLevel],tileDataLengths[pyramidLevel],pyramidMergeSamplesPerPixelTiles,pyramidSamplesPerPixel,false/*addBasicOffsetTable*/);	// not adding BOT for private pyramid pixel data
+								byteoffset = getByteOffsetsAndLengthsOfTileDataFromStartOfFileForPixelDataAttribute(byteoffset,aa,numberOfFrames,numberOfTiles,encodeAsExplicit,encodeAsLittleEndian,tileDataByteOffsets[pyramidLevel],tileDataLengths[pyramidLevel],pyramidMergeSamplesPerPixelTiles,pyramidSamplesPerPixel,false/*basicOffsetTablePresent*/);	// not adding BOT for private pyramid pixel data
 							}
 							else {
 								byteoffset += aa.getLengthOfEntireEncodedAttribute(encodeAsExplicit,encodeAsLittleEndian);
@@ -766,16 +766,47 @@ public class AddTIFFOrOffsetTables {
 			slf4jlogger.debug("AddTIFFOrOffsetTables(): mergeSamplesPerPixelTiles = {}",mergeSamplesPerPixelTiles);
 
 			int numberOfFrames = Attribute.getSingleIntegerValueOrDefault(list,TagFromName.NumberOfFrames,1);
+			
+			boolean willHaveBasicOffsetTable = addBasicOffsetTable;	// (001495)
+			
+			Attribute aPixelData = list.get(TagFromName.PixelData);
+			if (aPixelData != null) {
+				if (aPixelData instanceof OtherByteAttributeMultipleCompressedFrames) {
+					willHaveBasicOffsetTable = ((OtherByteAttributeMultipleCompressedFrames)aPixelData).getBasicOffsetTable() != null;
+				}
+				else if (aPixelData instanceof OtherByteAttributeCompressedSeparateFramesOnDisk) {
+					willHaveBasicOffsetTable = ((OtherByteAttributeCompressedSeparateFramesOnDisk)aPixelData).getBasicOffsetTable() != null;
+				}
+				else {
+					if (!addBasicOffsetTable) {
+						throw new DicomException("Not yet implemented - cannot determine presence or absence of existing Basic Offset Table in "+aPixelData.getClass());
+					}
+				}
+			}
+			else {
+				throw new DicomException("Unable to find PixelData attribute");
+			}
 
+			if (willHaveBasicOffsetTable) {
+				if (addExtendedOffsetTable) {
+					slf4jlogger.warn("AddTIFFOrOffsetTables(): Basic Offset Table Item Value is not permitted if Extended Offset Table is present (being added) - inserting anyway or leaving existing assuming creating test invalid object"); // PS3.5 A.4
+				}
+			}
+			
+			{
+				boolean hasExistingExtendedOffsetTable = list.get(TagFromName.ExtendedOffsetTable) != null;
+				if (hasExistingExtendedOffsetTable) {
+					if (addBasicOffsetTable) {
+						slf4jlogger.warn("AddTIFFOrOffsetTables(): Basic Offset Table Item Value is not permitted if Extended Offset Table is present (already present) - inserting anyway assuming creating test invalid object"); // PS3.5 A.4
+					}
+				}
+			}
+			
 			int basicOffsetTable[] = null;
 
 			if (addBasicOffsetTable) {
-				if (addExtendedOffsetTable) {
-					slf4jlogger.warn("AddTIFFOrOffsetTables(): Basic Offset Table Item Value is not permitted if Extended Offset Table is present - inserting anyway assuming creating test invalid object"); // PS3.5 A.4
-				}
 				// create BOT with dummy values to be set later, so that length of dataset can be calculated before BOT entries are set ...
 				basicOffsetTable = new int[numberOfFrames];
-				Attribute aPixelData = list.get(TagFromName.PixelData);
 				if (aPixelData != null) {
 					if (aPixelData instanceof OtherByteAttributeMultipleCompressedFrames) {
 						((OtherByteAttributeMultipleCompressedFrames)aPixelData).setBasicOffsetTable(basicOffsetTable);
@@ -802,7 +833,7 @@ public class AddTIFFOrOffsetTables {
 				{ Attribute a = new OtherVeryLongAttribute(TagFromName.ExtendedOffsetTableLengths); a.setValues(extendedOffsetTableLengths); list.put(a); }
 			}
 			
-			long byteOffsetFromFileStartOfNextAttributeAfterPixelData = getByteOffsetsAndLengthsOfTileDataFromStartOfFile(list,transferSyntax,tileDataByteOffsets,tileDataLengths,imageWidths,imageLengths,mergeSamplesPerPixelTiles,samplesPerPixel,addBasicOffsetTable);
+			long byteOffsetFromFileStartOfNextAttributeAfterPixelData = getByteOffsetsAndLengthsOfTileDataFromStartOfFile(list,transferSyntax,tileDataByteOffsets,tileDataLengths,imageWidths,imageLengths,mergeSamplesPerPixelTiles,samplesPerPixel,willHaveBasicOffsetTable);	// (001495)
 			
 			if (addBasicOffsetTable) {
 				long firstOffsetFromStartOfFile = tileDataByteOffsets[0][0];
@@ -818,7 +849,6 @@ public class AddTIFFOrOffsetTables {
 					}
 				}
 				// do not assume that setting the array previously re-used the array (may have copied), so update ...
-				Attribute aPixelData = list.get(TagFromName.PixelData);
 				if (aPixelData != null) {
 					if (aPixelData instanceof OtherByteAttributeMultipleCompressedFrames) {
 						((OtherByteAttributeMultipleCompressedFrames)aPixelData).setBasicOffsetTable(basicOffsetTable);

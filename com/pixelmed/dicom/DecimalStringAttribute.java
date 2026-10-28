@@ -22,7 +22,7 @@ import java.util.Locale;
  */
 public class DecimalStringAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DecimalStringAttribute.java,v 1.28 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DecimalStringAttribute.java,v 1.29 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
 	
@@ -112,7 +112,7 @@ public class DecimalStringAttribute extends StringAttribute {
 	
 	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == ' ' || c == '+' || c == '-' || c == '.' || c == 'e' || c == 'E');
 	}
 

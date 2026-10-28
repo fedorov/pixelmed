@@ -1346,3 +1346,11 @@ confidentialityprofiledataelementsandhandling.xml:	${HOME}/${PATHTOSTANDARDFROMH
 		"$${HOME}/${PATHTOSTANDARDFROMHOME}/support/stylesheets/extractconfidentialityprofiledataelementsandhandling.xsl" \
 		"$${HOME}/${PATHTOSTANDARDFROMHOME}/source/docbook/part15/part15.xml" \
 		$@
+		
+teststoredfilepathstrategy:	StoredFilePathStrategy.class StoredFilePathStrategyHashSubFolders.class StoredFilePathStrategySingleFolder.class StoredFilePathStrategyComponentFolders.class
+	java -Djava.awt.headless=true -cp ${PATHTOROOT} \
+		com.pixelmed.dicom.StoredFilePathStrategyHashSubFolders
+	java -Djava.awt.headless=true -cp ${PATHTOROOT} \
+		com.pixelmed.dicom.StoredFilePathStrategySingleFolder
+	java -Djava.awt.headless=true -cp ${PATHTOROOT} \
+		com.pixelmed.dicom.StoredFilePathStrategyComponentFolders

@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class DateAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateAttribute.java,v 1.24 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/DateAttribute.java,v 1.25 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 8;
 	
@@ -73,21 +73,15 @@ public class DateAttribute extends StringAttribute {
 	
 	protected char getInvalidCharacterReplacement() { return 0; }							// remove invalid characters; this may allow old ACR-NEMA use of periods, or non-standard use of forward slash or hyphen to work
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && Character.isDigit(c);
 	}
 
-	public boolean areValuesWellFormed() throws DicomException {
+	public boolean isValueWellFormed(String v) {
 		boolean good = true;
-		if (originalValues != null && originalValues.length > 0) {
-			for (int i=0; i<originalValues.length; ++i) {
-				String v = originalValues[i];
-				if (v != null && v.length() > 0) {
-					if (v.length() != 8) {
-						good = false;
-						break;
-					}
-				}
+		if (v != null && v.length() > 0) {
+			if (v.length() != 8) {
+				good = false;
 			}
 		}
 		return good;

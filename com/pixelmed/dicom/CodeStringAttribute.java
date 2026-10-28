@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class CodeStringAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodeStringAttribute.java,v 1.24 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/CodeStringAttribute.java,v 1.25 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 16;
 	
@@ -77,10 +77,9 @@ public class CodeStringAttribute extends StringAttribute {
 		return false;
 	}
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 //System.err.println("CodeStringAttribute.isCharacterInValueValid(): c = "+c);
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isUpperCase(c) || Character.isDigit(c) || c == ' ' || c == '_');
 	}
-
 }
 

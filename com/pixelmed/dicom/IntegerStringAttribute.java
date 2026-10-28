@@ -21,7 +21,7 @@ import java.text.NumberFormat;
  */
 public class IntegerStringAttribute extends StringAttribute {
 
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/IntegerStringAttribute.java,v 1.28 2026/03/08 15:20:35 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/IntegerStringAttribute.java,v 1.29 2026/10/28 13:28:11 dclunie Exp $";
 
 	protected static final int MAX_LENGTH_SINGLE_VALUE = 12;
 	
@@ -119,18 +119,43 @@ public class IntegerStringAttribute extends StringAttribute {
 	
 	//protected final boolean allowRepairOfInvalidCharacterReplacement() { return false; }	// moot, since we do not check this in repairValues(), i.e., hard-coded
 
-	public final boolean isCharacterInValueValid(int c) throws DicomException {
+	public final boolean isCharacterInValueValid(int c) {
 		return c < 0x7f /* ASCII only to limit Character.isXX() tests */ && (Character.isDigit(c) || c == ' ' || c == '+' || c == '-');
 	}
+	
+	public boolean isValueWellFormed(long l) {
+		return !(l < -2147483648l || l > 2147483647l);
+	}
+	
+	public boolean isValueWellFormed(String v) {
+		boolean good = true;
+		if (v != null && v.length() > 0) {
+			long l=0;
+			try {
+				l=Long.valueOf(v).longValue();
+			}
+			catch (NumberFormatException e) {
+				good = false;
+			}
+			catch (NullPointerException e) {
+				good = false;
+			}
+			if (!isValueWellFormed(l)) {
+				good = false;
+			}
+		}
+		return good;
+	}
 
+	// override parent method rather than testing each string since can getLongValues() in bulk
 	public boolean areValuesWellFormed() throws DicomException {
 		boolean good = true;
 		{
 			long[] longValues = getLongValues();
 			for (int i=0; i<longValues.length; ++i) {
-				long v = longValues[i];
-//System.err.println("IntegerStringAttribute.isValid(): Checking value ="+v+" (from String value "+originalValues[i]+", long value "+Long.parseLong(originalValues[i])+")");
-				if (v < -2147483648l || v > 2147483647l) {
+				long l = longValues[i];
+//System.err.println("IntegerStringAttribute.isValid(): Checking value ="+l+" (from String value "+originalValues[i]+", long value "+Long.parseLong(originalValues[i])+")");
+				if (!isValueWellFormed(l)) {
 					good = false;
 					break;
 				}

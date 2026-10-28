@@ -15,7 +15,7 @@ import java.text.NumberFormat;
 abstract public class StringAttribute extends Attribute {
 
 	/***/
-	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttribute.java,v 1.41 2026/03/08 15:20:36 dclunie Exp $";
+	private static final String identString = "@(#) $Header: /userland/cvs/pixelmed/imgbook/com/pixelmed/dicom/StringAttribute.java,v 1.42 2026/10/28 13:28:11 dclunie Exp $";
 
 	public abstract int getMaximumLengthOfSingleValue();
 
@@ -506,9 +506,26 @@ abstract public class StringAttribute extends Attribute {
 		return good;
 	}
 
-	public boolean isCharacterInValueValid(int c) throws DicomException {
+	// not static since want to delegate to overridden methid in sub-class :(
+	public boolean isCharacterInValueValid(int c) {
 //System.err.println("StringAttribute.isCharacterInValueValid(): c = "+(char)c+" ("+c+" dec)");
 		return !Character.isISOControl(c) && c != '\\';	// ESC is theoretically permitted, but we clean up ISO 2022 in ingestion, so should not occur internally
+	}
+
+	public boolean areCharactersInValueValid(String v) {
+//System.err.println("StringAttribute.areCharactersInValuesValid():");
+		boolean good = true;
+		if (v != null) {
+			for (int i=0; i<v.length(); ++i) {
+				int c = v.codePointAt(i);
+				if (!isCharacterInValueValid(c)) {
+//System.err.println("StringAttribute.isCharacterInValueValid(): invalid character c = "+c);
+					good = false;
+					break;
+				}
+			}
+		}
+		return good;
 	}
 
 	public boolean areCharactersInValuesValid() throws DicomException {
@@ -516,25 +533,35 @@ abstract public class StringAttribute extends Attribute {
 		boolean good = true;
 		if (originalValues != null && originalValues.length > 0) {
 			for (String v : originalValues) {
-				if (v != null) {
-					for (int i=0; i<v.length(); ++i) {
-						int c = v.codePointAt(i);
-						if (!isCharacterInValueValid(c)) {
-//System.err.println("StringAttribute.isCharacterInValueValid(): invalid character c = "+c);
-							good = false;
-							break;
-						}
-					}
-					if (!good) break;
+				if (!areCharactersInValueValid(v)) {
+					good = false;
+					break;
 				}
 			}
 		}
 		return good;
 	}
 	
+	// not static since want to delegate to overridden methid in sub-class :(
+	public boolean isValueWellFormed(String v) {
+//System.err.println("StringAttribute.isValueWellFormed():");
+		return true;
+	}
+	
 	public boolean areValuesWellFormed() throws DicomException {
 //System.err.println("StringAttribute.areValuesWellFormed():");
-		return true;
+		boolean good = true;
+		if (originalValues != null && originalValues.length > 0) {
+			for (int i=0; i<originalValues.length; ++i) {
+				String v = originalValues[i];
+				if (!isValueWellFormed(v)) {
+					good = false;
+					break;
+				}
+			}
+		}
+//System.err.println("StringAttribute.areValuesWellFormed(): "+good);
+		return good;
 	}
 
 	public boolean isValid() throws DicomException {
